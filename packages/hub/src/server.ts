@@ -13,6 +13,10 @@ import { ORBIS_VERSION } from "@orbis/shared";
 import { EventBus } from "./bus.js";
 import { loadConfig, type ConfigOverrides, type Env, type HubConfig } from "./config.js";
 import { ComputerManager, type ComputerProvider } from "./computer/manager.js";
+import { DockerProvider } from "./computer/docker.js";
+import { BrowserService } from "./computer/browser.js";
+import { computerTools } from "./computer/tools.js";
+import { registerComputerRoutes, VncSessions } from "./computer/routes.js";
 import { openDatabase, type Database } from "./db/index.js";
 import { HttpError, unauthorized } from "./errors.js";
 import { BotsRepo } from "./repos/bots.js";
@@ -52,7 +56,7 @@ import { SecretResolvers, type HubContext } from "./context.js";
 export interface HubOptions {
   env?: Env;
   config?: ConfigOverrides;
-  /** Extra computer providers whose destroy() runs when a bot is deleted. */
+  /** Computer providers replacing the built-in ones of the same kind (tests pass a recorded docker), or extra ones. */
   computerProviders?: ComputerProvider[];
   /** Replace or add brain adapters (tests register fakes here). */
   brains?: BrainAdapter[];
@@ -142,7 +146,14 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   }
   for (const adapter of opts.brains ?? []) brains.register(adapter);
 
-  const computer = new ComputerManager(config.dataDir, opts.computerProviders ?? []);
+  const computer = new ComputerManager(config.dataDir, {
+    defaultProvider: config.computerProvider,
+    providers: [new DockerProvider(), ...(opts.computerProviders ?? [])],
+    bus,
+    bots: repos.bots,
+  });
+  const browser = new BrowserService(computer, config.browserExecutable);
+  computer.startSweeper();
   const timeline = new Timeline(repos.items, repos.conversations, repos.bots, bus);
   const secretResolvers = new SecretResolvers();
   const engine = new RunEngine({
@@ -213,9 +224,12 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   // Registered before the auth hook: its onRequest hook marks upgrade requests so a
   // refused upgrade (401) still has its socket destroyed.
   await app.register(websocket);
+  const vncSessions = new VncSessions();
   app.addHook("onRequest", async (req) => {
     const mode = needsHubToken(req.url);
     if (!mode) return;
+    // noVNC pages inside an iframe authenticate with their path-scoped cookie.
+    if (vncSessions.allows(req.url, req.headers.cookie)) return;
     const presented = mode === "bearer" ? bearer(req) : (new URL(req.url, "http://x").searchParams.get("token") ?? bearer(req));
     if (!presented || !safeEqual(presented, config.token)) throw unauthorized();
   });
@@ -236,6 +250,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     repos,
     brains,
     computer,
+    browser,
     timeline,
     engine,
     botService,
@@ -255,6 +270,17 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const memoryService = new MemoryService(ctx);
   for (const tool of memoryService.tools()) tools.register(tool);
   engine.addHooks(memoryService.hooks());
+  for (const tool of computerTools(computer, browser)) tools.register(tool);
+  // While the user holds a bot's computer, its tool calls wait (specs/computer: takeover).
+  gateway.onBeforeCall(async ({ run, bot, signal }) => {
+    if (!computer.holdsTakeover(bot.id)) return;
+    engine.markWaiting(run.id, true);
+    try {
+      await computer.waitForControl(bot.id, signal);
+    } finally {
+      engine.markWaiting(run.id, false);
+    }
+  });
   approvals.expireStale();
 
   app.get("/health", { schema: { hide: true } }, async () => ({ ok: true, version: config.version }));
@@ -265,6 +291,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerOpenAiCompat(app, ctx);
   await registerGroupRoutes(app, ctx);
   await memoryService.routes(app);
+  await registerComputerRoutes(app, ctx, browser, vncSessions);
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
@@ -293,6 +320,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       if (closed) return;
       closed = true;
       await engine.shutdown();
+      await browser.shutdown();
+      await computer.shutdown();
       await app.close();
       db.close();
     },

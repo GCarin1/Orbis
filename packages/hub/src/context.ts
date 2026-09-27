@@ -2,6 +2,7 @@
 import type { EventBus } from "./bus.js";
 import type { HubConfig } from "./config.js";
 import type { ComputerManager } from "./computer/manager.js";
+import type { BrowserService } from "./computer/browser.js";
 import type { Database } from "./db/index.js";
 import type { BotsRepo } from "./repos/bots.js";
 import type { ConversationsRepo, ItemsRepo } from "./repos/conversations.js";
@@ -50,6 +51,7 @@ export interface HubContext {
   };
   brains: BrainRegistry;
   computer: ComputerManager;
+  browser: BrowserService;
   timeline: Timeline;
   engine: RunEngine;
   botService: BotService;

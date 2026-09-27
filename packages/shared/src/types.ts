@@ -265,3 +265,20 @@ export interface HandoffCardData {
   error?: string | null;
   [key: string]: unknown;
 }
+
+export type ComputerState = "stopped" | "running" | "hibernated";
+
+/** What clients see of a bot's computer (`GET /bots/:id/computer`, `computer.updated`). */
+export interface ComputerStatus {
+  botId: string;
+  enabled: boolean;
+  provider: ComputerProviderKind;
+  status: ComputerState;
+  /** The user holds the computer: the bot's tool calls wait. */
+  takeover: boolean;
+  /** Path of the noVNC page when the provider has a desktop, else null (screenshots only). */
+  vncPath: string | null;
+  lastUsedAt: string | null;
+  /** When the latest browser screenshot was taken, for the live view. */
+  screenshotAt: string | null;
+}

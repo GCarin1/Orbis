@@ -11,6 +11,7 @@ import { Timeline } from "./components/Timeline.js";
 import { TokenGate } from "./components/TokenGate.js";
 import { ApprovalsInbox } from "./components/ApprovalsInbox.js";
 import { GroupList, NewGroupDialog } from "./components/Groups.js";
+import { ComputerPanel } from "./components/ComputerPanel.js";
 import type { MentionOption } from "./components/Composer.js";
 
 export function App() {
@@ -21,6 +22,8 @@ export function App() {
   });
   const [creating, setCreating] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
+  const [computerOpen, setComputerOpen] = useState(false);
+  const [computerFull, setComputerFull] = useState(false);
   const store = useStore();
 
   useEffect(() => {
@@ -52,6 +55,9 @@ export function App() {
 
   const bots = useMemo(() => Object.values(store.bots), [store.bots]);
   const selected = store.selectedBotId ? store.bots[store.selectedBotId] : undefined;
+  useEffect(() => {
+    if (computerOpen && selected) void useStore.getState().loadComputer(selected.id).catch(() => undefined);
+  }, [computerOpen, selected?.id]);
   const group = store.selectedGroupId ? store.conversations[store.selectedGroupId] : undefined;
   const groups = useMemo(() => Object.values(store.conversations).filter((c) => c.kind === "group"), [store.conversations]);
   const conversationId = group ? group.id : selected ? store.directByBot[selected.id] : undefined;
@@ -80,7 +86,7 @@ export function App() {
   }
 
   return (
-    <div className="layout">
+    <div className={`layout${selected && computerOpen && !group ? " with-computer" : ""}`}>
       <aside className="sidebar">
         <header className="brand">
           <img src="/icon.svg" alt="" width={28} height={28} />
@@ -137,6 +143,10 @@ export function App() {
                   <StateLabel state={selected.state} />
                 </div>
               </div>
+              <button className="btn conv-computer" aria-pressed={computerOpen} onClick={() => setComputerOpen(!computerOpen)}>
+                🖥 {t("computer.open")}
+                {store.computers[selected.id]?.status === "running" && <span className="dot-running" aria-hidden="true" />}
+              </button>
             </header>
             {items.length === 0 && activeRuns.length === 0 ? (
               <p className="muted empty">{t("conv.start", { name: selected.name })}</p>
@@ -149,6 +159,20 @@ export function App() {
           <p className="muted empty">{t("conv.empty")}</p>
         )}
       </main>
+      {selected && computerOpen && !group && store.api && (
+        <ComputerPanel
+          api={store.api}
+          bot={selected}
+          status={store.computers[selected.id]}
+          fullscreen={computerFull}
+          onAction={(action) => store.computerAction(selected.id, action)}
+          onFullscreen={setComputerFull}
+          onClose={() => {
+            setComputerOpen(false);
+            setComputerFull(false);
+          }}
+        />
+      )}
       {creatingGroup && (
         <NewGroupDialog
           bots={bots}

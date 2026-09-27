@@ -21,7 +21,7 @@ HTTP (Fastify)  ── auth hook (bearer / stream query token)
    │             RunEngine ── RunsRepo, BrainSessionsRepo┘
    │                  │   ├── assembleContext (identity, memories, history)
    │                  │   ├── BrainRegistry → mock | claude-code | custom-cli | …
-   │                  │   └── ComputerManager (per-bot workspace)
+   │                  │   └── ComputerManager → local | docker, BrowserService
    │                  ▼
    └── /api/v1/stream ◄── EventBus ◄── Timeline (post, react, cards)
 ```
@@ -51,9 +51,16 @@ HTTP (Fastify)  ── auth hook (bearer / stream query token)
   `summary` after each successful run and serves the memory routes. Engine
   `onEnded` hooks run before the terminal `run.updated` event, so a client
   sees the follow-up run queued before the run that caused it ends.
-- **Computer.** Change 0001 ships the per-bot workspace directory (the working
-  directory of every CLI brain), created with the bot and destroyed with it.
-  The provider interface (ADR 0005) is ready for the `docker` provider.
+- **Computer.** `computer/manager.ts` gives each bot one computer through a
+  provider (ADR 0005): `local` (directories and child processes on the hub
+  host) or `docker` (one `orbis/desktop` container and one volume per bot,
+  every docker call through an injectable command runner). The manager
+  starts a computer when a tool needs it, hibernates it after
+  `hibernateAfterMin`, holds takeovers (the gateway's before-call hook makes
+  the bot's tool calls wait), and destroys it with the bot. `computer/browser.ts`
+  drives Chromium with Playwright: a persistent per-bot profile for `local`,
+  DevTools into the container for `docker`. `computer/paths.ts` confines file
+  tools to the workspace, symlinks included.
 
 ## Bot states
 

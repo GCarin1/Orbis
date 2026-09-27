@@ -184,7 +184,7 @@ export class BotService {
     await Promise.all(active.map((r) => this.d.engine.wait(r.id)));
     for (const hook of this.deleteHooks) await hook(bot);
     transaction(this.d.db, () => this.d.bots.delete(bot.id));
-    await this.d.computer.destroy(bot.id);
+    await this.d.computer.destroy(bot);
     this.d.bus.publish("bot.deleted", { botId: bot.id });
   }
 }

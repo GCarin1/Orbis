@@ -691,3 +691,102 @@ textarea {
 .mention-list li:hover {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
+
+/* computer panel (side panel and full screen) */
+.layout.with-computer {
+  grid-template-columns: 320px 1fr minmax(360px, 34vw);
+}
+.conv-computer {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.conv-computer[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.dot-running {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+.computer-panel {
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  min-width: 0;
+  overflow-y: auto;
+}
+.computer-panel.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  border-left: 0;
+}
+.computer-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+.computer-head h2 {
+  font-size: 1em;
+}
+.computer-tools,
+.computer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.computer-screen {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #000;
+  object-fit: contain;
+}
+iframe.computer-screen {
+  aspect-ratio: 16 / 10;
+  flex: 1;
+  min-height: 260px;
+}
+.computer-panel.fullscreen .computer-screen {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+.computer-empty {
+  padding: 24px 8px;
+  text-align: center;
+}
+.computer-note {
+  font-size: 0.8em;
+}
+.banner-takeover {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+}
+.pill-computer-running {
+  background: #dcfce7;
+  color: #15803d;
+}
+.pill-computer-hibernated {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+@media (max-width: 900px) {
+  .layout.with-computer {
+    grid-template-columns: 1fr;
+  }
+  .computer-panel {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+}

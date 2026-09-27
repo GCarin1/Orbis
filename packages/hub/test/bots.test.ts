@@ -97,7 +97,14 @@ describe("bots", () => {
 
   it("deletes memory, routines, secrets and the direct conversation, and destroys the computer (criterion 3)", async () => {
     const destroyed: string[] = [];
-    const spy: ComputerProvider = { kind: "spy", destroy: async (botId) => void destroyed.push(botId) };
+    const spy: ComputerProvider = {
+      kind: "spy",
+      ensure: async () => undefined,
+      exec: async () => ({ exitCode: 0, output: "", timedOut: false, droppedBytes: 0 }),
+      stop: async () => undefined,
+      view: async () => ({ vncPort: null, cdpPort: null }),
+      destroy: async (botId) => void destroyed.push(botId),
+    };
     t = await testHub({ computerProviders: [spy] });
     const bot = await createBot(t);
     const { conversation } = await chat(t, bot.id, "hello");

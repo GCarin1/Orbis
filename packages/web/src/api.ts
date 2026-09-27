@@ -63,6 +63,13 @@ export class Api {
   get<T>(path: string) {
     return this.request<T>("GET", path);
   }
+  /** A binary resource (screenshots), or null on 404. */
+  async blob(path: string): Promise<Blob | null> {
+    const res = await fetch(this.base + path, { headers: { authorization: `Bearer ${this.token}` } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new ApiError(res.status, null);
+    return res.blob();
+  }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>("POST", path, body);
   }

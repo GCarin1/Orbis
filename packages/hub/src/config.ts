@@ -28,6 +28,8 @@ export interface HubConfig {
   openaiApiKey: string | null;
   /** Directory of the built web app; null disables static serving. */
   webDir: string | null;
+  /** Chromium for the local browser tools; null uses Playwright's own browser. */
+  browserExecutable: string | null;
 }
 
 export type Env = Record<string, string | undefined>;
@@ -114,5 +116,6 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     anthropicApiKey: overrides.anthropicApiKey ?? readVar(env, "ANTHROPIC_API_KEY") ?? null,
     openaiApiKey: overrides.openaiApiKey ?? readVar(env, "OPENAI_API_KEY") ?? null,
     webDir: overrides.webDir === undefined ? null : overrides.webDir,
+    browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
   };
 }

@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the computer change
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/hub/src/computer/provider.ts`, `packages/hub/src/computer/local.ts`, `packages/hub/src/computer/docker.ts`, `packages/hub/test/computer/docker.test.ts`, `docker/desktop/Dockerfile`
 
 ## Context
 

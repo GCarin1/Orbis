@@ -9,6 +9,25 @@ change that delivered it.
 
 ### Added
 
+- One computer per bot (change 0005-computer; lands ADR 0005):
+  - Provider interface with the `local` provider (child processes in the
+    bot's workspace, scrubbed environment with the bot's own HOME,
+    process-group kill on timeout, 64 KiB output cap) and the `docker`
+    provider (one `orbis/desktop` container and one home volume per bot,
+    workspace bind-mounted, CPU and memory limits, noVNC and DevTools on
+    127.0.0.1) over an injectable command runner; `docker/desktop` image.
+  - Start on demand, hibernation after `hibernateAfterMin`, destroy on
+    delete, takeover that holds the bot's tool calls, `computer.updated`.
+  - Tools `computer.shell` (asks by default), `computer.read_file`,
+    `computer.write_file`, `computer.list_files` confined to the workspace
+    (symlinks included); `browser.open|snapshot|click|type|press|screenshot|close`
+    on Playwright with a per-bot profile, text snapshots with references,
+    takeover requests on password, CAPTCHA and verification pages.
+  - REST: computer status, start, stop, takeover, release, screenshot and the
+    noVNC proxy behind a path-scoped cookie.
+  - Web: computer side panel and full screen with the live screenshot or
+    noVNC, Take over / Hand back.
+  - `ORBIS_BROWSER_EXECUTABLE` and `ORBIS_DOCKER`.
 - Collaboration (change 0004-collaboration):
   - Group conversations of 2 to 6 bots with a lead: `POST /api/v1/conversations`,
     `PATCH|DELETE /api/v1/conversations/:id`, members routes, the

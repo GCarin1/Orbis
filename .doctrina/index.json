@@ -71,9 +71,9 @@
         "id": "computer",
         "path": ".doctrina/specs/computer/spec.md",
         "status": "active",
-        "version": "0.1.1",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — per-bot workspace directories exist since change 0001 (working directory of CLI brains, destroyed with the bot); tools, providers and the live view land in the computer change",
+        "implementation": "verified — local and docker providers (`packages/hub/src/computer/`), browser tools on Playwright, hibernation, takeover, the live view and the `orbis/desktop` image (`docker/desktop/`)",
         "realizes": [
           "SC3"
         ],
@@ -224,9 +224,9 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.2.1",
+        "version": "0.2.2",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http and memory tools are verified; the tools of computer, browser, skills, routines and secrets register with their changes",
+        "implementation": "planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer and browser tools are verified; the tools of skills, routines and secrets register with their changes",
         "realizes": [
           "SC2",
           "SC3"
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft and handoff cards, thread replies, the approvals inbox, @ autocomplete, languages and the end-to-end paths are verified; /skill autocomplete, settings and computer screens land with their capabilities",
+        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft and handoff cards, thread replies, the approvals inbox, @ autocomplete, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; /skill autocomplete and the settings, skills, routines and usage screens land with their capabilities",
         "realizes": [
           "SC7",
           "SC4",
@@ -329,6 +329,7 @@
         "title": "One computer per bot behind a provider interface",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `packages/hub/src/computer/provider.ts`, `packages/hub/src/computer/local.ts`, `packages/hub/src/computer/docker.ts`, `packages/hub/test/computer/docker.test.ts`, `docker/desktop/Dockerfile`",
         "scope": [
           "computer",
           "bots",
@@ -510,6 +511,28 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0005-computer",
+        "title": "computer",
+        "path": ".doctrina/changes/archive/2026-09-27-0005-computer",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "computer",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (triage's \"runtime\" came from the word docker; the spec's requirements are unimplemented)"
       }
     ],
     "skills": [],

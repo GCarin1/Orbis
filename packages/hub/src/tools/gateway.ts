@@ -29,8 +29,12 @@ export function bridgeEntry(): string | null {
 
 export const PERMISSION_TOOL = "mcp__orbis__approval_prompt";
 
+/** Runs before every tool handler; may wait (a takeover) or throw to refuse. */
+export type BeforeToolCall = (session: RunSession, tool: ToolDefinition) => Promise<void>;
+
 export class ToolGateway implements RunToolHost {
   private readonly sessions = new Map<string, RunSession>();
+  private readonly beforeCall: BeforeToolCall[] = [];
 
   constructor(
     private readonly registry: ToolRegistry,
@@ -62,6 +66,10 @@ export class ToolGateway implements RunToolHost {
     };
   }
 
+  onBeforeCall(hook: BeforeToolCall): void {
+    this.beforeCall.push(hook);
+  }
+
   /** The run a token belongs to, or undefined when unknown or revoked. */
   session(token: string): RunSession | undefined {
     return this.sessions.get(token);
@@ -75,7 +83,7 @@ export class ToolGateway implements RunToolHost {
     return this.registry.forBot(bot);
   }
 
-  /** Allowlist → schema → policy/approval → handler → result cap. */
+  /** Allowlist → schema → policy/approval → before-call hooks (takeover) → handler → result cap. */
   async execute(session: RunSession, name: string, input: unknown, callId: string): Promise<ToolCallResult> {
     const { run, bot, signal } = session;
     const tool = this.registry.resolve(name);
@@ -99,6 +107,7 @@ export class ToolGateway implements RunToolHost {
       if (!gate.allowed) return { output: gate.message, isError: true };
     }
     try {
+      for (const hook of this.beforeCall) await hook(session, tool);
       const result = await tool.handler(args, { run, bot, callId, signal });
       const normalized = typeof result === "string" ? { output: result, isError: false } : result;
       return { output: capResult(normalized.output), isError: normalized.isError };

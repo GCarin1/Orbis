@@ -37,12 +37,12 @@ fecha quando os critérios de aceite são provados por testes.
 | Montagem de contexto (identidade, memórias, conversa recente dentro do orçamento) | ✅ |
 | API REST + stream WebSocket + OpenAPI, token bearer | ✅ |
 | CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `group`, `memory`, `approvals`, `runtimes`, `mcp` | ✅ |
-| App web: roster, grupos, timeline com passos, cards de aprovação, rascunho e handoff, autocomplete de `@`, caixa de aprovações, pt-BR/inglês, instalável | ✅ |
+| App web: roster, grupos, timeline com passos, cards de aprovação, rascunho e handoff, autocomplete de `@`, caixa de aprovações, painel do computador, pt-BR/inglês, instalável | ✅ |
 | Gateway de ferramentas via MCP, aprovações (uma vez/sempre/negar), rascunhos com Enviar/Descartar | ✅ verificado |
 | `/v1/chat/completions` compatível com OpenAI (fale com qualquer bot de qualquer cliente OpenAI) | ✅ |
 | Grupos de 2 a 6 bots, @menções e @everyone, `team.handoff` assíncrono com limite de profundidade, memória por bot e da equipe (`memory.save`, `memory.search`, resumos de execução) | ✅ verificado |
-| Um computador por bot (local e Docker, navegador, tela ao vivo, assumir controle) | próximo |
-| Skills, rotinas, segredos, teto de gasto, templates, app desktop | planejado |
+| Um computador por bot: provedores `local` e `docker`, shell e arquivos confinados ao workspace, navegador Playwright com perfil próprio, hibernação, tela ao vivo (screenshot ou noVNC), assumir controle | ✅ verificado |
+| Skills, rotinas, segredos, teto de gasto, templates, app desktop | próximo |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
 no cabeçalho `Implementation:` de cada spec.
@@ -95,8 +95,8 @@ API (`~/.orbis/token`) e o workspace de cada bot.
 
 Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
-[`docs/collaboration.md`](docs/collaboration.md), [`docs/mcp.md`](docs/mcp.md)
-e [`docs/cli.md`](docs/cli.md).
+[`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
+[`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 
@@ -110,6 +110,8 @@ Todas as variáveis são opcionais; veja [`.env.example`](.env.example).
 | `ORBIS_MAX_BOTS` | `50` | bots por instalação |
 | `ORBIS_MAX_GROUP_SIZE` | `6` | bots por grupo |
 | `ORBIS_COMPUTER_PROVIDER` | `local` | `local` ou `docker` |
+| `ORBIS_BROWSER_EXECUTABLE` | Chromium do Playwright | Chromium das ferramentas de navegador locais |
+| `ORBIS_DOCKER` | `docker` | a CLI do docker usada pelo provedor docker |
 | `ORBIS_URL` | `http://127.0.0.1:7420` | URL do hub para a CLI |
 
 ## Desenvolvimento

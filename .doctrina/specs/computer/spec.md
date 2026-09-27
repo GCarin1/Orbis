@@ -2,11 +2,11 @@
 
 **Capability:** computer
 **Status:** active
-**Implementation:** planned — per-bot workspace directories exist since change 0001 (working directory of CLI brains, destroyed with the bot); tools, providers and the live view land in the computer change
+**Implementation:** verified — local and docker providers (`packages/hub/src/computer/`), browser tools on Playwright, hibernation, takeover, the live view and the `orbis/desktop` image (`docker/desktop/`)
 **Realizes:** SC3
 **Depends on:** bots, tool-gateway, secrets
 **Last updated:** 2026-09-27
-**Version:** 0.1.1
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -25,10 +25,11 @@ are destroyed with their bot.
 - The system shall give each bot whose computer is enabled its own workspace directory, terminal and browser profile, none of which is shared with another bot.
 - The system shall provide computers through the provider named in the bot's computer configuration or, when it names none, in ORBIS_COMPUTER_PROVIDER: `local` or `docker`.
 - The system shall run the docker provider with one container and one named volume per bot, created from the image named in the bot's configuration (default `orbis/desktop:latest`, which carries Xvfb, a window manager, Chromium, x11vnc and noVNC), with the bot's CPU and memory limits applied.
-- The system shall execute `computer.shell` with the bot's workspace as working directory, a timeout (default 120 seconds), an output cap of 64 KiB, and an environment that holds none of the hub's variables beyond PATH, HOME, LANG and TERM.
+- The system shall execute `computer.shell` with the bot's workspace as working directory, a timeout (default 120 seconds) that kills the command's whole process group, an output cap of 64 KiB, and an environment made only of PATH and LANG from the hub, TERM, and HOME set to the bot's own home directory.
 - The system shall confine `computer.read_file`, `computer.write_file` and `computer.list_files` to the bot's workspace after resolving `..` segments and symlinks.
 - The system shall drive the browser tools with Playwright on a persistent browser profile stored per bot.
 - The system shall publish the bot's screen at three levels: the state ring in the roster, a side panel with the live view (browser screenshots for `local`, noVNC for `docker`) and a full-screen view.
+- The system shall serve a docker computer's noVNC view only through the hub, to requests that carry the API token or the bot's view cookie, which is scoped to that bot's view path.
 
 ### Event-driven
 
@@ -37,6 +38,7 @@ are destroyed with their bot.
 - When a bot is deleted, the system shall destroy its container, volume, workspace and browser profile.
 - When the user takes over a bot's computer, the system shall pause the start of new tool calls for that bot until the user hands control back.
 - When a browser tool meets a CAPTCHA, a two-factor prompt or a password field, the system shall return a result that asks the bot to request a takeover from the user.
+- When the output of `computer.shell` is longer than the tool result allows, the system shall return its start and its end, say how much was left out, and suggest redirecting it to a file.
 
 ### Unwanted-behavior (must-not)
 
@@ -45,13 +47,15 @@ are destroyed with their bot.
 
 ## Acceptance criteria
 
-1. [unverified] With the local provider, `computer.shell` runs in the bot's workspace, a command past its timeout is killed, and the command's environment holds no ORBIS_TOKEN or ORBIS_MASTER_KEY — verified by `packages/hub/test/computer/local.test.ts`.
-2. [unverified] File tools refuse `../` paths, absolute paths outside the workspace and symlinks that point outside it — verified by `packages/hub/test/computer/local.test.ts`.
-3. [unverified] A bot cannot read a file from another bot's workspace — verified by `packages/hub/test/computer/local.test.ts`.
-4. [unverified] The docker provider issues, through a recorded command runner, a create with the CPU and memory limits and the per-bot volume, a start before a tool, a stop after the idle period, and a removal of container and volume on destroy — verified by `packages/hub/test/computer/docker.test.ts`.
-5. [unverified] The browser tools open a local page, return its text snapshot, and keep cookies in a per-bot profile across browser restarts — verified by `packages/hub/test/computer/browser.test.ts`.
-6. [unverified] A local computer with no tool call for longer than `hibernateAfter` is stopped — verified by `packages/hub/test/computer/local.test.ts`.
-7. [unverified] While the user holds a takeover, a tool call of that bot waits until control is handed back — verified by `packages/hub/test/computer/takeover.test.ts`.
+1. [verified] With the local provider, `computer.shell` runs in the bot's workspace, a command past its timeout is killed, and the command's environment holds no ORBIS_TOKEN or ORBIS_MASTER_KEY — verified by `packages/hub/test/computer/local.test.ts`.
+2. [verified] File tools refuse `../` paths, absolute paths outside the workspace and symlinks that point outside it — verified by `packages/hub/test/computer/local.test.ts`.
+3. [verified] A bot cannot read a file from another bot's workspace — verified by `packages/hub/test/computer/local.test.ts`.
+4. [verified] The docker provider issues, through a recorded command runner, a create with the CPU and memory limits and the per-bot volume, a start before a tool, a stop after the idle period, and a removal of container and volume on destroy — verified by `packages/hub/test/computer/docker.test.ts`.
+5. [verified] The browser tools open a local page, return its text snapshot, and keep cookies in a per-bot profile across browser restarts — verified by `packages/hub/test/computer/browser.test.ts`.
+6. [verified] A local computer with no tool call for longer than `hibernateAfter` is stopped — verified by `packages/hub/test/computer/local.test.ts`.
+7. [verified] While the user holds a takeover, a tool call of that bot waits until control is handed back — verified by `packages/hub/test/computer/takeover.test.ts`.
+8. [verified] Password, CAPTCHA and verification-code pages answer with a request to ask the user for a takeover, and typing into a password field is refused — verified by `packages/hub/test/computer/browser.test.ts`.
+9. [verified] The noVNC pages and WebSocket answer only with the bot's own view cookie, and a local computer has no desktop to show — verified by `packages/hub/test/computer/docker.test.ts`.
 
 ## Maturity
 

@@ -1,6 +1,6 @@
 // Client state, fed by REST loads and the event stream.
 import { create } from "zustand";
-import type { Approval, ApprovalDecision, Bot, Conversation, DraftFields, Run, Step, StreamEvent, TimelineItem } from "@orbis/shared";
+import type { Approval, ApprovalDecision, Bot, ComputerStatus, Conversation, DraftFields, Run, Step, StreamEvent, TimelineItem } from "@orbis/shared";
 import { Api } from "./api.js";
 
 export type RunView = Omit<Run, "steps"> & { steps: Step[] };
@@ -16,6 +16,7 @@ interface State {
   items: Record<string, TimelineItem[]>;
   runs: Record<string, RunView>;
   approvals: Record<string, Approval>;
+  computers: Record<string, ComputerStatus>;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -33,6 +34,8 @@ interface State {
   answerApproval(id: string, decision: ApprovalDecision, note?: string): Promise<void>;
   sendDraft(itemId: string, fields: Partial<DraftFields>): Promise<void>;
   discardDraft(itemId: string): Promise<void>;
+  loadComputer(botId: string): Promise<void>;
+  computerAction(botId: string, action: "start" | "stop" | "takeover" | "release"): Promise<void>;
   apply(event: StreamEvent): void;
 }
 
@@ -56,6 +59,7 @@ export const useStore = create<State>((set, get) => ({
   items: {},
   runs: {},
   approvals: {},
+  computers: {},
   error: null,
 
   setApi: (api) => set({ api }),
@@ -162,8 +166,27 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ items: { ...s.items, [item.conversationId]: upsertItem(s.items[item.conversationId], item) } }));
   },
 
+  async loadComputer(botId) {
+    const api = get().api;
+    if (!api) return;
+    const status = await api.get<ComputerStatus>(`/api/v1/bots/${botId}/computer`);
+    set((s) => ({ computers: { ...s.computers, [botId]: status } }));
+  },
+
+  async computerAction(botId, action) {
+    const api = get().api;
+    if (!api) return;
+    const status = await api.post<ComputerStatus>(`/api/v1/bots/${botId}/computer/${action}`);
+    set((s) => ({ computers: { ...s.computers, [botId]: status } }));
+  },
+
   apply(event) {
     switch (event.type) {
+      case "computer.updated": {
+        const { botId, computer } = event.data as { botId: string; computer: ComputerStatus };
+        set((s) => ({ computers: { ...s.computers, [botId]: computer } }));
+        break;
+      }
       case "approval.requested":
       case "approval.resolved": {
         const { approval } = event.data as { approval: Approval };

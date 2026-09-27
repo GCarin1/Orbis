@@ -19,10 +19,12 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | hub               | 7420 | http, websocket  |
 | web-dev           | 5173 | http             |
 | desktop-novnc     | 6080 | http, websocket  |
+| desktop-cdp       | 9223 | http, websocket  |
 
 - `hub` serves REST, the stream, MCP, the OpenAI-compatible endpoint, webhooks and the built web app.
 - `web-dev` is the Vite dev server used only while developing the web app; it proxies `/api`, `/mcp`, `/v1` and `/hooks` to the hub.
-- `desktop-novnc` listens inside each `orbis/desktop` container; the docker provider publishes it on a random 127.0.0.1 port and the hub proxies it at `/api/v1/bots/:id/computer/vnc`.
+- `desktop-novnc` listens inside each `orbis/desktop` container; the docker provider publishes it on a random 127.0.0.1 port and the hub proxies it at `/api/v1/bots/:id/computer/vnc/`.
+- `desktop-cdp` relays the container's Chromium DevTools endpoint; the docker provider publishes it on a random 127.0.0.1 port and only the hub's browser tools connect to it.
 
 ## Environment
 
@@ -39,6 +41,8 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | ORBIS_ABSENCE_PAUSE_DAYS | no       | —                               | 14                       |
 | ORBIS_COMPUTER_PROVIDER  | no       | `local\|docker`                 | local                    |
 | ORBIS_LOG_LEVEL          | no       | `debug\|info\|warn\|error`      | info                     |
+| ORBIS_BROWSER_EXECUTABLE | no       | —                               | /usr/bin/chromium        |
+| ORBIS_DOCKER             | no       | —                               | docker                   |
 | ORBIS_URL                | no       | —                               | http://127.0.0.1:7420    |
 | ORBIS_RUN_TOKEN          | no       | —                               | set by the hub per run   |
 | ANTHROPIC_API_KEY        | no       | —                               | sk-ant-...               |
@@ -65,6 +69,8 @@ machine that runs Orbis; none is injected by CI.
 | ORBIS_ABSENCE_PAUSE_DAYS | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_COMPUTER_PROVIDER  | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_LOG_LEVEL          | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_BROWSER_EXECUTABLE | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_DOCKER             | local  | —        | —        | packages/hub/src/computer/docker.ts |
 | ANTHROPIC_API_KEY        | local  | —        | —        | packages/hub/src/config.ts        |
 | OPENAI_API_KEY           | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_URL                | local  | —        | —        | packages/cli/src/config.ts        |
@@ -105,7 +111,8 @@ machine that runs Orbis; none is injected by CI.
 - `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, policy: Policy, computer: ComputerConfig, tools: string[] (allowlist globs, default ["*"]), skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, lastMessage: { text, at }|null, createdAt, updatedAt }`.
 - `Brain`: `{ kind: "mock"|"anthropic"|"openai"|"claude-code"|"codex"|"gemini-cli"|"custom-cli", model?, baseUrl?, apiKeySecret?, command?, args?, maxSteps?, timeoutSec? }`.
 - `Policy`: `{ rules: [{ tool: "<name or glob>", decision: "allow"|"ask"|"deny", locked?: boolean }], grants: string[] }`.
-- `ComputerConfig`: `{ enabled, provider?: "local"|"docker", image?, cpus?, memoryMb?, hibernateAfterMin? }`.
+- `ComputerConfig`: `{ enabled, provider?: "local"|"docker", image? (default "orbis/desktop:latest"), cpus? (default 1), memoryMb? (default 2048), hibernateAfterMin? (default 30) }`.
+- `ComputerStatus`: `{ botId, enabled, provider: "local"|"docker", status: "stopped"|"running"|"hibernated", takeover: boolean, vncPath: string|null (docker and running only), lastUsedAt: string|null, screenshotAt: string|null }`.
 - `Conversation`: `{ id, kind: "direct"|"group", title, members: string[] (bot ids), leadBotId: string|null, createdAt, lastItemAt }`.
 - `TimelineItem`: `{ id, conversationId, kind: "message"|"event"|"card", author: { type: "user"|"bot"|"system", id: string|null }, text, parentId: string|null, mentions: string[], attachments: string[], reactions: { [emoji]: number }, runId: string|null, card?: Card, event?: { type, data }, createdAt, updatedAt }`.
 - `Card`: `{ type: "approval"|"draft"|"handoff"|"secret-request"|"routine", state: string, data: object }`.
@@ -126,7 +133,8 @@ machine that runs Orbis; none is injected by CI.
 - `GET /bots/:id/export` → `text/yaml` · `POST /bots/import` `{ yaml }` → 201 `Bot`.
 - `GET /bots/:id/memory` → `MemoryEntry[]` · `POST /bots/:id/memory` `{ kind, text }` → 201 · `GET /memory?scope=team` → team entries · `POST /memory` `{ kind, text }` → 201 team entry · `PATCH /memory/:id` `{ kind?, text? }` · `DELETE /memory/:id` → 204.
 - `GET /bots/:id/secrets` → `[{ name, createdAt }]` · `PUT /bots/:id/secrets/:name` `{ value }` · `DELETE /bots/:id/secrets/:name`.
-- `GET /bots/:id/computer` → `{ provider, status: "stopped"|"running"|"hibernated", takeover: boolean, vncPath: string|null }` · `POST /bots/:id/computer/start|stop|takeover|release` · `GET /bots/:id/computer/screenshot` → `image/png`.
+- `GET /bots/:id/computer` → `ComputerStatus` · `POST /bots/:id/computer/start|stop|takeover|release` → `ComputerStatus` (409 `computer_disabled`, 409 `computer_unavailable` when the provider fails, e.g. no Docker daemon) · `GET /bots/:id/computer/screenshot` → `image/png`, the latest screenshot kept after the bot's last browser action (404 before the first).
+- `POST /bots/:id/computer/vnc-session` → `{ url }` and a `Set-Cookie: orbis_vnc=…; Path=/api/v1/bots/:id/computer/vnc/; HttpOnly; SameSite=Strict` (409 `no_desktop` for the local provider, 409 `computer_stopped`) · `GET /bots/:id/computer/vnc/*` (noVNC files) and the WebSocket `GET /bots/:id/computer/vnc/websockify` accept that cookie instead of the bearer token.
 - `GET /conversations` · `POST /conversations` `{ title, members (ids or handles), leadBotId? }` → 201 group; 400 below 2 members, 409 `group_full` above the group-members budget · `GET /conversations/:id` · `PATCH /conversations/:id` `{ title?, leadBotId? }` · `DELETE /conversations/:id` → 204 (groups only) · `POST /conversations/:id/members` `{ botId }` (409 `group_full`, `already_member`) · `DELETE /conversations/:id/members/:botId` (409 `group_too_small`; removing the lead passes the lead to the next member).
 - `GET /conversations/:id/items?before=<id>&limit=<n>` → `TimelineItem[]` · `POST /conversations/:id/messages` `{ text, parentId?, attachments? }` → 201 `{ item, runs: Run[] }` · `POST /conversations/:id/read`.
 - `POST /items/:id/reactions` `{ emoji }` · `DELETE /items/:id/reactions/:emoji`.
@@ -143,7 +151,7 @@ machine that runs Orbis; none is injected by CI.
 
 - Client → hub: `{ "type": "subscribe", "conversations"?: string[] }`, `{ "type": "ping" }`.
 - Hub → client: `{ "type": "subscribed", "data": { conversations }, ... }` acknowledges each subscribe; events after it are never missed.
-- Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `conversation.updated` `{ conversation }`, `conversation.deleted` `{ conversationId }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `pong`.
+- Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `conversation.updated` `{ conversation }`, `conversation.deleted` `{ conversationId }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `computer.updated` `{ botId, computer: ComputerStatus }`, `pong`. Account-wide (sent to every subscriber): `bot.*`, `approval.*`, `computer.updated`, `pong`.
 
 ### MCP (`/mcp`)
 

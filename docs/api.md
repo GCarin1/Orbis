@@ -75,14 +75,30 @@ curl -s -X PATCH -H "$H" -H 'content-type: application/json' -d '{"text":"…"}'
 curl -s -X DELETE -H "$H" http://127.0.0.1:7420/api/v1/memory/<id>
 ```
 
+## Computer
+
+```bash
+curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/computer        # { provider, status, takeover, vncPath, … }
+curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/computer/start
+curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/computer/takeover   # the bot's tools wait…
+curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/computer/release    # …until you hand it back
+curl -s -H "$H" -o shot.png http://127.0.0.1:7420/api/v1/bots/ana/computer/screenshot
+```
+
+A failing provider (for example no Docker daemon) answers 409
+`computer_unavailable` with docker's own message; a disabled computer answers
+409 `computer_disabled`. For a docker computer, `POST
+/api/v1/bots/:id/computer/vnc-session` returns the noVNC URL and sets the
+path-scoped cookie the viewer uses. See [computer.md](computer.md).
+
 ## Stream
 
 `ws://127.0.0.1:7420/api/v1/stream?token=<token>` — send
 `{"type":"subscribe","conversations":["cnv_…"]}` (omit `conversations` for
 everything). Events: `bot.state`, `bot.updated`, `bot.deleted`,
 `conversation.updated`, `conversation.deleted`, `timeline.item`, `run.updated`, `run.step`,
-`approval.requested`, `approval.resolved`. Account-wide events (`bot.*`,
-`approval.*`) reach every subscriber.
+`approval.requested`, `approval.resolved`, `computer.updated`. Account-wide
+events (`bot.*`, `approval.*`, `computer.updated`) reach every subscriber.
 
 ## OpenAI-compatible endpoint
 
