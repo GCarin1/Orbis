@@ -2,11 +2,11 @@
 
 **Capability:** handoff
 **Status:** active
-**Implementation:** planned — built by the collaboration change (product.md delivery order 4)
+**Implementation:** verified
 **Realizes:** SC4
 **Depends on:** conversations, agent-runtimes, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -36,13 +36,14 @@ bots from bouncing work between themselves forever.
 
 - The system shall not start a bot-triggered run beyond the depth limit; it shall post a `handoff.depth_exceeded` event instead.
 - The system shall not accept a handoff whose receiver is the sending bot.
+- The system shall not give the receiver of a handoff the history of the conversation the handoff was made in; its input is the sender, the task and the context the sender wrote.
 
 ## Acceptance criteria
 
-1. [unverified] `team.handoff` returns an acknowledgment before the receiver runs, the receiver's run starts afterwards, a handoff card appears in the conversation, and the receiver's reply lands as a thread reply to the card — verified by `packages/hub/test/handoff.test.ts`.
-2. [unverified] With `returnResult` true, the sender runs again with the receiver's reply as input — verified by `packages/hub/test/handoff.test.ts`.
-3. [unverified] Two bots that hand off to each other stop at depth 4 and a `handoff.depth_exceeded` event is posted — verified by `packages/hub/test/handoff.test.ts`.
-4. [unverified] A handoff to the sending bot itself returns an error result — verified by `packages/hub/test/handoff.test.ts`.
+1. [verified] `team.handoff` returns an acknowledgment before the receiver runs, the receiver's run starts afterwards, a handoff card appears in the conversation, and the receiver's reply lands as a thread reply to the card — verified by `packages/hub/test/handoff.test.ts`.
+2. [verified] With `returnResult` true, the sender runs again with the receiver's reply as input — verified by `packages/hub/test/handoff.test.ts`.
+3. [verified] Two bots that hand off to each other stop at depth 4 and a `handoff.depth_exceeded` event is posted — verified by `packages/hub/test/handoff.test.ts`.
+4. [verified] A handoff to the sending bot itself returns an error result — verified by `packages/hub/test/handoff.test.ts`.
 
 ## Maturity
 

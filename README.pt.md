@@ -36,12 +36,12 @@ fecha quando os critérios de aceite são provados por testes.
 | Cérebros: `claude-code`, `codex`, `gemini-cli` (assinaturas, retomam a sessão), `anthropic` (SDK oficial), `openai`-compatível (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verificado |
 | Montagem de contexto (identidade, memórias, conversa recente dentro do orçamento) | ✅ |
 | API REST + stream WebSocket + OpenAPI, token bearer | ✅ |
-| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `approvals`, `runtimes`, `mcp` | ✅ |
-| App web: roster, timeline com passos, cards de aprovação e rascunho, caixa de aprovações, pt-BR/inglês, instalável | ✅ |
+| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `group`, `memory`, `approvals`, `runtimes`, `mcp` | ✅ |
+| App web: roster, grupos, timeline com passos, cards de aprovação, rascunho e handoff, autocomplete de `@`, caixa de aprovações, pt-BR/inglês, instalável | ✅ |
 | Gateway de ferramentas via MCP, aprovações (uma vez/sempre/negar), rascunhos com Enviar/Descartar | ✅ verificado |
 | `/v1/chat/completions` compatível com OpenAI (fale com qualquer bot de qualquer cliente OpenAI) | ✅ |
-| Grupos, @menções, handoff, ferramentas de memória | próximo |
-| Um computador por bot (local e Docker, navegador, tela ao vivo, assumir controle) | planejado |
+| Grupos de 2 a 6 bots, @menções e @everyone, `team.handoff` assíncrono com limite de profundidade, memória por bot e da equipe (`memory.save`, `memory.search`, resumos de execução) | ✅ verificado |
+| Um computador por bot (local e Docker, navegador, tela ao vivo, assumir controle) | próximo |
 | Skills, rotinas, segredos, teto de gasto, templates, app desktop | planejado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
@@ -95,7 +95,8 @@ API (`~/.orbis/token`) e o workspace de cada bot.
 
 Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
-[`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
+[`docs/collaboration.md`](docs/collaboration.md), [`docs/mcp.md`](docs/mcp.md)
+e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 

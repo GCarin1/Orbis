@@ -568,3 +568,126 @@ textarea {
   padding: 0 8px 8px;
   margin: 0;
 }
+
+/* groups */
+.groups {
+  padding: 4px 8px 4px;
+  border-bottom: 1px solid var(--border);
+  max-height: 32vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.groups ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 6px;
+}
+.groups .roster-text .muted {
+  font-size: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.avatar-stack {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.avatar-stack > * + * {
+  margin-left: -8px;
+}
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85em;
+}
+.member-picker {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.member-picker legend {
+  font-weight: 600;
+  font-size: 0.9em;
+  padding: 0 4px;
+}
+.dialog .member-option {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* handoff cards and threads */
+.card-handoff {
+  border-left-color: #f59e0b;
+}
+.handoff-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.handoff-task {
+  white-space: pre-wrap;
+  margin: 4px 0;
+}
+.handoff-context {
+  white-space: pre-wrap;
+  font-size: 0.88em;
+  margin: 4px 0 0;
+}
+.pill-queued {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.pill-running {
+  background: #fef3c7;
+  color: #b45309;
+}
+.pill-done {
+  background: #dcfce7;
+  color: #15803d;
+}
+.reply-to {
+  font-size: 0.78em;
+  margin-bottom: 2px;
+}
+
+/* @ autocomplete */
+.composer {
+  position: relative;
+}
+.mention-list {
+  position: absolute;
+  left: 20px;
+  bottom: calc(100% - 8px);
+  min-width: 260px;
+  max-width: calc(100% - 40px);
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  z-index: 5;
+}
+.mention-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.mention-list li.active,
+.mention-list li:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}

@@ -238,3 +238,30 @@ export interface DraftFields {
   /** Destination of a `webhook` draft. */
   url?: string;
 }
+
+export const MEMORY_KINDS = ["preference", "role", "fact", "summary"] as const;
+export type MemoryKind = (typeof MEMORY_KINDS)[number];
+
+export interface MemoryEntry {
+  id: string;
+  /** Null for a team-level entry shared by every bot. */
+  botId: string | null;
+  kind: MemoryKind;
+  text: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Data of a `handoff` card (specs/handoff). */
+export interface HandoffCardData {
+  from: string;
+  to: string;
+  task: string;
+  context: string | null;
+  returnResult: boolean;
+  receiverRunId: string | null;
+  returnRunId?: string | null;
+  error?: string | null;
+  [key: string]: unknown;
+}

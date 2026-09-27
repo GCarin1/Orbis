@@ -69,14 +69,18 @@ async function answerApproval(io: Io, client: HubClient, prompter: Prompter, app
   }
 }
 
+/** Runs a bot starts on its own in the conversation (a handoff, a mention) that the chat follows. */
+const FOLLOWED_TRIGGERS = new Set(["handoff", "mention"]);
+
 /**
- * Send one message and stream until every run it started has ended.
+ * Send one message and stream until every run it started has ended, and
+ * every run those runs started in the same conversation (handoffs, mentions).
  * Returns true when all runs finished successfully.
  */
 export async function sendAndStream(
   io: Io,
   client: HubClient,
-  bot: Bot,
+  bots: Bot[],
   conversation: Conversation,
   text: string,
   opts: { json: boolean; prompter?: Prompter | null } = { json: false },
@@ -87,7 +91,8 @@ export async function sendAndStream(
   const early: StreamEvent[] = [];
   let resolveDone: () => void = () => undefined;
   const done = new Promise<void>((r) => (resolveDone = r));
-  const botNames = new Map<string, string>([[bot.id, bot.handle]]);
+  const botNames = new Map<string, string>(bots.map((b) => [b.id, b.handle]));
+  const shownCards = new Set<string>();
 
   const handle = async (event: StreamEvent) => {
     for (const hooks of extraHooks) await hooks.onEvent?.(event, io, client);
@@ -103,6 +108,9 @@ export async function sendAndStream(
         else out(io, `${c.bold(`@${botNames.get(item.author.id ?? "") ?? "bot"}`)}: ${item.text}`);
       } else if (item.kind === "event" && !opts.json) {
         out(io, c.yellow(`  ! ${item.text}`));
+      } else if (item.kind === "card" && item.card?.type === "handoff" && !shownCards.has(item.id)) {
+        shownCards.add(item.id);
+        if (!opts.json) out(io, c.cyan(`  ⇢ ${clip(item.text.replace(/\s+/g, " "), 200)}`));
       }
     } else if (event.type === "approval.requested") {
       const approval = (event.data as { approval: Approval }).approval;
@@ -111,6 +119,9 @@ export async function sendAndStream(
       else out(io, c.yellow(`  ? waiting for approval ${approval.id} (${approval.tool}) — orbis approvals allow ${approval.id}`));
     } else if (event.type === "run.updated") {
       const run = (event.data as { run: Omit<Run, "steps"> }).run;
+      if (!pending.has(run.id) && run.status === "queued" && run.conversationId === conversation.id && FOLLOWED_TRIGGERS.has(run.trigger.type)) {
+        pending.add(run.id);
+      }
       if (!pending.has(run.id)) return;
       if (["done", "failed", "cancelled"].includes(run.status)) {
         finished.set(run.id, run.status);
@@ -150,11 +161,21 @@ export async function chatCommand(args: string[], ctx: CommandContext): Promise<
   const client = ctx.client();
   const bot = await client.get<Bot>(`/api/v1/bots/${encodeURIComponent(target.replace(/^@/, ""))}`);
   const conversation = await client.get<Conversation>(`/api/v1/bots/${bot.id}/conversation`);
+  return converse(ctx, conversation, words, `Chatting with ${bot.name} (@${bot.handle}) — ${bot.brain.kind}.`);
+}
+
+/**
+ * Talk in a conversation: one message from the arguments, the whole of a piped
+ * stdin, or an interactive session on a terminal. Exit status 1 when a run failed.
+ */
+export async function converse(ctx: CommandContext, conversation: Conversation, words: string[], intro: string): Promise<number> {
+  const client = ctx.client();
+  const bots = await client.get<Bot[]>("/api/v1/bots?includeHidden=true");
 
   if (words.length > 0) {
     const prompter = ctx.io.interactive ? new Prompter(ctx.io) : null;
     try {
-      const ok = await sendAndStream(ctx.io, client, bot, conversation, words.join(" "), { json: ctx.json, prompter });
+      const ok = await sendAndStream(ctx.io, client, bots, conversation, words.join(" "), { json: ctx.json, prompter });
       return ok ? 0 : 1;
     } finally {
       prompter?.close();
@@ -166,12 +187,12 @@ export async function chatCommand(args: string[], ctx: CommandContext): Promise<
     let text = "";
     for await (const chunk of ctx.io.stdin) text += chunk;
     if (!text.trim()) throw new UsageError("no message given and stdin is empty");
-    const ok = await sendAndStream(ctx.io, client, bot, conversation, text.trim(), { json: ctx.json });
+    const ok = await sendAndStream(ctx.io, client, bots, conversation, text.trim(), { json: ctx.json });
     return ok ? 0 : 1;
   }
 
   const c = paint(ctx.io);
-  out(ctx.io, c.dim(`Chatting with ${bot.name} (@${bot.handle}) — ${bot.brain.kind}. Ctrl+D to leave.`));
+  out(ctx.io, c.dim(`${intro} Ctrl+D to leave.`));
   const prompter = new Prompter(ctx.io);
   let failures = 0;
   try {
@@ -180,7 +201,7 @@ export async function chatCommand(args: string[], ctx: CommandContext): Promise<
       if (line === null) break;
       const text = line.trim();
       if (!text) continue;
-      const ok = await sendAndStream(ctx.io, client, bot, conversation, text, { json: false, prompter });
+      const ok = await sendAndStream(ctx.io, client, bots, conversation, text, { json: false, prompter });
       if (!ok) failures++;
     }
   } finally {

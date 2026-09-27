@@ -1,8 +1,10 @@
-// Structured cards inside the timeline: approvals and drafts (specs/approvals, specs/web-app).
+// Structured cards inside the timeline: approvals, drafts and handoffs
+// (specs/approvals, specs/handoff, specs/web-app).
 import { useState } from "react";
-import type { Bot, DraftFields, TimelineItem } from "@orbis/shared";
+import type { Bot, DraftFields, HandoffCardData, TimelineItem } from "@orbis/shared";
 import { useT, type TextKey } from "../i18n.js";
 import { useStore } from "../store.js";
+import { Avatar } from "./Avatar.js";
 
 function Pretty({ value }: { value: unknown }) {
   const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
@@ -127,12 +129,45 @@ export function DraftCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
   );
 }
 
-export function CardView({ item, bot }: { item: TimelineItem; bot?: Bot }) {
+export function HandoffCard({ item, bots }: { item: TimelineItem; bots: Record<string, Bot> }) {
+  const t = useT();
+  const data = item.card!.data as HandoffCardData;
+  const state = item.card!.state;
+  const from = bots[data.from];
+  const to = bots[data.to];
+  const name = (bot: Bot | undefined) => (bot ? `@${bot.handle}` : "?");
+  return (
+    <div className={`card card-handoff card-${state}`} data-testid="handoff-card">
+      <div className="card-head">
+        <span className="handoff-route">
+          {from && <Avatar bot={from} size={22} />}
+          <span aria-hidden="true">→</span>
+          {to && <Avatar bot={to} size={22} />}
+          <strong>{t("handoff.title", { from: name(from), to: name(to) })}</strong>
+        </span>
+        <span className={`pill pill-${state}`}>{t(`handoff.state.${state}` as TextKey)}</span>
+      </div>
+      <p className="handoff-task">{data.task}</p>
+      {data.context && (
+        <details>
+          <summary>{t("handoff.context")}</summary>
+          <p className="handoff-context">{data.context}</p>
+        </details>
+      )}
+      {data.returnResult && <p className="muted">{t("handoff.returns", { from: name(from) })}</p>}
+      {state === "failed" && data.error && <p className="error">{data.error}</p>}
+    </div>
+  );
+}
+
+export function CardView({ item, bot, bots = {} }: { item: TimelineItem; bot?: Bot; bots?: Record<string, Bot> }) {
   switch (item.card?.type) {
     case "approval":
       return <ApprovalCard item={item} bot={bot} />;
     case "draft":
       return <DraftCard item={item} bot={bot} />;
+    case "handoff":
+      return <HandoffCard item={item} bots={bots} />;
     default:
       return (
         <div className={`card card-${item.card?.type}`} data-testid="card">

@@ -35,12 +35,12 @@ are proven by tests.
 | Brains: `claude-code`, `codex`, `gemini-cli` (subscriptions, session resume), `anthropic` (official SDK), `openai`-compatible (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verified |
 | Context assembly (identity, memories, recent conversation within budget) | ✅ |
 | REST API + WebSocket stream + OpenAPI, bearer token | ✅ |
-| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `approvals`, `runtimes`, `mcp` | ✅ |
-| Web app: roster, timeline with run steps, approval and draft cards, approvals inbox, pt-BR/English, installable | ✅ |
+| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `group`, `memory`, `approvals`, `runtimes`, `mcp` | ✅ |
+| Web app: roster, groups, timeline with run steps, approval, draft and handoff cards, `@` autocomplete, approvals inbox, pt-BR/English, installable | ✅ |
 | Tool gateway over MCP, approvals (once/always/deny), drafts with Send/Discard | ✅ verified |
 | OpenAI-compatible `/v1/chat/completions` (talk to any bot from any OpenAI client) | ✅ |
-| Groups, @mentions, handoff, memory tools | next |
-| One computer per bot (local and Docker, browser, live view, takeover) | planned |
+| Groups of 2–6 bots, @mentions and @everyone, asynchronous `team.handoff` with a depth limit, memory per bot and team (`memory.save`, `memory.search`, run summaries) | ✅ verified |
+| One computer per bot (local and Docker, browser, live view, takeover) | next |
 | Skills, routines, secrets, usage caps, templates, desktop app | planned |
 
 The status of each capability is always current in
@@ -83,11 +83,11 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
  web app ─┐                         ┌─ mock
  desktop ─┤  REST + WebSocket       ├─ claude-code ─┐
  orbis CLI┼──────────────► HUB ─────┼─ custom-cli   ├─ child process in the
- HTTP API ┘  (one port, one token)  ├─ codex*       │  bot's own workspace,
-                                    ├─ gemini-cli*  ┘  your CLI login
-                                    ├─ anthropic*  ─┐
-                                    └─ openai*     ─┴─ HTTP to the model API
-                  SQLite · run engine · per-bot computer        (* planned)
+ HTTP API ┘  (one port, one token)  ├─ codex        │  bot's own workspace,
+ OpenAI clients (/v1)               ├─ gemini-cli   ┘  your CLI login
+                                    ├─ anthropic   ─┐
+                                    └─ openai      ─┴─ HTTP to the model API
+      SQLite · run engine · tool gateway (MCP) · groups & handoff · memory
 ```
 
 - **The hub** (`packages/hub`) owns bots, conversations, runs, memory and the
@@ -104,7 +104,8 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
 
 More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
-[`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
+[`docs/collaboration.md`](docs/collaboration.md), [`docs/mcp.md`](docs/mcp.md)
+and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration
 

@@ -10,6 +10,8 @@ import { loginCommand, openCommand } from "./commands/login.js";
 import { approvalsCommand } from "./commands/approvals.js";
 import { mcpCommand } from "./commands/mcp.js";
 import { runtimesCommand } from "./commands/runtimes.js";
+import { groupCommand } from "./commands/group.js";
+import { memoryCommand } from "./commands/memory.js";
 
 export const HELP = `orbis — persistent AI bots with their own computer, memory and approvals
 
@@ -20,6 +22,8 @@ Usage: orbis <command> [options]
   login [--url U] [--token T] [--show-token]   save or show how to reach the hub
   bots list|create|show|edit|delete|duplicate  manage bots
   chat @bot [message]                          talk to a bot (interactive without a message)
+  group list|create|chat|add|remove|delete     group conversations of 2 to 6 bots
+  memory list|add|edit|rm (@bot | --team)      what a bot or the whole team remembers
   approvals [list|allow <id> [--always]|deny <id> [--note N]]   answer what bots wait for
   runtimes check                               which subscription CLIs (claude, codex, gemini) are installed
   mcp                                          stdio MCP bridge to the hub (needs ORBIS_RUN_TOKEN)
@@ -40,6 +44,9 @@ const COMMANDS: Record<string, Command> = {
   bots: botsCommand,
   bot: botsCommand,
   chat: chatCommand,
+  group: groupCommand,
+  groups: groupCommand,
+  memory: memoryCommand,
   approvals: approvalsCommand,
   approval: approvalsCommand,
   mcp: mcpCommand,

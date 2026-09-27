@@ -33,6 +33,9 @@ import { codexBrain } from "./brains/codex.js";
 import { geminiBrain } from "./brains/gemini.js";
 import { runtimeHealth } from "./brains/health.js";
 import { registerOpenAiCompat } from "./api/openai-compat.js";
+import { registerGroupRoutes } from "./api/groups-routes.js";
+import { Collaboration } from "./collab/handoff.js";
+import { MemoryService } from "./collab/memory.js";
 import { registerCoreRoutes } from "./api/routes.js";
 import { registerStream } from "./api/stream.js";
 import { registerApprovalRoutes } from "./api/approvals-routes.js";
@@ -246,6 +249,12 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   };
   for (const tool of builtinTools(ctx, drafts)) tools.register(tool);
   tools.register(permissionTool(approvals, tools));
+  const collaboration = new Collaboration(ctx);
+  tools.register(collaboration.handoffTool());
+  engine.addHooks(collaboration.hooks());
+  const memoryService = new MemoryService(ctx);
+  for (const tool of memoryService.tools()) tools.register(tool);
+  engine.addHooks(memoryService.hooks());
   approvals.expireStale();
 
   app.get("/health", { schema: { hide: true } }, async () => ({ ok: true, version: config.version }));
@@ -254,6 +263,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerApprovalRoutes(app, ctx);
   await registerMcp(app, gateway);
   await registerOpenAiCompat(app, ctx);
+  await registerGroupRoutes(app, ctx);
+  await memoryService.routes(app);
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 

@@ -43,12 +43,44 @@ curl -s -H "$H" "http://127.0.0.1:7420/api/v1/conversations/$CONV/items?limit=50
 curl -s -H "$H" http://127.0.0.1:7420/api/v1/runs/<runId>          # steps, usage, reply
 ```
 
+## Groups
+
+```bash
+curl -s -H "$H" -H 'content-type: application/json' \
+  -d '{"title":"Release","members":["ana","bob"],"leadBotId":"bob"}' \
+  http://127.0.0.1:7420/api/v1/conversations                        # → 201 group
+curl -s -H "$H" -H 'content-type: application/json' -d '{"text":"@ana status?"}' \
+  http://127.0.0.1:7420/api/v1/conversations/<groupId>/messages     # runs: Ana only
+curl -s -X POST -H "$H" -H 'content-type: application/json' -d '{"botId":"cara"}' \
+  http://127.0.0.1:7420/api/v1/conversations/<groupId>/members
+curl -s -X DELETE -H "$H" http://127.0.0.1:7420/api/v1/conversations/<groupId>/members/ana
+```
+
+A group has 2 to 6 members: 400 below, 409 `group_full` above, 409
+`group_too_small` when a removal would leave one. `PATCH /conversations/:id`
+renames it or changes the lead; `DELETE` removes it. See
+[collaboration.md](collaboration.md) for routing, handoff cards and the depth
+limit.
+
+## Memory
+
+```bash
+curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/memory          # Ana's entries
+curl -s -H "$H" -H 'content-type: application/json' -d '{"kind":"preference","text":"Reports in Portuguese"}' \
+  http://127.0.0.1:7420/api/v1/bots/ana/memory
+curl -s -H "$H" "http://127.0.0.1:7420/api/v1/memory?scope=team"       # team entries
+curl -s -H "$H" -H 'content-type: application/json' -d '{"kind":"fact","text":"Staging lives at qa.acme.test"}' \
+  http://127.0.0.1:7420/api/v1/memory
+curl -s -X PATCH -H "$H" -H 'content-type: application/json' -d '{"text":"…"}' http://127.0.0.1:7420/api/v1/memory/<id>
+curl -s -X DELETE -H "$H" http://127.0.0.1:7420/api/v1/memory/<id>
+```
+
 ## Stream
 
 `ws://127.0.0.1:7420/api/v1/stream?token=<token>` — send
 `{"type":"subscribe","conversations":["cnv_…"]}` (omit `conversations` for
 everything). Events: `bot.state`, `bot.updated`, `bot.deleted`,
-`conversation.updated`, `timeline.item`, `run.updated`, `run.step`,
+`conversation.updated`, `conversation.deleted`, `timeline.item`, `run.updated`, `run.step`,
 `approval.requested`, `approval.resolved`. Account-wide events (`bot.*`,
 `approval.*`) reach every subscriber.
 

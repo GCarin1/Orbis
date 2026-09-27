@@ -25,6 +25,8 @@ export interface EnqueueRequest {
   triggerItemId?: string | null;
   /** Parent id for the reply message (thread replies, handoff cards). */
   replyParentId?: string | null;
+  /** Put the conversation's recent history in the context (default true; handoffs pass false). */
+  includeHistory?: boolean;
 }
 
 /** What the tool gateway provides to a run (change 0002 replaces the default). */
@@ -42,8 +44,12 @@ export interface RunHooks {
   beforeStart?(run: Run, bot: Bot): string | null;
   /** Called after each usage event; return a message to stop the run (spend cap). */
   afterUsage?(run: Run, bot: Bot, usage: Usage): string | null;
-  /** Called when a run ends, whatever its status. */
+  /** Called when a run that started ends, whatever its status. */
   onFinished?(run: Run, bot: Bot): void;
+  /** Called when a run starts executing. */
+  onStarted?(run: Run): void;
+  /** Called for every run that reaches done, failed or cancelled, started or not. */
+  onEnded?(run: Run): void;
 }
 
 export interface EngineDeps {
@@ -195,6 +201,16 @@ export class RunEngine {
   private finish(runId: string, status: "done" | "failed" | "cancelled", fields: { error?: string | null; reply?: string | null }): Run {
     this.d.runs.setStatus(runId, status, { finishedAt: nowIso(), ...fields });
     this.pending.delete(runId);
+    const ended = this.d.runs.get(runId)!;
+    // Hooks run before the terminal event, so follow-up runs they start (handoffs,
+    // mentions) are announced before the run that caused them is reported as ended.
+    for (const hook of this.hooks) {
+      try {
+        hook.onEnded?.(ended);
+      } catch (err) {
+        console.error("run hook onEnded failed:", err);
+      }
+    }
     const run = this.publishRun(runId)!;
     for (const resolve of this.waiters.get(runId) ?? []) resolve(run);
     this.waiters.delete(runId);
@@ -240,6 +256,7 @@ export class RunEngine {
     this.d.runs.setStatus(runId, "running", { startedAt: nowIso() });
     let run = this.publishRun(runId)!;
     this.setBotState(bot.id, "thinking");
+    for (const hook of this.hooks) hook.onStarted?.(run);
 
     const timeoutMs = (bot.brain.timeoutSec ?? 900) * 1000;
     let timedOut = false;
@@ -271,7 +288,13 @@ export class RunEngine {
       const since = storedSession && conversationId ? (this.d.runs.lastFinished(bot.id, conversationId, runId)?.finishedAt ?? null) : null;
 
       const context = assembleContext(
-        { bot, conversationId, task: req.input, excludeItemId: req.triggerItemId ?? null, since },
+        {
+          bot,
+          conversationId: req.includeHistory === false ? null : conversationId,
+          task: req.input,
+          excludeItemId: req.triggerItemId ?? null,
+          since,
+        },
         { items: this.d.items, memory: this.d.memory, bots: this.d.bots },
       );
 
@@ -396,6 +419,12 @@ export class RunEngine {
   private notifyFinished(runId: string, bot: Bot): void {
     const run = this.d.runs.get(runId);
     if (!run) return;
-    for (const hook of this.hooks) hook.onFinished?.(run, bot);
+    for (const hook of this.hooks) {
+      try {
+        hook.onFinished?.(run, bot);
+      } catch (err) {
+        console.error("run hook onFinished failed:", err);
+      }
+    }
   }
 }

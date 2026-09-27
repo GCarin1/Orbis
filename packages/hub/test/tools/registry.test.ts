@@ -32,7 +32,7 @@ describe("tool registry", () => {
       expect(["read", "write", "external"]).toContain(tool.risk);
     }
     const open = await createBot(t, { name: "Open" });
-    const restricted = await createBot(t, { name: "Restricted", tools: ["team.*", "http.fetch"] });
+    const restricted = await createBot(t, { name: "Restricted", tools: ["team.list_*", "http.fetch"] });
     const names = (id: string) => t!.hub.gateway.descriptors(t!.hub.botService.get(id)).map((d) => d.name).sort();
     expect(names(open.id)).toEqual(expect.arrayContaining(["conversation.post", "draft.create", "http.fetch", "team.list_bots"]));
     expect(names(restricted.id)).toEqual(["http.fetch", "team.list_bots"]);

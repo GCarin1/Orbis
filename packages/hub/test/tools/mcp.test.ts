@@ -34,7 +34,7 @@ describe("MCP endpoint", () => {
   it("answers initialize, tools/list and tools/call for a valid run token and 401 once revoked (criterion 4)", async () => {
     t = await testHub();
     await t.hub.listen();
-    const bot = t.hub.botService.get((await createBot(t, { tools: ["team.*", "conversation.post"] })).id);
+    const bot = t.hub.botService.get((await createBot(t, { tools: ["team.list_bots", "conversation.post"] })).id);
     const { session, token, run, conv } = openSession(t, bot);
 
     const init = await rpc(t, token, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" } } });
@@ -85,7 +85,7 @@ describe("MCP endpoint", () => {
   it("serves a real MCP client through the hub's bridge script as a subprocess", async () => {
     t = await testHub();
     await t.hub.listen();
-    const bot = t.hub.botService.get((await createBot(t, { tools: ["team.*"] })).id);
+    const bot = t.hub.botService.get((await createBot(t, { tools: ["team.list_bots"] })).id);
     const { session, run } = openSession(t, bot);
     const { command, args, env } = session.mcp!.server;
     const child = spawn(command, args, { env: { PATH: process.env.PATH ?? "", ...env }, stdio: ["pipe", "pipe", "pipe"] });

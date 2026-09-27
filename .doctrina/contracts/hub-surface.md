@@ -114,6 +114,9 @@ machine that runs Orbis; none is injected by CI.
 - `Approval`: `{ id, runId, botId, conversationId, itemId, tool, input (secrets masked), reason, status: "pending"|"approved"|"denied"|"expired", decision: "allow_once"|"allow_always"|"deny"|null, note, createdAt, decidedAt }`.
 - Approval card data: `{ approvalId, botId, tool, input, reason, locked?, decision?, note? }`; states `pending`, `approved`, `denied`, `expired`.
 - Draft card data: `{ channel: "email"|"chat"|"social"|"webhook", to, subject?, body, url?, botId, delivery?: { channel, at, ok, detail } }`; states `pending`, `sent`, `failed`, `discarded`.
+- Handoff card data: `{ from, to (bot ids), task, context: string|null, returnResult: boolean, receiverRunId: string|null, returnRunId?, error? }`; states `queued`, `running`, `done`, `failed`. The receiver's reply has `parentId` = the card's item id.
+- `MemoryEntry`: `{ id, botId: string|null (null = team), kind: "preference"|"role"|"fact"|"summary", text, source ("user" or "run:<id>"), createdAt, updatedAt }`.
+- Timeline event `handoff.depth_exceeded`: `event.data` = `{ from, to, depth, limit }`, posted when a handoff or a bot-to-bot mention would start a run deeper than the handoff-depth budget.
 
 ### REST routes (prefix `/api/v1`)
 
@@ -121,10 +124,10 @@ machine that runs Orbis; none is injected by CI.
 - `GET /bots?includeHidden=true` → `Bot[]` · `POST /bots` → 201 `Bot` · `GET|PATCH|DELETE /bots/:idOrHandle` · `POST /bots/:id/duplicate` → 201 `Bot`.
 - `GET /bots/:id/conversation` → the direct `Conversation`, created on first request.
 - `GET /bots/:id/export` → `text/yaml` · `POST /bots/import` `{ yaml }` → 201 `Bot`.
-- `GET|POST /bots/:id/memory`, `GET /memory?scope=team`, `POST /memory` (team), `PATCH|DELETE /memory/:id`.
+- `GET /bots/:id/memory` → `MemoryEntry[]` · `POST /bots/:id/memory` `{ kind, text }` → 201 · `GET /memory?scope=team` → team entries · `POST /memory` `{ kind, text }` → 201 team entry · `PATCH /memory/:id` `{ kind?, text? }` · `DELETE /memory/:id` → 204.
 - `GET /bots/:id/secrets` → `[{ name, createdAt }]` · `PUT /bots/:id/secrets/:name` `{ value }` · `DELETE /bots/:id/secrets/:name`.
 - `GET /bots/:id/computer` → `{ provider, status: "stopped"|"running"|"hibernated", takeover: boolean, vncPath: string|null }` · `POST /bots/:id/computer/start|stop|takeover|release` · `GET /bots/:id/computer/screenshot` → `image/png`.
-- `GET /conversations` · `POST /conversations` `{ title, members, leadBotId? }` → 201 group · `GET|PATCH|DELETE /conversations/:id` · `POST /conversations/:id/members` `{ botId }` · `DELETE /conversations/:id/members/:botId`.
+- `GET /conversations` · `POST /conversations` `{ title, members (ids or handles), leadBotId? }` → 201 group; 400 below 2 members, 409 `group_full` above the group-members budget · `GET /conversations/:id` · `PATCH /conversations/:id` `{ title?, leadBotId? }` · `DELETE /conversations/:id` → 204 (groups only) · `POST /conversations/:id/members` `{ botId }` (409 `group_full`, `already_member`) · `DELETE /conversations/:id/members/:botId` (409 `group_too_small`; removing the lead passes the lead to the next member).
 - `GET /conversations/:id/items?before=<id>&limit=<n>` → `TimelineItem[]` · `POST /conversations/:id/messages` `{ text, parentId?, attachments? }` → 201 `{ item, runs: Run[] }` · `POST /conversations/:id/read`.
 - `POST /items/:id/reactions` `{ emoji }` · `DELETE /items/:id/reactions/:emoji`.
 - `GET /runs?botId=&conversationId=&status=` · `GET /runs/:id` · `POST /runs/:id/cancel`.
@@ -140,7 +143,7 @@ machine that runs Orbis; none is injected by CI.
 
 - Client → hub: `{ "type": "subscribe", "conversations"?: string[] }`, `{ "type": "ping" }`.
 - Hub → client: `{ "type": "subscribed", "data": { conversations }, ... }` acknowledges each subscribe; events after it are never missed.
-- Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `conversation.updated` `{ conversation }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `pong`.
+- Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `conversation.updated` `{ conversation }`, `conversation.deleted` `{ conversationId }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `pong`.
 
 ### MCP (`/mcp`)
 
@@ -162,6 +165,8 @@ machine that runs Orbis; none is injected by CI.
 - `specs/hub-api`
 - `specs/bots`
 - `specs/conversations`
+- `specs/handoff`
+- `specs/memory`
 - `specs/tool-gateway`
 - `specs/approvals`
 - `specs/routines`

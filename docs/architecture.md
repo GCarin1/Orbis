@@ -43,6 +43,14 @@ HTTP (Fastify)  ── auth hook (bearer / stream query token)
   configuration) and `run()` (an async stream of normalized events). CLI
   brains share `process.ts`: scrubbed environment, timeout with process-group
   kill, stderr tail, line-by-line stdout.
+- **Collaboration.** `collab/handoff.ts` registers `team.handoff` and run
+  hooks: handoff cards follow the receiver's run, returned results wake the
+  sender, bot replies in a group that mention members start their runs, and
+  every bot-started run carries `depth + 1` up to `ORBIS_MAX_HANDOFF_DEPTH`.
+  `collab/memory.ts` registers `memory.save` / `memory.search`, writes a
+  `summary` after each successful run and serves the memory routes. Engine
+  `onEnded` hooks run before the terminal `run.updated` event, so a client
+  sees the follow-up run queued before the run that caused it ends.
 - **Computer.** Change 0001 ships the per-bot workspace directory (the working
   directory of every CLI brain), created with the bot and destroyed with it.
   The provider interface (ADR 0005) is ready for the `docker` provider.

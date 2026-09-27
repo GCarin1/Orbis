@@ -10,6 +10,7 @@ interface State {
   connected: boolean;
   bots: Record<string, Bot>;
   selectedBotId: string | null;
+  selectedGroupId: string | null;
   conversations: Record<string, Conversation>;
   directByBot: Record<string, string>;
   items: Record<string, TimelineItem[]>;
@@ -22,6 +23,9 @@ interface State {
   setError(error: string | null): void;
   loadBots(): Promise<void>;
   selectBot(botId: string | null): Promise<void>;
+  loadConversations(): Promise<void>;
+  selectGroup(conversationId: string | null): Promise<void>;
+  createGroup(input: { title: string; members: string[]; leadBotId?: string }): Promise<Conversation>;
   loadTimeline(conversationId: string): Promise<void>;
   send(conversationId: string, text: string): Promise<void>;
   createBot(input: object): Promise<Bot>;
@@ -46,6 +50,7 @@ export const useStore = create<State>((set, get) => ({
   connected: false,
   bots: {},
   selectedBotId: null,
+  selectedGroupId: null,
   conversations: {},
   directByBot: {},
   items: {},
@@ -65,7 +70,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async selectBot(botId) {
-    set({ selectedBotId: botId });
+    set({ selectedBotId: botId, selectedGroupId: null });
     const api = get().api;
     if (!api || !botId) return;
     const conv = await api.get<Conversation>(`/api/v1/bots/${botId}/conversation`);
@@ -75,6 +80,28 @@ export const useStore = create<State>((set, get) => ({
     }));
     await get().loadTimeline(conv.id);
     void api.post(`/api/v1/conversations/${conv.id}/read`).catch(() => undefined);
+  },
+
+  async loadConversations() {
+    const api = get().api;
+    if (!api) return;
+    const list = await api.get<Conversation[]>("/api/v1/conversations");
+    set((s) => ({ conversations: { ...s.conversations, ...Object.fromEntries(list.map((c) => [c.id, c])) } }));
+  },
+
+  async selectGroup(conversationId) {
+    set({ selectedGroupId: conversationId, selectedBotId: null });
+    const api = get().api;
+    if (!api || !conversationId) return;
+    await get().loadTimeline(conversationId);
+    void api.post(`/api/v1/conversations/${conversationId}/read`).catch(() => undefined);
+  },
+
+  async createGroup(input) {
+    const api = get().api!;
+    const group = await api.post<Conversation>("/api/v1/conversations", input);
+    set((s) => ({ conversations: { ...s.conversations, [group.id]: group } }));
+    return group;
   },
 
   async loadTimeline(conversationId) {
@@ -165,6 +192,15 @@ export const useStore = create<State>((set, get) => ({
       case "conversation.updated": {
         const { conversation } = event.data as { conversation: Conversation };
         set((s) => ({ conversations: { ...s.conversations, [conversation.id]: conversation } }));
+        break;
+      }
+      case "conversation.deleted": {
+        const { conversationId } = event.data as { conversationId: string };
+        set((s) => {
+          const conversations = { ...s.conversations };
+          delete conversations[conversationId];
+          return { conversations, selectedGroupId: s.selectedGroupId === conversationId ? null : s.selectedGroupId };
+        });
         break;
       }
       case "timeline.item": {

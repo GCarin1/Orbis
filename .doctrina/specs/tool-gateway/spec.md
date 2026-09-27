@@ -2,11 +2,11 @@
 
 **Capability:** tool-gateway
 **Status:** active
-**Implementation:** planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes and the result cap are verified since change 0002; the tools of handoff, memory, computer, browser, skills, routines and secrets register with their changes
+**Implementation:** planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http and memory tools are verified; the tools of computer, browser, skills, routines and secrets register with their changes
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.2.1
 
 ## Purpose
 

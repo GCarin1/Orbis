@@ -1,18 +1,7 @@
+import type { MemoryEntry, MemoryKind } from "@orbis/shared";
 import { all, get, run, type Database, type Row } from "../db/index.js";
 
-export const MEMORY_KINDS = ["preference", "role", "fact", "summary"] as const;
-export type MemoryKind = (typeof MEMORY_KINDS)[number];
-
-export interface MemoryEntry {
-  id: string;
-  /** Null for a team-level entry shared by every bot. */
-  botId: string | null;
-  kind: MemoryKind;
-  text: string;
-  source: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export { MEMORY_KINDS, type MemoryEntry, type MemoryKind } from "@orbis/shared";
 
 function toEntry(r: Row): MemoryEntry {
   return {

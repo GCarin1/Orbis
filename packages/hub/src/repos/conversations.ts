@@ -204,6 +204,16 @@ export class ItemsRepo {
     return rows.reverse().map(toItem);
   }
 
+  /** The bot message a run posted as its reply. */
+  replyOf(runId: string): TimelineItem | undefined {
+    const row = get(
+      this.db,
+      "SELECT * FROM items WHERE run_id = ? AND kind = 'message' AND author_type = 'bot' ORDER BY seq DESC LIMIT 1",
+      runId,
+    );
+    return row ? toItem(row) : undefined;
+  }
+
   setCard(id: string, card: Card, at: string): TimelineItem {
     run(this.db, "UPDATE items SET card = ?, updated_at = ? WHERE id = ?", JSON.stringify(card), at, id);
     return this.get(id)!;

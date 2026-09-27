@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** planned — in progress: roster, direct chat, approval and draft cards, the approvals inbox, languages and the end-to-end path are verified; groups, composer autocomplete, settings and computer screens land with their capabilities
+**Implementation:** planned — in progress: roster, groups, direct and group chat, approval, draft and handoff cards, thread replies, the approvals inbox, @ autocomplete, languages and the end-to-end paths are verified; /skill autocomplete, settings and computer screens land with their capabilities
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -27,6 +27,7 @@ run's steps.
 - The web app shall show every text in pt-BR or English, following the browser language, with a manual switch that is remembered.
 - The web app shall ship a web app manifest and a service worker so it can be installed on desktop and mobile browsers.
 - The web app shall state each bot state with a text label next to its color, for accessibility.
+- The web app shall list the group conversations in the sidebar, provide a dialog that creates a group of 2 to 6 bots with a lead, and show a group's members, lead and their states above its timeline.
 
 ### Event-driven
 
@@ -41,6 +42,8 @@ run's steps.
 3. [verified] Switching the language to English and back to pt-BR changes the interface texts — verified by `packages/web/test/i18n.test.tsx`.
 4. [unverified] Typing `@` in the composer offers the member handles and `/` offers the skills — verified by `packages/web/test/composer.test.tsx`.
 5. [verified] In a real browser, a user creates a bot, sends it a message and sees the reply appear — verified by `tests/e2e/skeleton.test.ts`.
+6. [verified] In a real browser, a user creates a group in the dialog, picks a member from the `@` autocomplete, gets only that member's reply, and sees a handoff card with the receiver's answer — verified by `tests/e2e/collaboration.test.ts`.
+7. [verified] A handoff card shows sender, receiver, task, context and state, and the receiver's reply shows which item it answers — verified by `packages/web/test/collab.test.tsx`.
 
 ## Maturity
 

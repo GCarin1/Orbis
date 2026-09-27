@@ -9,6 +9,24 @@ change that delivered it.
 
 ### Added
 
+- Collaboration (change 0004-collaboration):
+  - Group conversations of 2 to 6 bots with a lead: `POST /api/v1/conversations`,
+    `PATCH|DELETE /api/v1/conversations/:id`, members routes, the
+    `conversation.deleted` stream event. A message runs the mentioned members,
+    every member for `@everyone`, or the lead; bot replies that mention
+    members start their runs.
+  - `team.handoff`: asynchronous, with a handoff card (`queued`, `running`,
+    `done`, `failed`), the receiver's reply threaded under it, no foreign
+    history, optional `returnResult`; a chain depth limit
+    (`ORBIS_MAX_HANDOFF_DEPTH`, default 4) with a `handoff.depth_exceeded`
+    event.
+  - Memory per bot and per team: `memory.save` and `memory.search` tools, a
+    run summary after each successful run, REST routes to list, add, edit and
+    delete entries.
+  - CLI: `orbis group list|create|chat|add|remove|delete`,
+    `orbis memory list|add|edit|rm`; `orbis chat` follows handoffs.
+  - Web: groups in the sidebar, group creation dialog, group header with
+    members and lead, handoff cards, threaded replies, `@` autocomplete.
 - API and CLI brains (change 0003-api-and-cli-brains):
   - `anthropic` brain on the official `@anthropic-ai/sdk`: streaming tool loop
     through the gateway, `claude-opus-5` default, adaptive thinking, prompt

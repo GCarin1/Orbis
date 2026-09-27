@@ -6,6 +6,8 @@ import type { RunView } from "../store.js";
 import { Avatar } from "./Avatar.js";
 import { CardView } from "./Cards.js";
 
+const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}…` : text);
+
 function StepLine({ step }: { step: Step }) {
   switch (step.type) {
     case "thinking":
@@ -61,6 +63,7 @@ export function Timeline({
 }) {
   const t = useT();
   const end = useRef<HTMLDivElement>(null);
+  const byId = new Map(items.map((i) => [i.id, i]));
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: "end" });
   }, [items.length, activeRuns.length]);
@@ -76,11 +79,12 @@ export function Timeline({
           );
         }
         if (item.kind === "card") {
-          return <CardView key={item.id} item={item} bot={bots[item.author.id ?? ""]} />;
+          return <CardView key={item.id} item={item} bot={bots[item.author.id ?? ""]} bots={bots} />;
         }
         const bot = item.author.type === "bot" ? bots[item.author.id ?? ""] : undefined;
         const mine = item.author.type === "user";
         const run = item.runId ? runs[item.runId] : undefined;
+        const parent = item.parentId ? byId.get(item.parentId) : undefined;
         return (
           <div key={item.id} className={`message ${mine ? "message-user" : "message-bot"}`} data-testid="message">
             {bot && <Avatar bot={bot} size={32} />}
@@ -89,6 +93,11 @@ export function Timeline({
                 <strong>{mine ? t("you") : (bot?.name ?? "bot")}</strong>
                 <time className="muted">{new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
               </div>
+              {parent && (
+                <div className="reply-to muted" data-testid="reply-to">
+                  ↪ {t("thread.replyTo", { text: clip(parent.text, 80) })}
+                </div>
+              )}
               <div className="bubble-text">{item.text}</div>
               {run && <Steps run={run} />}
             </div>

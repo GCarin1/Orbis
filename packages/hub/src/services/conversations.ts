@@ -2,7 +2,7 @@
 import { extractMentions, type Conversation, type Run, type TimelineItem } from "@orbis/shared";
 import type { EventBus } from "../bus.js";
 import type { HubConfig } from "../config.js";
-import { badRequest, notFound } from "../errors.js";
+import { badRequest, conflict, notFound } from "../errors.js";
 import { newId, nowIso } from "../ids.js";
 import type { BotsRepo } from "../repos/bots.js";
 import type { ConversationsRepo, ItemsRepo } from "../repos/conversations.js";
@@ -32,11 +32,21 @@ export interface ConversationServiceDeps {
   engine: RunEngine;
 }
 
+export interface GroupInput {
+  title: string;
+  /** Bot ids or handles. */
+  members: string[];
+  leadBotId?: string | null;
+}
+
 export class ConversationService {
   private router: MessageRouter;
 
   constructor(private readonly d: ConversationServiceDeps) {
-    this.router = { route: (conversation, item) => this.routeDirect(conversation, item) };
+    this.router = {
+      route: (conversation, item) =>
+        conversation.kind === "direct" ? this.routeDirect(conversation, item) : this.routeGroup(conversation, item),
+    };
   }
 
   setRouter(router: MessageRouter): void {
@@ -71,6 +81,86 @@ export class ConversationService {
     const saved = this.get(conv.id);
     this.d.bus.publish("conversation.updated", { conversation: saved });
     return saved;
+  }
+
+  // --- groups ----------------------------------------------------------------
+
+  private group(id: string): Conversation {
+    const conv = this.get(id);
+    if (conv.kind !== "group") throw badRequest(`conversation ${id} is a direct conversation, not a group`);
+    return conv;
+  }
+
+  private publish(id: string): Conversation {
+    const saved = this.get(id);
+    this.d.bus.publish("conversation.updated", { conversation: saved });
+    return saved;
+  }
+
+  createGroup(input: GroupInput): Conversation {
+    const title = input.title.trim();
+    if (!title) throw badRequest("invalid group", { title: "must not be empty" });
+    const members = [...new Set(input.members.map((m) => this.d.botService.get(m).id))];
+    if (members.length < 2) throw badRequest("invalid group", { members: "a group needs at least 2 different bots" });
+    if (members.length > this.d.config.maxGroupSize) {
+      throw conflict("group_full", `a group holds at most ${this.d.config.maxGroupSize} bots (ORBIS_MAX_GROUP_SIZE)`);
+    }
+    const lead = input.leadBotId ? this.d.botService.get(input.leadBotId).id : members[0]!;
+    if (!members.includes(lead)) throw badRequest("invalid group", { leadBotId: "the lead must be a member" });
+    const conv: Conversation = {
+      id: newId("cnv"),
+      kind: "group",
+      title,
+      members,
+      leadBotId: lead,
+      createdAt: nowIso(),
+      lastItemAt: null,
+    };
+    this.d.conversations.insert(conv, null);
+    return this.publish(conv.id);
+  }
+
+  updateGroup(id: string, patch: { title?: string; leadBotId?: string | null }): Conversation {
+    const conv = this.group(id);
+    const next: { title?: string; leadBotId?: string | null } = {};
+    if (patch.title !== undefined) {
+      if (!patch.title.trim()) throw badRequest("invalid group", { title: "must not be empty" });
+      next.title = patch.title.trim();
+    }
+    if (patch.leadBotId !== undefined) {
+      const lead = patch.leadBotId === null ? conv.members[0]! : this.d.botService.get(patch.leadBotId).id;
+      if (!conv.members.includes(lead)) throw badRequest("invalid group", { leadBotId: "the lead must be a member" });
+      next.leadBotId = lead;
+    }
+    this.d.conversations.update(id, next);
+    return this.publish(id);
+  }
+
+  deleteGroup(id: string): void {
+    this.group(id);
+    this.d.conversations.delete(id);
+    this.d.bus.publish("conversation.deleted", { conversationId: id });
+  }
+
+  addMember(id: string, botRef: string): Conversation {
+    const conv = this.group(id);
+    const bot = this.d.botService.get(botRef);
+    if (conv.members.includes(bot.id)) throw conflict("already_member", `@${bot.handle} is already in this group`);
+    if (conv.members.length >= this.d.config.maxGroupSize) {
+      throw conflict("group_full", `a group holds at most ${this.d.config.maxGroupSize} bots (ORBIS_MAX_GROUP_SIZE)`);
+    }
+    this.d.conversations.addMember(id, bot.id);
+    return this.publish(id);
+  }
+
+  removeMember(id: string, botRef: string): Conversation {
+    const conv = this.group(id);
+    const bot = this.d.botService.get(botRef);
+    if (!conv.members.includes(bot.id)) throw notFound(`@${bot.handle} in this group`);
+    if (conv.members.length <= 2) throw conflict("group_too_small", "a group needs at least 2 bots; delete the group instead");
+    this.d.conversations.removeMember(id, bot.id);
+    if (conv.leadBotId === bot.id) this.d.conversations.update(id, { leadBotId: conv.members.find((m) => m !== bot.id)! });
+    return this.publish(id);
   }
 
   items(conversationId: string, opts: { before?: string; limit?: number }): TimelineItem[] {
@@ -118,6 +208,33 @@ export class ConversationService {
         replyParentId: item.parentId,
       }),
     ];
+  }
+
+  /**
+   * Group: `@everyone` runs every member; mentioned members run; with no
+   * mention the lead runs. Mentions of bots outside the group are ignored.
+   */
+  routeGroup(conversation: Conversation, item: TimelineItem): Run[] {
+    const members = conversation.members
+      .map((id) => this.d.bots.get(id))
+      .filter((b): b is NonNullable<typeof b> => b !== undefined);
+    let targets = item.mentions.includes("everyone")
+      ? members
+      : members.filter((b) => item.mentions.includes(b.handle));
+    if (targets.length === 0 && !item.mentions.includes("everyone")) {
+      const lead = members.find((b) => b.id === conversation.leadBotId) ?? members[0];
+      targets = lead ? [lead] : [];
+    }
+    return targets.map((bot) =>
+      this.d.engine.enqueue({
+        botId: bot.id,
+        conversationId: conversation.id,
+        trigger: { type: "message", ref: item.id },
+        input: item.text,
+        triggerItemId: item.id,
+        replyParentId: item.parentId,
+      }),
+    );
   }
 
   /** The user read the conversation: a bot that was `done` goes back to `idle`. */
