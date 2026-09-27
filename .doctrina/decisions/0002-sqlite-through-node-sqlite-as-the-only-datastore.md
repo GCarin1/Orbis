@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the walking skeleton
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/hub/src/db/index.ts`, `packages/hub/src/db/migrations.ts`
 
 ## Context
 

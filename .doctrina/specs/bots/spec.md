@@ -2,10 +2,10 @@
 
 **Capability:** bots
 **Status:** active
-**Implementation:** planned — built by the walking skeleton change (product.md delivery order 1)
+**Implementation:** verified
 **Realizes:** SC1
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -44,12 +44,12 @@ Everything else in Orbis hangs off a bot.
 
 ## Acceptance criteria
 
-1. [unverified] Creating a bot through `POST /api/v1/bots` answers 201 with id, handle, initials and color, and a new hub instance opened on the same data directory lists the same bot with the same settings — verified by `packages/hub/test/bots.test.ts`.
-2. [unverified] Duplicating a bot copies identity, description, brain, policy, computer configuration and skill allowlist, and the copy has a new handle and no memory entries or secrets — verified by `packages/hub/test/bots.test.ts`.
-3. [unverified] Deleting a bot removes its memory entries, routines, secrets and direct conversation and calls the computer provider's destroy for that bot — verified by `packages/hub/test/bots.test.ts`.
-4. [unverified] Creating a bot beyond ORBIS_MAX_BOTS answers 409, and the handles `everyone`, `A` and a duplicate handle answer 400 or 409 — verified by `packages/hub/test/bots.test.ts`.
-5. [unverified] The roster lists pinned bots first and leaves hidden bots out unless `includeHidden=true` — verified by `packages/hub/test/bots.test.ts`.
-6. [unverified] A run moves the bot through `thinking`, `working`, `done` and broadcasts one `bot.state` event per transition — verified by `packages/hub/test/runs.test.ts`.
+1. [verified] Creating a bot through `POST /api/v1/bots` answers 201 with id, handle, initials and color, and a new hub instance opened on the same data directory lists the same bot with the same settings — verified by `packages/hub/test/bots.test.ts`.
+2. [verified] Duplicating a bot copies identity, description, brain, policy, computer configuration and skill allowlist, and the copy has a new handle and no memory entries or secrets — verified by `packages/hub/test/bots.test.ts`.
+3. [verified] Deleting a bot removes its memory entries, routines, secrets and direct conversation and calls the computer provider's destroy for that bot — verified by `packages/hub/test/bots.test.ts`.
+4. [verified] Creating a bot beyond ORBIS_MAX_BOTS answers 409, and the handles `everyone`, `A` and a duplicate handle answer 400 or 409 — verified by `packages/hub/test/bots.test.ts`.
+5. [verified] The roster lists pinned bots first and leaves hidden bots out unless `includeHidden=true` — verified by `packages/hub/test/bots.test.ts`.
+6. [verified] A run moves the bot through `thinking`, `working`, `done` and broadcasts one `bot.state` event per transition — verified by `packages/hub/test/runs.test.ts`.
 
 ## Maturity
 

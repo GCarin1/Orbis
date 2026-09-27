@@ -1,0 +1,143 @@
+// pt-BR and English texts (specs/web-app: follows the browser, manual switch remembered).
+import { create } from "zustand";
+
+export type Lang = "pt-BR" | "en";
+
+const pt = {
+  "app.tagline": "Sua equipe de bots de IA persistentes",
+  "token.title": "Conectar ao hub",
+  "token.help": "Cole o token da API. Ele fica em ~/.orbis/token no computador que roda o hub (ou use `orbis open`).",
+  "token.placeholder": "token da API",
+  "token.submit": "Conectar",
+  "token.invalid": "Token inválido ou hub inacessível.",
+  "roster.title": "Bots",
+  "roster.new": "Novo bot",
+  "roster.pinned": "Fixados",
+  "roster.noRole": "Sem cargo",
+  "roster.empty": "Nenhum bot ainda. Crie o primeiro.",
+  "state.idle": "Ocioso",
+  "state.thinking": "Pensando",
+  "state.working": "Trabalhando",
+  "state.waiting": "Aguardando você",
+  "state.blocked": "Bloqueado",
+  "state.done": "Concluído",
+  "conv.empty": "Escolha um bot na barra lateral para conversar.",
+  "conv.start": "Diga olá para {name}. A descrição dele guarda as regras duradouras; a mensagem guarda a tarefa do momento.",
+  "composer.placeholder": "Mensagem para {name} — Enter envia, Shift+Enter quebra a linha",
+  "composer.send": "Enviar",
+  "steps.show": "Ver {count} passos",
+  "steps.hide": "Ocultar passos",
+  "steps.running": "{name} está trabalhando…",
+  "you": "Você",
+  "newbot.title": "Novo bot",
+  "newbot.name": "Nome",
+  "newbot.role": "Cargo",
+  "newbot.description": "Descrição e regras duradouras",
+  "newbot.descriptionHint": "Ex.: Você é a analista de QA. Nunca envie nada sem minha aprovação.",
+  "newbot.brain": "Cérebro",
+  "newbot.model": "Modelo (opcional)",
+  "newbot.command": "Comando",
+  "newbot.create": "Criar bot",
+  "newbot.cancel": "Cancelar",
+  "brain.claude-code": "Claude Code (assinatura, sem API)",
+  "brain.codex": "Codex CLI (assinatura, sem API)",
+  "brain.gemini-cli": "Gemini CLI (conta Google, sem API)",
+  "brain.anthropic": "API Anthropic",
+  "brain.openai": "API compatível com OpenAI (OpenAI, Ollama, OpenRouter…)",
+  "brain.custom-cli": "Comando próprio",
+  "brain.mock": "Mock (testes, sem IA)",
+  "lang.label": "Idioma",
+  "stream.offline": "Reconectando ao hub…",
+  "error.generic": "Algo deu errado: {message}",
+};
+
+export type TextKey = keyof typeof pt;
+
+const en: Record<TextKey, string> = {
+  "app.tagline": "Your team of persistent AI bots",
+  "token.title": "Connect to the hub",
+  "token.help": "Paste the API token. It lives in ~/.orbis/token on the machine running the hub (or use `orbis open`).",
+  "token.placeholder": "API token",
+  "token.submit": "Connect",
+  "token.invalid": "Invalid token or unreachable hub.",
+  "roster.title": "Bots",
+  "roster.new": "New bot",
+  "roster.pinned": "Pinned",
+  "roster.noRole": "No role",
+  "roster.empty": "No bots yet. Create the first one.",
+  "state.idle": "Idle",
+  "state.thinking": "Thinking",
+  "state.working": "Working",
+  "state.waiting": "Waiting for you",
+  "state.blocked": "Blocked",
+  "state.done": "Done",
+  "conv.empty": "Pick a bot in the sidebar to start talking.",
+  "conv.start": "Say hello to {name}. Its description holds the durable rules; your message holds the task of the moment.",
+  "composer.placeholder": "Message {name} — Enter sends, Shift+Enter adds a line",
+  "composer.send": "Send",
+  "steps.show": "Show {count} steps",
+  "steps.hide": "Hide steps",
+  "steps.running": "{name} is working…",
+  "you": "You",
+  "newbot.title": "New bot",
+  "newbot.name": "Name",
+  "newbot.role": "Role",
+  "newbot.description": "Description and durable rules",
+  "newbot.descriptionHint": "E.g.: You are the QA analyst. Never send anything without my approval.",
+  "newbot.brain": "Brain",
+  "newbot.model": "Model (optional)",
+  "newbot.command": "Command",
+  "newbot.create": "Create bot",
+  "newbot.cancel": "Cancel",
+  "brain.claude-code": "Claude Code (subscription, no API)",
+  "brain.codex": "Codex CLI (subscription, no API)",
+  "brain.gemini-cli": "Gemini CLI (Google account, no API)",
+  "brain.anthropic": "Anthropic API",
+  "brain.openai": "OpenAI-compatible API (OpenAI, Ollama, OpenRouter…)",
+  "brain.custom-cli": "Your own command",
+  "brain.mock": "Mock (tests, no AI)",
+  "lang.label": "Language",
+  "stream.offline": "Reconnecting to the hub…",
+  "error.generic": "Something went wrong: {message}",
+};
+
+const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };
+const STORAGE_KEY = "orbis.lang";
+
+function initialLang(): Lang {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "pt-BR" || saved === "en") return saved;
+  } catch {
+    /* storage unavailable */
+  }
+  const nav = typeof navigator !== "undefined" ? navigator.language : "en";
+  return nav.toLowerCase().startsWith("pt") ? "pt-BR" : "en";
+}
+
+interface LangState {
+  lang: Lang;
+  setLang(lang: Lang): void;
+}
+
+export const useLang = create<LangState>((set) => ({
+  lang: initialLang(),
+  setLang(lang) {
+    try {
+      localStorage.setItem(STORAGE_KEY, lang);
+    } catch {
+      /* storage unavailable */
+    }
+    document.documentElement.lang = lang;
+    set({ lang });
+  },
+}));
+
+export function translate(lang: Lang, key: TextKey, vars: Record<string, string | number> = {}): string {
+  return TEXTS[lang][key].replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`));
+}
+
+export function useT() {
+  const lang = useLang((s) => s.lang);
+  return (key: TextKey, vars?: Record<string, string | number>) => translate(lang, key, vars);
+}

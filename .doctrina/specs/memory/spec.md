@@ -2,11 +2,11 @@
 
 **Capability:** memory
 **Status:** active
-**Implementation:** planned — context assembly lands with the walking skeleton; memory entries and tools land in the collaboration change
+**Implementation:** planned — in progress: context assembly is verified since change 0001; memory entries, search, tools and run summaries land in the collaboration change
 **Realizes:** SC1
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -38,7 +38,7 @@ conversation items first.
 
 1. [unverified] `memory.save` stores an entry that `memory.search` finds by a word of its text, team entries are found by every bot, and edits and deletes are reflected in search at once — verified by `packages/hub/test/memory.test.ts`.
 2. [unverified] A bot's search never returns another bot's own entries — verified by `packages/hub/test/memory.test.ts`.
-3. [unverified] Context assembly keeps at most 30 items and 12,000 characters of conversation, drops the oldest first, and includes every preference entry — verified by `packages/hub/test/context.test.ts`.
+3. [verified] Context assembly keeps at most 30 items and 12,000 characters of conversation, drops the oldest first, and includes every preference entry — verified by `packages/hub/test/context.test.ts`.
 4. [unverified] A successful run stores a `summary` entry with the task and the start of the reply — verified by `packages/hub/test/memory.test.ts`.
 
 ## Maturity

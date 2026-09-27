@@ -15,9 +15,9 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — mock and claude-code land with the walking skeleton; the API brains and the other CLI brains land in the brains change",
+        "implementation": "planned — in progress: the mock brain, the claude-code and custom-cli adapters without tools, the scrubbed environment and run failure are verified since change 0001; MCP wiring lands in change 0002, API brains, codex, gemini-cli and the health check in the brains change",
         "realizes": [
           "SC2"
         ],
@@ -46,9 +46,9 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the walking skeleton change (product.md delivery order 1)",
+        "implementation": "verified",
         "realizes": [
           "SC1"
         ]
@@ -57,9 +57,9 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — `serve`, `bots` and `chat` land with the walking skeleton; the remaining commands land with the capability they drive",
+        "implementation": "planned — in progress: configuration, serve, bots and chat are verified since change 0001; inline approvals and the remaining command groups land with their capabilities",
         "realizes": [
           "SC7"
         ],
@@ -71,9 +71,9 @@
         "id": "computer",
         "path": ".doctrina/specs/computer/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.1.1",
         "last_updated": "2026-09-27",
-        "implementation": "planned — the workspace used by CLI brains lands with the walking skeleton; tools, providers and live view land in the computer change",
+        "implementation": "planned — per-bot workspace directories exist since change 0001 (working directory of CLI brains, destroyed with the bot); tools, providers and the live view land in the computer change",
         "realizes": [
           "SC3"
         ],
@@ -87,9 +87,9 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the walking skeleton change (direct) and the collaboration change (groups)",
+        "implementation": "planned — in progress: direct conversations, threads, reactions and the run queue are verified since change 0001; groups and mention routing land in the collaboration change",
         "realizes": [
           "SC1",
           "SC4"
@@ -133,9 +133,9 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — REST, stream and auth land with the walking skeleton; the OpenAI-compatible endpoint lands in the brains change",
+        "implementation": "planned — in progress: auth, validation, OpenAPI and the stream are verified since change 0001; the OpenAI-compatible endpoint lands in the brains change",
         "realizes": [
           "SC7"
         ],
@@ -148,9 +148,9 @@
         "id": "memory",
         "path": ".doctrina/specs/memory/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — context assembly lands with the walking skeleton; memory entries and tools land in the collaboration change",
+        "implementation": "planned — in progress: context assembly is verified since change 0001; memory entries, search, tools and run summaries land in the collaboration change",
         "realizes": [
           "SC1"
         ],
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — roster and direct chat land with the walking skeleton; cards, groups, settings and computer view land with their capabilities",
+        "implementation": "planned — in progress: roster, direct chat, languages and the end-to-end path are verified since change 0001; cards, groups, composer autocomplete, settings and computer screens land with their capabilities",
         "realizes": [
           "SC7",
           "SC4",
@@ -275,6 +275,7 @@
         "title": "TypeScript monorepo on Node.js 22 with npm workspaces",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `package.json`, `tsconfig.base.json`, `vitest.config.ts`",
         "summary": "Orbis is one TypeScript repository on Node.js 22.12 or later, split into npm"
       },
       {
@@ -283,7 +284,7 @@
         "title": "SQLite through node:sqlite as the only datastore",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "All state lives in one SQLite file in the data directory, opened through",
+        "landed": "2026-09-27 — `packages/hub/src/db/index.ts`, `packages/hub/src/db/migrations.ts`",
         "scope": [
           "bots",
           "conversations",
@@ -291,7 +292,8 @@
           "routines",
           "secrets",
           "usage"
-        ]
+        ],
+        "summary": "All state lives in one SQLite file in the data directory, opened through"
       },
       {
         "id": "0003",
@@ -299,12 +301,12 @@
         "title": "Two brain families behind one normalized event stream",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "Every brain is an adapter that emits the same normalized events",
         "scope": [
           "agent-runtimes",
           "usage",
           "tool-gateway"
-        ]
+        ],
+        "summary": "Every brain is an adapter that emits the same normalized events"
       },
       {
         "id": "0004",
@@ -312,12 +314,12 @@
         "title": "One tool registry served in-process and over MCP",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "Tools are defined once in the hub's registry (name, description, JSON",
         "scope": [
           "tool-gateway",
           "agent-runtimes",
           "cli"
-        ]
+        ],
+        "summary": "Tools are defined once in the hub's registry (name, description, JSON"
       },
       {
         "id": "0005",
@@ -325,12 +327,12 @@
         "title": "One computer per bot behind a provider interface",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "Each bot owns one computer — workspace, terminal, browser profile — created",
         "scope": [
           "computer",
           "bots",
           "agent-runtimes"
-        ]
+        ],
+        "summary": "Each bot owns one computer — workspace, terminal, browser profile — created"
       },
       {
         "id": "0006",
@@ -338,12 +340,12 @@
         "title": "Deterministic policy decides and nothing overrides a locked rule",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "A tool call is decided by a pure function of (bot policy, grants, tool,",
         "scope": [
           "approvals",
           "tool-gateway",
           "routines"
-        ]
+        ],
+        "summary": "A tool call is decided by a pure function of (bot policy, grants, tool,"
       },
       {
         "id": "0007",
@@ -351,12 +353,12 @@
         "title": "One web app for browser and desktop with an Electron shell",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "The web app (React + Vite) is built once and served by the hub at `/`.",
         "scope": [
           "web-app",
           "desktop-app",
           "hub-api"
-        ]
+        ],
+        "summary": "The web app (React + Vite) is built once and served by the hub at `/`."
       },
       {
         "id": "0008",
@@ -364,16 +366,59 @@
         "title": "Secrets resolve only inside the tool gateway",
         "status": "accepted",
         "date": "2026-09-27",
-        "summary": "Secrets are stored encrypted per bot.",
         "scope": [
           "secrets",
           "tool-gateway",
           "computer"
-        ]
+        ],
+        "summary": "Secrets are stored encrypted per bot."
       }
     ],
     "changes": [],
-    "changes_archive": [],
+    "changes_archive": [
+      {
+        "id": "0001-walking-skeleton",
+        "title": "walking skeleton",
+        "path": ".doctrina/changes/archive/2026-09-27-0001-walking-skeleton",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "computer",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "memory",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      }
+    ],
     "skills": [],
     "contracts": [
       {

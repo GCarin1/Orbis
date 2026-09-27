@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the walking skeleton
-- **Landed:** —
+- **Landed:** 2026-09-27 — `package.json`, `tsconfig.base.json`, `vitest.config.ts`
 
 ## Context
 

@@ -1,0 +1,68 @@
+# Architecture
+
+Orbis is one TypeScript monorepo (ADR 0001) with four packages:
+
+| Package | Role |
+|---------|------|
+| `@orbis/shared` | Domain types (`Bot`, `Conversation`, `TimelineItem`, `Run`, `Step`), stream event names, handle and mention helpers. |
+| `@orbis/hub` | The server: configuration, SQLite store, repositories, services, the run engine, brain adapters, the per-bot computer, REST + WebSocket routes. |
+| `@orbis/cli` | The `orbis` command. It talks to the hub only through the public API. |
+| `@orbis/web` | The React web app, served by the hub at `/` and shown by the desktop app. |
+
+## The hub
+
+```
+HTTP (Fastify)  ── auth hook (bearer / stream query token)
+   │
+   ├── routes ── BotService ─────────── BotsRepo ────────┐
+   │         └── ConversationService ── ConversationsRepo├─ SQLite (node:sqlite, WAL)
+   │                  │                 ItemsRepo        │   migrations in src/db
+   │                  ▼                                  │
+   │             RunEngine ── RunsRepo, BrainSessionsRepo┘
+   │                  │   ├── assembleContext (identity, memories, history)
+   │                  │   ├── BrainRegistry → mock | claude-code | custom-cli | …
+   │                  │   └── ComputerManager (per-bot workspace)
+   │                  ▼
+   └── /api/v1/stream ◄── EventBus ◄── Timeline (post, react, cards)
+```
+
+- **Store.** One SQLite file in the data directory, opened through the built-in
+  `node:sqlite` module (ADR 0002). Migration 1 creates every table of the MVP
+  (bots, conversations, members, items, runs, brain sessions, memory with FTS5,
+  routines, routine runs, secrets, approvals, settings).
+- **Event bus.** Every change that a client may show is published once
+  (`bot.state`, `bot.updated`, `timeline.item`, `run.updated`, `run.step`, …)
+  and fanned out to WebSocket subscribers filtered by conversation.
+- **Run engine.** `enqueue()` records a `queued` run and chains it behind the
+  runs of the same bot and conversation (FIFO). `execute()` resolves the brain
+  adapter, fails fast when the brain is misconfigured, assembles the context,
+  consumes the adapter's normalized events, persists each step, updates the
+  bot state, enforces the timeout, and finally posts the reply as a bot
+  message (or a `run.failed` event).
+- **Brains.** Each adapter implements `check()` (what is missing from the
+  configuration) and `run()` (an async stream of normalized events). CLI
+  brains share `process.ts`: scrubbed environment, timeout with process-group
+  kill, stderr tail, line-by-line stdout.
+- **Computer.** Change 0001 ships the per-bot workspace directory (the working
+  directory of every CLI brain), created with the bot and destroyed with it.
+  The provider interface (ADR 0005) is ready for the `docker` provider.
+
+## Bot states
+
+| State | When |
+|-------|------|
+| `idle` | nothing running (or the user read a finished conversation) |
+| `thinking` | a run started or the brain is producing output |
+| `working` | the brain is executing a tool |
+| `waiting` | a run waits for the user (approval, secret) |
+| `blocked` | the last run failed, timed out or was refused |
+| `done` | the last run finished; back to `idle` when the conversation is read |
+
+## Specs, contracts and decisions
+
+- Behaviour: `.doctrina/specs/<capability>/spec.md` (EARS requirements and
+  acceptance criteria, each citing the test that proves it).
+- Seams: `.doctrina/contracts/hub-surface.md` (ports, environment, budgets,
+  every route and event shape) and `.doctrina/contracts/cli-harnesses.md`
+  (argv and output mapping of each agent CLI).
+- Decisions: `.doctrina/decisions/` (ADRs 0001–0008).

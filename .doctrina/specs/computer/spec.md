@@ -2,11 +2,11 @@
 
 **Capability:** computer
 **Status:** active
-**Implementation:** planned — the workspace used by CLI brains lands with the walking skeleton; tools, providers and live view land in the computer change
+**Implementation:** planned — per-bot workspace directories exist since change 0001 (working directory of CLI brains, destroyed with the bot); tools, providers and the live view land in the computer change
 **Realizes:** SC3
 **Depends on:** bots, tool-gateway, secrets
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.1.1
 
 ## Purpose
 

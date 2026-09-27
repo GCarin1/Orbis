@@ -2,11 +2,11 @@
 
 **Capability:** conversations
 **Status:** active
-**Implementation:** planned — built by the walking skeleton change (direct) and the collaboration change (groups)
+**Implementation:** planned — in progress: direct conversations, threads, reactions and the run queue are verified since change 0001; groups and mention routing land in the collaboration change
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -49,11 +49,11 @@ timeline changes.
 
 ## Acceptance criteria
 
-1. [unverified] A message in a direct conversation starts exactly one run of that conversation's bot, and the bot's reply is appended to the same timeline — verified by `packages/hub/test/conversations.test.ts`.
+1. [verified] A message in a direct conversation starts exactly one run of that conversation's bot, and the bot's reply is appended to the same timeline — verified by `packages/hub/test/conversations.test.ts`.
 2. [unverified] In a group, a message mentioning one member runs only that member, `@everyone` runs every member, and a message with no mention runs only the lead — verified by `packages/hub/test/conversations.test.ts`.
 3. [unverified] Adding a seventh member to a group with the default limit answers 409 — verified by `packages/hub/test/conversations.test.ts`.
-4. [unverified] A thread reply stores its parent id, and a reaction change is broadcast as a `timeline.item` event — verified by `packages/hub/test/conversations.test.ts`.
-5. [unverified] Two messages sent while a run is in progress start two further runs in arrival order — verified by `packages/hub/test/runs.test.ts`.
+4. [verified] A thread reply stores its parent id, and a reaction change is broadcast as a `timeline.item` event — verified by `packages/hub/test/conversations.test.ts`.
+5. [verified] Two messages sent while a run is in progress start two further runs in arrival order — verified by `packages/hub/test/runs.test.ts`.
 
 ## Maturity
 

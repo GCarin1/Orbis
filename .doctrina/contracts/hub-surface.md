@@ -102,7 +102,7 @@ machine that runs Orbis; none is injected by CI.
 
 ### Resource shapes
 
-- `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, policy: Policy, computer: ComputerConfig, skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, createdAt, updatedAt }`.
+- `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, policy: Policy, computer: ComputerConfig, skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, lastMessage: { text, at }|null, createdAt, updatedAt }`.
 - `Brain`: `{ kind: "mock"|"anthropic"|"openai"|"claude-code"|"codex"|"gemini-cli"|"custom-cli", model?, baseUrl?, apiKeySecret?, command?, args?, maxSteps?, timeoutSec? }`.
 - `Policy`: `{ rules: [{ tool: "<name or glob>", decision: "allow"|"ask"|"deny", locked?: boolean }], grants: string[] }`.
 - `ComputerConfig`: `{ enabled, provider?: "local"|"docker", image?, cpus?, memoryMb?, hibernateAfterMin? }`.
@@ -136,6 +136,7 @@ machine that runs Orbis; none is injected by CI.
 ### Stream (`/api/v1/stream`)
 
 - Client → hub: `{ "type": "subscribe", "conversations"?: string[] }`, `{ "type": "ping" }`.
+- Hub → client: `{ "type": "subscribed", "data": { conversations }, ... }` acknowledges each subscribe; events after it are never missed.
 - Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `conversation.updated` `{ conversation }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `pong`.
 
 ### MCP (`/mcp`)
