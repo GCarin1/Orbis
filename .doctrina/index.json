@@ -533,6 +533,15 @@
           }
         ],
         "lane": "product (triage's \"runtime\" came from the word docker; the spec's requirements are unimplemented)"
+      },
+      {
+        "id": "0006-brand",
+        "title": "brand",
+        "path": ".doctrina/changes/archive/2026-09-27-0006-brand",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [],
+        "lane": "chore (confident; signals: readme) — opened as chore"
       }
     ],
     "skills": [],

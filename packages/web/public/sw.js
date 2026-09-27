@@ -1,7 +1,7 @@
 // Orbis service worker: caches the app shell so the installed app opens offline.
 // API calls and the event stream always go to the network.
-const CACHE = "orbis-shell-v1";
-const SHELL = ["/", "/index.html", "/icon.svg", "/manifest.webmanifest"];
+const CACHE = "orbis-shell-v2";
+const SHELL = ["/", "/index.html", "/icon.svg", "/app-icon.svg", "/icon-192.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));

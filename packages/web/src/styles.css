@@ -5,9 +5,16 @@
   --text: #0f172a;
   --muted: #64748b;
   --border: #e2e8f0;
-  --accent: #4f46e5;
+  /* Brand (docs/brand): cyan-blue → blue → violet on deep navy. */
+  --brand-cyan: #3ecbff;
+  --brand-blue: #3b82f6;
+  --brand-violet: #7c4dff;
+  --brand-navy: #0b1020;
+  /* Deeper stops of the brand gradient keep white text readable (≥ 4.5:1). */
+  --brand-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 55%, #6d28d9 100%);
+  --accent: #2563eb;
   --accent-text: #ffffff;
-  --user-bubble: #4f46e5;
+  --user-bubble: var(--brand-gradient);
   --user-text: #ffffff;
   --bot-bubble: #ffffff;
   --danger: #dc2626;
@@ -21,14 +28,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b1120;
-    --panel: #111827;
-    --panel-2: #1e293b;
+    --bg: #0b1020;
+    --panel: #10172b;
+    --panel-2: #1a2340;
     --text: #e2e8f0;
     --muted: #94a3b8;
-    --border: #1f2a3d;
-    --accent: #6366f1;
-    --user-bubble: #4f46e5;
+    --border: #202a47;
+    --accent: #5b8cff;
+    --user-bubble: var(--brand-gradient);
     --bot-bubble: #1e293b;
     --shadow: 0 1px 2px rgb(0 0 0 / 30%);
   }
@@ -80,8 +87,8 @@ textarea {
   cursor: default;
 }
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--brand-gradient);
+  border-color: transparent;
   color: var(--accent-text);
 }
 .link {
@@ -116,11 +123,31 @@ textarea {
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 14px 16px;
-  font-weight: 700;
-  font-size: 1.1em;
   border-bottom: 1px solid var(--border);
+}
+.wordmark {
+  font-family: Poppins, Montserrat, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  font-size: 1.3em;
+  letter-spacing: -0.01em;
+}
+.brand-tagline {
+  font-size: 0.62em;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.gate-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.gate-brand .wordmark {
+  font-size: 2.2em;
 }
 .brand .lang-switch {
   margin-left: auto;
@@ -576,6 +603,10 @@ textarea {
   max-height: 32vh;
   overflow-y: auto;
   flex-shrink: 0;
+}
+.groups .roster-empty {
+  font-size: 0.85em;
+  margin: 0;
 }
 .groups ul {
   list-style: none;

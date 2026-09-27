@@ -8,3 +8,4 @@ One line per archived change, newest last. Appended by
 - 2026-09-27 — 0003-api-and-cli-brains — api and cli brains (specs: agent-runtimes MODIFIED, cli MODIFIED, hub-api MODIFIED)
 - 2026-09-27 — 0004-collaboration — collaboration (specs: cli MODIFIED, conversations MODIFIED, handoff MODIFIED, memory MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-09-27 — 0005-computer — computer (specs: computer MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
+- 2026-09-27 — 0006-brand — brand

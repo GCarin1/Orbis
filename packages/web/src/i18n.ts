@@ -5,6 +5,7 @@ export type Lang = "pt-BR" | "en";
 
 const pt = {
   "app.tagline": "Sua equipe de bots de IA persistentes",
+  "brand.tagline": "Agentes de IA autônomos e open source",
   "token.title": "Conectar ao hub",
   "token.help": "Cole o token da API. Ele fica em ~/.orbis/token no computador que roda o hub (ou use `orbis open`).",
   "token.placeholder": "token da API",
@@ -121,6 +122,7 @@ export type TextKey = keyof typeof pt;
 
 const en: Record<TextKey, string> = {
   "app.tagline": "Your team of persistent AI bots",
+  "brand.tagline": "Open Source Autonomous AI Agents",
   "token.title": "Connect to the hub",
   "token.help": "Paste the API token. It lives in ~/.orbis/token on the machine running the hub (or use `orbis open`).",
   "token.placeholder": "API token",

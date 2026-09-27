@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Orbis">
+  <title>Orbis</title>
+  
+  <mask id="k-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128">
+    <rect width="128" height="128" fill="#fff"/>
+    <g transform="translate(62 68) rotate(-25)"><path d="M -52 0 A 52 25 0 0 0 52 0 A 52 13 0 0 1 -52 0 Z" fill="#000" stroke="#000" stroke-width="9" stroke-linejoin="round"/></g>
+  </mask>
+  <g mask="url(#k-cut)">
+    <circle cx="64" cy="61" r="35" fill="none" stroke="#0b1020" stroke-width="12.5"/>
+    <circle cx="61.5" cy="58.5" r="16.5" fill="#0b1020"/>
+  </g>
+  <g transform="translate(62 68) rotate(-25)"><path d="M -52 0 A 52 25 0 0 0 52 0 A 52 13 0 0 1 -52 0 Z" fill="#0b1020"/></g>
+  <circle cx="106.5" cy="19.5" r="7.5" fill="#0b1020"/>
+  <circle cx="17" cy="104" r="4.5" fill="#0b1020"/>
+</svg>

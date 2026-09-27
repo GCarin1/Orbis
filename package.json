@@ -2,7 +2,7 @@
   "name": "orbis",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-hosted, open-source team of persistent AI bots with their own computer, memory, skills, routines and approvals — driven by API models or by agent CLIs you already subscribe to.",
+  "description": "Self-hosted, open-source team of persistent AI bots with their own computer, memory, skills, routines and approvals \u2014 driven by API models or by agent CLIs you already subscribe to.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -22,7 +22,8 @@
     "dev:hub": "npm run build && node packages/cli/dist/index.js serve",
     "dev:web": "npm run dev -w @orbis/web",
     "orbis": "node packages/cli/dist/index.js",
-    "doctrina": "doctrina"
+    "doctrina": "doctrina",
+    "brand:icons": "node scripts/render-brand.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

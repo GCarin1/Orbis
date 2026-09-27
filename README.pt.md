@@ -1,4 +1,9 @@
-# Orbis
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.svg">
+    <img alt="Orbis — agentes de IA autônomos e open source" src="docs/brand/logo-light.svg" width="460">
+  </picture>
+</h1>
 
 **Uma equipe de bots de IA persistentes, open source e auto-hospedada.** Cada
 bot tem nome, cargo, regras duradouras, memória própria e computador próprio;

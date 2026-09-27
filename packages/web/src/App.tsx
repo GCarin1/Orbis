@@ -89,8 +89,10 @@ export function App() {
     <div className={`layout${selected && computerOpen && !group ? " with-computer" : ""}`}>
       <aside className="sidebar">
         <header className="brand">
-          <img src="/icon.svg" alt="" width={28} height={28} />
-          <span>Orbis</span>
+          <img src="/icon.svg" alt="" width={34} height={34} />
+          <span className="wordmark" title={t("brand.tagline")}>
+            Orbis
+          </span>
           <LanguageSwitch />
         </header>
         <ApprovalsInbox approvals={Object.values(store.approvals)} bots={store.bots} onOpen={(id) => void store.selectBot(id)} />

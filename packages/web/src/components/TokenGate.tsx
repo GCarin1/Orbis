@@ -20,9 +20,12 @@ export function TokenGate({ onToken }: { onToken(token: string): void }) {
           }
         }}
       >
-        <img src="/icon.svg" alt="" width={48} height={48} />
-        <h1>Orbis</h1>
-        <p className="muted">{t("app.tagline")}</p>
+        <div className="gate-brand">
+          <img src="/icon.svg" alt="" width={88} height={88} />
+          <h1 className="wordmark">Orbis</h1>
+          <p className="brand-tagline">{t("brand.tagline")}</p>
+          <p className="muted">{t("app.tagline")}</p>
+        </div>
         <h2>{t("token.title")}</h2>
         <p className="muted">{t("token.help")}</p>
         <input

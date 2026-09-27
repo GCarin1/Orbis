@@ -9,6 +9,13 @@ change that delivered it.
 
 ### Added
 
+- Orbis brand (change 0006-brand): the planet-and-orbit mark with its
+  cyan-to-violet gradient, one-colour and app-icon versions, dark and light
+  logos with the tagline "Open Source Autonomous AI Agents", PWA icons, a
+  social preview and a brand guide in `docs/brand/` (`npm run brand:icons`
+  renders the PNGs). The web app uses the new favicon, icons, wordmark and
+  colours; the READMEs open with the logo.
+
 - One computer per bot (change 0005-computer; lands ADR 0005):
   - Provider interface with the `local` provider (child processes in the
     bot's workspace, scrubbed environment with the bot's own HOME,
