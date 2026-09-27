@@ -12,18 +12,20 @@
     "packages/shared",
     "packages/hub",
     "packages/cli",
-    "packages/web"
+    "packages/web",
+    "packages/desktop"
   ],
   "scripts": {
-    "typecheck": "tsc -b packages/shared packages/hub packages/cli && tsc -p packages/web --noEmit",
+    "typecheck": "tsc -b packages/shared packages/hub packages/cli packages/desktop && tsc -p packages/web --noEmit",
     "test": "vitest run",
-    "build": "tsc -b packages/shared packages/hub packages/cli && npm run build -w @orbis/web",
+    "build": "tsc -b packages/shared packages/hub packages/cli packages/desktop && npm run build -w @orbis/web",
     "check": "npm run typecheck && npm test && npm run build",
     "dev:hub": "npm run build && node packages/cli/dist/index.js serve",
     "dev:web": "npm run dev -w @orbis/web",
     "orbis": "node packages/cli/dist/index.js",
     "doctrina": "doctrina",
-    "brand:icons": "node scripts/render-brand.mjs"
+    "brand:icons": "node scripts/render-brand.mjs",
+    "desktop": "npm run build && electron packages/desktop"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

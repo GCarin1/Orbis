@@ -37,6 +37,16 @@ export default defineConfig({
       },
       {
         extends: true,
+        test: {
+          name: "desktop",
+          include: ["packages/desktop/test/**/*.test.ts"],
+          environment: "node",
+          testTimeout: 60_000,
+          globalSetup: ["tests/setup/build-hub.ts"],
+        },
+      },
+      {
+        extends: true,
         plugins: [react()],
         test: {
           name: "web",

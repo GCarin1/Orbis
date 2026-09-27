@@ -1,0 +1,19 @@
+{
+  "name": "@orbis/desktop",
+  "version": "0.1.0",
+  "description": "Orbis desktop app: the web app in a native window, with the local hub, notifications and a tray.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@orbis/hub": "0.1.0",
+    "@orbis/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5"
+  }
+}

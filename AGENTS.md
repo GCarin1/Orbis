@@ -77,7 +77,7 @@ canonical templates and syncs `index.json`. Flags: `doctrina <cmd> --help`.
 
 - Runtime: Node.js >= 22.12, TypeScript 5.9 strict ESM; hub = Fastify 5 + `node:sqlite`; web = React 19 + Vite.
 - Package manager: npm workspaces (`packages/shared|hub|cli|web`).
-- Test runner: Vitest projects `shared hub cli web e2e` (e2e drives Playwright Chromium).
+- Test runner: Vitest projects `shared hub cli desktop web e2e` (e2e drives Playwright Chromium).
 - Linter / formatter: `tsc` strict is the lint; no formatter enforced.
 
 ## Commands
@@ -87,12 +87,14 @@ npm install && npm run build   # tsc -b + vite build
 npm test                       # every Vitest project; `npx vitest run --project hub`
 npx doctrina verify            # the gate: typecheck -> test -> build
 node packages/cli/dist/index.js serve   # run the hub (orbis serve)
+npm run desktop                         # the desktop app
 ```
 
 ## Repository structure
 
 `packages/shared` types/events · `packages/hub` server, run engine, brains, computer ·
-`packages/cli` the `orbis` command · `packages/web` web app · `tests/e2e` browser tests · `docs/` guides.
+`packages/cli` the `orbis` command · `packages/web` web app · `packages/desktop` Electron shell ·
+`docker/desktop` bot computer image · `tests/e2e` browser tests · `docs/` guides · `docs/brand` logo.
 
 ## Conventions and boundaries
 

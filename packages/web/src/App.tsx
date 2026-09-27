@@ -62,6 +62,15 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // In the desktop app, a notification click opens its conversation.
+  useEffect(() => {
+    const desktop = (window as unknown as { orbisDesktop?: { onOpenConversation?(cb: (id: string) => void): void } }).orbisDesktop;
+    desktop?.onOpenConversation?.((conversationId) => {
+      setView("chat");
+      void useStore.getState().openConversation(conversationId);
+    });
+  }, []);
+
   const bots = useMemo(() => Object.values(store.bots), [store.bots]);
   const selected = store.selectedBotId ? store.bots[store.selectedBotId] : undefined;
   useEffect(() => {

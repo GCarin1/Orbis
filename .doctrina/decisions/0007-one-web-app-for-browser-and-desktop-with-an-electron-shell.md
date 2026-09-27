@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the desktop change
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/desktop/src/main.ts`, `packages/desktop/src/window.ts`, `packages/desktop/test/window.test.ts`
 
 ## Context
 

@@ -102,9 +102,9 @@
         "id": "desktop-app",
         "path": ".doctrina/specs/desktop-app/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the desktop change (product.md delivery order 7)",
+        "implementation": "verified — Electron shell in `packages/desktop` (hub launcher, hardened window, notifications, tray); run with `npm run desktop`",
         "realizes": [
           "SC7"
         ],
@@ -255,7 +255,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.8.0",
+        "version": "0.8.1",
         "last_updated": "2026-09-27",
         "implementation": "verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer and bot settings screens, approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -357,6 +357,7 @@
         "title": "One web app for browser and desktop with an Electron shell",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `packages/desktop/src/main.ts`, `packages/desktop/src/window.ts`, `packages/desktop/test/window.test.ts`",
         "scope": [
           "web-app",
           "desktop-app",
@@ -621,6 +622,24 @@
           },
           {
             "capability": "templates",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0010-desktop-app",
+        "title": "desktop-app",
+        "path": ".doctrina/changes/archive/2026-09-27-0010-desktop-app",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "desktop-app",
             "operation": "MODIFIED"
           },
           {

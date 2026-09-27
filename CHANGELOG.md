@@ -9,6 +9,14 @@ change that delivered it.
 
 ### Added
 
+- Desktop app (change 0010-desktop-app; lands ADR 0007): `packages/desktop`,
+  an Electron shell that uses the hub answering `/health` at its configured
+  URL or starts the bundled hub with Node.js and waits for it, loads the web
+  app in a window with context isolation, no Node integration and the
+  sandbox (other origins open in the browser), raises one native
+  notification per approval or secret request (a click opens the
+  conversation) and stays in the tray. `npm run desktop`.
+
 - Templates and bot settings (change 0009-templates-and-settings):
   `GET /api/v1/bots/:id/export` writes a `BotTemplate` YAML (identity,
   brain without credentials, policy, computer, allowlists, the bot's own

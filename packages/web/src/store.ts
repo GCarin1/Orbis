@@ -43,6 +43,8 @@ interface State {
   loadBots(): Promise<void>;
   selectBot(botId: string | null): Promise<void>;
   loadConversations(): Promise<void>;
+  /** Open a conversation by id (a desktop notification click). */
+  openConversation(conversationId: string): Promise<void>;
   selectGroup(conversationId: string | null): Promise<void>;
   createGroup(input: { title: string; members: string[]; leadBotId?: string }): Promise<Conversation>;
   loadTimeline(conversationId: string): Promise<void>;
@@ -120,6 +122,14 @@ export const useStore = create<State>((set, get) => ({
     if (!api) return;
     const list = await api.get<Conversation[]>("/api/v1/conversations");
     set((s) => ({ conversations: { ...s.conversations, ...Object.fromEntries(list.map((c) => [c.id, c])) } }));
+  },
+
+  async openConversation(conversationId) {
+    const api = get().api;
+    if (!api) return;
+    const conv = get().conversations[conversationId] ?? (await api.get<Conversation>(`/api/v1/conversations/${conversationId}`));
+    if (conv.kind === "group") await get().selectGroup(conv.id);
+    else if (conv.members[0]) await get().selectBot(conv.members[0]);
   },
 
   async selectGroup(conversationId) {

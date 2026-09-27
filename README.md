@@ -49,7 +49,7 @@ are proven by tests.
 | Skills (SKILL.md, `/name`, Claude Code skills folder) and routines (cron in a timezone, signed webhooks, draft-only tests, absence pause) | ✅ verified |
 | Secrets (per-bot AES-256-GCM vault, `{{secret:NAME}}` resolved only in the tool gateway, redaction, secret-request cards) and usage (per bot and month, price table, spend caps) | ✅ verified |
 | Bot templates (YAML export with a secret scan, import with routines disabled) and the bot settings screen | ✅ verified |
-| Desktop app | next |
+| Desktop app (Electron: finds or starts the hub, hardened window, native notifications, tray) | ✅ verified |
 
 The status of each capability is always current in
 `npx doctrina status` and in each spec's `Implementation:` header.
@@ -81,6 +81,8 @@ orbis chat @ana "Summarise what a smoke test should cover for a login page"
 orbis chat @ana            # interactive session; the bot resumes its Claude Code session
 orbis open                 # opens the web app already signed in
 ```
+
+Or the **desktop app**, which starts the hub for you: `npm run desktop`.
 
 The hub keeps everything in `~/.orbis` (`ORBIS_DATA_DIR`): the SQLite
 database, the API token (`~/.orbis/token`) and each bot's workspace.
@@ -114,7 +116,7 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
 More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
-[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
 [`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration

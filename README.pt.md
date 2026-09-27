@@ -50,7 +50,7 @@ fecha quando os critérios de aceite são provados por testes.
 | Skills (SKILL.md, `/nome`, pasta de skills do Claude Code) e rotinas (cron com fuso horário, webhooks assinados, testes só-rascunho, pausa por ausência) | ✅ verificado |
 | Segredos (cofre AES-256-GCM por bot, `{{secret:NOME}}` resolvido só no gateway de ferramentas, mascaramento, cards de pedido de segredo) e uso (por bot e mês, tabela de preços, teto de gasto) | ✅ verificado |
 | Templates de bot (exportação YAML com varredura de segredos, importação com rotinas desativadas) e a tela de configurações do bot | ✅ verificado |
-| App desktop | próximo |
+| App desktop (Electron: encontra ou inicia o hub, janela protegida, notificações nativas, bandeja) | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
 no cabeçalho `Implementation:` de cada spec.
@@ -83,6 +83,8 @@ orbis chat @ana            # sessão interativa; o bot retoma a sessão do Claud
 orbis open                 # abre o app web já autenticado
 ```
 
+Ou o **app desktop**, que inicia o hub para você: `npm run desktop`.
+
 O hub guarda tudo em `~/.orbis` (`ORBIS_DATA_DIR`): o banco SQLite, o token da
 API (`~/.orbis/token`) e o workspace de cada bot.
 
@@ -104,7 +106,7 @@ API (`~/.orbis/token`) e o workspace de cada bot.
 Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
-[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
 [`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração

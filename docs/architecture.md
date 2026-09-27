@@ -1,6 +1,6 @@
 # Architecture
 
-Orbis is one TypeScript monorepo (ADR 0001) with four packages:
+Orbis is one TypeScript monorepo (ADR 0001) with five packages:
 
 | Package | Role |
 |---------|------|
@@ -8,6 +8,7 @@ Orbis is one TypeScript monorepo (ADR 0001) with four packages:
 | `@orbis/hub` | The server: configuration, SQLite store, repositories, services, the run engine, brain adapters, the per-bot computer, REST + WebSocket routes. |
 | `@orbis/cli` | The `orbis` command. It talks to the hub only through the public API. |
 | `@orbis/web` | The React web app, served by the hub at `/` and shown by the desktop app. |
+| `@orbis/desktop` | The Electron shell: finds or starts the hub, a hardened window, native notifications, tray. |
 
 ## The hub
 

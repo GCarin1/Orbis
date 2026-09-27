@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.8.0
+**Version:** 0.8.1
 
 ## Purpose
 
@@ -34,6 +34,7 @@ run's steps.
 - When the stream delivers an event, the web app shall update the roster, the open timeline and the approvals inbox without a page reload.
 - When the user answers an approval card or sends or discards a draft card, the web app shall call the API and show the card's new state.
 - When the stream connection drops, the web app shall reconnect with backoff and reload the open timeline.
+- When the desktop app reports a notification click, the web app shall open that notification's conversation — the group, or the bot of a direct conversation.
 
 ## Acceptance criteria
 
@@ -51,6 +52,7 @@ run's steps.
 12. [verified] In a real browser, a user answers a bot's secret request in the masked card, the bot's command uses the value, and the value appears nowhere on the page — verified by `tests/e2e/secrets.test.ts`.
 13. [verified] The bot settings panel edits identity, brain, policy rules and grants, computer, allowlists and the spend cap in one patch, and asks before deleting — verified by `packages/web/test/settings.test.tsx`.
 14. [verified] In a real browser, a user edits a bot's settings, exports it as a template file and imports that file as a new bot — verified by `tests/e2e/templates.test.ts`.
+15. [verified] Opening a conversation by id selects the group, or the bot whose direct conversation it is — verified by `packages/web/test/desktop.test.tsx`.
 
 ## Maturity
 
