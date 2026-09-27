@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { DEFAULT_HOST, DEFAULT_PORT, ORBIS_VERSION, type ComputerProviderKind } from "@orbis/shared";
+import { PRICES, type Price } from "./brains/pricing.js";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -30,6 +31,8 @@ export interface HubConfig {
   webDir: string | null;
   /** Chromium for the local browser tools; null uses Playwright's own browser. */
   browserExecutable: string | null;
+  /** USD per million tokens by model prefix: the shipped table with `<data>/prices.json` over it. */
+  prices: Record<string, Price>;
 }
 
 export type Env = Record<string, string | undefined>;
@@ -117,5 +120,21 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     openaiApiKey: overrides.openaiApiKey ?? readVar(env, "OPENAI_API_KEY") ?? null,
     webDir: overrides.webDir === undefined ? null : overrides.webDir,
     browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
+    prices: overrides.prices ?? loadPrices(dataDir),
   };
+}
+
+/** The shipped price table, extended and overridden by `<data>/prices.json` when present. */
+export function loadPrices(dataDir: string): Record<string, Price> {
+  const file = path.join(dataDir, "prices.json");
+  if (!existsSync(file)) return { ...PRICES };
+  const parsed = JSON.parse(readFileSync(file, "utf8")) as Record<string, Partial<Price>>;
+  const table: Record<string, Price> = { ...PRICES };
+  for (const [model, price] of Object.entries(parsed)) {
+    if (typeof price?.input !== "number" || typeof price?.output !== "number") {
+      throw new Error(`${file}: "${model}" needs numeric input and output prices (USD per million tokens)`);
+    }
+    table[model] = price as Price;
+  }
+  return table;
 }

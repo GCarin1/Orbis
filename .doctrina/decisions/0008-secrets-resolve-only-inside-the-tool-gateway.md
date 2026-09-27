@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the secrets-and-usage change
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/hub/src/secrets/vault.ts`, `packages/hub/src/tools/gateway.ts`, `packages/hub/test/secrets.test.ts`
 
 ## Context
 

@@ -2,11 +2,11 @@
 
 **Capability:** secrets
 **Status:** active
-**Implementation:** planned — built by the secrets-and-usage change (product.md delivery order 6)
+**Implementation:** verified — AES-256-GCM vault and gateway resolution (`packages/hub/src/secrets/`), redaction in the engine, the timeline and approvals
 **Realizes:** SC9
 **Depends on:** bots, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -23,6 +23,7 @@ the moment a tool executes, redacting it from everything that comes back.
 - The system shall scope every secret to one bot and name it with `[A-Z][A-Z0-9_]{0,63}`.
 - The system shall let tool inputs reference a secret as `{{secret:NAME}}` and replace the placeholder with the value only inside the tool gateway at execution time.
 - The system shall replace every occurrence of a secret value in tool results, run events, timeline items and log lines with `••••` before storing or returning them.
+- The system shall authenticate each encrypted value together with its bot id and name, so a value copied to another bot or name does not decrypt.
 
 ### Event-driven
 
@@ -34,13 +35,14 @@ the moment a tool executes, redacting it from everything that comes back.
 
 - The system shall not place a secret value in any brain input, timeline item, API response, run event or log line.
 - The system shall not resolve a placeholder against another bot's vault.
+- The system shall not resolve a placeholder in the input of a tool that only posts inside Orbis (drafts, conversation posts, memory, handoffs); only `computer.shell`, `computer.write_file`, `browser.open`, `browser.type` and `http.fetch` receive values.
 
 ## Acceptance criteria
 
-1. [unverified] A stored secret decrypts to its value, the generated key file has mode 0600, and the ciphertext in the database does not contain the value — verified by `packages/hub/test/secrets.test.ts`.
-2. [unverified] The secret-request flow stores the value and resumes the run, and neither the timeline nor any API response contains the value — verified by `packages/hub/test/secrets.test.ts`.
-3. [unverified] A shell command using `{{secret:NAME}}` receives the value, and its echoed output returns to the brain with `••••` in place of the value — verified by `packages/hub/test/secrets.test.ts`.
-4. [unverified] A placeholder naming another bot's secret is not resolved — verified by `packages/hub/test/secrets.test.ts`.
+1. [verified] A stored secret decrypts to its value, the generated key file has mode 0600, and the ciphertext in the database does not contain the value — verified by `packages/hub/test/secrets.test.ts`.
+2. [verified] The secret-request flow stores the value and resumes the run, and neither the timeline nor any API response contains the value — verified by `packages/hub/test/secrets.test.ts`.
+3. [verified] A shell command using `{{secret:NAME}}` receives the value, and its echoed output returns to the brain with `••••` in place of the value — verified by `packages/hub/test/secrets.test.ts`.
+4. [verified] A placeholder naming another bot's secret is not resolved — verified by `packages/hub/test/secrets.test.ts`.
 
 ## Maturity
 

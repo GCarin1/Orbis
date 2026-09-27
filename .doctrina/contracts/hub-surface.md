@@ -51,6 +51,12 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 An empty value is treated as unset everywhere, so a blank line in `.env`
 falls back to the default instead of becoming an empty string.
 
+Files the hub keeps in the data directory: `token` (0600), `master.key`
+(0600, generated when ORBIS_MASTER_KEY is unset — 64 hex characters) and,
+optionally, `prices.json` (`{ "<model prefix>": { "input": USD, "output":
+USD, "cacheRead"?, "cacheWrite"? } }` per million tokens, over the shipped
+price table).
+
 ## Wiring
 
 Every variable is read at runtime from the process environment of the
@@ -116,6 +122,8 @@ machine that runs Orbis; none is injected by CI.
 - `SkillInfo`: `{ name ([a-z0-9-]{1,64}), description, when: string|null, scope: "account"|"bot", botId: string|null, updatedAt }`; `Skill` adds `content` (the SKILL.md document) and `body` (the Markdown after the frontmatter).
 - `Routine`: `{ id, botId, name, trigger: { type: "cron", cron, timezone (IANA) } | { type: "webhook" }, instruction, approval: "normal"|"draft_only", enabled, paused, webhookPath: string|null, nextRunAt: string|null, lastRun: RoutineRun|null, createdAt, updatedAt }`; `RoutineRun`: `{ id, routineId, runId, test, status, summary, startedAt }`.
 - Routine card data: `{ routineId, name, trigger, approval, event }`; states `created`, `enabled`, `disabled`, `paused`. Timeline event `skill.unavailable`: `event.data` = `{ botId, skill }`.
+- Secret-request card data: `{ name, reason, botId, runId, answeredAt? }`; states `pending`, `fulfilled`, `declined`, `expired`. Tool inputs reference secrets as `{{secret:NAME}}`; values are resolved only for `computer.shell`, `computer.write_file`, `browser.open`, `browser.type` and `http.fetch`, and every value of the bot appears as `••••` in tool results, run steps, replies, bot timeline items and approval inputs.
+- `UsageTotals`: `{ runs, inputTokens, outputTokens, cachedTokens, costUsd, subscriptionCostUsd }`; `UsageReport`: `{ from, to, total: UsageTotals, bots: [{ botId, usage: UsageTotals, spendCapUsd: number|null, capIncludesSubscription, cappedCostUsd }] }`.
 - `Conversation`: `{ id, kind: "direct"|"group", title, members: string[] (bot ids), leadBotId: string|null, createdAt, lastItemAt }`.
 - `TimelineItem`: `{ id, conversationId, kind: "message"|"event"|"card", author: { type: "user"|"bot"|"system", id: string|null }, text, parentId: string|null, mentions: string[], attachments: string[], reactions: { [emoji]: number }, runId: string|null, card?: Card, event?: { type, data }, createdAt, updatedAt }`.
 - `Card`: `{ type: "approval"|"draft"|"handoff"|"secret-request"|"routine", state: string, data: object }`.
@@ -135,7 +143,7 @@ machine that runs Orbis; none is injected by CI.
 - `GET /bots/:id/conversation` → the direct `Conversation`, created on first request.
 - `GET /bots/:id/export` → `text/yaml` · `POST /bots/import` `{ yaml }` → 201 `Bot`.
 - `GET /bots/:id/memory` → `MemoryEntry[]` · `POST /bots/:id/memory` `{ kind, text }` → 201 · `GET /memory?scope=team` → team entries · `POST /memory` `{ kind, text }` → 201 team entry · `PATCH /memory/:id` `{ kind?, text? }` · `DELETE /memory/:id` → 204.
-- `GET /bots/:id/secrets` → `[{ name, createdAt }]` · `PUT /bots/:id/secrets/:name` `{ value }` · `DELETE /bots/:id/secrets/:name`.
+- `GET /bots/:id/secrets` → `[{ name, createdAt }]` (never values) · `PUT /bots/:id/secrets/:name` `{ value }` → `{ name, createdAt }` (400 for a name outside `[A-Z][A-Z0-9_]{0,63}`) · `DELETE /bots/:id/secrets/:name` → 204.
 - `GET /bots/:id/computer` → `ComputerStatus` · `POST /bots/:id/computer/start|stop|takeover|release` → `ComputerStatus` (409 `computer_disabled`, 409 `computer_unavailable` when the provider fails, e.g. no Docker daemon) · `GET /bots/:id/computer/screenshot` → `image/png`, the latest screenshot kept after the bot's last browser action (404 before the first).
 - `POST /bots/:id/computer/vnc-session` → `{ url }` and a `Set-Cookie: orbis_vnc=…; Path=/api/v1/bots/:id/computer/vnc/; HttpOnly; SameSite=Strict` (409 `no_desktop` for the local provider, 409 `computer_stopped`) · `GET /bots/:id/computer/vnc/*` (noVNC files) and the WebSocket `GET /bots/:id/computer/vnc/websockify` accept that cookie instead of the bearer token.
 - `GET /conversations` · `POST /conversations` `{ title, members (ids or handles), leadBotId? }` → 201 group; 400 below 2 members, 409 `group_full` above the group-members budget · `GET /conversations/:id` · `PATCH /conversations/:id` `{ title?, leadBotId? }` · `DELETE /conversations/:id` → 204 (groups only) · `POST /conversations/:id/members` `{ botId }` (409 `group_full`, `already_member`) · `DELETE /conversations/:id/members/:botId` (409 `group_too_small`; removing the lead passes the lead to the next member).
@@ -143,10 +151,10 @@ machine that runs Orbis; none is injected by CI.
 - `POST /items/:id/reactions` `{ emoji }` · `DELETE /items/:id/reactions/:emoji`.
 - `GET /runs?botId=&conversationId=&status=` · `GET /runs/:id` · `POST /runs/:id/cancel`.
 - `GET /approvals?status=pending` · `GET /approvals/:id` · `POST /approvals/:id` `{ decision: "allow_once"|"allow_always"|"deny", note? }` → the `Approval`; 409 when it is no longer pending.
-- `POST /cards/:itemId/send` `{ fields?: { to?, subject?, body?, url? } }` → the updated item · `POST /cards/:itemId/discard` → the updated item (drafts; 409 once sent or discarded) · `POST /cards/:itemId/secret` `{ value }` or `{ decline: true }` (secret requests).
+- `POST /cards/:itemId/send` `{ fields?: { to?, subject?, body?, url? } }` → the updated item · `POST /cards/:itemId/discard` → the updated item (drafts; 409 once sent or discarded) · `POST /cards/:itemId/secret` `{ value }` or `{ decline: true }` (secret requests; the answered card never holds the value; 409 `card_closed` once answered).
 - `GET /skills?botId=&offered=` → `SkillInfo[]`: account skills without `botId`, that bot's own skills with it, and with `offered=true` the skills the bot is offered (its allowlist of account skills plus its own) · `POST /skills` `{ content, botId? }` → 201 `Skill` (400 with `fields.name` / `fields.description`, 409 `skill_exists`) · `GET /skills/:name?botId=` → `Skill` · `PUT /skills/:name?botId=` `{ content }` (the name cannot change) · `DELETE /skills/:name?botId=` → 204.
 - `GET /bots/:id/routines` → `Routine[]` · `POST /bots/:id/routines` `{ name, trigger, instruction, approval? }` → 201 `Routine` with `secret` (409 `routine_limit` past the routines-per-bot budget) · `GET /routines/:id` → `Routine` with `secret` · `PATCH /routines/:id` `{ name?, trigger?, instruction?, approval? }` · `DELETE /routines/:id` → 204 · `POST /routines/:id/test` → 202 `RoutineRun` (a draft-only run) · `POST /routines/:id/enable` `{ force? }` → `Routine` (409 `untested` without a successful test run unless `force`; clears `paused`) · `POST /routines/:id/disable` → `Routine` · `GET /routines/:id/runs` → the last 20 `RoutineRun`, newest first.
-- `GET /usage?from=&to=&botId=` → `{ from, to, total: Usage, bots: [{ botId, usage: Usage, spendCapUsd }] }`.
+- `GET /usage?from=&to=&botId=` → `UsageReport` for `[from, to)` (default: the current UTC calendar month); 400 when `to` is not after `from`.
 - `GET /runtimes/health` → `[{ kind, executable, found, version }]`.
 - `GET /openapi.json` → OpenAPI 3.1 document.
 

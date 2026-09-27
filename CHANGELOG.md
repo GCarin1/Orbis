@@ -9,6 +9,19 @@ change that delivered it.
 
 ### Added
 
+- Secrets and usage (change 0008-secrets-and-usage; lands ADR 0008):
+  - Per-bot AES-256-GCM vault (ORBIS_MASTER_KEY or a generated 0600
+    `master.key`, bot and name authenticated with each value), REST routes,
+    `{{secret:NAME}}` resolved inside the tool gateway for acting tools
+    only, `••••` redaction in tool results, run steps, replies, bot timeline
+    items and approval cards, `secret.request` cards with a masked field.
+  - Usage report per bot and account (`GET /api/v1/usage`), the price
+    table overridable with `prices.json`, spend caps that refuse a run at
+    the cap and stop one that crosses it, subscription cost outside caps by
+    default.
+  - CLI `orbis secrets` (hidden prompt or stdin) and `orbis usage`; web
+    secret-request card and usage screen.
+
 - Skills and routines (change 0007-skills-and-routines):
   - Skills as SKILL.md files at account and bot scope with REST routes,
     the offered list in every run's context, `skills.list` / `skills.read`,

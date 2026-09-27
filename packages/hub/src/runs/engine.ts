@@ -79,6 +79,7 @@ export class RunEngine {
   private toolHost: RunToolHost = NO_TOOL_HOST;
   private readonly hooks: RunHooks[] = [];
   private readonly contextSections: Array<(bot: Bot) => string | null> = [];
+  private redactor: (<T>(botId: string, value: T) => T) | null = null;
   private stopped = false;
 
   constructor(private readonly d: EngineDeps) {}
@@ -89,6 +90,11 @@ export class RunEngine {
 
   addHooks(hooks: RunHooks): void {
     this.hooks.push(hooks);
+  }
+
+  /** Mask secret values in everything a run stores or publishes (steps, reply, error). */
+  setRedactor(redactor: <T>(botId: string, value: T) => T): void {
+    this.redactor = redactor;
   }
 
   /** Add a section to every run's system text (the offered skills). */
@@ -278,7 +284,9 @@ export class RunEngine {
     let failure: string | null = null;
     const host = this.toolHost.open(run, bot, controller.signal);
 
-    const pushStep = (step: Step) => {
+    const pushStep = (raw: Step) => {
+      // Secret values never reach stored or published steps (specs/secrets).
+      const step = this.redactor ? this.redactor(bot.id, raw) : raw;
       steps.push(step);
       this.d.runs.setSteps(runId, steps);
       this.d.bus.publish("run.step", { runId, conversationId: run.conversationId, botId: bot.id, step });
@@ -394,6 +402,10 @@ export class RunEngine {
     }
     if (!failure && (reply === null || reply.trim() === "")) reply = lastText;
     if (!failure && (reply === null || reply.trim() === "")) failure = "the brain returned no reply";
+    if (this.redactor) {
+      if (reply !== null) reply = this.redactor(bot.id, reply);
+      if (failure !== null) failure = this.redactor(bot.id, failure);
+    }
 
     if (failure) {
       this.failRun(run, bot, failure);

@@ -14,6 +14,8 @@ import { groupCommand } from "./commands/group.js";
 import { memoryCommand } from "./commands/memory.js";
 import { skillsCommand } from "./commands/skills.js";
 import { routinesCommand } from "./commands/routines.js";
+import { secretsCommand } from "./commands/secrets.js";
+import { usageCommand } from "./commands/usage.js";
 
 export const HELP = `orbis — persistent AI bots with their own computer, memory and approvals
 
@@ -28,6 +30,8 @@ Usage: orbis <command> [options]
   memory list|add|edit|rm (@bot | --team)      what a bot or the whole team remembers
   skills list|add|show|remove [@bot]           SKILL.md procedures, invoked with /name
   routines list|add|test|enable|disable|remove|runs   scheduled and webhook runs of a bot
+  secrets list|set|rm @bot [NAME]              credentials bots use as {{secret:NAME}} (value: hidden prompt or stdin)
+  usage [@bot] [--from D] [--to D]             tokens, cost and spend caps (this month by default)
   approvals [list|allow <id> [--always]|deny <id> [--note N]]   answer what bots wait for
   runtimes check                               which subscription CLIs (claude, codex, gemini) are installed
   mcp                                          stdio MCP bridge to the hub (needs ORBIS_RUN_TOKEN)
@@ -55,6 +59,9 @@ const COMMANDS: Record<string, Command> = {
   skill: skillsCommand,
   routines: routinesCommand,
   routine: routinesCommand,
+  secrets: secretsCommand,
+  secret: secretsCommand,
+  usage: usageCommand,
   approvals: approvalsCommand,
   approval: approvalsCommand,
   mcp: mcpCommand,

@@ -35,9 +35,17 @@ export const PERMISSION_TOOL = "mcp__orbis__approval_prompt";
  */
 export type BeforeToolCall = (session: RunSession, tool: ToolDefinition, input: unknown) => Promise<void | ToolCallResult>;
 
+/** Where secret placeholders are resolved and values redacted (the vault). */
+export interface SecretBroker {
+  resolve<T>(botId: string, input: T): T;
+  redact(botId: string, text: string): string;
+  hasPlaceholder(value: unknown): boolean;
+}
+
 export class ToolGateway implements RunToolHost {
   private readonly sessions = new Map<string, RunSession>();
   private readonly beforeCall: BeforeToolCall[] = [];
+  private secrets: SecretBroker | null = null;
 
   constructor(
     private readonly registry: ToolRegistry,
@@ -67,6 +75,10 @@ export class ToolGateway implements RunToolHost {
         this.approvals.expireForRun(run.id);
       },
     };
+  }
+
+  setSecrets(broker: SecretBroker): void {
+    this.secrets = broker;
   }
 
   onBeforeCall(hook: BeforeToolCall): void {
@@ -115,9 +127,26 @@ export class ToolGateway implements RunToolHost {
         result = (await hook(session, tool, args)) ?? undefined;
         if (result) break;
       }
-      result ??= await tool.handler(args, { run, bot, callId, signal });
+      if (!result) {
+        // Placeholders become values only here, only for tools that act, and only from this bot's vault.
+        let input = args;
+        if (this.secrets && tool.secrets && this.secrets.hasPlaceholder(args)) {
+          try {
+            input = this.secrets.resolve(bot.id, args);
+          } catch (err) {
+            const names = (err as { names?: string[] }).names;
+            if (!names) throw err;
+            return {
+              output: `${names.map((n) => `{{secret:${n}}}`).join(", ")} ${names.length > 1 ? "are" : "is"} not set for @${bot.handle}: ask the user with secret.request {"name":"${names[0]}","reason":"…"}`,
+              isError: true,
+            };
+          }
+        }
+        result = await tool.handler(input, { run, bot, callId, signal });
+      }
       const normalized = typeof result === "string" ? { output: result, isError: false } : result;
-      return { output: capResult(normalized.output), isError: normalized.isError };
+      const output = this.secrets ? this.secrets.redact(bot.id, normalized.output) : normalized.output;
+      return { output: capResult(output), isError: normalized.isError };
     } catch (err) {
       return { output: `${tool.name} failed: ${err instanceof Error ? err.message : String(err)}`, isError: true };
     }

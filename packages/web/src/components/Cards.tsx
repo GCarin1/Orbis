@@ -160,6 +160,64 @@ export function HandoffCard({ item, bots }: { item: TimelineItem; bots: Record<s
   );
 }
 
+/** A bot asks for a secret: a masked field that posts straight to the vault (specs/secrets). */
+export function SecretRequestCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
+  const t = useT();
+  const data = item.card!.data as { name: string; reason: string };
+  const state = item.card!.state;
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const answer = async (body: { value: string } | { decline: true }) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await useStore.getState().answerSecret(item.id, body);
+      setValue("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className={`card card-secret card-${state}`} data-testid="secret-card">
+      <div className="card-head">
+        <strong>🔑 {t("secret.asks", { name: bot?.name ?? "bot", secret: data.name })}</strong>
+        <span className={`pill pill-${state === "fulfilled" ? "approved" : state}`}>{t(`secret.state.${state}` as TextKey)}</span>
+      </div>
+      <p className="muted">{data.reason}</p>
+      {state === "pending" && (
+        <form
+          className="card-actions"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (value) void answer({ value });
+          }}
+        >
+          <input
+            className="card-note"
+            type="password"
+            autoComplete="off"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={t("secret.placeholder")}
+            aria-label={t("secret.placeholder")}
+          />
+          <button className="btn btn-primary" type="submit" disabled={busy || !value}>
+            {t("secret.submit")}
+          </button>
+          <button className="btn btn-danger" type="button" disabled={busy} onClick={() => void answer({ decline: true })}>
+            {t("secret.decline")}
+          </button>
+        </form>
+      )}
+      <p className="muted secret-note">{t("secret.note", { secret: data.name })}</p>
+      {error && <p className="error">{error}</p>}
+    </div>
+  );
+}
+
 export function RoutineCard({ item }: { item: TimelineItem }) {
   const t = useT();
   const state = item.card!.state;
@@ -183,6 +241,8 @@ export function CardView({ item, bot, bots = {} }: { item: TimelineItem; bot?: B
       return <HandoffCard item={item} bots={bots} />;
     case "routine":
       return <RoutineCard item={item} />;
+    case "secret-request":
+      return <SecretRequestCard item={item} bot={bot} />;
     default:
       return (
         <div className={`card card-${item.card?.type}`} data-testid="card">

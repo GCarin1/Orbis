@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** planned — in progress: roster, groups, direct and group chat, approval, draft, handoff and routine cards, thread replies, the approvals inbox, @ and / autocomplete, the skills screen, the routines panel, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the settings and usage screens land with their capabilities
+**Implementation:** planned — in progress: roster, groups, direct and group chat, approval, draft, handoff, routine and secret-request cards, thread replies, the approvals inbox, @ and / autocomplete, the skills, usage and routines screens, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the bot settings screen lands with templates
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -47,6 +47,8 @@ run's steps.
 8. [verified] The computer panel shows the computer's state, the latest screenshot (or noVNC for a desktop), and sends Take over and Hand back — verified by `packages/web/test/computer.test.tsx`.
 9. [verified] In a real browser, after a bot opens a page, the user sees that page in the computer panel, takes over, hands back and switches to full screen — verified by `tests/e2e/computer.test.ts`.
 10. [verified] In a real browser, a user writes a skill in the skills screen, invokes it with the `/` autocomplete, and creates, tests and enables a routine whose cards appear in the conversation — verified by `tests/e2e/skills-routines.test.ts`.
+11. [verified] The secret-request card posts the masked value to the vault route (or declines), and the usage screen shows runs, tokens, cost, the subscription part and the cap per bot — verified by `packages/web/test/secrets-usage.test.tsx`.
+12. [verified] In a real browser, a user answers a bot's secret request in the masked card, the bot's command uses the value, and the value appears nowhere on the page — verified by `tests/e2e/secrets.test.ts`.
 
 ## Maturity
 

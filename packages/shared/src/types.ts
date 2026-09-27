@@ -338,3 +338,30 @@ export interface Routine {
   createdAt: string;
   updatedAt: string;
 }
+
+// --- usage (specs/usage) -----------------------------------------------------
+
+export interface UsageTotals {
+  runs: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  /** Every cost, API and subscription. */
+  costUsd: number;
+  /** The part of costUsd covered by a subscription (CLI brains). */
+  subscriptionCostUsd: number;
+}
+
+export interface UsageReport {
+  from: string;
+  to: string;
+  total: UsageTotals;
+  bots: Array<{
+    botId: string;
+    usage: UsageTotals;
+    spendCapUsd: number | null;
+    capIncludesSubscription: boolean;
+    /** What counts toward the cap in the range. */
+    cappedCostUsd: number;
+  }>;
+}

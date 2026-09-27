@@ -28,6 +28,8 @@ orbis routines list @bot
 orbis routines add @bot --name N (--cron "0 9 * * 1-5" [--tz Zone] | --webhook) --instruction "…" [--draft-only]
 orbis routines test <id> [--no-wait]            # draft-only; waits and prints the reply
 orbis routines enable <id> [--force] | disable <id> | remove <id> | runs <id>
+orbis secrets list @bot | set @bot NAME | rm @bot NAME   # set reads a hidden prompt or stdin
+orbis usage [@bot] [--from DATE] [--to DATE]
 orbis approvals [list [--all]]
 orbis approvals allow <id> [--always]
 orbis approvals deny <id> [--note TEXT]

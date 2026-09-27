@@ -104,7 +104,7 @@ export const anthropicBrain: BrainAdapter = {
           output: u.output_tokens,
           cacheRead: u.cache_read_input_tokens ?? 0,
           cacheWrite: u.cache_creation_input_tokens ?? 0,
-        }),
+        }, ctx.config.prices),
         subscription: false,
       };
 

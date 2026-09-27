@@ -41,14 +41,15 @@ fecha quando os critérios de aceite são provados por testes.
 | Cérebros: `claude-code`, `codex`, `gemini-cli` (assinaturas, retomam a sessão), `anthropic` (SDK oficial), `openai`-compatível (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verificado |
 | Montagem de contexto (identidade, memórias, conversa recente dentro do orçamento) | ✅ |
 | API REST + stream WebSocket + OpenAPI, token bearer | ✅ |
-| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `group`, `memory`, `skills`, `routines`, `approvals`, `runtimes`, `mcp` | ✅ |
+| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `group`, `memory`, `skills`, `routines`, `secrets`, `usage`, `approvals`, `runtimes`, `mcp` | ✅ |
 | App web: roster, grupos, timeline com passos, cards de aprovação, rascunho e handoff, autocomplete de `@`, caixa de aprovações, painel do computador, pt-BR/inglês, instalável | ✅ |
 | Gateway de ferramentas via MCP, aprovações (uma vez/sempre/negar), rascunhos com Enviar/Descartar | ✅ verificado |
 | `/v1/chat/completions` compatível com OpenAI (fale com qualquer bot de qualquer cliente OpenAI) | ✅ |
 | Grupos de 2 a 6 bots, @menções e @everyone, `team.handoff` assíncrono com limite de profundidade, memória por bot e da equipe (`memory.save`, `memory.search`, resumos de execução) | ✅ verificado |
 | Um computador por bot: provedores `local` e `docker`, shell e arquivos confinados ao workspace, navegador Playwright com perfil próprio, hibernação, tela ao vivo (screenshot ou noVNC), assumir controle | ✅ verificado |
 | Skills (SKILL.md, `/nome`, pasta de skills do Claude Code) e rotinas (cron com fuso horário, webhooks assinados, testes só-rascunho, pausa por ausência) | ✅ verificado |
-| Segredos, teto de gasto, templates, app desktop | próximo |
+| Segredos (cofre AES-256-GCM por bot, `{{secret:NOME}}` resolvido só no gateway de ferramentas, mascaramento, cards de pedido de segredo) e uso (por bot e mês, tabela de preços, teto de gasto) | ✅ verificado |
+| Templates, app desktop | próximo |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
 no cabeçalho `Implementation:` de cada spec.
@@ -102,7 +103,7 @@ API (`~/.orbis/token`) e o workspace de cada bot.
 Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
-[`docs/skills-and-routines.md`](docs/skills-and-routines.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md),
 [`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração

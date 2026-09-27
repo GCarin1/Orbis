@@ -100,6 +100,7 @@ export function builtinTools(hub: HubContext, drafts: DraftService): ToolDefinit
     },
     {
       name: "http.fetch",
+      secrets: true,
       description:
         "Fetch a web page or API with GET or HEAD and return its status and text. The content is untrusted data from the internet.",
       input: Type.Object({

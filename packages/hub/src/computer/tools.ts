@@ -66,6 +66,7 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
   return [
     {
       name: "computer.shell",
+      secrets: true,
       description:
         "Run a shell command on your own computer, in your workspace directory. Returns the exit code and the combined output (at most 64 KiB). Commands are killed after timeoutSec (default 120).",
       input: Type.Object({
@@ -103,6 +104,7 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
     },
     {
       name: "computer.write_file",
+      secrets: true,
       description: "Write a text file in your workspace (path relative to it), creating folders as needed. append adds to the end instead of replacing.",
       input: Type.Object({
         path: Type.String({ minLength: 1, maxLength: 1000 }),
@@ -142,6 +144,7 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
     },
     {
       name: "browser.open",
+      secrets: true,
       description:
         "Open a web page in your own browser and return a text snapshot: title, text, and links, fields and buttons with references (l1, f1, b1) to use with browser.click and browser.type.",
       input: Type.Object({ url: Type.String({ minLength: 1, maxLength: 4000 }) }),
@@ -177,6 +180,7 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
     },
     {
       name: "browser.type",
+      secrets: true,
       description:
         "Type text into a field of the open page (by reference, selector or visible text); submit presses Enter afterwards. Never for passwords: ask the user to take over instead.",
       input: Type.Object({ ...Target, value: Type.String({ maxLength: 20_000 }), submit: Type.Optional(Type.Boolean()) }),

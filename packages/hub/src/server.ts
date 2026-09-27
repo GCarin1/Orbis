@@ -19,6 +19,8 @@ import { computerTools } from "./computer/tools.js";
 import { registerComputerRoutes, VncSessions } from "./computer/routes.js";
 import { SkillService } from "./skills/service.js";
 import { RoutineService } from "./routines/service.js";
+import { SecretService } from "./secrets/service.js";
+import { UsageService } from "./usage/service.js";
 import { openDatabase, type Database } from "./db/index.js";
 import { HttpError, unauthorized } from "./errors.js";
 import { BotsRepo } from "./repos/bots.js";
@@ -72,6 +74,8 @@ export interface Hub extends HubContext {
   app: FastifyInstance;
   skills: SkillService;
   routines: RoutineService;
+  secrets: SecretService;
+  usage: UsageService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -284,6 +288,11 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   engine.addHooks(skillService.hooks());
   engine.addContextSection((bot) => skillService.contextSection(bot));
   conversationService.setSkillResolver((bot, text) => skillService.resolve(bot, text));
+  const secrets = new SecretService(ctx);
+  secrets.wire();
+  for (const tool of secrets.tools()) tools.register(tool);
+  const usage = new UsageService(ctx, opts.clock);
+  engine.addHooks(usage.hooks());
   const routines = new RoutineService(ctx, drafts, opts.clock);
   for (const tool of routines.tools()) tools.register(tool);
   engine.addHooks(routines.hooks());
@@ -312,6 +321,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerComputerRoutes(app, ctx, browser, vncSessions);
   await skillService.routes(app);
   await routines.routes(app);
+  await secrets.routes(app);
+  await usage.routes(app);
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
@@ -332,6 +343,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     ...ctx,
     skills: skillService,
     routines,
+    secrets,
+    usage,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });

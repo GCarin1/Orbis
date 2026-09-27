@@ -14,6 +14,7 @@ import { GroupList, NewGroupDialog } from "./components/Groups.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
 import { RoutinesPanel } from "./components/RoutinesPanel.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
+import { UsageScreen } from "./components/UsageScreen.js";
 import type { SkillOption } from "./components/Composer.js";
 import type { MentionOption } from "./components/Composer.js";
 
@@ -29,7 +30,7 @@ export function App() {
   const [panel, setPanel] = useState<"computer" | "routines" | null>(null);
   const computerOpen = panel === "computer";
   const setComputerOpen = (open: boolean) => setPanel(open ? "computer" : null);
-  const [view, setView] = useState<"chat" | "skills">("chat");
+  const [view, setView] = useState<"chat" | "skills" | "usage">("chat");
   const [computerFull, setComputerFull] = useState(false);
   const store = useStore();
 
@@ -118,6 +119,9 @@ export function App() {
           <button className={`nav-item${view === "skills" ? " selected" : ""}`} aria-pressed={view === "skills"} onClick={() => setView("skills")}>
             📘 {t("nav.skills")}
           </button>
+          <button className={`nav-item${view === "usage" ? " selected" : ""}`} aria-pressed={view === "usage"} onClick={() => setView("usage")}>
+            📊 {t("nav.usage")}
+          </button>
         </nav>
         <ApprovalsInbox
           approvals={Object.values(store.approvals)}
@@ -149,8 +153,9 @@ export function App() {
       </aside>
       <main className="main">
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
+        {view === "usage" && store.api ? <UsageScreen api={store.api} bots={store.bots} /> : null}
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
-        {view === "skills" ? null : group ? (
+        {view !== "chat" ? null : group ? (
           <>
             <header className="conv-head">
               <span className="avatar-stack">

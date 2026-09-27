@@ -25,6 +25,8 @@ export interface ToolDefinition {
   defaultDecision?: Exclude<PolicyDecision, "deny">;
   /** Tools that are themselves the gate (approval_prompt) skip the policy. */
   ungated?: boolean;
+  /** The tool acts outside Orbis and may receive `{{secret:NAME}}` values (ADR 0008). */
+  secrets?: boolean;
   /** Offer the tool only to some bots (approval_prompt: Claude Code runs only). */
   offer?(bot: Bot): boolean;
   handler(input: any, ctx: ToolContext): Promise<string | ToolCallResult>;

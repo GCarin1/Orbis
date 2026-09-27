@@ -110,6 +110,19 @@ curl -s -H "X-Orbis-Signature: $SIG" -H 'content-type: application/json' -d "$BO
 
 See [skills-and-routines.md](skills-and-routines.md).
 
+## Secrets and usage
+
+```bash
+curl -s -X PUT -H "$H" -H 'content-type: application/json' -d '{"value":"ghp_…"}' \
+  http://127.0.0.1:7420/api/v1/bots/ana/secrets/GITHUB_TOKEN       # values never come back
+curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/secrets             # [{ name, createdAt }]
+curl -s -H "$H" -H 'content-type: application/json' -d '{"value":"…"}' \
+  http://127.0.0.1:7420/api/v1/cards/<itemId>/secret                # answer a secret-request card ({"decline":true} declines)
+curl -s -H "$H" "http://127.0.0.1:7420/api/v1/usage?from=2026-09-01&to=2026-10-01"
+```
+
+See [secrets-and-usage.md](secrets-and-usage.md).
+
 ## Stream
 
 `ws://127.0.0.1:7420/api/v1/stream?token=<token>` — send

@@ -996,3 +996,69 @@ iframe.computer-screen {
     grid-template-columns: 1fr;
   }
 }
+
+/* secret-request cards and the usage screen */
+.card-secret {
+  border-left-color: #eab308;
+}
+.card-secret form {
+  flex-wrap: nowrap;
+}
+.secret-note {
+  font-size: 0.78em;
+  margin: 6px 0 0;
+}
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.usage-table th,
+.usage-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.usage-table thead th {
+  font-size: 0.8em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.usage-table tfoot th,
+.usage-table tfoot td {
+  font-weight: 700;
+  border-bottom: 0;
+}
+.usage-bot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cap-bar {
+  display: inline-block;
+  width: 80px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.cap-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--brand-gradient);
+}
+.cap-bar.reached > span {
+  background: var(--danger);
+}
+.cap-reached {
+  color: var(--danger);
+}
+.screen-body:has(.usage-table) {
+  overflow-x: auto;
+}

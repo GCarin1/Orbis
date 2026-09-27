@@ -2,11 +2,11 @@
 
 **Capability:** usage
 **Status:** active
-**Implementation:** planned — built by the secrets-and-usage change (product.md delivery order 6)
+**Implementation:** verified — usage report and spend-cap hooks (`packages/hub/src/usage/`), price table with `<data>/prices.json` overrides
 **Realizes:** SC8
 **Depends on:** agent-runtimes, bots
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -28,6 +28,7 @@ covered by the subscription, so the user sees what the subscription saves.
 
 - When a run is about to start and the bot's month-to-date capped cost has reached its spend cap, the system shall refuse the run, set the bot state to `blocked` and post an event naming the cap.
 - When a run's capped cost crosses the bot's spend cap during execution, the system shall stop the run after the current step and post an event naming the cap.
+- When the data directory holds `prices.json`, the system shall apply its per-model prices over the shipped table, so local and third-party models can be priced.
 
 ### Unwanted-behavior (must-not)
 
@@ -35,9 +36,10 @@ covered by the subscription, so the user sees what the subscription saves.
 
 ## Acceptance criteria
 
-1. [unverified] Usage of three runs across two bots sums per bot and per account for the month and for a date range — verified by `packages/hub/test/usage.test.ts`.
-2. [unverified] A bot at its cap has its next run refused with a blocked state and an event, and a run that crosses the cap stops after the current step — verified by `packages/hub/test/usage.test.ts`.
-3. [unverified] Subscription-covered cost is flagged and left out of the cap by default — verified by `packages/hub/test/usage.test.ts`.
+1. [verified] Usage of three runs across two bots sums per bot and per account for the month and for a date range — verified by `packages/hub/test/usage.test.ts`.
+2. [verified] A bot at its cap has its next run refused with a blocked state and an event, and a run that crosses the cap stops after the current step — verified by `packages/hub/test/usage.test.ts`.
+3. [verified] Subscription-covered cost is flagged and left out of the cap by default — verified by `packages/hub/test/usage.test.ts`.
+4. [verified] API usage is priced from the shipped table, a model with no price costs zero, and `prices.json` adds and overrides prices — verified by `packages/hub/test/usage.test.ts`.
 
 ## Maturity
 

@@ -13,7 +13,16 @@ export class Timeline {
     private readonly bus: EventBus,
   ) {}
 
-  post(item: Omit<NewItem, "id" | "createdAt"> & { id?: string; createdAt?: string }): TimelineItem {
+  private redactor: (<T>(botId: string, value: T) => T) | null = null;
+
+  /** Mask a bot's secret values in the items it authors (specs/secrets). */
+  setRedactor(redactor: <T>(botId: string, value: T) => T): void {
+    this.redactor = redactor;
+  }
+
+  post(input: Omit<NewItem, "id" | "createdAt"> & { id?: string; createdAt?: string }): TimelineItem {
+    const botId = input.author.type === "bot" ? input.author.id : null;
+    const item = botId && this.redactor ? { ...input, text: this.redactor(botId, input.text), card: input.card ? this.redactor(botId, input.card) : input.card } : input;
     const at = item.createdAt ?? nowIso();
     const saved = this.items.insert({ ...item, id: item.id ?? newId("itm"), createdAt: at });
     this.conversations.touch(saved.conversationId, at);

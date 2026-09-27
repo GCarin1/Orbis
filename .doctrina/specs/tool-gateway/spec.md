@@ -2,11 +2,11 @@
 
 **Capability:** tool-gateway
 **Status:** active
-**Implementation:** planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer, browser, skills and routine tools are verified; `secret.request` registers with the secrets change
+**Implementation:** verified — every listed tool is registered; `{{secret:NAME}}` resolution and result redaction run inside the gateway (ADR 0008)
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.2.3
+**Version:** 0.3.0
 
 ## Purpose
 

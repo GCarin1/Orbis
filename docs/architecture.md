@@ -59,6 +59,12 @@ HTTP (Fastify)  ── auth hook (bearer / stream query token)
   clock (croner, IANA timezones), verifies webhook HMACs on the raw body,
   and turns external tool calls of draft-only runs into draft cards through
   the gateway's before-call hook.
+- **Secrets and usage.** `secrets/vault.ts` encrypts per-bot values
+  (AES-256-GCM, bot and name as authenticated data); the gateway resolves
+  `{{secret:NAME}}` for acting tools only and redacts results, and the
+  engine, the timeline and approvals redact with the same vault (ADR 0008).
+  `usage/` sums the runs table per bot and enforces spend caps through the
+  engine's `beforeStart` and `afterUsage` hooks.
 - **Computer.** `computer/manager.ts` gives each bot one computer through a
   provider (ADR 0005): `local` (directories and child processes on the hub
   host) or `docker` (one `orbis/desktop` container and one volume per bot,

@@ -1,6 +1,7 @@
 // The OpenAI-compatible brain: Chat Completions with streaming and function
 // calling, for OpenAI, OpenRouter, Groq, Ollama, LM Studio, vLLM and any server
 // that speaks the same shape (specs/agent-runtimes).
+import { costOf } from "./pricing.js";
 import { chatTurns } from "./history.js";
 import { renderSystem } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput } from "./types.js";
@@ -121,12 +122,16 @@ export const openaiBrain: BrainAdapter = {
           return;
         }
         if (chunk.usage) {
+          const input_ = Number(chunk.usage.prompt_tokens ?? 0);
+          const output = Number(chunk.usage.completion_tokens ?? 0);
+          const cached = Number(chunk.usage.prompt_tokens_details?.cached_tokens ?? 0);
           yield {
             type: "run.usage",
-            inputTokens: Number(chunk.usage.prompt_tokens ?? 0),
-            outputTokens: Number(chunk.usage.completion_tokens ?? 0),
-            cachedTokens: Number(chunk.usage.prompt_tokens_details?.cached_tokens ?? 0),
-            costUsd: 0,
+            inputTokens: input_,
+            outputTokens: output,
+            cachedTokens: cached,
+            // Zero for models the table does not price (local servers), unless prices.json names them.
+            costUsd: costOf(input.bot.brain.model ?? "", { input: input_ - cached, output, cacheRead: cached }, ctx.config.prices),
             subscription: false,
           };
         }

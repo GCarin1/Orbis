@@ -57,9 +57,9 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, skills, routines, approvals, runtimes and mcp are verified; usage and bots export|import land with their capabilities",
+        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, skills, routines, secrets, usage, approvals, runtimes and mcp are verified; bots export|import land with templates",
         "realizes": [
           "SC7"
         ],
@@ -178,9 +178,9 @@
         "id": "secrets",
         "path": ".doctrina/specs/secrets/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the secrets-and-usage change (product.md delivery order 6)",
+        "implementation": "verified — AES-256-GCM vault and gateway resolution (`packages/hub/src/secrets/`), redaction in the engine, the timeline and approvals",
         "realizes": [
           "SC9"
         ],
@@ -224,9 +224,9 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.2.3",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer, browser, skills and routine tools are verified; `secret.request` registers with the secrets change",
+        "implementation": "verified — every listed tool is registered; `{{secret:NAME}}` resolution and result redaction run inside the gateway (ADR 0008)",
         "realizes": [
           "SC2",
           "SC3"
@@ -240,9 +240,9 @@
         "id": "usage",
         "path": ".doctrina/specs/usage/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the secrets-and-usage change (product.md delivery order 6)",
+        "implementation": "verified — usage report and spend-cap hooks (`packages/hub/src/usage/`), price table with `<data>/prices.json` overrides",
         "realizes": [
           "SC8"
         ],
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft, handoff and routine cards, thread replies, the approvals inbox, @ and / autocomplete, the skills screen, the routines panel, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the settings and usage screens land with their capabilities",
+        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft, handoff, routine and secret-request cards, thread replies, the approvals inbox, @ and / autocomplete, the skills, usage and routines screens, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the bot settings screen lands with templates",
         "realizes": [
           "SC7",
           "SC4",
@@ -370,6 +370,7 @@
         "title": "Secrets resolve only inside the tool gateway",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `packages/hub/src/secrets/vault.ts`, `packages/hub/src/tools/gateway.ts`, `packages/hub/test/secrets.test.ts`",
         "scope": [
           "secrets",
           "tool-gateway",
@@ -576,9 +577,46 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0008-secrets-and-usage",
+        "title": "secrets-and-usage",
+        "path": ".doctrina/changes/archive/2026-09-27-0008-secrets-and-usage",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "secrets",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "usage",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (triage read \"secrets\" as a runtime signal; the secrets and usage requirements are unimplemented)"
       }
     ],
-    "skills": [],
+    "skills": [
+      {
+        "id": "close-after-a-failed-gate",
+        "path": ".doctrina/skills/close-after-a-failed-gate.md",
+        "description": "Resume a `doctrina close` that stopped at a gate after its apply step, without applying the deltas twice",
+        "last_updated": "2026-09-27"
+      }
+    ],
     "contracts": [
       {
         "id": "cli-harnesses",

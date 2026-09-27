@@ -52,6 +52,7 @@ interface State {
   answerApproval(id: string, decision: ApprovalDecision, note?: string): Promise<void>;
   sendDraft(itemId: string, fields: Partial<DraftFields>): Promise<void>;
   discardDraft(itemId: string): Promise<void>;
+  answerSecret(itemId: string, answer: { value: string } | { decline: true }): Promise<void>;
   loadComputer(botId: string): Promise<void>;
   loadOfferedSkills(botId: string): Promise<void>;
   loadRoutines(botId: string): Promise<void>;
@@ -180,6 +181,13 @@ export const useStore = create<State>((set, get) => ({
     const api = get().api;
     if (!api) return;
     const item = await api.post<TimelineItem>(`/api/v1/cards/${itemId}/send`, { fields });
+    set((s) => ({ items: { ...s.items, [item.conversationId]: upsertItem(s.items[item.conversationId], item) } }));
+  },
+
+  async answerSecret(itemId, answer) {
+    const api = get().api;
+    if (!api) return;
+    const item = await api.post<TimelineItem>(`/api/v1/cards/${itemId}/secret`, answer);
     set((s) => ({ items: { ...s.items, [item.conversationId]: upsertItem(s.items[item.conversationId], item) } }));
   },
 
