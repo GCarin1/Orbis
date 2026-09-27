@@ -68,7 +68,7 @@ machine that runs Orbis; none is injected by CI.
 | ANTHROPIC_API_KEY        | local  | —        | —        | packages/hub/src/config.ts        |
 | OPENAI_API_KEY           | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_URL                | local  | —        | —        | packages/cli/src/config.ts        |
-| ORBIS_RUN_TOKEN          | local  | —        | —        | packages/cli/src/commands/mcp.ts  |
+| ORBIS_RUN_TOKEN          | local  | —        | —        | packages/hub/src/mcp/bridge.ts    |
 
 ## Budgets
 
@@ -102,7 +102,7 @@ machine that runs Orbis; none is injected by CI.
 
 ### Resource shapes
 
-- `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, policy: Policy, computer: ComputerConfig, skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, lastMessage: { text, at }|null, createdAt, updatedAt }`.
+- `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, policy: Policy, computer: ComputerConfig, tools: string[] (allowlist globs, default ["*"]), skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, lastMessage: { text, at }|null, createdAt, updatedAt }`.
 - `Brain`: `{ kind: "mock"|"anthropic"|"openai"|"claude-code"|"codex"|"gemini-cli"|"custom-cli", model?, baseUrl?, apiKeySecret?, command?, args?, maxSteps?, timeoutSec? }`.
 - `Policy`: `{ rules: [{ tool: "<name or glob>", decision: "allow"|"ask"|"deny", locked?: boolean }], grants: string[] }`.
 - `ComputerConfig`: `{ enabled, provider?: "local"|"docker", image?, cpus?, memoryMb?, hibernateAfterMin? }`.
@@ -110,7 +110,10 @@ machine that runs Orbis; none is injected by CI.
 - `TimelineItem`: `{ id, conversationId, kind: "message"|"event"|"card", author: { type: "user"|"bot"|"system", id: string|null }, text, parentId: string|null, mentions: string[], attachments: string[], reactions: { [emoji]: number }, runId: string|null, card?: Card, event?: { type, data }, createdAt, updatedAt }`.
 - `Card`: `{ type: "approval"|"draft"|"handoff"|"secret-request"|"routine", state: string, data: object }`.
 - `Run`: `{ id, botId, conversationId, trigger: { type: "message"|"handoff"|"mention"|"routine"|"webhook"|"api", ref }, depth, status: "queued"|"running"|"waiting"|"done"|"failed"|"cancelled", steps: Step[], usage: { inputTokens, outputTokens, cachedTokens, costUsd, subscription }, error: string|null, createdAt, startedAt, finishedAt }`.
-- `Step`: `{ type: "thinking"|"text"|"tool_call"|"tool_result", at, text?, tool?, input?, output?, isError? }`.
+- `Step`: `{ type: "thinking"|"text"|"tool_call"|"tool_result", at, text?, tool?, callId?, input?, output?, isError? }`.
+- `Approval`: `{ id, runId, botId, conversationId, itemId, tool, input (secrets masked), reason, status: "pending"|"approved"|"denied"|"expired", decision: "allow_once"|"allow_always"|"deny"|null, note, createdAt, decidedAt }`.
+- Approval card data: `{ approvalId, botId, tool, input, reason, locked?, decision?, note? }`; states `pending`, `approved`, `denied`, `expired`.
+- Draft card data: `{ channel: "email"|"chat"|"social"|"webhook", to, subject?, body, url?, botId, delivery?: { channel, at, ok, detail } }`; states `pending`, `sent`, `failed`, `discarded`.
 
 ### REST routes (prefix `/api/v1`)
 
@@ -125,8 +128,8 @@ machine that runs Orbis; none is injected by CI.
 - `GET /conversations/:id/items?before=<id>&limit=<n>` → `TimelineItem[]` · `POST /conversations/:id/messages` `{ text, parentId?, attachments? }` → 201 `{ item, runs: Run[] }` · `POST /conversations/:id/read`.
 - `POST /items/:id/reactions` `{ emoji }` · `DELETE /items/:id/reactions/:emoji`.
 - `GET /runs?botId=&conversationId=&status=` · `GET /runs/:id` · `POST /runs/:id/cancel`.
-- `GET /approvals?status=pending` · `POST /approvals/:id` `{ decision: "allow_once"|"allow_always"|"deny", note? }`.
-- `POST /cards/:itemId/send` `{ fields? }` · `POST /cards/:itemId/discard` (drafts) · `POST /cards/:itemId/secret` `{ value }` or `{ decline: true }` (secret requests).
+- `GET /approvals?status=pending` · `GET /approvals/:id` · `POST /approvals/:id` `{ decision: "allow_once"|"allow_always"|"deny", note? }` → the `Approval`; 409 when it is no longer pending.
+- `POST /cards/:itemId/send` `{ fields?: { to?, subject?, body?, url? } }` → the updated item · `POST /cards/:itemId/discard` → the updated item (drafts; 409 once sent or discarded) · `POST /cards/:itemId/secret` `{ value }` or `{ decline: true }` (secret requests).
 - `GET /skills?botId=` · `POST /skills` `{ content, botId? }` · `GET|PUT|DELETE /skills/:name?botId=`.
 - `GET /bots/:id/routines` · `POST /bots/:id/routines` · `GET|PATCH|DELETE /routines/:id` · `POST /routines/:id/test` · `POST /routines/:id/enable` `{ force? }` · `POST /routines/:id/disable` · `GET /routines/:id/runs`.
 - `GET /usage?from=&to=&botId=` → `{ from, to, total: Usage, bots: [{ botId, usage: Usage, spendCapUsd }] }`.
@@ -141,7 +144,7 @@ machine that runs Orbis; none is injected by CI.
 
 ### MCP (`/mcp`)
 
-- `POST /mcp`, body one JSON-RPC 2.0 request, response `application/json`. Methods: `initialize` (answers `protocolVersion: "2025-06-18"`, `capabilities: { tools: {} }`, `serverInfo: { name: "orbis", version }`), `notifications/initialized` (202, no body), `ping`, `tools/list`, `tools/call`.
+- `POST /mcp`, body one JSON-RPC 2.0 request (no batches), response `application/json`, `202` with no body for a notification; `GET /mcp` answers 405 (no server-sent stream); a missing, unknown or revoked run token answers 401. Methods: `initialize` (answers `protocolVersion: "2025-06-18"`, `capabilities: { tools: {} }`, `serverInfo: { name: "orbis", version }`), `notifications/initialized` (202, no body), `ping`, `tools/list`, `tools/call`.
 - Tool names on the wire replace dots with underscores (`team.handoff` → `team_handoff`) because MCP clients prefix names with the server name.
 - `approval_prompt` is an extra tool offered only to `claude-code` runs: input `{ tool_name, input, tool_use_id? }`, output text holding `{ "behavior": "allow", "updatedInput": {...} }` or `{ "behavior": "deny", "message": "..." }`.
 

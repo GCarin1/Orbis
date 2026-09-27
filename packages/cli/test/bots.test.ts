@@ -26,8 +26,8 @@ describe("orbis bots", () => {
   it("shows, edits, duplicates and deletes a bot", async () => {
     hub = await startTestHub();
     await runCli(["bots", "create", "--name", "Ana", "--brain", "mock"], hub.env);
-    const edited = await runCli(["bots", "edit", "@ana", "--role", "QA lead", "--pin", "--json"], hub.env);
-    expect(JSON.parse(edited.stdout)).toMatchObject({ role: "QA lead", pinned: true });
+    const edited = await runCli(["bots", "edit", "@ana", "--role", "QA lead", "--pin", "--tools", "team.*, draft.create", "--json"], hub.env);
+    expect(JSON.parse(edited.stdout)).toMatchObject({ role: "QA lead", pinned: true, tools: ["team.*", "draft.create"] });
     const shown = await runCli(["bots", "show", "@ana"], hub.env);
     expect(shown.stdout).toContain("QA lead");
     const copy = await runCli(["bots", "duplicate", "@ana", "--json"], hub.env);

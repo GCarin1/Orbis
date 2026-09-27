@@ -36,10 +36,10 @@ fecha quando os critérios de aceite são provados por testes.
 | Cérebros: `mock`, `claude-code` (retoma a sessão), `custom-cli` | ✅ |
 | Montagem de contexto (identidade, memórias, conversa recente dentro do orçamento) | ✅ |
 | API REST + stream WebSocket + OpenAPI, token bearer | ✅ |
-| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` | ✅ |
-| App web: roster, timeline com os passos de cada execução, pt-BR/inglês, instalável | ✅ |
-| Gateway de ferramentas (MCP), aprovações e rascunhos | próximo |
-| Cérebros por API, Codex, Gemini CLI, endpoint compatível com OpenAI | planejado |
+| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `approvals`, `mcp` | ✅ |
+| App web: roster, timeline com passos, cards de aprovação e rascunho, caixa de aprovações, pt-BR/inglês, instalável | ✅ |
+| Gateway de ferramentas via MCP, aprovações (uma vez/sempre/negar), rascunhos com Enviar/Descartar | ✅ verificado |
+| Cérebros por API, Codex, Gemini CLI, endpoint compatível com OpenAI | próximo |
 | Grupos, @menções, handoff, ferramentas de memória | planejado |
 | Um computador por bot (local e Docker, navegador, tela ao vivo, assumir controle) | planejado |
 | Skills, rotinas, segredos, teto de gasto, templates, app desktop | planejado |
@@ -94,7 +94,8 @@ API (`~/.orbis/token`) e o workspace de cada bot.
   [`docs/api.md`](docs/api.md) e em `GET /api/v1/openapi.json`.
 
 Mais em [`docs/architecture.md`](docs/architecture.md),
-[`docs/brains.md`](docs/brains.md) e [`docs/cli.md`](docs/cli.md).
+[`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
+[`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 

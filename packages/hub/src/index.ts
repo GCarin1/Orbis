@@ -4,3 +4,5 @@ export type { HubContext } from "./context.js";
 export type { BrainAdapter, BrainEvent, BrainInput, BrainContext } from "./brains/types.js";
 export type { ComputerProvider } from "./computer/manager.js";
 export { startHub } from "./main.js";
+export { runMcpBridge, bridgeEnv } from "./mcp/bridge.js";
+export { decide } from "./approvals/policy.js";

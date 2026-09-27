@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** planned — in progress: roster, direct chat, languages and the end-to-end path are verified since change 0001; cards, groups, composer autocomplete, settings and computer screens land with their capabilities
+**Implementation:** planned — in progress: roster, direct chat, approval and draft cards, the approvals inbox, languages and the end-to-end path are verified; groups, composer autocomplete, settings and computer screens land with their capabilities
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -37,7 +37,7 @@ run's steps.
 ## Acceptance criteria
 
 1. [verified] The roster renders pinned bots first, groups by role, and shows the state label for each bot — verified by `packages/web/test/roster.test.tsx`.
-2. [unverified] The timeline renders a message, an event and an approval card, and pressing "Allow once" calls the approvals API — verified by `packages/web/test/timeline.test.tsx`.
+2. [verified] The timeline renders a message, an event and an approval card, and pressing "Allow once" calls the approvals API — verified by `packages/web/test/timeline.test.tsx`.
 3. [verified] Switching the language to English and back to pt-BR changes the interface texts — verified by `packages/web/test/i18n.test.tsx`.
 4. [unverified] Typing `@` in the composer offers the member handles and `/` offers the skills — verified by `packages/web/test/composer.test.tsx`.
 5. [verified] In a real browser, a user creates a bot, sends it a message and sees the reply appear — verified by `tests/e2e/skeleton.test.ts`.

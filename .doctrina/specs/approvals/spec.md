@@ -2,11 +2,11 @@
 
 **Capability:** approvals
 **Status:** active
-**Implementation:** planned — built by the tools-and-approvals change (product.md delivery order 2)
+**Implementation:** verified
 **Realizes:** SC5
 **Depends on:** tool-gateway, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -25,6 +25,7 @@ a model can never override a locked rule.
 - The system shall give `computer.shell` and `routine.create` the default decision `ask`, and every other registered tool the default decision `allow`.
 - The system shall show every pending approval as an approval card in the run's conversation, carrying the bot, the tool, the input with secret values masked, and the brain's stated reason.
 - The system shall represent every outbound message a bot prepares (email, chat message, social post, webhook call) as a draft card with editable recipient, subject and body, and the actions Send and Discard.
+- The system shall deliver a draft whose channel is `webhook` as an HTTP POST of its fields to its URL, and append every other draft to the `outbox.jsonl` file of the data directory.
 
 ### Event-driven
 
@@ -34,6 +35,8 @@ a model can never override a locked rule.
 - When the user answers "deny", the system shall return a denial result carrying the user's optional note to the brain, execute nothing and resume the run.
 - When the user presses Send on a draft card, the system shall deliver the draft as edited through its delivery channel, mark the card `sent` and record the delivery result on the card.
 - When the user presses Discard on a draft card, the system shall mark the card `discarded`.
+- When Claude Code asks permission for one of its built-in tools, the system shall decide it as the Orbis tool with the same effect — Bash as `computer.shell`; Write, Edit, MultiEdit and NotebookEdit as `computer.write_file`; Read, Glob, Grep and LS as `computer.read_file`; WebFetch and WebSearch as `http.fetch` — and allow every other built-in tool.
+- When a run ends while one of its approvals is pending, the system shall mark the approval `expired` and its card `expired`.
 
 ### State-driven
 
@@ -51,10 +54,10 @@ a model can never override a locked rule.
 
 ## Acceptance criteria
 
-1. [unverified] A table of policies and calls yields the documented decision for every precedence level, including a locked `ask` that beats an "allow always" grant — verified by `packages/hub/test/approvals/policy.test.ts`.
-2. [unverified] An `ask` decision pauses the run, sets the bot to `waiting`, posts an approval card and broadcasts `approval.requested`; "allow once" resumes the run and executes the call; "deny" returns a denial and executes nothing — verified by `packages/hub/test/approvals/approvals.test.ts`.
-3. [unverified] "Allow always" stores a grant so that the next identical call runs without a card — verified by `packages/hub/test/approvals/approvals.test.ts`.
-4. [unverified] A draft is delivered only after Send, with the user's edits, and a discarded draft is never delivered — verified by `packages/hub/test/approvals/drafts.test.ts`.
+1. [verified] A table of policies and calls yields the documented decision for every precedence level, including a locked `ask` that beats an "allow always" grant — verified by `packages/hub/test/approvals/policy.test.ts`.
+2. [verified] An `ask` decision pauses the run, sets the bot to `waiting`, posts an approval card and broadcasts `approval.requested`; "allow once" resumes the run and executes the call; "deny" returns a denial and executes nothing — verified by `packages/hub/test/approvals/approvals.test.ts`.
+3. [verified] "Allow always" stores a grant so that the next identical call runs without a card — verified by `packages/hub/test/approvals/approvals.test.ts`.
+4. [verified] A draft is delivered only after Send, with the user's edits, and a discarded draft is never delivered — verified by `packages/hub/test/approvals/drafts.test.ts`.
 
 ## Maturity
 

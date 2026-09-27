@@ -5,7 +5,7 @@
 **Implementation:** verified
 **Realizes:** SC1
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Everything else in Orbis hangs off a bot.
 
 ### Ubiquitous
 
-- The system shall store each bot with an id, a unique handle, a name, a role label, a description that holds its durable rules, an avatar made of initials and a color, a brain configuration, a tool policy, a computer configuration, a skill allowlist and a monthly spend cap in USD.
+- The system shall store each bot with an id, a unique handle, a name, a role label, a description that holds its durable rules, an avatar made of initials and a color, a brain configuration, a tool policy, a tool allowlist, a computer configuration, a skill allowlist and a monthly spend cap in USD.
 - The system shall derive a new bot's handle from its name as a lowercase slug of 2 to 32 characters from `[a-z0-9-]`, appending `-2`, `-3` and so on when the handle is taken.
 - The system shall place the bot's name, role and description in every prompt sent to its brain, ahead of the task of the moment.
 - The system shall expose each bot's state as exactly one of `idle`, `thinking`, `working`, `waiting`, `blocked` or `done`.

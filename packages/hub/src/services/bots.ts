@@ -28,6 +28,7 @@ export interface BotInput {
   brain?: Brain;
   policy?: Policy;
   computer?: ComputerConfig;
+  tools?: string[];
   skills?: string[];
   spendCapUsd?: number | null;
   capIncludesSubscription?: boolean;
@@ -106,6 +107,7 @@ export class BotService {
       brain: input.brain ?? DEFAULT_BRAIN,
       policy: input.policy ?? DEFAULT_POLICY,
       computer: input.computer ?? DEFAULT_COMPUTER,
+      tools: input.tools ?? ["*"],
       skills: input.skills ?? ["*"],
       spendCapUsd: input.spendCapUsd ?? null,
       capIncludesSubscription: input.capIncludesSubscription ?? false,
@@ -140,6 +142,7 @@ export class BotService {
     if (patch.brain !== undefined) bot.brain = patch.brain;
     if (patch.policy !== undefined) bot.policy = patch.policy;
     if (patch.computer !== undefined) bot.computer = patch.computer;
+    if (patch.tools !== undefined) bot.tools = patch.tools;
     if (patch.skills !== undefined) bot.skills = patch.skills;
     if (patch.spendCapUsd !== undefined) bot.spendCapUsd = patch.spendCapUsd;
     if (patch.capIncludesSubscription !== undefined) bot.capIncludesSubscription = patch.capIncludesSubscription;
@@ -162,6 +165,7 @@ export class BotService {
       brain: structuredClone(source.brain),
       policy: { rules: structuredClone(source.policy.rules), grants: [] },
       computer: structuredClone(source.computer),
+      tools: [...source.tools],
       skills: [...source.skills],
       spendCapUsd: source.spendCapUsd,
       capIncludesSubscription: source.capIncludesSubscription,

@@ -5,13 +5,17 @@ orbis serve [--port N] [--host H] [--data-dir D] [--quiet]
 orbis open
 orbis login [--url U] [--token T] [--show-token] [--status]
 orbis bots list [--all]
-orbis bots create --name N [--handle H] [--role R] [--description D] [--spend-cap USD]
+orbis bots create --name N [--handle H] [--role R] [--description D] [--spend-cap USD] [--tools a,b.*]
                   [--brain KIND] [--model M] [--command C] [--base-url U] [--api-key-secret NAME]
 orbis bots show @bot
 orbis bots edit @bot [same options as create] [--pin|--unpin] [--hide|--unhide]
 orbis bots duplicate @bot
 orbis bots delete @bot --yes
 orbis chat @bot [message]
+orbis approvals [list [--all]]
+orbis approvals allow <id> [--always]
+orbis approvals deny <id> [--note TEXT]
+orbis mcp                       # stdio MCP bridge; needs ORBIS_RUN_TOKEN
 ```
 
 Global options: `--url`, `--token`, `--json`, `--help`.
@@ -37,6 +41,9 @@ printed only by `orbis login --show-token`.
 - `orbis chat @ana` on a terminal opens an interactive session (Ctrl+D leaves).
 - `echo "message" | orbis chat @ana` sends stdin as one message.
 - `--json` prints the bot's reply items as JSON lines.
+- When a run waits for your approval, an interactive `orbis chat` asks
+  `allow [o]nce, [a]lways, or [d]eny?` (deny asks for an optional note); a
+  piped `orbis chat` prints the approval id to answer with `orbis approvals`.
 
 ## Exit codes
 

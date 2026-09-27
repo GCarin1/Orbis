@@ -1,11 +1,11 @@
 // `orbis chat @handle [message]` — one-shot or interactive, streaming the
 // bot's steps and reply (specs/cli).
-import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
-import type { Bot, Conversation, Run, Step, StreamEvent, TimelineItem } from "@orbis/shared";
+import type { Approval, Bot, Conversation, Run, Step, StreamEvent, TimelineItem } from "@orbis/shared";
 import type { HubClient } from "../client.js";
 import type { CommandContext } from "../context.js";
 import { UsageError, out, paint, type Io } from "../io.js";
+import { Prompter } from "../prompter.js";
 
 const clip = (s: string, n = 240) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
@@ -37,6 +37,38 @@ function printStep(io: Io, step: Step, handle: string): void {
   void handle;
 }
 
+const DECISIONS: Record<string, "allow_once" | "allow_always" | "deny"> = {
+  o: "allow_once",
+  once: "allow_once",
+  y: "allow_once",
+  a: "allow_always",
+  always: "allow_always",
+  d: "deny",
+  n: "deny",
+  deny: "deny",
+};
+
+/** Ask the user about a pending approval on the terminal and send the answer. */
+async function answerApproval(io: Io, client: HubClient, prompter: Prompter, approval: Approval, handle: string): Promise<void> {
+  const c = paint(io);
+  out(io, c.yellow(`  ? @${handle} wants to use ${c.bold(approval.tool)} ${clip(JSON.stringify(approval.input ?? {}), 200)}`));
+  for (;;) {
+    const answer = await prompter.ask("    allow [o]nce, [a]lways, or [d]eny? ");
+    if (answer === null) return;
+    const decision = DECISIONS[answer.trim().toLowerCase()];
+    if (!decision) continue;
+    let note: string | null = null;
+    if (decision === "deny") note = ((await prompter.ask("    note for the bot (optional): ")) ?? "").trim() || null;
+    try {
+      await client.post(`/api/v1/approvals/${approval.id}`, { decision, ...(note ? { note } : {}) });
+      out(io, c.dim(`    → ${decision.replace("_", " ")}`));
+    } catch (err) {
+      out(io, c.red(`    could not answer: ${err instanceof Error ? err.message : String(err)}`));
+    }
+    return;
+  }
+}
+
 /**
  * Send one message and stream until every run it started has ended.
  * Returns true when all runs finished successfully.
@@ -47,7 +79,7 @@ export async function sendAndStream(
   bot: Bot,
   conversation: Conversation,
   text: string,
-  opts: { json: boolean } = { json: false },
+  opts: { json: boolean; prompter?: Prompter | null } = { json: false },
 ): Promise<boolean> {
   const c = paint(io);
   const pending = new Set<string>();
@@ -72,6 +104,11 @@ export async function sendAndStream(
       } else if (item.kind === "event" && !opts.json) {
         out(io, c.yellow(`  ! ${item.text}`));
       }
+    } else if (event.type === "approval.requested") {
+      const approval = (event.data as { approval: Approval }).approval;
+      if (!pending.has(approval.runId)) return;
+      if (opts.prompter) await answerApproval(io, client, opts.prompter, approval, botNames.get(approval.botId) ?? "bot");
+      else out(io, c.yellow(`  ? waiting for approval ${approval.id} (${approval.tool}) — orbis approvals allow ${approval.id}`));
     } else if (event.type === "run.updated") {
       const run = (event.data as { run: Omit<Run, "steps"> }).run;
       if (!pending.has(run.id)) return;
@@ -115,8 +152,13 @@ export async function chatCommand(args: string[], ctx: CommandContext): Promise<
   const conversation = await client.get<Conversation>(`/api/v1/bots/${bot.id}/conversation`);
 
   if (words.length > 0) {
-    const ok = await sendAndStream(ctx.io, client, bot, conversation, words.join(" "), { json: ctx.json });
-    return ok ? 0 : 1;
+    const prompter = ctx.io.interactive ? new Prompter(ctx.io) : null;
+    try {
+      const ok = await sendAndStream(ctx.io, client, bot, conversation, words.join(" "), { json: ctx.json, prompter });
+      return ok ? 0 : 1;
+    } finally {
+      prompter?.close();
+    }
   }
 
   if (!ctx.io.interactive) {
@@ -130,18 +172,19 @@ export async function chatCommand(args: string[], ctx: CommandContext): Promise<
 
   const c = paint(ctx.io);
   out(ctx.io, c.dim(`Chatting with ${bot.name} (@${bot.handle}) — ${bot.brain.kind}. Ctrl+D to leave.`));
-  const rl = createInterface({ input: ctx.io.stdin, output: ctx.io.stdout, prompt: c.bold("you> ") });
-  rl.prompt();
+  const prompter = new Prompter(ctx.io);
   let failures = 0;
-  for await (const line of rl) {
-    const text = line.trim();
-    if (text) {
-      rl.pause();
-      const ok = await sendAndStream(ctx.io, client, bot, conversation, text);
+  try {
+    for (;;) {
+      const line = await prompter.ask(c.bold("you> "));
+      if (line === null) break;
+      const text = line.trim();
+      if (!text) continue;
+      const ok = await sendAndStream(ctx.io, client, bot, conversation, text, { json: false, prompter });
       if (!ok) failures++;
-      rl.resume();
     }
-    rl.prompt();
+  } finally {
+    prompter.close();
   }
   out(ctx.io);
   return failures > 0 ? 1 : 0;

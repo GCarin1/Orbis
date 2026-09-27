@@ -12,6 +12,11 @@ import type { BotService } from "./services/bots.js";
 import type { ConversationService } from "./services/conversations.js";
 import type { Timeline } from "./services/timeline.js";
 import type { BrainRegistry } from "./brains/types.js";
+import type { ApprovalService } from "./approvals/service.js";
+import type { DraftService } from "./approvals/drafts.js";
+import type { ToolGateway } from "./tools/gateway.js";
+import type { ToolRegistry } from "./tools/registry.js";
+import type { ApprovalsRepo } from "./repos/approvals.js";
 
 /** Where the engine looks up a bot's secret by name; the secrets capability registers the vault. */
 export class SecretResolvers {
@@ -41,6 +46,7 @@ export interface HubContext {
     runs: RunsRepo;
     sessions: BrainSessionsRepo;
     memory: MemoryRepo;
+    approvals: ApprovalsRepo;
   };
   brains: BrainRegistry;
   computer: ComputerManager;
@@ -49,4 +55,10 @@ export interface HubContext {
   botService: BotService;
   conversationService: ConversationService;
   secretResolvers: SecretResolvers;
+  tools: ToolRegistry;
+  approvals: ApprovalService;
+  drafts: DraftService;
+  gateway: ToolGateway;
+  /** The URL the hub listens on (known after listen), for CLI brains reaching /mcp. */
+  url(): string;
 }

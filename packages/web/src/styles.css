@@ -451,3 +451,120 @@ textarea {
     padding: 10px 16px;
   }
 }
+
+/* cards */
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.card-approval {
+  border-left-color: #a855f7;
+}
+.card-draft {
+  border-left-color: #0ea5e9;
+}
+.card-input {
+  background: var(--panel-2);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 0.8em;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 6px 0;
+}
+.card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+}
+.card-note {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+}
+.draft-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.draft-fields label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8em;
+  font-weight: 600;
+  gap: 2px;
+}
+.draft-fields input,
+.draft-fields textarea {
+  font-weight: 400;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+}
+.pill {
+  font-size: 0.72em;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--panel-2);
+  white-space: nowrap;
+}
+.pill-pending {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+.pill-approved,
+.pill-sent {
+  background: #dcfce7;
+  color: #15803d;
+}
+.pill-denied,
+.pill-failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.btn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.inbox {
+  padding: 4px 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.inbox h3 {
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 10px 8px 4px;
+}
+.inbox .count {
+  background: #a855f7;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 7px;
+  margin-left: 4px;
+}
+.inbox ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px;
+}
+.inbox-item {
+  padding: 6px 8px;
+  font-size: 0.88em;
+}
+.inbox-empty {
+  font-size: 0.82em;
+  padding: 0 8px 8px;
+  margin: 0;
+}

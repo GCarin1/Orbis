@@ -25,6 +25,8 @@ export function formatBot(ctx: CommandContext, bot: Bot): string {
   ].join("\n");
 }
 
+const splitList = (value: string) => value.split(",").map((v) => v.trim()).filter(Boolean);
+
 const brainOptions = {
   brain: { type: "string" },
   model: { type: "string" },
@@ -71,6 +73,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
           role: { type: "string" },
           description: { type: "string" },
           "spend-cap": { type: "string" },
+          tools: { type: "string" },
           ...brainOptions,
         },
         strict: true,
@@ -82,6 +85,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
         ...(values.role ? { role: values.role } : {}),
         ...(values.description ? { description: values.description } : {}),
         ...(values["spend-cap"] ? { spendCapUsd: Number(values["spend-cap"]) } : {}),
+        ...(values.tools ? { tools: splitList(values.tools) } : {}),
         ...(brainFrom(values) ? { brain: brainFrom(values) } : {}),
       });
       if (ctx.json) return json(ctx.io, bot), 0;
@@ -109,6 +113,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
           role: { type: "string" },
           description: { type: "string" },
           "spend-cap": { type: "string" },
+          tools: { type: "string" },
           pin: { type: "boolean" },
           unpin: { type: "boolean" },
           hide: { type: "boolean" },
@@ -126,6 +131,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
         ...(values.role !== undefined ? { role: values.role } : {}),
         ...(values.description !== undefined ? { description: values.description } : {}),
         ...(values["spend-cap"] !== undefined ? { spendCapUsd: values["spend-cap"] === "none" ? null : Number(values["spend-cap"]) } : {}),
+        ...(values.tools !== undefined ? { tools: splitList(values.tools) } : {}),
         ...(values.pin ? { pinned: true } : values.unpin ? { pinned: false } : {}),
         ...(values.hide ? { hidden: true } : values.unhide ? { hidden: false } : {}),
         ...(brain ? { brain } : {}),

@@ -9,6 +9,21 @@ change that delivered it.
 
 ### Added
 
+- Tool gateway and approvals (change 0002-tool-gateway-and-approvals):
+  - One account-level tool registry with JSON Schema validation, risk
+    classes, a per-bot allowlist (`Bot.tools`), the 20,000-character result
+    cap and `<untrusted-content>` envelopes; tools `team.list_bots`,
+    `conversation.post`, `draft.create` and `http.fetch` (GET/HEAD).
+  - MCP endpoint `POST /mcp` with per-run tokens and the stdio bridge
+    (`orbis mcp`, `dist/mcp-bridge.js`); Claude Code bots get the Orbis tools
+    and `--permission-prompt-tool mcp__orbis__approval_prompt`.
+  - Deterministic policy (locked deny → locked ask → grants → rules →
+    default), approval cards with allow once / always / deny, expiry when the
+    run ends, `GET/POST /api/v1/approvals`.
+  - Drafts with editable fields, Send (webhook POST or `outbox.jsonl`) and
+    Discard; `POST /api/v1/cards/:id/send|discard`.
+  - CLI: inline approvals in `orbis chat`, `orbis approvals`, `orbis mcp`.
+  - Web: approval and draft cards, approvals inbox.
 - Walking skeleton (change 0001-walking-skeleton):
   - Hub with SQLite storage, REST API under `/api/v1`, WebSocket stream,
     OpenAPI document, bearer-token auth and the web app served at `/`.

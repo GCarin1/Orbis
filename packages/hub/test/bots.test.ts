@@ -19,6 +19,7 @@ describe("bots", () => {
       role: "QA lead",
       description: "Never send without approval.",
       brain: { kind: "mock" },
+      tools: ["team.*", "http.fetch"],
       spendCapUsd: 5,
     });
     expect(res.status).toBe(201);
@@ -45,6 +46,7 @@ describe("bots", () => {
         handle: "ana-souza",
         description: "Never send without approval.",
         brain: { kind: "mock" },
+        tools: ["team.*", "http.fetch"],
         spendCapUsd: 5,
       });
     } finally {
@@ -58,6 +60,7 @@ describe("bots", () => {
       description: "Durable rules",
       policy: { rules: [{ tool: "computer.shell", decision: "deny", locked: true }], grants: ["http.fetch"] },
       computer: { enabled: true, provider: "local", hibernateAfterMin: 10 },
+      tools: ["computer.*"],
       skills: ["qa-report"],
     });
     t.hub.repos.memory.insert({
@@ -82,6 +85,7 @@ describe("bots", () => {
       description: "Durable rules",
       brain: source.brain,
       computer: source.computer,
+      tools: ["computer.*"],
       skills: ["qa-report"],
     });
     expect(copy.policy.rules).toEqual(source.policy.rules);

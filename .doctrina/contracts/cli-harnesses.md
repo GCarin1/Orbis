@@ -38,7 +38,7 @@ MCP server entry — ORBIS_URL and ORBIS_RUN_TOKEN.
 
 | Variable        | Origin | Workflow | Job/Step | Consumer                          |
 |-----------------|--------|----------|----------|-----------------------------------|
-| ORBIS_RUN_TOKEN | local  | —        | —        | packages/cli/src/commands/mcp.ts  |
+| ORBIS_RUN_TOKEN | local  | —        | —        | packages/hub/src/mcp/bridge.ts    |
 | ORBIS_URL       | local  | —        | —        | packages/cli/src/config.ts        |
 
 ## Budgets
@@ -52,12 +52,16 @@ MCP server entry — ORBIS_URL and ORBIS_RUN_TOKEN.
 
 Common to every harness: working directory = the bot's workspace; the
 prompt carries the bot identity, description, context and task as described
-in `specs/agent-runtimes`; the MCP server entry is
-`{ "command": "<node>", "args": ["<orbis cli entry>", "mcp"], "env": { "ORBIS_URL": "...", "ORBIS_RUN_TOKEN": "..." } }`.
+in `specs/agent-runtimes`; the MCP server entry is the hub's own stdio bridge
+script — the same code as `orbis mcp` —
+`{ "command": "<node>", "args": ["<@orbis/hub>/dist/mcp-bridge.js"], "env": { "ORBIS_URL": "<hub url>", "ORBIS_RUN_TOKEN": "<run token>" } }`.
+Orbis tools appear to the CLI with dots replaced by underscores
+(`team.handoff` → `team_handoff`; Claude Code shows `mcp__orbis__team_handoff`).
 
 ### claude-code (Claude Code, subscription login)
 
-- argv: `claude -p <prompt> --output-format stream-json --verbose --append-system-prompt <identity> --mcp-config <json> --strict-mcp-config --permission-prompt-tool mcp__orbis__approval_prompt [--model <model>] (--session-id <uuid> | --resume <uuid>)`.
+- argv: `claude -p <prompt> --output-format stream-json --verbose --append-system-prompt <identity> [--model <model>] --mcp-config '{"mcpServers":{"orbis":{"type":"stdio",...entry}}}' --strict-mcp-config --permission-prompt-tool mcp__orbis__approval_prompt (--session-id <uuid> | --resume <uuid>)`.
+- `approval_prompt` receives `{ tool_name, input, tool_use_id? }` and answers the text `{"behavior":"allow","updatedInput":<input>}` or `{"behavior":"deny","message":"..."}` after the Orbis policy (and the user, on `ask`) decided.
 - The first run of a bot in a conversation passes a new `--session-id`; later runs pass `--resume` with the stored id.
 - stdout: one JSON object per line. Mapping: `{"type":"system","subtype":"init"}` → `run.started` (session id kept); `{"type":"assistant"}` content blocks `text` → `step.text`, `thinking` → `step.thinking`, `tool_use` → `step.tool_call`; `{"type":"user"}` content blocks `tool_result` → `step.tool_result`; `{"type":"result"}` → `run.usage` from `usage` and `total_cost_usd` (subscription-covered), then `run.finished` with `result` as the reply, or `run.failed` when `is_error` is true. Every other `type` is ignored.
 

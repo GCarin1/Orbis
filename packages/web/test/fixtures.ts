@@ -11,6 +11,7 @@ export function bot(overrides: Partial<Bot> & { name: string }): Bot {
     brain: { kind: "mock" },
     policy: { rules: [], grants: [] },
     computer: { enabled: true },
+    tools: ["*"],
     skills: ["*"],
     spendCapUsd: null,
     capIncludesSubscription: false,

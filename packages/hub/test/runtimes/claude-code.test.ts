@@ -42,6 +42,7 @@ describe("claude-code brain", () => {
 
   it("runs through a fake Claude Code, stores the session and resumes it on the next run (criterion 4)", async () => {
     t = await testHub();
+    const hubUrl = await t.hub.listen();
     const bot = await createBot(t, { brain: fakeClaude });
     const conv = (await t.api("GET", `/api/v1/bots/${bot.id}/conversation`)).body;
 
@@ -58,6 +59,13 @@ describe("claude-code brain", () => {
     const argv1 = JSON.parse(readFileSync(path.join(workspace, "fake-claude-argv.json"), "utf8")) as string[];
     expect(argv1).toEqual(expect.arrayContaining(["-p", "--output-format", "stream-json", "--verbose", "--append-system-prompt", "--session-id"]));
     const session = argv1[argv1.indexOf("--session-id") + 1];
+    // Wired to the Orbis tool gateway through the stdio bridge, with a run token only.
+    const mcpConfig = JSON.parse(argv1[argv1.indexOf("--mcp-config") + 1]!);
+    expect(mcpConfig.mcpServers.orbis).toMatchObject({ type: "stdio", command: process.execPath, env: { ORBIS_URL: hubUrl } });
+    expect(mcpConfig.mcpServers.orbis.args[0]).toMatch(/mcp-bridge\.js$/);
+    expect(mcpConfig.mcpServers.orbis.env.ORBIS_RUN_TOKEN).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(argv1).toContain("--strict-mcp-config");
+    expect(argv1[argv1.indexOf("--permission-prompt-tool") + 1]).toBe("mcp__orbis__approval_prompt");
     expect(argv1[argv1.indexOf("--append-system-prompt") + 1]).toContain("You are Ana (@ana)");
 
     const second = await t.api("POST", `/api/v1/conversations/${conv.id}/messages`, { text: "and now?" });
@@ -97,5 +105,40 @@ describe("claude-code brain", () => {
     const posted = await t.api("POST", `/api/v1/conversations/${conv.id}/messages`, { text: "hi" });
     const run = await t.hub.engine.wait(posted.body.runs[0].id);
     expect(run.error).toMatch(/executable "definitely-not-claude-xyz" not found/);
+  });
+
+  it("answers Claude Code permission prompts with the Orbis policy through approval_prompt", async () => {
+    t = await testHub();
+    await t.hub.listen();
+    const bot = t.hub.botService.get((await createBot(t, { brain: fakeClaude })).id);
+    const conv = t.hub.conversationService.directFor(bot.id);
+    const run = t.hub.engine.enqueue({ botId: bot.id, conversationId: conv.id, trigger: { type: "api", ref: null }, input: "HANG" });
+    const session = t.hub.gateway.open(t.hub.repos.runs.get(run.id)!, bot, new AbortController().signal);
+    const token = session.mcp!.server.env.ORBIS_RUN_TOKEN!;
+    const call = (tool_name: string, input: unknown) =>
+      t!.hub.app.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${token}` },
+        payload: { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "approval_prompt", arguments: { tool_name, input } } },
+      });
+    const decision = async (res: Promise<{ body: string }>) => JSON.parse(JSON.parse((await res).body).result.content[0].text);
+
+    // Read maps to computer.read_file (default allow); Orbis's own tools are gated at execution.
+    expect(await decision(call("Read", { file_path: "a" }))).toEqual({ behavior: "allow", updatedInput: { file_path: "a" } });
+    expect(await decision(call("mcp__orbis__team_list_bots", {}))).toMatchObject({ behavior: "allow" });
+
+    // Bash maps to computer.shell, which asks by default: an approval card waits for the user.
+    const pending = decision(call("Bash", { command: "rm -rf build" }));
+    let approval;
+    for (let i = 0; i < 200 && !approval; i++) {
+      approval = t.hub.approvals.list("pending")[0];
+      if (!approval) await new Promise((r) => setTimeout(r, 10));
+    }
+    expect(approval).toMatchObject({ tool: "computer.shell", input: { claudeTool: "Bash", input: { command: "rm -rf build" } } });
+    t.hub.approvals.resolve(approval!.id, "deny", "use the Makefile");
+    expect(await pending).toEqual({ behavior: "deny", message: "The user denied computer.shell. Note from the user: use the Makefile" });
+    session.close();
+    t.hub.engine.cancel(run.id);
   });
 });

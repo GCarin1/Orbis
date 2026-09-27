@@ -1,6 +1,6 @@
 // Client state, fed by REST loads and the event stream.
 import { create } from "zustand";
-import type { Bot, Conversation, Run, Step, StreamEvent, TimelineItem } from "@orbis/shared";
+import type { Approval, ApprovalDecision, Bot, Conversation, DraftFields, Run, Step, StreamEvent, TimelineItem } from "@orbis/shared";
 import { Api } from "./api.js";
 
 export type RunView = Omit<Run, "steps"> & { steps: Step[] };
@@ -14,6 +14,7 @@ interface State {
   directByBot: Record<string, string>;
   items: Record<string, TimelineItem[]>;
   runs: Record<string, RunView>;
+  approvals: Record<string, Approval>;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -24,6 +25,10 @@ interface State {
   loadTimeline(conversationId: string): Promise<void>;
   send(conversationId: string, text: string): Promise<void>;
   createBot(input: object): Promise<Bot>;
+  loadApprovals(): Promise<void>;
+  answerApproval(id: string, decision: ApprovalDecision, note?: string): Promise<void>;
+  sendDraft(itemId: string, fields: Partial<DraftFields>): Promise<void>;
+  discardDraft(itemId: string): Promise<void>;
   apply(event: StreamEvent): void;
 }
 
@@ -45,6 +50,7 @@ export const useStore = create<State>((set, get) => ({
   directByBot: {},
   items: {},
   runs: {},
+  approvals: {},
   error: null,
 
   setApi: (api) => set({ api }),
@@ -101,8 +107,42 @@ export const useStore = create<State>((set, get) => ({
     return bot;
   },
 
+  async loadApprovals() {
+    const api = get().api;
+    if (!api) return;
+    const pending = await api.get<Approval[]>("/api/v1/approvals?status=pending");
+    set({ approvals: Object.fromEntries(pending.map((a) => [a.id, a])) });
+  },
+
+  async answerApproval(id, decision, note) {
+    const api = get().api;
+    if (!api) return;
+    const approval = await api.post<Approval>(`/api/v1/approvals/${id}`, { decision, ...(note ? { note } : {}) });
+    set((s) => ({ approvals: { ...s.approvals, [id]: approval } }));
+  },
+
+  async sendDraft(itemId, fields) {
+    const api = get().api;
+    if (!api) return;
+    const item = await api.post<TimelineItem>(`/api/v1/cards/${itemId}/send`, { fields });
+    set((s) => ({ items: { ...s.items, [item.conversationId]: upsertItem(s.items[item.conversationId], item) } }));
+  },
+
+  async discardDraft(itemId) {
+    const api = get().api;
+    if (!api) return;
+    const item = await api.post<TimelineItem>(`/api/v1/cards/${itemId}/discard`);
+    set((s) => ({ items: { ...s.items, [item.conversationId]: upsertItem(s.items[item.conversationId], item) } }));
+  },
+
   apply(event) {
     switch (event.type) {
+      case "approval.requested":
+      case "approval.resolved": {
+        const { approval } = event.data as { approval: Approval };
+        set((s) => ({ approvals: { ...s.approvals, [approval.id]: approval } }));
+        break;
+      }
       case "bot.state": {
         const { botId, state } = event.data as { botId: string; state: Bot["state"] };
         set((s) => (s.bots[botId] ? { bots: { ...s.bots, [botId]: { ...s.bots[botId]!, state } } } : {}));

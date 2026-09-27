@@ -81,6 +81,8 @@ export interface Bot {
   brain: Brain;
   policy: Policy;
   computer: ComputerConfig;
+  /** Tool allowlist (names or globs such as `computer.*`); `["*"]` offers every registered tool. */
+  tools: string[];
   /** Account skill allowlist; `["*"]` offers every account skill. */
   skills: string[];
   spendCapUsd: number | null;
@@ -204,4 +206,35 @@ export interface ApiErrorBody {
 
 export function emptyUsage(): Usage {
   return { inputTokens: 0, outputTokens: 0, cachedTokens: 0, costUsd: 0, subscription: false };
+}
+
+export type ApprovalStatus = "pending" | "approved" | "denied" | "expired";
+export type ApprovalDecision = "allow_once" | "allow_always" | "deny";
+
+export interface Approval {
+  id: string;
+  runId: string;
+  botId: string;
+  conversationId: string | null;
+  itemId: string | null;
+  tool: string;
+  /** Tool input with secret values masked. */
+  input: unknown;
+  reason: string | null;
+  status: ApprovalStatus;
+  decision: ApprovalDecision | null;
+  note: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export type DraftChannel = "email" | "chat" | "social" | "webhook";
+
+export interface DraftFields {
+  channel: DraftChannel;
+  to: string;
+  subject?: string;
+  body: string;
+  /** Destination of a `webhook` draft. */
+  url?: string;
 }

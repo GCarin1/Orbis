@@ -17,11 +17,23 @@ export default defineConfig({
       { extends: true, test: { name: "shared", include: ["packages/shared/test/**/*.test.ts"], environment: "node" } },
       {
         extends: true,
-        test: { name: "hub", include: ["packages/hub/test/**/*.test.ts"], environment: "node", testTimeout: 30_000 },
+        test: {
+          name: "hub",
+          include: ["packages/hub/test/**/*.test.ts"],
+          environment: "node",
+          testTimeout: 30_000,
+          globalSetup: ["tests/setup/build-hub.ts"],
+        },
       },
       {
         extends: true,
-        test: { name: "cli", include: ["packages/cli/test/**/*.test.ts"], environment: "node", testTimeout: 30_000 },
+        test: {
+          name: "cli",
+          include: ["packages/cli/test/**/*.test.ts"],
+          environment: "node",
+          testTimeout: 30_000,
+          globalSetup: ["tests/setup/build-hub.ts"],
+        },
       },
       {
         extends: true,

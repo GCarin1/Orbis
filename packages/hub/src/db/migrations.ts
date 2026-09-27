@@ -178,4 +178,8 @@ CREATE TABLE settings (
 );
 `,
   },
+  {
+    version: 2,
+    sql: `ALTER TABLE bots ADD COLUMN tools TEXT NOT NULL DEFAULT '["*"]';`,
+  },
 ];

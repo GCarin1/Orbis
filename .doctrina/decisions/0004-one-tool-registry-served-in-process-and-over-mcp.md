@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the tools-and-approvals change
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/hub/src/tools/registry.ts`, `packages/hub/src/tools/gateway.ts`, `packages/hub/src/mcp/protocol.ts`, `packages/hub/src/mcp/bridge.ts`
 
 ## Context
 

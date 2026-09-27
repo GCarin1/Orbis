@@ -14,7 +14,11 @@ export interface Captured {
   stderr: string;
 }
 
-export function makeIo(env: Record<string, string | undefined>, stdinText?: string): { io: Io; stdout: () => string; stderr: () => string } {
+export function makeIo(
+  env: Record<string, string | undefined>,
+  stdinText?: string,
+  interactive = false,
+): { io: Io; stdout: () => string; stderr: () => string } {
   const stdout = new PassThrough();
   const stderr = new PassThrough();
   const stdin = new PassThrough();
@@ -24,14 +28,19 @@ export function makeIo(env: Record<string, string | undefined>, stdinText?: stri
   stderr.on("data", (d) => (errText += d));
   if (stdinText !== undefined) stdin.end(stdinText);
   return {
-    io: { stdout, stderr, stdin, env, interactive: false, color: false },
+    io: { stdout, stderr, stdin, env, interactive, color: false },
     stdout: () => out,
     stderr: () => errText,
   };
 }
 
-export async function runCli(argv: string[], env: Record<string, string | undefined>, stdinText?: string): Promise<Captured> {
-  const { io, stdout, stderr } = makeIo(env, stdinText);
+export async function runCli(
+  argv: string[],
+  env: Record<string, string | undefined>,
+  stdinText?: string,
+  interactive = false,
+): Promise<Captured> {
+  const { io, stdout, stderr } = makeIo(env, stdinText, interactive);
   const code = await main(argv, io);
   return { code, stdout: stdout(), stderr: stderr() };
 }

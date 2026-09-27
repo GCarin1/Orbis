@@ -29,6 +29,15 @@ import { claudeCodeBrain } from "./brains/claude-code.js";
 import { customCliBrain } from "./brains/custom-cli.js";
 import { registerCoreRoutes } from "./api/routes.js";
 import { registerStream } from "./api/stream.js";
+import { registerApprovalRoutes } from "./api/approvals-routes.js";
+import { ApprovalsRepo } from "./repos/approvals.js";
+import { ApprovalService } from "./approvals/service.js";
+import { DraftService } from "./approvals/drafts.js";
+import { ToolRegistry } from "./tools/registry.js";
+import { ToolGateway } from "./tools/gateway.js";
+import { builtinTools } from "./tools/builtin.js";
+import { permissionTool } from "./tools/permission.js";
+import { registerMcp } from "./mcp/protocol.js";
 import { SecretResolvers, type HubContext } from "./context.js";
 
 export interface HubOptions {
@@ -116,6 +125,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     runs: new RunsRepo(db),
     sessions: new BrainSessionsRepo(db),
     memory: new MemoryRepo(db),
+    approvals: new ApprovalsRepo(db),
   };
   const brains = new BrainRegistry().register(mockBrain).register(claudeCodeBrain).register(customCliBrain);
   for (const adapter of opts.brains ?? []) brains.register(adapter);
@@ -147,6 +157,14 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     timeline,
     engine,
   });
+
+  const approvals = new ApprovalService({ repo: repos.approvals, bus, timeline, engine, botService });
+  const drafts = new DraftService(repos.items, timeline, config.dataDir);
+  const tools = new ToolRegistry();
+  let listeningUrl: string | null = null;
+  const url = () => listeningUrl ?? `http://${config.host}:${config.port}`;
+  const gateway = new ToolGateway(tools, approvals, url);
+  engine.setToolHost(gateway);
 
   // Runs left "running" by a previous process cannot resume: close them honestly.
   for (const run of repos.runs.list({ status: "running", limit: 500 })) {
@@ -211,11 +229,21 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     botService,
     conversationService,
     secretResolvers,
+    tools,
+    approvals,
+    drafts,
+    gateway,
+    url,
   };
+  for (const tool of builtinTools(ctx, drafts)) tools.register(tool);
+  tools.register(permissionTool(approvals, tools));
+  approvals.expireStale();
 
   app.get("/health", { schema: { hide: true } }, async () => ({ ok: true, version: config.version }));
   await registerCoreRoutes(app, ctx);
   await registerStream(app, ctx);
+  await registerApprovalRoutes(app, ctx);
+  await registerMcp(app, gateway);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -236,7 +264,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });
-      return address.replace("[::1]", "127.0.0.1");
+      listeningUrl = address.replace("[::1]", "127.0.0.1");
+      return listeningUrl;
     },
     async close() {
       if (closed) return;

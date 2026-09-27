@@ -35,10 +35,10 @@ are proven by tests.
 | Brains: `mock`, `claude-code` (session resume), `custom-cli` | ✅ |
 | Context assembly (identity, memories, recent conversation within budget) | ✅ |
 | REST API + WebSocket stream + OpenAPI, bearer token | ✅ |
-| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` | ✅ |
-| Web app: roster, timeline with run steps, pt-BR/English, installable | ✅ |
-| Tool gateway (MCP), approvals and drafts | next |
-| API brains, Codex, Gemini CLI, OpenAI-compatible endpoint | planned |
+| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `approvals`, `mcp` | ✅ |
+| Web app: roster, timeline with run steps, approval and draft cards, approvals inbox, pt-BR/English, installable | ✅ |
+| Tool gateway over MCP, approvals (once/always/deny), drafts with Send/Discard | ✅ verified |
+| API brains, Codex, Gemini CLI, OpenAI-compatible endpoint | next |
 | Groups, @mentions, handoff, memory tools | planned |
 | One computer per bot (local and Docker, browser, live view, takeover) | planned |
 | Skills, routines, secrets, usage caps, templates, desktop app | planned |
@@ -103,7 +103,8 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
   [`docs/api.md`](docs/api.md) and at `GET /api/v1/openapi.json`.
 
 More in [`docs/architecture.md`](docs/architecture.md),
-[`docs/brains.md`](docs/brains.md) and [`docs/cli.md`](docs/cli.md).
+[`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
+[`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration
 

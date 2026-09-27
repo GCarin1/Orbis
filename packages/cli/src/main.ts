@@ -7,6 +7,8 @@ import { botsCommand } from "./commands/bots.js";
 import { chatCommand } from "./commands/chat.js";
 import { serveCommand } from "./commands/serve.js";
 import { loginCommand, openCommand } from "./commands/login.js";
+import { approvalsCommand } from "./commands/approvals.js";
+import { mcpCommand } from "./commands/mcp.js";
 
 export const HELP = `orbis — persistent AI bots with their own computer, memory and approvals
 
@@ -17,6 +19,8 @@ Usage: orbis <command> [options]
   login [--url U] [--token T] [--show-token]   save or show how to reach the hub
   bots list|create|show|edit|delete|duplicate  manage bots
   chat @bot [message]                          talk to a bot (interactive without a message)
+  approvals [list|allow <id> [--always]|deny <id> [--note N]]   answer what bots wait for
+  mcp                                          stdio MCP bridge to the hub (needs ORBIS_RUN_TOKEN)
 
 Global options:
   --url <url>      hub URL (else ORBIS_URL, ~/.config/orbis/config.json, http://127.0.0.1:7420)
@@ -34,6 +38,9 @@ const COMMANDS: Record<string, Command> = {
   bots: botsCommand,
   bot: botsCommand,
   chat: chatCommand,
+  approvals: approvalsCommand,
+  approval: approvalsCommand,
+  mcp: mcpCommand,
 };
 
 export function registerCommand(name: string, command: Command): void {

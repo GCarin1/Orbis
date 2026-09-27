@@ -1,5 +1,5 @@
 // Stream events (hub → client) from `.doctrina/contracts/hub-surface.md` § Stream.
-import type { Bot, BotState, Conversation, Run, Step, TimelineItem } from "./types.js";
+import type { Approval, Bot, BotState, Conversation, Run, Step, TimelineItem } from "./types.js";
 
 export interface StreamEventMap {
   "bot.state": { botId: string; state: BotState };
@@ -9,8 +9,8 @@ export interface StreamEventMap {
   "timeline.item": { conversationId: string; item: TimelineItem };
   "run.updated": { run: Omit<Run, "steps"> };
   "run.step": { runId: string; conversationId: string | null; botId: string; step: Step };
-  "approval.requested": { approval: Record<string, unknown> & { conversationId?: string | null } };
-  "approval.resolved": { approval: Record<string, unknown> & { conversationId?: string | null } };
+  "approval.requested": { approval: Approval };
+  "approval.resolved": { approval: Approval };
   pong: Record<string, never>;
 }
 

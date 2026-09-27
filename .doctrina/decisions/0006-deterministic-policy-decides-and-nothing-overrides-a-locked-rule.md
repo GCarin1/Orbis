@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the tools-and-approvals change
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/hub/src/approvals/policy.ts`, `packages/hub/src/approvals/service.ts`, `packages/hub/test/approvals/policy.test.ts`
 
 ## Context
 

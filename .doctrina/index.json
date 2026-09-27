@@ -15,9 +15,9 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: the mock brain, the claude-code and custom-cli adapters without tools, the scrubbed environment and run failure are verified since change 0001; MCP wiring lands in change 0002, API brains, codex, gemini-cli and the health check in the brains change",
+        "implementation": "planned — in progress: the mock brain, the claude-code adapter wired to the tool gateway, custom-cli, the scrubbed environment and run failure are verified; API brains, codex, gemini-cli and the health check land in the brains change",
         "realizes": [
           "SC2"
         ],
@@ -31,9 +31,9 @@
         "id": "approvals",
         "path": ".doctrina/specs/approvals/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the tools-and-approvals change (product.md delivery order 2)",
+        "implementation": "verified",
         "realizes": [
           "SC5"
         ],
@@ -46,7 +46,7 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -57,9 +57,9 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: configuration, serve, bots and chat are verified since change 0001; inline approvals and the remaining command groups land with their capabilities",
+        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, approvals and mcp are verified; the skills, routines, usage, group and runtimes command groups land with their capabilities",
         "realizes": [
           "SC7"
         ],
@@ -224,9 +224,9 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the tools-and-approvals change (product.md delivery order 2)",
+        "implementation": "planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes and the result cap are verified since change 0002; the tools of handoff, memory, computer, browser, skills, routines and secrets register with their changes",
         "realizes": [
           "SC2",
           "SC3"
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: roster, direct chat, languages and the end-to-end path are verified since change 0001; cards, groups, composer autocomplete, settings and computer screens land with their capabilities",
+        "implementation": "planned — in progress: roster, direct chat, approval and draft cards, the approvals inbox, languages and the end-to-end path are verified; groups, composer autocomplete, settings and computer screens land with their capabilities",
         "realizes": [
           "SC7",
           "SC4",
@@ -314,6 +314,7 @@
         "title": "One tool registry served in-process and over MCP",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `packages/hub/src/tools/registry.ts`, `packages/hub/src/tools/gateway.ts`, `packages/hub/src/mcp/protocol.ts`, `packages/hub/src/mcp/bridge.ts`",
         "scope": [
           "tool-gateway",
           "agent-runtimes",
@@ -340,6 +341,7 @@
         "title": "Deterministic policy decides and nothing overrides a locked rule",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `packages/hub/src/approvals/policy.ts`, `packages/hub/src/approvals/service.ts`, `packages/hub/test/approvals/policy.test.ts`",
         "scope": [
           "approvals",
           "tool-gateway",
@@ -409,6 +411,40 @@
           },
           {
             "capability": "memory",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0002-tool-gateway-and-approvals",
+        "title": "tool gateway and approvals",
+        "path": ".doctrina/changes/archive/2026-09-27-0002-tool-gateway-and-approvals",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "approvals",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
             "operation": "MODIFIED"
           },
           {

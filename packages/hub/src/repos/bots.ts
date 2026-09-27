@@ -20,6 +20,7 @@ function toBot(r: Row): Bot {
     brain: json<Brain>(r.brain, { kind: "mock" }),
     policy: json<Policy>(r.policy, { rules: [], grants: [] }),
     computer: json<ComputerConfig>(r.computer, { enabled: true }),
+    tools: json<string[]>(r.tools, ["*"]),
     skills: json<string[]>(r.skills, ["*"]),
     spendCapUsd: r.spend_cap_usd === null ? null : Number(r.spend_cap_usd),
     capIncludesSubscription: r.cap_includes_subscription === 1,
@@ -62,9 +63,9 @@ export class BotsRepo {
   insert(bot: Bot): void {
     run(
       this.db,
-      `INSERT INTO bots (id, handle, name, role, description, avatar_color, brain, policy, computer, skills,
+      `INSERT INTO bots (id, handle, name, role, description, avatar_color, brain, policy, computer, tools, skills,
          spend_cap_usd, cap_includes_subscription, pinned, hidden, state, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       bot.id,
       bot.handle,
       bot.name,
@@ -74,6 +75,7 @@ export class BotsRepo {
       JSON.stringify(bot.brain),
       JSON.stringify(bot.policy),
       JSON.stringify(bot.computer),
+      JSON.stringify(bot.tools),
       JSON.stringify(bot.skills),
       bot.spendCapUsd,
       bot.capIncludesSubscription ? 1 : 0,
@@ -90,7 +92,7 @@ export class BotsRepo {
     run(
       this.db,
       `UPDATE bots SET handle = ?, name = ?, role = ?, description = ?, avatar_color = ?, brain = ?, policy = ?,
-         computer = ?, skills = ?, spend_cap_usd = ?, cap_includes_subscription = ?, pinned = ?, hidden = ?,
+         computer = ?, tools = ?, skills = ?, spend_cap_usd = ?, cap_includes_subscription = ?, pinned = ?, hidden = ?,
          updated_at = ?
        WHERE id = ?`,
       bot.handle,
@@ -101,6 +103,7 @@ export class BotsRepo {
       JSON.stringify(bot.brain),
       JSON.stringify(bot.policy),
       JSON.stringify(bot.computer),
+      JSON.stringify(bot.tools),
       JSON.stringify(bot.skills),
       bot.spendCapUsd,
       bot.capIncludesSubscription ? 1 : 0,

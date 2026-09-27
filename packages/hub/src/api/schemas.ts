@@ -56,6 +56,7 @@ const botFields = {
   brain: Type.Optional(BrainSchema),
   policy: Type.Optional(PolicySchema),
   computer: Type.Optional(ComputerSchema),
+  tools: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 200 }), { maxItems: 200 })),
   skills: Type.Optional(Type.Array(Type.String({ maxLength: 64 }), { maxItems: 200 })),
   spendCapUsd: Type.Optional(Type.Union([Type.Number({ minimum: 0 }), Type.Null()])),
   capIncludesSubscription: Type.Optional(Type.Boolean()),

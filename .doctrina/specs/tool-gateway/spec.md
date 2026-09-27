@@ -2,11 +2,11 @@
 
 **Capability:** tool-gateway
 **Status:** active
-**Implementation:** planned — built by the tools-and-approvals change (product.md delivery order 2)
+**Implementation:** planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes and the result cap are verified since change 0002; the tools of handoff, memory, computer, browser, skills, routines and secrets register with their changes
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -35,19 +35,21 @@ call through the approvals policy and marks outside content as untrusted.
 - When an MCP client sends `tools/list` with a run token, the system shall answer with the tools allowed for that run's bot only.
 - When an MCP client sends `tools/call` with a run token, the system shall execute the call as the run's bot inside that run.
 - When a run ends, the system shall revoke its run token.
+- When an MCP client sends a GET request to `/mcp`, the system shall answer 405 because the endpoint offers no server-sent stream.
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not execute a tool that is outside the calling bot's allowlist; it shall return an error result naming the tool instead.
 - The system shall not accept an MCP request whose run token is missing, unknown or revoked; it shall answer 401.
+- The system shall not send a request body or use a method other than GET or HEAD through `http.fetch`, so that data leaves Orbis only through a draft the user sends.
 
 ## Acceptance criteria
 
-1. [unverified] The registry lists every tool with its schema and risk class, and a bot with a restricted allowlist sees only its allowed tools — verified by `packages/hub/test/tools/registry.test.ts`.
-2. [unverified] A call to a tool outside the allowlist returns an error result and executes nothing — verified by `packages/hub/test/tools/registry.test.ts`.
-3. [unverified] `http.fetch` output arrives wrapped in `<untrusted-content>`, and a result longer than 20,000 characters is cut with a truncation marker — verified by `packages/hub/test/tools/registry.test.ts`.
-4. [unverified] `/mcp` answers `initialize`, `tools/list` and `tools/call` for a valid run token and 401 for a revoked one — verified by `packages/hub/test/tools/mcp.test.ts`.
-5. [unverified] The `orbis mcp` stdio bridge forwards `tools/list` and `tools/call` to the hub and prints the responses on stdout — verified by `packages/cli/test/mcp-bridge.test.ts`.
+1. [verified] The registry lists every tool with its schema and risk class, and a bot with a restricted allowlist sees only its allowed tools — verified by `packages/hub/test/tools/registry.test.ts`.
+2. [verified] A call to a tool outside the allowlist returns an error result and executes nothing — verified by `packages/hub/test/tools/registry.test.ts`.
+3. [verified] `http.fetch` output arrives wrapped in `<untrusted-content>`, and a result longer than 20,000 characters is cut with a truncation marker — verified by `packages/hub/test/tools/registry.test.ts`.
+4. [verified] `/mcp` answers `initialize`, `tools/list` and `tools/call` for a valid run token and 401 for a revoked one — verified by `packages/hub/test/tools/mcp.test.ts`.
+5. [verified] The `orbis mcp` stdio bridge forwards `tools/list` and `tools/call` to the hub and prints the responses on stdout — verified by `packages/cli/test/mcp-bridge.test.ts`.
 
 ## Maturity
 

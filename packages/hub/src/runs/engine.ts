@@ -29,7 +29,7 @@ export interface EnqueueRequest {
 
 /** What the tool gateway provides to a run (change 0002 replaces the default). */
 export interface RunToolHost {
-  open(run: Run, bot: Bot): { tools: ToolBridge; mcp: McpWiring | null; close(): void };
+  open(run: Run, bot: Bot, signal: AbortSignal): { tools: ToolBridge; mcp: McpWiring | null; close(): void };
 }
 
 export const NO_TOOL_HOST: RunToolHost = {
@@ -176,6 +176,15 @@ export class RunEngine {
     return run;
   }
 
+  /** A run starts or stops waiting for the user (an approval or a secret request). */
+  markWaiting(runId: string, waiting: boolean): void {
+    const run = this.d.runs.get(runId);
+    if (!run || !["running", "waiting"].includes(run.status)) return;
+    this.d.runs.setStatus(runId, waiting ? "waiting" : "running");
+    this.publishRun(runId);
+    this.setBotState(run.botId, waiting ? "waiting" : "working");
+  }
+
   setBotState(botId: string, state: BotState): void {
     const bot = this.d.bots.get(botId);
     if (!bot || bot.state === state) return;
@@ -244,7 +253,7 @@ export class RunEngine {
     let reply: string | null = null;
     let lastText: string | null = null;
     let failure: string | null = null;
-    const host = this.toolHost.open(run, bot);
+    const host = this.toolHost.open(run, bot, controller.signal);
 
     const pushStep = (step: Step) => {
       steps.push(step);

@@ -4,6 +4,7 @@ import type { Bot, Step, TimelineItem } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import type { RunView } from "../store.js";
 import { Avatar } from "./Avatar.js";
+import { CardView } from "./Cards.js";
 
 function StepLine({ step }: { step: Step }) {
   switch (step.type) {
@@ -75,11 +76,7 @@ export function Timeline({
           );
         }
         if (item.kind === "card") {
-          return (
-            <div key={item.id} className={`card card-${item.card?.type}`} data-testid="card">
-              <strong>{item.card?.type}</strong> {item.text}
-            </div>
-          );
+          return <CardView key={item.id} item={item} bot={bots[item.author.id ?? ""]} />;
         }
         const bot = item.author.type === "bot" ? bots[item.author.id ?? ""] : undefined;
         const mine = item.author.type === "user";

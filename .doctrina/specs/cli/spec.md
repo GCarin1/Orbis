@@ -2,11 +2,11 @@
 
 **Capability:** cli
 **Status:** active
-**Implementation:** planned — in progress: configuration, serve, bots and chat are verified since change 0001; inline approvals and the remaining command groups land with their capabilities
+**Implementation:** planned — in progress: configuration, serve, bots, chat with inline approvals, approvals and mcp are verified; the skills, routines, usage, group and runtimes command groups land with their capabilities
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -41,7 +41,7 @@ It talks to the hub only through the public API.
 1. [verified] Flags beat environment variables, which beat the config file — verified by `packages/cli/test/config.test.ts`.
 2. [verified] `orbis chat @<handle> "hi"` against a test hub prints the mock bot's reply and exits 0 — verified by `packages/cli/test/chat.test.ts`.
 3. [verified] `orbis bots create` then `orbis bots list --json` prints the new bot as JSON — verified by `packages/cli/test/bots.test.ts`.
-4. [unverified] During `orbis chat`, a pending approval is answered from the prompt and the run completes — verified by `packages/cli/test/chat.test.ts`.
+4. [verified] During `orbis chat`, a pending approval is answered from the prompt and the run completes — verified by `packages/cli/test/chat.test.ts`.
 
 ## Maturity
 

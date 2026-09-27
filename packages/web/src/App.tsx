@@ -9,6 +9,7 @@ import { NewBotDialog } from "./components/NewBotDialog.js";
 import { Roster } from "./components/Roster.js";
 import { Timeline } from "./components/Timeline.js";
 import { TokenGate } from "./components/TokenGate.js";
+import { ApprovalsInbox } from "./components/ApprovalsInbox.js";
 
 export function App() {
   const t = useT();
@@ -22,6 +23,7 @@ export function App() {
   useEffect(() => {
     if (!token) return;
     store.setApi(new Api(token));
+    void useStore.getState().loadApprovals().catch(() => undefined);
     void useStore.getState().loadBots().catch((err: unknown) => {
       if ((err as { status?: number }).status === 401) {
         saveToken(null);
@@ -34,6 +36,7 @@ export function App() {
       onReconnect: () => {
         const s = useStore.getState();
         void s.loadBots();
+        void s.loadApprovals();
         const conv = s.selectedBotId ? s.directByBot[s.selectedBotId] : undefined;
         if (conv) void s.loadTimeline(conv);
       },
@@ -73,6 +76,7 @@ export function App() {
           <span>Orbis</span>
           <LanguageSwitch />
         </header>
+        <ApprovalsInbox approvals={Object.values(store.approvals)} bots={store.bots} onOpen={(id) => void store.selectBot(id)} />
         <Roster bots={bots} selectedId={store.selectedBotId} onSelect={(id) => void store.selectBot(id)} onNew={() => setCreating(true)} />
       </aside>
       <main className="main">
