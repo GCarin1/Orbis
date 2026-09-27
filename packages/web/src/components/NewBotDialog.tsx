@@ -8,7 +8,7 @@ export interface NewBotInput {
   name: string;
   role: string;
   description: string;
-  brain: { kind: BrainKind; model?: string; command?: string };
+  brain: { kind: BrainKind; model?: string; command?: string; baseUrl?: string };
 }
 
 export function NewBotDialog({ onCreate, onCancel }: { onCreate(input: NewBotInput): Promise<void>; onCancel(): void }) {
@@ -19,6 +19,7 @@ export function NewBotDialog({ onCreate, onCancel }: { onCreate(input: NewBotInp
   const [kind, setKind] = useState<BrainKind>("claude-code");
   const [model, setModel] = useState("");
   const [command, setCommand] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,7 +39,12 @@ export function NewBotDialog({ onCreate, onCancel }: { onCreate(input: NewBotInp
               name: name.trim(),
               role: role.trim(),
               description,
-              brain: { kind, ...(model.trim() ? { model: model.trim() } : {}), ...(command.trim() ? { command: command.trim() } : {}) },
+              brain: {
+                kind,
+                ...(model.trim() ? { model: model.trim() } : {}),
+                ...(command.trim() ? { command: command.trim() } : {}),
+                ...(baseUrl.trim() && (kind === "openai" || kind === "anthropic") ? { baseUrl: baseUrl.trim() } : {}),
+              },
             });
           } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -74,6 +80,12 @@ export function NewBotDialog({ onCreate, onCancel }: { onCreate(input: NewBotInp
           <label>
             {t("newbot.model")}
             <input value={model} onChange={(e) => setModel(e.target.value)} name="model" />
+          </label>
+        )}
+        {(kind === "openai" || kind === "anthropic") && (
+          <label>
+            {t("newbot.baseUrl")}
+            <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={kind === "openai" ? "http://localhost:11434/v1" : ""} name="baseUrl" />
           </label>
         )}
         {kind === "custom-cli" && (

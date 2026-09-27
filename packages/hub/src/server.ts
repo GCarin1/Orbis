@@ -27,6 +27,12 @@ import { BrainRegistry, type BrainAdapter } from "./brains/types.js";
 import { mockBrain } from "./brains/mock.js";
 import { claudeCodeBrain } from "./brains/claude-code.js";
 import { customCliBrain } from "./brains/custom-cli.js";
+import { anthropicBrain } from "./brains/anthropic.js";
+import { openaiBrain } from "./brains/openai.js";
+import { codexBrain } from "./brains/codex.js";
+import { geminiBrain } from "./brains/gemini.js";
+import { runtimeHealth } from "./brains/health.js";
+import { registerOpenAiCompat } from "./api/openai-compat.js";
 import { registerCoreRoutes } from "./api/routes.js";
 import { registerStream } from "./api/stream.js";
 import { registerApprovalRoutes } from "./api/approvals-routes.js";
@@ -127,7 +133,10 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     memory: new MemoryRepo(db),
     approvals: new ApprovalsRepo(db),
   };
-  const brains = new BrainRegistry().register(mockBrain).register(claudeCodeBrain).register(customCliBrain);
+  const brains = new BrainRegistry();
+  for (const adapter of [mockBrain, anthropicBrain, openaiBrain, claudeCodeBrain, codexBrain, geminiBrain, customCliBrain]) {
+    brains.register(adapter);
+  }
   for (const adapter of opts.brains ?? []) brains.register(adapter);
 
   const computer = new ComputerManager(config.dataDir, opts.computerProviders ?? []);
@@ -244,6 +253,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerStream(app, ctx);
   await registerApprovalRoutes(app, ctx);
   await registerMcp(app, gateway);
+  await registerOpenAiCompat(app, ctx);
+  app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {

@@ -33,14 +33,14 @@ fecha quando os critérios de aceite são provados por testes.
 |------------|--------|
 | Bots (identidade, regras, avatar, estado, fixar/ocultar/duplicar/apagar) | ✅ verificado |
 | Conversas diretas, threads, reações, fila de execuções, stream ao vivo | ✅ |
-| Cérebros: `mock`, `claude-code` (retoma a sessão), `custom-cli` | ✅ |
+| Cérebros: `claude-code`, `codex`, `gemini-cli` (assinaturas, retomam a sessão), `anthropic` (SDK oficial), `openai`-compatível (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verificado |
 | Montagem de contexto (identidade, memórias, conversa recente dentro do orçamento) | ✅ |
 | API REST + stream WebSocket + OpenAPI, token bearer | ✅ |
-| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `approvals`, `mcp` | ✅ |
+| CLI `orbis`: `serve`, `login`, `open`, `bots`, `chat` (aprovação inline), `approvals`, `runtimes`, `mcp` | ✅ |
 | App web: roster, timeline com passos, cards de aprovação e rascunho, caixa de aprovações, pt-BR/inglês, instalável | ✅ |
 | Gateway de ferramentas via MCP, aprovações (uma vez/sempre/negar), rascunhos com Enviar/Descartar | ✅ verificado |
-| Cérebros por API, Codex, Gemini CLI, endpoint compatível com OpenAI | próximo |
-| Grupos, @menções, handoff, ferramentas de memória | planejado |
+| `/v1/chat/completions` compatível com OpenAI (fale com qualquer bot de qualquer cliente OpenAI) | ✅ |
+| Grupos, @menções, handoff, ferramentas de memória | próximo |
 | Um computador por bot (local e Docker, navegador, tela ao vivo, assumir controle) | planejado |
 | Skills, rotinas, segredos, teto de gasto, templates, app desktop | planejado |
 

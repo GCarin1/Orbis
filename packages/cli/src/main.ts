@@ -9,6 +9,7 @@ import { serveCommand } from "./commands/serve.js";
 import { loginCommand, openCommand } from "./commands/login.js";
 import { approvalsCommand } from "./commands/approvals.js";
 import { mcpCommand } from "./commands/mcp.js";
+import { runtimesCommand } from "./commands/runtimes.js";
 
 export const HELP = `orbis — persistent AI bots with their own computer, memory and approvals
 
@@ -20,6 +21,7 @@ Usage: orbis <command> [options]
   bots list|create|show|edit|delete|duplicate  manage bots
   chat @bot [message]                          talk to a bot (interactive without a message)
   approvals [list|allow <id> [--always]|deny <id> [--note N]]   answer what bots wait for
+  runtimes check                               which subscription CLIs (claude, codex, gemini) are installed
   mcp                                          stdio MCP bridge to the hub (needs ORBIS_RUN_TOKEN)
 
 Global options:
@@ -41,6 +43,7 @@ const COMMANDS: Record<string, Command> = {
   approvals: approvalsCommand,
   approval: approvalsCommand,
   mcp: mcpCommand,
+  runtimes: runtimesCommand,
 };
 
 export function registerCommand(name: string, command: Command): void {

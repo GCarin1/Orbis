@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** n/a — no implementation yet; land with the brains change
-- **Landed:** —
+- **Landed:** 2026-09-27 — `packages/hub/src/brains/types.ts`, `packages/hub/src/runs/engine.ts`, `packages/hub/src/brains/anthropic.ts`, `packages/hub/src/brains/claude-code.ts`
 
 ## Context
 

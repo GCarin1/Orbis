@@ -2,11 +2,11 @@
 
 **Capability:** cli
 **Status:** active
-**Implementation:** planned — in progress: configuration, serve, bots, chat with inline approvals, approvals and mcp are verified; the skills, routines, usage, group and runtimes command groups land with their capabilities
+**Implementation:** planned — in progress: configuration, serve, bots, chat with inline approvals, approvals, runtimes and mcp are verified; the skills, routines, usage and group command groups land with their capabilities
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.3.1
 
 ## Purpose
 

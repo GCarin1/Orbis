@@ -2,11 +2,11 @@
 
 **Capability:** agent-runtimes
 **Status:** active
-**Implementation:** planned — in progress: the mock brain, the claude-code adapter wired to the tool gateway, custom-cli, the scrubbed environment and run failure are verified; API brains, codex, gemini-cli and the health check land in the brains change
+**Implementation:** verified
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -28,6 +28,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall run the CLI brains (`claude-code`, `codex`, `gemini-cli`, `custom-cli`) as child processes whose working directory is the bot's computer workspace and which authenticate with the CLI's own login, with no API key supplied by Orbis.
 - The system shall connect every CLI brain that supports MCP to the Orbis tool gateway through the `orbis mcp` stdio bridge, authenticated with a run token, so that CLI brains and API brains reach the same tools.
 - The system shall run the `mock` brain deterministically from its input, with no network access, for tests and demos.
+- The system shall use `claude-opus-5` for an `anthropic` brain that names no model, with adaptive thinking on the models that support it.
 
 ### Event-driven
 
@@ -37,11 +38,13 @@ brain are owned by `contracts/cli-harnesses`.
 - When Claude Code asks for permission to use one of its built-in tools, the system shall decide through `specs/approvals` by serving the MCP tool named in `--permission-prompt-tool`.
 - When a brain process exits with a non-zero status, or a run exceeds its timeout (default 15 minutes), the system shall stop the process, mark the run failed with the error text and set the bot state to `blocked`.
 - When a user requests the brain health check, the system shall report for each CLI brain whether its executable is found on PATH and the version it prints.
+- When an `anthropic` brain runs `claude-opus-5`, `claude-opus-5-5` or `claude-fable-5-1` against the first-party API, the system shall request the server-side refusal fallback (`fallbacks: "default"`).
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not pass ORBIS_TOKEN, ORBIS_MASTER_KEY, any bot's secret values or any other bot's run token in the environment of a brain process.
 - The system shall not start a run whose brain configuration is incomplete (executable not found, missing base URL for `openai`, missing API key for a remote API); it shall fail the run at once with a message naming the missing piece.
+- The system shall not execute tool calls from an API brain turn that stopped on `refusal`, or on `max_tokens` while holding a tool call; the run fails naming the reason.
 
 ### Optional
 
@@ -51,13 +54,13 @@ brain are owned by `contracts/cli-harnesses`.
 ## Acceptance criteria
 
 1. [verified] The mock brain emits `run.started`, `step.text` and `run.finished` in that order for a plain message, and a `step.tool_call`/`step.tool_result` pair when the message asks for a tool — verified by `packages/hub/test/runtimes/mock.test.ts`.
-2. [unverified] The anthropic adapter, run against a fake Messages API server, executes a `tool_use` block through the gateway, returns a `tool_result`, emits the final text and records input and output tokens — verified by `packages/hub/test/runtimes/anthropic.test.ts`.
-3. [unverified] The openai adapter, run against a fake Chat Completions server with streaming, executes a function call through the gateway and emits the final text and usage — verified by `packages/hub/test/runtimes/openai.test.ts`.
+2. [verified] The anthropic adapter, run against a fake Messages API server, executes a `tool_use` block through the gateway, returns a `tool_result`, emits the final text and records input and output tokens — verified by `packages/hub/test/runtimes/anthropic.test.ts`.
+3. [verified] The openai adapter, run against a fake Chat Completions server with streaming, executes a function call through the gateway and emits the final text and usage — verified by `packages/hub/test/runtimes/openai.test.ts`.
 4. [verified] The claude-code adapter builds argv with `-p`, `--output-format stream-json`, `--mcp-config`, `--permission-prompt-tool` and, on the second run, `--resume <session>`, and turns a fake executable's stream-json output into normalized events — verified by `packages/hub/test/runtimes/claude-code.test.ts`.
-5. [unverified] The codex, gemini-cli and custom-cli adapters turn their fake executables' output into normalized events — verified by `packages/hub/test/runtimes/cli-harnesses.test.ts`.
+5. [verified] The codex, gemini-cli and custom-cli adapters turn their fake executables' output into normalized events — verified by `packages/hub/test/runtimes/cli-harnesses.test.ts`.
 6. [verified] A CLI brain's environment holds no ORBIS_TOKEN, no ORBIS_MASTER_KEY and no secret value — verified by `packages/hub/test/runtimes/cli-harnesses.test.ts`.
 7. [verified] A brain that exits non-zero or outlives its timeout fails the run and sets the bot to `blocked` — verified by `packages/hub/test/runs.test.ts`.
-8. [unverified] The health check reports found and missing executables with their versions — verified by `packages/hub/test/runtimes/health.test.ts`.
+8. [verified] The health check reports found and missing executables with their versions — verified by `packages/hub/test/runtimes/health.test.ts`.
 
 ## Maturity
 

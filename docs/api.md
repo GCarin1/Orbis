@@ -51,3 +51,28 @@ everything). Events: `bot.state`, `bot.updated`, `bot.deleted`,
 `conversation.updated`, `timeline.item`, `run.updated`, `run.step`,
 `approval.requested`, `approval.resolved`. Account-wide events (`bot.*`,
 `approval.*`) reach every subscriber.
+
+## OpenAI-compatible endpoint
+
+Any OpenAI client can talk to a bot: the model is `orbis:<handle>`, the key is
+the Orbis token, and the message lands in the bot's direct conversation (you
+see it in the web app too).
+
+```python
+import os
+from openai import OpenAI
+client = OpenAI(base_url="http://127.0.0.1:7420/v1", api_key=open(os.path.expanduser("~/.orbis/token")).read().strip())
+reply = client.chat.completions.create(model="orbis:ana", messages=[{"role": "user", "content": "status of the release?"}])
+print(reply.choices[0].message.content)
+```
+
+`GET /v1/models` lists one `orbis:<handle>` model per visible bot. With
+`stream: true` the reply arrives as `chat.completion.chunk` server-sent events
+ending in `data: [DONE]` (a `: working` comment every 10 seconds keeps
+connections alive while the bot works). An unknown model answers 404
+`model_not_found`; a failed run answers 502 `run_failed`.
+
+## Runtimes
+
+`GET /api/v1/runtimes/health` → `[{ kind, executable, found, path, version }]`
+for `claude-code`, `codex` and `gemini-cli`.

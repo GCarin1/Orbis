@@ -26,7 +26,7 @@ on stdin/stdout, and reaches the hub through the `orbis mcp` stdio bridge.
 | Variable        | Required | Values | Example                |
 |-----------------|----------|--------|------------------------|
 | ORBIS_RUN_TOKEN | no       | —      | set by the hub per run |
-| ORBIS_URL       | no       | —      | http://127.0.0.1:7420  |
+| ORBIS_URL       | no       | —      | the hub URL, per run   |
 
 The hub builds each harness environment from scratch: PATH, HOME, LANG, TERM,
 USER, the harness's own login variables that already exist in the hub's
@@ -67,7 +67,8 @@ Orbis tools appear to the CLI with dots replaced by underscores
 
 ### codex (OpenAI Codex CLI, ChatGPT login)
 
-- argv: `codex exec --json --skip-git-repo-check --sandbox workspace-write --cd <workspace> [-m <model>] -c mcp_servers.orbis.command=<json> -c mcp_servers.orbis.args=<json> -c mcp_servers.orbis.env=<toml inline table> <prompt>`; resume: `codex exec resume <thread-id> --json ... <prompt>`.
+- argv: `codex exec --json --skip-git-repo-check --sandbox workspace-write --cd <workspace> [-m <model>] -c mcp_servers.orbis.command=<json string> -c mcp_servers.orbis.args=<json array> -c mcp_servers.orbis.env={KEY="value",...} <prompt>`; resume keeps every `exec` option before the subcommand: `codex exec <options> resume <thread-id> <prompt>`.
+- The first run sends the whole prompt (identity, context, task); a resumed run sends only the recent conversation and the task.
 - stdout: one JSON object per line. Mapping: `thread.started` → `run.started` (thread id kept); `item.completed` with `item.type` `agent_message` → `step.text`, `reasoning` → `step.thinking`, `command_execution` → `step.tool_call` + `step.tool_result` (command, aggregated output, exit code), `mcp_tool_call` → `step.tool_call` + `step.tool_result`, `file_change` → `step.tool_result`; `turn.completed` → `run.usage` from `usage`; `turn.failed` or `error` → `run.failed`. The last `agent_message` is the reply.
 
 ### gemini-cli (Google Gemini CLI, Google login)
@@ -75,7 +76,9 @@ Orbis tools appear to the CLI with dots replaced by underscores
 - The hub writes `<workspace>/.gemini/settings.json` with `{ "mcpServers": { "orbis": { ...server entry, "trust": true } } }` before each run.
 - argv: `gemini -p <prompt> --output-format stream-json [-m <model>]`.
 - stdout: one JSON object per line. Mapping: `init` → `run.started`; `message` with role `assistant` → `step.text` (deltas concatenated); `tool_use` → `step.tool_call`; `tool_result` → `step.tool_result`; `result` → `run.usage` from `stats` then `run.finished`; `error` → `run.failed`.
-- Fallback: when the first stdout line is not JSON Lines, the whole stdout is read as `--output-format json` (`{ response, stats, error? }`).
+- Assistant text before a `tool_use` becomes a `step.text`; the reply is the assistant text after the last tool call.
+- Fallback: when no stdout line is a JSON object with a `type`, the whole stdout is read as `--output-format json` (`{ response, stats, error? }`).
+- The settings file is restored (or removed) when the run ends, so the run token does not stay in the workspace.
 
 ### custom-cli (any command)
 

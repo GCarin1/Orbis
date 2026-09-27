@@ -15,6 +15,7 @@ orbis chat @bot [message]
 orbis approvals [list [--all]]
 orbis approvals allow <id> [--always]
 orbis approvals deny <id> [--note TEXT]
+orbis runtimes check            # claude / codex / gemini installed? which version?
 orbis mcp                       # stdio MCP bridge; needs ORBIS_RUN_TOKEN
 ```
 

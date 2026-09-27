@@ -9,6 +9,20 @@ change that delivered it.
 
 ### Added
 
+- API and CLI brains (change 0003-api-and-cli-brains):
+  - `anthropic` brain on the official `@anthropic-ai/sdk`: streaming tool loop
+    through the gateway, `claude-opus-5` default, adaptive thinking, prompt
+    caching, server-side refusal fallback on first-party Opus 5 / Opus 5.5 /
+    Fable 5.1, refusal and truncated-tool-call handling, usage and cost.
+  - `openai` brain for any OpenAI-compatible server (OpenAI, OpenRouter,
+    Ollama, LM Studio, vLLM) with streamed function calling; no key on
+    localhost.
+  - `codex` (ChatGPT subscription, thread resume) and `gemini-cli` (Google
+    account, workspace MCP settings restored after each run) brains.
+  - `GET /api/v1/runtimes/health` and `orbis runtimes check`.
+  - OpenAI-compatible `GET /v1/models` and `POST /v1/chat/completions`
+    (JSON and server-sent events) with `orbis:<handle>` models.
+  - Web: base URL field for API brains.
 - Tool gateway and approvals (change 0002-tool-gateway-and-approvals):
   - One account-level tool registry with JSON Schema validation, risk
     classes, a per-bot allowlist (`Bot.tools`), the 20,000-character result

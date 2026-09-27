@@ -15,9 +15,9 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: the mock brain, the claude-code adapter wired to the tool gateway, custom-cli, the scrubbed environment and run failure are verified; API brains, codex, gemini-cli and the health check land in the brains change",
+        "implementation": "verified",
         "realizes": [
           "SC2"
         ],
@@ -57,9 +57,9 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.3.1",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, approvals and mcp are verified; the skills, routines, usage, group and runtimes command groups land with their capabilities",
+        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, approvals, runtimes and mcp are verified; the skills, routines, usage and group command groups land with their capabilities",
         "realizes": [
           "SC7"
         ],
@@ -133,9 +133,9 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: auth, validation, OpenAPI and the stream are verified since change 0001; the OpenAI-compatible endpoint lands in the brains change",
+        "implementation": "verified",
         "realizes": [
           "SC7"
         ],
@@ -301,6 +301,7 @@
         "title": "Two brain families behind one normalized event stream",
         "status": "accepted",
         "date": "2026-09-27",
+        "landed": "2026-09-27 — `packages/hub/src/brains/types.ts`, `packages/hub/src/runs/engine.ts`, `packages/hub/src/brains/anthropic.ts`, `packages/hub/src/brains/claude-code.ts`",
         "scope": [
           "agent-runtimes",
           "usage",
@@ -449,6 +450,28 @@
           },
           {
             "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0003-api-and-cli-brains",
+        "title": "api and cli brains",
+        "path": ".doctrina/changes/archive/2026-09-27-0003-api-and-cli-brains",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "hub-api",
             "operation": "MODIFIED"
           }
         ],

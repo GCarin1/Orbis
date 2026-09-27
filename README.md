@@ -32,14 +32,14 @@ are proven by tests.
 |------------|-------|
 | Bots (identity, rules, avatar, state, pin/hide/duplicate/delete) | ✅ verified |
 | Direct conversations, threads, reactions, run queue, live stream | ✅ |
-| Brains: `mock`, `claude-code` (session resume), `custom-cli` | ✅ |
+| Brains: `claude-code`, `codex`, `gemini-cli` (subscriptions, session resume), `anthropic` (official SDK), `openai`-compatible (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verified |
 | Context assembly (identity, memories, recent conversation within budget) | ✅ |
 | REST API + WebSocket stream + OpenAPI, bearer token | ✅ |
-| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `approvals`, `mcp` | ✅ |
+| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `approvals`, `runtimes`, `mcp` | ✅ |
 | Web app: roster, timeline with run steps, approval and draft cards, approvals inbox, pt-BR/English, installable | ✅ |
 | Tool gateway over MCP, approvals (once/always/deny), drafts with Send/Discard | ✅ verified |
-| API brains, Codex, Gemini CLI, OpenAI-compatible endpoint | next |
-| Groups, @mentions, handoff, memory tools | planned |
+| OpenAI-compatible `/v1/chat/completions` (talk to any bot from any OpenAI client) | ✅ |
+| Groups, @mentions, handoff, memory tools | next |
 | One computer per bot (local and Docker, browser, live view, takeover) | planned |
 | Skills, routines, secrets, usage caps, templates, desktop app | planned |
 

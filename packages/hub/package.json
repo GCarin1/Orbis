@@ -15,8 +15,11 @@
   "bin": {
     "orbis-hub": "./dist/main.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "@fastify/static": "^10.1.5",
     "@fastify/swagger": "^9.9.0",
     "@fastify/type-provider-typebox": "^6.1.0",

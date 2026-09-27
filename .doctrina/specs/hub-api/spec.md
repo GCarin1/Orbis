@@ -2,11 +2,11 @@
 
 **Capability:** hub-api
 **Status:** active
-**Implementation:** planned — in progress: auth, validation, OpenAPI and the stream are verified since change 0001; the OpenAI-compatible endpoint lands in the brains change
+**Implementation:** verified
 **Realizes:** SC7
 **Depends on:** bots, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -40,7 +40,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 
 1. [verified] A request without a token answers 401, `/health` answers 200 without one, and `/api/v1/openapi.json` lists the bot routes — verified by `packages/hub/test/api.test.ts`.
 2. [verified] A malformed bot body answers 400 naming the failing field — verified by `packages/hub/test/api.test.ts`.
-3. [unverified] `/v1/chat/completions` with `orbis:<handle>` answers the bot's reply in the OpenAI shape, and with `stream: true` as server-sent chunks ending in `[DONE]` — verified by `packages/hub/test/openai-compat.test.ts`.
+3. [verified] `/v1/chat/completions` with `orbis:<handle>` answers the bot's reply in the OpenAI shape, and with `stream: true` as server-sent chunks ending in `[DONE]` — verified by `packages/hub/test/openai-compat.test.ts`.
 4. [verified] A stream client subscribed to one conversation receives that conversation's items and not another's — verified by `packages/hub/test/stream.test.ts`.
 
 ## Maturity
