@@ -54,6 +54,10 @@ interface State {
   discardDraft(itemId: string): Promise<void>;
   answerSecret(itemId: string, answer: { value: string } | { decline: true }): Promise<void>;
   loadComputer(botId: string): Promise<void>;
+  updateBot(botId: string, patch: object): Promise<Bot>;
+  duplicateBot(botId: string): Promise<Bot>;
+  deleteBot(botId: string): Promise<void>;
+  importBot(yaml: string): Promise<Bot>;
   loadOfferedSkills(botId: string): Promise<void>;
   loadRoutines(botId: string): Promise<void>;
   createRoutine(botId: string, input: { name: string; trigger: RoutineTrigger; instruction: string; approval: RoutineApproval }): Promise<Routine & { secret: string }>;
@@ -196,6 +200,33 @@ export const useStore = create<State>((set, get) => ({
     if (!api) return;
     const item = await api.post<TimelineItem>(`/api/v1/cards/${itemId}/discard`);
     set((s) => ({ items: { ...s.items, [item.conversationId]: upsertItem(s.items[item.conversationId], item) } }));
+  },
+
+  async updateBot(botId, patch) {
+    const bot = await get().api!.patch<Bot>(`/api/v1/bots/${botId}`, patch);
+    set((s) => ({ bots: { ...s.bots, [bot.id]: bot } }));
+    return bot;
+  },
+
+  async duplicateBot(botId) {
+    const bot = await get().api!.post<Bot>(`/api/v1/bots/${botId}/duplicate`);
+    set((s) => ({ bots: { ...s.bots, [bot.id]: bot } }));
+    return bot;
+  },
+
+  async deleteBot(botId) {
+    await get().api!.delete(`/api/v1/bots/${botId}`);
+    set((s) => {
+      const bots = { ...s.bots };
+      delete bots[botId];
+      return { bots, selectedBotId: s.selectedBotId === botId ? null : s.selectedBotId };
+    });
+  },
+
+  async importBot(yaml) {
+    const bot = await get().api!.post<Bot>("/api/v1/bots/import", { yaml });
+    set((s) => ({ bots: { ...s.bots, [bot.id]: bot } }));
+    return bot;
   },
 
   async loadComputer(botId) {

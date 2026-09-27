@@ -48,7 +48,8 @@ are proven by tests.
 | One computer per bot: `local` and `docker` providers, shell and file tools confined to the workspace, Playwright browser on a per-bot profile, hibernation, live view (screenshot or noVNC), takeover | ✅ verified |
 | Skills (SKILL.md, `/name`, Claude Code skills folder) and routines (cron in a timezone, signed webhooks, draft-only tests, absence pause) | ✅ verified |
 | Secrets (per-bot AES-256-GCM vault, `{{secret:NAME}}` resolved only in the tool gateway, redaction, secret-request cards) and usage (per bot and month, price table, spend caps) | ✅ verified |
-| Templates, desktop app | next |
+| Bot templates (YAML export with a secret scan, import with routines disabled) and the bot settings screen | ✅ verified |
+| Desktop app | next |
 
 The status of each capability is always current in
 `npx doctrina status` and in each spec's `Implementation:` header.
@@ -113,7 +114,7 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
 More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
-[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md),
 [`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration

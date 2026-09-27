@@ -24,7 +24,7 @@ Usage: orbis <command> [options]
   serve [--port N] [--host H] [--data-dir D]   run the hub (API, stream, web app)
   open                                         open the web app in your browser
   login [--url U] [--token T] [--show-token]   save or show how to reach the hub
-  bots list|create|show|edit|delete|duplicate  manage bots
+  bots list|create|show|edit|delete|duplicate|export|import   manage bots; share one as a YAML template
   chat @bot [message]                          talk to a bot (interactive without a message)
   group list|create|chat|add|remove|delete     group conversations of 2 to 6 bots
   memory list|add|edit|rm (@bot | --team)      what a bot or the whole team remembers

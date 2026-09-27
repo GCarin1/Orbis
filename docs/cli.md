@@ -11,6 +11,8 @@ orbis bots show @bot
 orbis bots edit @bot [same options as create] [--pin|--unpin] [--hide|--unhide]
 orbis bots duplicate @bot
 orbis bots delete @bot --yes
+orbis bots export @bot [--out FILE]               # a YAML template; refused if it looks like it holds a credential
+orbis bots import <FILE|->                        # a new bot; its routines start disabled
 orbis chat @bot [message]
 orbis group list
 orbis group create "<title>" @a @b [...] [--lead @a]      # 2 to 6 bots

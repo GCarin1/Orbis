@@ -1,4 +1,5 @@
-// `orbis bots list|create|show|edit|delete|duplicate`
+// `orbis bots list|create|show|edit|delete|duplicate|export|import`
+import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { BRAIN_KINDS, type Bot, type BrainKind } from "@orbis/shared";
 import type { CommandContext } from "../context.js";
@@ -169,7 +170,31 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
       out(ctx.io, `Deleted ${positionals[0]}`);
       return 0;
     }
+    case "export": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { out: { type: "string" } }, strict: true });
+      if (!positionals[0]) throw new UsageError("bots export needs a bot: orbis bots export @ana [--out ana.orbis.yaml]");
+      const yaml = await client.get<string>(`${botPath(positionals[0])}/export`);
+      if (values.out) {
+        writeFileSync(values.out, yaml);
+        out(ctx.io, `Wrote ${values.out} (no memory, history or secrets inside).`);
+      } else {
+        ctx.io.stdout.write(yaml);
+      }
+      return 0;
+    }
+    case "import": {
+      const { positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true });
+      const file = positionals[0];
+      if (!file) throw new UsageError("bots import needs a template file (or - for stdin): orbis bots import ana.orbis.yaml");
+      let yaml = "";
+      if (file === "-") for await (const chunk of ctx.io.stdin) yaml += chunk;
+      else yaml = readFileSync(file, "utf8");
+      const bot = await client.post<Bot>("/api/v1/bots/import", { yaml });
+      if (ctx.json) return json(ctx.io, bot), 0;
+      out(ctx.io, `Imported ${bot.name} as @${bot.handle}. Its routines start disabled: test and enable them (orbis routines list @${bot.handle}).`);
+      return 0;
+    }
     default:
-      throw new UsageError(`unknown bots subcommand "${sub}" (list, create, show, edit, delete, duplicate)`);
+      throw new UsageError(`unknown bots subcommand "${sub}" (list, create, show, edit, delete, duplicate, export, import)`);
   }
 }

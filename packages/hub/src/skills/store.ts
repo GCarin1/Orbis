@@ -75,6 +75,11 @@ export class SkillStore {
     }
   }
 
+  /** Parse and validate a SKILL.md document without saving it. */
+  parse(content: string): ParsedSkill {
+    return parseSkill(content);
+  }
+
   /** Skills of one scope (account when botId is null), by name. */
   list(botId: string | null): Skill[] {
     const root = this.root(botId);

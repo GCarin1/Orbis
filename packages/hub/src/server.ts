@@ -21,6 +21,7 @@ import { SkillService } from "./skills/service.js";
 import { RoutineService } from "./routines/service.js";
 import { SecretService } from "./secrets/service.js";
 import { UsageService } from "./usage/service.js";
+import { TemplateService } from "./templates/service.js";
 import { openDatabase, type Database } from "./db/index.js";
 import { HttpError, unauthorized } from "./errors.js";
 import { BotsRepo } from "./repos/bots.js";
@@ -298,6 +299,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   engine.addHooks(routines.hooks());
   gateway.onBeforeCall(routines.draftOnlyHook());
   routines.start();
+  const templates = new TemplateService(ctx, skillService, routines);
   // While the user holds a bot's computer, its tool calls wait (specs/computer: takeover).
   gateway.onBeforeCall(async ({ run, bot, signal }) => {
     if (!computer.holdsTakeover(bot.id)) return;
@@ -323,6 +325,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await routines.routes(app);
   await secrets.routes(app);
   await usage.routes(app);
+  await templates.routes(app);
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 

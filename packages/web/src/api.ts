@@ -63,6 +63,22 @@ export class Api {
   get<T>(path: string) {
     return this.request<T>("GET", path);
   }
+  /** A text resource (a YAML template). */
+  async text(path: string): Promise<string> {
+    const res = await fetch(this.base + path, { headers: { authorization: `Bearer ${this.token}` } });
+    const body = await res.text();
+    if (!res.ok) {
+      let parsed: ApiErrorBody | null = null;
+      try {
+        parsed = JSON.parse(body) as ApiErrorBody;
+      } catch {
+        parsed = null;
+      }
+      throw new ApiError(res.status, parsed);
+    }
+    return body;
+  }
+
   /** A binary resource (screenshots), or null on 404. */
   async blob(path: string): Promise<Blob | null> {
     const res = await fetch(this.base + path, { headers: { authorization: `Bearer ${this.token}` } });

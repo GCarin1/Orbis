@@ -31,6 +31,9 @@ curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana        # by handle or id
 curl -s -X PATCH -H "$H" -H 'content-type: application/json' -d '{"pinned":true}' http://127.0.0.1:7420/api/v1/bots/ana
 curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/duplicate
 curl -s -X DELETE -H "$H" http://127.0.0.1:7420/api/v1/bots/ana   # destroys memory, secrets, computer
+curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/export > ana.orbis.yaml   # a template (templates.md)
+curl -s -H "$H" -H 'content-type: application/json' -d "$(jq -n --rawfile y ana.orbis.yaml '{yaml: $y}')" \
+  http://127.0.0.1:7420/api/v1/bots/import
 ```
 
 ## Talking to a bot

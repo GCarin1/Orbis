@@ -49,7 +49,8 @@ fecha quando os critérios de aceite são provados por testes.
 | Um computador por bot: provedores `local` e `docker`, shell e arquivos confinados ao workspace, navegador Playwright com perfil próprio, hibernação, tela ao vivo (screenshot ou noVNC), assumir controle | ✅ verificado |
 | Skills (SKILL.md, `/nome`, pasta de skills do Claude Code) e rotinas (cron com fuso horário, webhooks assinados, testes só-rascunho, pausa por ausência) | ✅ verificado |
 | Segredos (cofre AES-256-GCM por bot, `{{secret:NOME}}` resolvido só no gateway de ferramentas, mascaramento, cards de pedido de segredo) e uso (por bot e mês, tabela de preços, teto de gasto) | ✅ verificado |
-| Templates, app desktop | próximo |
+| Templates de bot (exportação YAML com varredura de segredos, importação com rotinas desativadas) e a tela de configurações do bot | ✅ verificado |
+| App desktop | próximo |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
 no cabeçalho `Implementation:` de cada spec.
@@ -103,7 +104,7 @@ API (`~/.orbis/token`) e o workspace de cada bot.
 Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
-[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md),
 [`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração

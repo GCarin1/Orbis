@@ -2,11 +2,11 @@
 
 **Capability:** cli
 **Status:** active
-**Implementation:** planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, skills, routines, secrets, usage, approvals, runtimes and mcp are verified; bots export|import land with templates
+**Implementation:** verified — every command group listed above, `bots export|import` included
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -48,6 +48,7 @@ It talks to the hub only through the public API.
 5. [verified] `orbis group create` then `orbis group chat` prints the reply of the mentioned member, and `orbis memory add --team` then `orbis memory list --team --json` prints the entry — verified by `packages/cli/test/collab.test.ts`.
 6. [verified] `orbis skills add|list|show|remove` manage account and bot skills and a `/skill` chat runs with the skill; `orbis routines add|test|enable|runs|remove` drive a routine from creation to enabled — verified by `packages/cli/test/skills-routines.test.ts`.
 7. [verified] `orbis secrets set` stores a value piped on stdin and `orbis secrets list` shows names only; `orbis usage` prints this month's runs, cost and cap per bot and the total — verified by `packages/cli/test/secrets-usage.test.ts`.
+8. [verified] `orbis bots export` writes a template (to stdout or `--out`), `orbis bots import` creates a new bot from a file or stdin, and an export holding a GitHub token fails naming its line — verified by `packages/cli/test/templates.test.ts`.
 
 ## Maturity
 

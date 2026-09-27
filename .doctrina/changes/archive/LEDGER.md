@@ -11,3 +11,4 @@ One line per archived change, newest last. Appended by
 - 2026-09-27 — 0006-brand — brand
 - 2026-09-27 — 0007-skills-and-routines — skills-and-routines (specs: approvals MODIFIED, cli MODIFIED, routines MODIFIED, skills MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-09-27 — 0008-secrets-and-usage — secrets-and-usage (specs: cli MODIFIED, secrets MODIFIED, tool-gateway MODIFIED, usage MODIFIED, web-app MODIFIED)
+- 2026-09-27 — 0009-templates-and-settings — templates-and-settings (specs: cli MODIFIED, templates MODIFIED, web-app MODIFIED)

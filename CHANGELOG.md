@@ -9,6 +9,16 @@ change that delivered it.
 
 ### Added
 
+- Templates and bot settings (change 0009-templates-and-settings):
+  `GET /api/v1/bots/:id/export` writes a `BotTemplate` YAML (identity,
+  brain without credentials, policy, computer, allowlists, the bot's own
+  skills, routines; never memory, history or secrets) after a secret scan
+  that names each suspicious line; `POST /api/v1/bots/import` creates a new
+  bot with its routines disabled; `orbis bots export|import`; the web bot
+  settings panel (identity, brain, policy rules and grants, computer,
+  allowlists, spend cap, export, duplicate, delete) and template import in
+  the new-bot dialog.
+
 - Secrets and usage (change 0008-secrets-and-usage; lands ADR 0008):
   - Per-bot AES-256-GCM vault (ORBIS_MASTER_KEY or a generated 0600
     `master.key`, bot and name authenticated with each value), REST routes,

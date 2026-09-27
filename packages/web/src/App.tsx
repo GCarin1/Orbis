@@ -13,6 +13,7 @@ import { ApprovalsInbox } from "./components/ApprovalsInbox.js";
 import { GroupList, NewGroupDialog } from "./components/Groups.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
 import { RoutinesPanel } from "./components/RoutinesPanel.js";
+import { BotSettings } from "./components/BotSettings.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
 import type { SkillOption } from "./components/Composer.js";
@@ -27,7 +28,7 @@ export function App() {
   const [creating, setCreating] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   // One side panel at a time beside a direct conversation.
-  const [panel, setPanel] = useState<"computer" | "routines" | null>(null);
+  const [panel, setPanel] = useState<"computer" | "routines" | "settings" | null>(null);
   const computerOpen = panel === "computer";
   const setComputerOpen = (open: boolean) => setPanel(open ? "computer" : null);
   const [view, setView] = useState<"chat" | "skills" | "usage">("chat");
@@ -203,6 +204,9 @@ export function App() {
                 <button className="btn" aria-pressed={panel === "routines"} onClick={() => setPanel(panel === "routines" ? null : "routines")}>
                   ⏰ {t("routines.open")}
                 </button>
+                <button className="btn" aria-pressed={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+                  ⚙ {t("settings.open")}
+                </button>
                 <button className="btn conv-computer" aria-pressed={computerOpen} onClick={() => setComputerOpen(!computerOpen)}>
                   🖥 {t("computer.open")}
                   {store.computers[selected.id]?.status === "running" && <span className="dot-running" aria-hidden="true" />}
@@ -220,6 +224,30 @@ export function App() {
           <p className="muted empty">{t("conv.empty")}</p>
         )}
       </main>
+      {selected && panel === "settings" && !group && view === "chat" && store.api && (
+        <BotSettings
+          key={selected.id}
+          bot={selected}
+          onSave={async (patch) => void (await store.updateBot(selected.id, patch))}
+          onExport={async () => {
+            const yaml = await store.api!.text(`/api/v1/bots/${selected.id}/export`);
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([yaml], { type: "text/yaml" }));
+            link.download = `${selected.handle}.orbis.yaml`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+          }}
+          onDuplicate={async () => {
+            const copy = await store.duplicateBot(selected.id);
+            await store.selectBot(copy.id);
+          }}
+          onDelete={async () => {
+            await store.deleteBot(selected.id);
+            setPanel(null);
+          }}
+          onClose={() => setPanel(null)}
+        />
+      )}
       {selected && panel === "routines" && !group && view === "chat" && (
         <RoutinesPanel
           bot={selected}
@@ -257,6 +285,11 @@ export function App() {
       )}
       {creating && (
         <NewBotDialog
+          onImport={async (yaml) => {
+            const bot = await store.importBot(yaml);
+            setCreating(false);
+            await store.selectBot(bot.id);
+          }}
           onCancel={() => setCreating(false)}
           onCreate={async (input) => {
             const bot = await store.createBot(input);

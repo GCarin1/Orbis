@@ -11,7 +11,15 @@ export interface NewBotInput {
   brain: { kind: BrainKind; model?: string; command?: string; baseUrl?: string };
 }
 
-export function NewBotDialog({ onCreate, onCancel }: { onCreate(input: NewBotInput): Promise<void>; onCancel(): void }) {
+export function NewBotDialog({
+  onCreate,
+  onImport,
+  onCancel,
+}: {
+  onCreate(input: NewBotInput): Promise<void>;
+  onImport?(yaml: string): Promise<void>;
+  onCancel(): void;
+}) {
   const t = useT();
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -92,6 +100,26 @@ export function NewBotDialog({ onCreate, onCancel }: { onCreate(input: NewBotInp
           <label>
             {t("newbot.command")}
             <input value={command} onChange={(e) => setCommand(e.target.value)} required name="command" />
+          </label>
+        )}
+        {onImport && (
+          <label className="import-field">
+            {t("newbot.import")}
+            <input
+              type="file"
+              accept=".yaml,.yml,text/yaml"
+              name="template"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setError(null);
+                try {
+                  await onImport(await file.text());
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : String(err));
+                }
+              }}
+            />
           </label>
         )}
         {error && <p className="error">{error}</p>}

@@ -57,9 +57,9 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, skills, routines, secrets, usage, approvals, runtimes and mcp are verified; bots export|import land with templates",
+        "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
           "SC7"
         ],
@@ -208,9 +208,9 @@
         "id": "templates",
         "path": ".doctrina/specs/templates/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the templates change (product.md delivery order 6)",
+        "implementation": "verified — template export, secret scan and import (`packages/hub/src/templates/`)",
         "realizes": [
           "SC10"
         ],
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft, handoff, routine and secret-request cards, thread replies, the approvals inbox, @ and / autocomplete, the skills, usage and routines screens, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the bot settings screen lands with templates",
+        "implementation": "verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer and bot settings screens, approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
           "SC7",
           "SC4",
@@ -607,6 +607,28 @@
           }
         ],
         "lane": "product (triage read \"secrets\" as a runtime signal; the secrets and usage requirements are unimplemented)"
+      },
+      {
+        "id": "0009-templates-and-settings",
+        "title": "templates-and-settings",
+        "path": ".doctrina/changes/archive/2026-09-27-0009-templates-and-settings",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "templates",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [

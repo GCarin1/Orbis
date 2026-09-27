@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** planned — in progress: roster, groups, direct and group chat, approval, draft, handoff, routine and secret-request cards, thread replies, the approvals inbox, @ and / autocomplete, the skills, usage and routines screens, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the bot settings screen lands with templates
+**Implementation:** verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer and bot settings screens, approvals inbox, languages, PWA and the end-to-end paths
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -49,6 +49,8 @@ run's steps.
 10. [verified] In a real browser, a user writes a skill in the skills screen, invokes it with the `/` autocomplete, and creates, tests and enables a routine whose cards appear in the conversation — verified by `tests/e2e/skills-routines.test.ts`.
 11. [verified] The secret-request card posts the masked value to the vault route (or declines), and the usage screen shows runs, tokens, cost, the subscription part and the cap per bot — verified by `packages/web/test/secrets-usage.test.tsx`.
 12. [verified] In a real browser, a user answers a bot's secret request in the masked card, the bot's command uses the value, and the value appears nowhere on the page — verified by `tests/e2e/secrets.test.ts`.
+13. [verified] The bot settings panel edits identity, brain, policy rules and grants, computer, allowlists and the spend cap in one patch, and asks before deleting — verified by `packages/web/test/settings.test.tsx`.
+14. [verified] In a real browser, a user edits a bot's settings, exports it as a template file and imports that file as a new bot — verified by `tests/e2e/templates.test.ts`.
 
 ## Maturity
 
