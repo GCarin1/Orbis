@@ -1,0 +1,17 @@
+{
+  "name": "orbis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted, open-source team of persistent AI bots with their own computer, memory, skills, routines and approvals — driven by API models or by agent CLIs you already subscribe to.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "doctrina": "doctrina"
+  },
+  "devDependencies": {
+    "doctrina-cli": "^0.17.0"
+  }
+}

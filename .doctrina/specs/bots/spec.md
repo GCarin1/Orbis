@@ -1,0 +1,70 @@
+# Spec — bots
+
+**Capability:** bots
+**Status:** active
+**Implementation:** planned — built by the walking skeleton change (product.md delivery order 1)
+**Realizes:** SC1
+**Last updated:** 2026-09-27
+**Version:** 0.1.0
+
+## Purpose
+
+A bot is a durable AI colleague: a named identity with a role, durable rules,
+an avatar, a brain configuration, a tool policy, a computer configuration, a
+skill allowlist and a spend cap. This capability owns the bot record, its
+lifecycle (create, edit, duplicate, pin, hide, delete) and its visible state.
+Everything else in Orbis hangs off a bot.
+
+## Requirements (EARS)
+
+### Ubiquitous
+
+- The system shall store each bot with an id, a unique handle, a name, a role label, a description that holds its durable rules, an avatar made of initials and a color, a brain configuration, a tool policy, a computer configuration, a skill allowlist and a monthly spend cap in USD.
+- The system shall derive a new bot's handle from its name as a lowercase slug of 2 to 32 characters from `[a-z0-9-]`, appending `-2`, `-3` and so on when the handle is taken.
+- The system shall place the bot's name, role and description in every prompt sent to its brain, ahead of the task of the moment.
+- The system shall expose each bot's state as exactly one of `idle`, `thinking`, `working`, `waiting`, `blocked` or `done`.
+- The system shall persist bots in the hub database so that a bot and its settings survive a hub restart.
+
+### Event-driven
+
+- When a user duplicates a bot, the system shall create a new bot with the same name suffixed " (copy)", role, description, avatar color, brain, policy, computer configuration and skill allowlist, a new handle, and no memory, conversations, computer state or secrets.
+- When a user deletes a bot, the system shall delete its memory entries, routines, secrets, runs and direct conversation, remove it from every group, and ask the computer provider to destroy its computer.
+- When a user pins or hides a bot, the system shall store the flag, and the roster listing shall return pinned bots first and leave hidden bots out unless the request asks for hidden bots.
+- When a run of a bot starts, calls a brain, executes a tool, waits for the user, fails or finishes, the system shall set the bot state to `thinking`, `thinking`, `working`, `waiting`, `blocked` or `done` respectively and broadcast a `bot.state` event.
+- When the user marks the bot's direct conversation as read while the bot is `done`, the system shall set the bot state to `idle`.
+
+### Unwanted-behavior (must-not)
+
+- The system shall not create a bot when the installation already holds the maximum number of bots (ORBIS_MAX_BOTS, default 50).
+- The system shall not accept a handle that another bot already uses, that equals `everyone`, or that falls outside `[a-z0-9-]{2,32}`.
+
+### Optional
+
+- Where a new bot has no avatar color, the system may derive the color deterministically from a hash of its role label.
+
+## Acceptance criteria
+
+1. [unverified] Creating a bot through `POST /api/v1/bots` answers 201 with id, handle, initials and color, and a new hub instance opened on the same data directory lists the same bot with the same settings — verified by `packages/hub/test/bots.test.ts`.
+2. [unverified] Duplicating a bot copies identity, description, brain, policy, computer configuration and skill allowlist, and the copy has a new handle and no memory entries or secrets — verified by `packages/hub/test/bots.test.ts`.
+3. [unverified] Deleting a bot removes its memory entries, routines, secrets and direct conversation and calls the computer provider's destroy for that bot — verified by `packages/hub/test/bots.test.ts`.
+4. [unverified] Creating a bot beyond ORBIS_MAX_BOTS answers 409, and the handles `everyone`, `A` and a duplicate handle answer 400 or 409 — verified by `packages/hub/test/bots.test.ts`.
+5. [unverified] The roster lists pinned bots first and leaves hidden bots out unless `includeHidden=true` — verified by `packages/hub/test/bots.test.ts`.
+6. [unverified] A run moves the bot through `thinking`, `working`, `done` and broadcasts one `bot.state` event per transition — verified by `packages/hub/test/runs.test.ts`.
+
+## Maturity
+
+**MVP (committed):**
+
+- Bot record, handle rules, CRUD, duplicate, pin, hide, delete with cascade.
+- State machine and `bot.state` events.
+
+**Future (aspirational, not committed):**
+
+- Teams and departments above roles, with per-team defaults.
+- Avatar image upload.
+- An audit bot that reports duplicated roles and bots with no owner.
+
+## Out of scope for this spec
+
+- What a brain does with the prompt (see `specs/agent-runtimes`).
+- The computer's own lifecycle beyond the destroy call (see `specs/computer`).

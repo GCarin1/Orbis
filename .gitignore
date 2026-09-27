@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.orbis/
+.orbis-test/
+coverage/
+.env
+.DS_Store
+packages/desktop/out/
+packages/web/dev-dist/
+test-results/
+playwright-report/

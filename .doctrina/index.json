@@ -1,0 +1,396 @@
+{
+  "$schema_version": "0.1.0",
+  "project": "Orbis",
+  "framework_version": "0.17.0",
+  "last_updated": "2026-09-27",
+  "artifacts": {
+    "product": {
+      "path": ".doctrina/product.md",
+      "status": "active",
+      "version": "0.1.0",
+      "last_updated": "2026-09-27"
+    },
+    "specs": [
+      {
+        "id": "agent-runtimes",
+        "path": ".doctrina/specs/agent-runtimes/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — mock and claude-code land with the walking skeleton; the API brains and the other CLI brains land in the brains change",
+        "realizes": [
+          "SC2"
+        ],
+        "depends_on": [
+          "bots",
+          "tool-gateway",
+          "memory"
+        ]
+      },
+      {
+        "id": "approvals",
+        "path": ".doctrina/specs/approvals/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the tools-and-approvals change (product.md delivery order 2)",
+        "realizes": [
+          "SC5"
+        ],
+        "depends_on": [
+          "tool-gateway",
+          "conversations"
+        ]
+      },
+      {
+        "id": "bots",
+        "path": ".doctrina/specs/bots/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the walking skeleton change (product.md delivery order 1)",
+        "realizes": [
+          "SC1"
+        ]
+      },
+      {
+        "id": "cli",
+        "path": ".doctrina/specs/cli/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — `serve`, `bots` and `chat` land with the walking skeleton; the remaining commands land with the capability they drive",
+        "realizes": [
+          "SC7"
+        ],
+        "depends_on": [
+          "hub-api"
+        ]
+      },
+      {
+        "id": "computer",
+        "path": ".doctrina/specs/computer/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — the workspace used by CLI brains lands with the walking skeleton; tools, providers and live view land in the computer change",
+        "realizes": [
+          "SC3"
+        ],
+        "depends_on": [
+          "bots",
+          "tool-gateway",
+          "secrets"
+        ]
+      },
+      {
+        "id": "conversations",
+        "path": ".doctrina/specs/conversations/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the walking skeleton change (direct) and the collaboration change (groups)",
+        "realizes": [
+          "SC1",
+          "SC4"
+        ],
+        "depends_on": [
+          "bots"
+        ]
+      },
+      {
+        "id": "desktop-app",
+        "path": ".doctrina/specs/desktop-app/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the desktop change (product.md delivery order 7)",
+        "realizes": [
+          "SC7"
+        ],
+        "depends_on": [
+          "web-app",
+          "hub-api"
+        ]
+      },
+      {
+        "id": "handoff",
+        "path": ".doctrina/specs/handoff/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the collaboration change (product.md delivery order 4)",
+        "realizes": [
+          "SC4"
+        ],
+        "depends_on": [
+          "conversations",
+          "agent-runtimes",
+          "tool-gateway"
+        ]
+      },
+      {
+        "id": "hub-api",
+        "path": ".doctrina/specs/hub-api/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — REST, stream and auth land with the walking skeleton; the OpenAI-compatible endpoint lands in the brains change",
+        "realizes": [
+          "SC7"
+        ],
+        "depends_on": [
+          "bots",
+          "conversations"
+        ]
+      },
+      {
+        "id": "memory",
+        "path": ".doctrina/specs/memory/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — context assembly lands with the walking skeleton; memory entries and tools land in the collaboration change",
+        "realizes": [
+          "SC1"
+        ],
+        "depends_on": [
+          "bots"
+        ]
+      },
+      {
+        "id": "routines",
+        "path": ".doctrina/specs/routines/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the skills-and-routines change (product.md delivery order 6)",
+        "realizes": [
+          "SC6"
+        ],
+        "depends_on": [
+          "agent-runtimes",
+          "approvals",
+          "bots"
+        ]
+      },
+      {
+        "id": "secrets",
+        "path": ".doctrina/specs/secrets/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the secrets-and-usage change (product.md delivery order 6)",
+        "realizes": [
+          "SC9"
+        ],
+        "depends_on": [
+          "bots",
+          "tool-gateway"
+        ]
+      },
+      {
+        "id": "skills",
+        "path": ".doctrina/specs/skills/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the skills-and-routines change (product.md delivery order 6)",
+        "realizes": [
+          "SC6"
+        ],
+        "depends_on": [
+          "tool-gateway",
+          "bots"
+        ]
+      },
+      {
+        "id": "templates",
+        "path": ".doctrina/specs/templates/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the templates change (product.md delivery order 6)",
+        "realizes": [
+          "SC10"
+        ],
+        "depends_on": [
+          "bots",
+          "skills",
+          "routines"
+        ]
+      },
+      {
+        "id": "tool-gateway",
+        "path": ".doctrina/specs/tool-gateway/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the tools-and-approvals change (product.md delivery order 2)",
+        "realizes": [
+          "SC2",
+          "SC3"
+        ],
+        "depends_on": [
+          "bots",
+          "approvals"
+        ]
+      },
+      {
+        "id": "usage",
+        "path": ".doctrina/specs/usage/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — built by the secrets-and-usage change (product.md delivery order 6)",
+        "realizes": [
+          "SC8"
+        ],
+        "depends_on": [
+          "agent-runtimes",
+          "bots"
+        ]
+      },
+      {
+        "id": "web-app",
+        "path": ".doctrina/specs/web-app/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-09-27",
+        "implementation": "planned — roster and direct chat land with the walking skeleton; cards, groups, settings and computer view land with their capabilities",
+        "realizes": [
+          "SC7",
+          "SC4",
+          "SC5"
+        ],
+        "depends_on": [
+          "hub-api"
+        ]
+      }
+    ],
+    "decisions": [
+      {
+        "id": "0001",
+        "path": ".doctrina/decisions/0001-typescript-monorepo-on-node-js-22-with-npm-workspaces.md",
+        "title": "TypeScript monorepo on Node.js 22 with npm workspaces",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "Orbis is one TypeScript repository on Node.js 22.12 or later, split into npm"
+      },
+      {
+        "id": "0002",
+        "path": ".doctrina/decisions/0002-sqlite-through-node-sqlite-as-the-only-datastore.md",
+        "title": "SQLite through node:sqlite as the only datastore",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "All state lives in one SQLite file in the data directory, opened through",
+        "scope": [
+          "bots",
+          "conversations",
+          "memory",
+          "routines",
+          "secrets",
+          "usage"
+        ]
+      },
+      {
+        "id": "0003",
+        "path": ".doctrina/decisions/0003-two-brain-families-behind-one-normalized-event-stream.md",
+        "title": "Two brain families behind one normalized event stream",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "Every brain is an adapter that emits the same normalized events",
+        "scope": [
+          "agent-runtimes",
+          "usage",
+          "tool-gateway"
+        ]
+      },
+      {
+        "id": "0004",
+        "path": ".doctrina/decisions/0004-one-tool-registry-served-in-process-and-over-mcp.md",
+        "title": "One tool registry served in-process and over MCP",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "Tools are defined once in the hub's registry (name, description, JSON",
+        "scope": [
+          "tool-gateway",
+          "agent-runtimes",
+          "cli"
+        ]
+      },
+      {
+        "id": "0005",
+        "path": ".doctrina/decisions/0005-one-computer-per-bot-behind-a-provider-interface.md",
+        "title": "One computer per bot behind a provider interface",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "Each bot owns one computer — workspace, terminal, browser profile — created",
+        "scope": [
+          "computer",
+          "bots",
+          "agent-runtimes"
+        ]
+      },
+      {
+        "id": "0006",
+        "path": ".doctrina/decisions/0006-deterministic-policy-decides-and-nothing-overrides-a-locked-rule.md",
+        "title": "Deterministic policy decides and nothing overrides a locked rule",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "A tool call is decided by a pure function of (bot policy, grants, tool,",
+        "scope": [
+          "approvals",
+          "tool-gateway",
+          "routines"
+        ]
+      },
+      {
+        "id": "0007",
+        "path": ".doctrina/decisions/0007-one-web-app-for-browser-and-desktop-with-an-electron-shell.md",
+        "title": "One web app for browser and desktop with an Electron shell",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "The web app (React + Vite) is built once and served by the hub at `/`.",
+        "scope": [
+          "web-app",
+          "desktop-app",
+          "hub-api"
+        ]
+      },
+      {
+        "id": "0008",
+        "path": ".doctrina/decisions/0008-secrets-resolve-only-inside-the-tool-gateway.md",
+        "title": "Secrets resolve only inside the tool gateway",
+        "status": "accepted",
+        "date": "2026-09-27",
+        "summary": "Secrets are stored encrypted per bot.",
+        "scope": [
+          "secrets",
+          "tool-gateway",
+          "computer"
+        ]
+      }
+    ],
+    "changes": [],
+    "changes_archive": [],
+    "skills": [],
+    "contracts": [
+      {
+        "id": "cli-harnesses",
+        "path": ".doctrina/contracts/cli-harnesses.md",
+        "status": "active",
+        "last_updated": "2026-09-27"
+      },
+      {
+        "id": "hub-surface",
+        "path": ".doctrina/contracts/hub-surface.md",
+        "status": "active",
+        "last_updated": "2026-09-27"
+      }
+    ],
+    "entrypoint": {
+      "path": "AGENTS.md"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$comment": "doctrina verify runs each check below, in order, through your shell. A non-zero exit fails the gate. The expect guards make a run that executed nothing fail instead of pass.",
+  "checks": [
+    {
+      "name": "typecheck",
+      "run": "npm run typecheck --silent",
+      "expect": { "fail_if_output_matches": "error TS\\d+" }
+    },
+    {
+      "name": "test",
+      "run": "npm test --silent",
+      "expect": { "require_output_matches": "Test Files\\s+\\d+ passed", "fail_if_output_matches": "Test Files\\s+.*\\d+ failed" }
+    },
+    {
+      "name": "build",
+      "run": "npm run build --silent"
+    }
+  ]
+}
