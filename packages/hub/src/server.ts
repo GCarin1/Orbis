@@ -17,6 +17,8 @@ import { DockerProvider } from "./computer/docker.js";
 import { BrowserService } from "./computer/browser.js";
 import { computerTools } from "./computer/tools.js";
 import { registerComputerRoutes, VncSessions } from "./computer/routes.js";
+import { SkillService } from "./skills/service.js";
+import { RoutineService } from "./routines/service.js";
 import { openDatabase, type Database } from "./db/index.js";
 import { HttpError, unauthorized } from "./errors.js";
 import { BotsRepo } from "./repos/bots.js";
@@ -62,10 +64,14 @@ export interface HubOptions {
   brains?: BrainAdapter[];
   /** Fastify request logging; off by default. */
   logger?: boolean;
+  /** The clock routines schedule by (tests drive time with it). */
+  clock?: () => Date;
 }
 
 export interface Hub extends HubContext {
   app: FastifyInstance;
+  skills: SkillService;
+  routines: RoutineService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -230,8 +236,10 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     if (!mode) return;
     // noVNC pages inside an iframe authenticate with their path-scoped cookie.
     if (vncSessions.allows(req.url, req.headers.cookie)) return;
+    // Any authenticated change is user activity (routines pause after a long absence).
     const presented = mode === "bearer" ? bearer(req) : (new URL(req.url, "http://x").searchParams.get("token") ?? bearer(req));
     if (!presented || !safeEqual(presented, config.token)) throw unauthorized();
+    if (mode === "bearer" && req.method !== "GET" && req.method !== "HEAD") routines.recordActivity();
   });
 
   await app.register(swagger, {
@@ -271,6 +279,16 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   for (const tool of memoryService.tools()) tools.register(tool);
   engine.addHooks(memoryService.hooks());
   for (const tool of computerTools(computer, browser)) tools.register(tool);
+  const skillService = new SkillService(ctx);
+  for (const tool of skillService.tools()) tools.register(tool);
+  engine.addHooks(skillService.hooks());
+  engine.addContextSection((bot) => skillService.contextSection(bot));
+  conversationService.setSkillResolver((bot, text) => skillService.resolve(bot, text));
+  const routines = new RoutineService(ctx, drafts, opts.clock);
+  for (const tool of routines.tools()) tools.register(tool);
+  engine.addHooks(routines.hooks());
+  gateway.onBeforeCall(routines.draftOnlyHook());
+  routines.start();
   // While the user holds a bot's computer, its tool calls wait (specs/computer: takeover).
   gateway.onBeforeCall(async ({ run, bot, signal }) => {
     if (!computer.holdsTakeover(bot.id)) return;
@@ -292,6 +310,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerGroupRoutes(app, ctx);
   await memoryService.routes(app);
   await registerComputerRoutes(app, ctx, browser, vncSessions);
+  await skillService.routes(app);
+  await routines.routes(app);
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
@@ -310,6 +330,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   let closed = false;
   const hub: Hub = {
     ...ctx,
+    skills: skillService,
+    routines,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });
@@ -319,6 +341,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     async close() {
       if (closed) return;
       closed = true;
+      routines.stop();
       await engine.shutdown();
       await browser.shutdown();
       await computer.shutdown();

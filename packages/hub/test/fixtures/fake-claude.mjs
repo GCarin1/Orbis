@@ -2,11 +2,18 @@
 // A stand-in for `claude -p --output-format stream-json`, replaying the shapes
 // of contracts/cli-harnesses. It records its argv and environment in the
 // working directory so tests can assert what the adapter passed.
-import { writeFileSync, existsSync, readFileSync } from "node:fs";
+import { writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 
 const argv = process.argv.slice(2);
 writeFileSync("fake-claude-argv.json", JSON.stringify(argv));
 writeFileSync("fake-claude-env.json", JSON.stringify(process.env));
+// The skills Claude Code would load from its working directory.
+const skills = existsSync(".claude/skills")
+  ? readdirSync(".claude/skills", { withFileTypes: true })
+      .filter((d) => d.isDirectory() && existsSync(`.claude/skills/${d.name}/SKILL.md`))
+      .map((d) => ({ name: d.name, content: readFileSync(`.claude/skills/${d.name}/SKILL.md`, "utf8") }))
+  : [];
+writeFileSync("fake-claude-skills.json", JSON.stringify(skills));
 
 const flag = (name) => {
   const i = argv.indexOf(name);

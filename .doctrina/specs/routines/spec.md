@@ -2,11 +2,11 @@
 
 **Capability:** routines
 **Status:** active
-**Implementation:** planned — built by the skills-and-routines change (product.md delivery order 6)
+**Implementation:** verified — routines service, scheduler and webhooks (`packages/hub/src/routines/`)
 **Realizes:** SC6
 **Depends on:** agent-runtimes, approvals, bots
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -31,20 +31,22 @@ enough that nobody would read the results.
 - When a POST reaches `/hooks/routines/<id>` with a valid signature (HMAC-SHA256 of the raw body under the routine's secret, in `X-Orbis-Signature` or in GitHub's `X-Hub-Signature-256` as `sha256=<hex>`), the system shall start a run with the instruction and the payload wrapped as untrusted content.
 - When a user requests a test run, the system shall run the routine once in `draft_only` mode and record it as a test run.
 - When the user has shown no activity for ORBIS_ABSENCE_PAUSE_DAYS days (default 14), the system shall pause every scheduled routine and post a routine card saying so.
+- When the user enables a routine, the system shall clear its absence pause and compute its next fire time from the current time.
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not enable a routine that has no successful test run unless the request carries `force: true`.
 - The system shall not start a run for a webhook request whose signature is missing or does not match.
 - The system shall not create a 51st routine for a bot.
+- The system shall not catch up on fire times that passed while the hub was stopped.
 
 ## Acceptance criteria
 
-1. [unverified] Routines are created, listed, edited and deleted; the 51st routine of a bot answers 409; only the last 20 runs are kept — verified by `packages/hub/test/routines.test.ts`.
-2. [unverified] A cron routine in `America/Sao_Paulo` fires at the matching local time under a fake clock and starts a run with its instruction — verified by `packages/hub/test/routines.test.ts`.
-3. [unverified] A webhook with a valid `X-Orbis-Signature` or `X-Hub-Signature-256` starts a run with the payload wrapped as untrusted content, and a bad signature answers 401 and starts nothing — verified by `packages/hub/test/routines.test.ts`.
-4. [unverified] Enabling a routine with no successful test run answers 409 unless `force` is set — verified by `packages/hub/test/routines.test.ts`.
-5. [unverified] After the absence period, scheduled routines are paused and a routine card is posted — verified by `packages/hub/test/routines.test.ts`.
+1. [verified] Routines are created, listed, edited and deleted; the 51st routine of a bot answers 409; only the last 20 runs are kept — verified by `packages/hub/test/routines.test.ts`.
+2. [verified] A cron routine in `America/Sao_Paulo` fires at the matching local time under a fake clock and starts a run with its instruction — verified by `packages/hub/test/routines.test.ts`.
+3. [verified] A webhook with a valid `X-Orbis-Signature` or `X-Hub-Signature-256` starts a run with the payload wrapped as untrusted content, and a bad signature answers 401 and starts nothing — verified by `packages/hub/test/routines.test.ts`.
+4. [verified] Enabling a routine with no successful test run answers 409 unless `force` is set — verified by `packages/hub/test/routines.test.ts`.
+5. [verified] After the absence period, scheduled routines are paused and a routine card is posted — verified by `packages/hub/test/routines.test.ts`.
 
 ## Maturity
 

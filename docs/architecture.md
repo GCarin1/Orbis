@@ -51,6 +51,14 @@ HTTP (Fastify)  ── auth hook (bearer / stream query token)
   `summary` after each successful run and serves the memory routes. Engine
   `onEnded` hooks run before the terminal `run.updated` event, so a client
   sees the follow-up run queued before the run that caused it ends.
+- **Skills and routines.** `skills/` keeps SKILL.md files on disk, adds the
+  offered skills to every run's system text (an engine context section),
+  resolves `/name` messages in the router, and writes Claude Code's
+  `.claude/skills/` before its runs. `routines/` stores routines in SQLite,
+  fires cron routines from an in-process scheduler with an injectable
+  clock (croner, IANA timezones), verifies webhook HMACs on the raw body,
+  and turns external tool calls of draft-only runs into draft cards through
+  the gateway's before-call hook.
 - **Computer.** `computer/manager.ts` gives each bot one computer through a
   provider (ADR 0005): `local` (directories and child processes on the hub
   host) or `docker` (one `orbis/desktop` container and one volume per bot,

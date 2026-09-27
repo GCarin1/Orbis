@@ -1,7 +1,7 @@
 // specs/agent-runtimes — acceptance criterion 4 (claude-code adapter), replayed
 // from a fake executable per contracts/cli-harnesses.
 import { afterEach, describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { claudeArgs, mapClaudeMessage, type ClaudeStreamState } from "../../src/brains/claude-code.js";
 import { createBot, FIXTURES, testHub, type TestHub } from "../helpers.js";
@@ -75,6 +75,32 @@ describe("claude-code brain", () => {
     expect(argv2[argv2.indexOf("--resume") + 1]).toBe(session);
     // A resumed session already holds the earlier turns: the prompt carries only what is new.
     expect(argv2[argv2.indexOf("-p") + 1]).not.toContain("list the files");
+  });
+
+  it("finds the offered skills under .claude/skills in its workspace, and loses the ones no longer offered (skills criterion 4)", async () => {
+    t = await testHub();
+    const skill = (name: string, description: string) => `---\nname: ${name}\ndescription: ${description}\n---\n# ${name}\nSteps for ${name}.\n`;
+    await t.api("POST", "/api/v1/skills", { content: skill("release-notes", "Write release notes") });
+    await t.api("POST", "/api/v1/skills", { content: skill("secret-ops", "Not for Ana") });
+    const bot = await createBot(t, { brain: fakeClaude, skills: ["release-*"] });
+    await t.api("POST", "/api/v1/skills", { content: skill("triage", "Ana's own triage"), botId: bot.id });
+    const workspace = t.hub.computer.workspaceDir(bot.id);
+    // A skill the user put in the workspace themselves is left alone.
+    mkdirSync(path.join(workspace, ".claude", "skills", "mine"), { recursive: true });
+    writeFileSync(path.join(workspace, ".claude", "skills", "mine", "SKILL.md"), skill("mine", "The user's own"));
+
+    const conv = (await t.api("GET", `/api/v1/bots/${bot.id}/conversation`)).body;
+    const send = async (text: string) => t!.hub.engine.wait((await t!.api("POST", `/api/v1/conversations/${conv.id}/messages`, { text })).body.runs[0].id);
+    expect((await send("hello")).status).toBe("done");
+    const seen = () => (JSON.parse(readFileSync(path.join(workspace, "fake-claude-skills.json"), "utf8")) as Array<{ name: string; content: string }>);
+    expect(seen().map((s) => s.name).sort()).toEqual(["mine", "release-notes", "triage"]);
+    expect(seen().find((s) => s.name === "triage")!.content).toContain("description: Ana's own triage");
+    const argv = JSON.parse(readFileSync(path.join(workspace, "fake-claude-argv.json"), "utf8")) as string[];
+    expect(argv[argv.indexOf("--append-system-prompt") + 1]).toContain("- release-notes: Write release notes");
+
+    await t.api("DELETE", `/api/v1/skills/triage?botId=${bot.id}`);
+    await send("again");
+    expect(seen().map((s) => s.name).sort()).toEqual(["mine", "release-notes"]);
   });
 
   it("starts a new session when the stored one no longer exists", async () => {

@@ -1,8 +1,8 @@
-// specs/web-app — acceptance criterion 4: the composer's autocomplete
-// (`@` here; `/skill` arrives with the skills change).
+// specs/web-app — acceptance criterion 4: the composer's autocomplete,
+// `@` for member handles and `/` for skills.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { Composer, filterMentions, mentionAt, type MentionOption } from "../src/components/Composer.js";
+import { Composer, filterMentions, filterSkills, mentionAt, skillAt, type MentionOption, type SkillOption } from "../src/components/Composer.js";
 import { useLang } from "../src/i18n.js";
 import { bot } from "./fixtures.js";
 
@@ -54,5 +54,42 @@ describe("@ autocomplete", () => {
       fireEvent.keyDown(box, { key: "Enter" });
     });
     expect(onSend).toHaveBeenCalledWith("ask @bob and @bob thanks @");
+  });
+});
+
+describe("/ autocomplete", () => {
+  const skills: SkillOption[] = [
+    { name: "release-notes", description: "Write the release notes" },
+    { name: "review", description: "Review a pull request" },
+    { name: "triage", description: "Triage a bug" },
+  ];
+
+  it("finds a /skill at the start of the message, after mentions only", () => {
+    expect(skillAt("/re", 3)).toEqual({ start: 0, query: "re" });
+    expect(skillAt("@ana /tr", 8)).toEqual({ start: 5, query: "tr" });
+    expect(skillAt("see /re", 7)).toBeNull();
+    expect(skillAt("/review now", 11)).toBeNull();
+    expect(filterSkills(skills, "re").map((s) => s.name)).toEqual(["release-notes", "review"]);
+  });
+
+  it("offers the skills as you type / and completes the name with Enter (criterion 4, / part)", async () => {
+    const onSend = vi.fn(async () => undefined);
+    render(<Composer name="Ana" mentions={[{ handle: "ana", label: "Ana — QA", bot: ana }]} skills={skills} onSend={onSend} />);
+    const box = screen.getByRole("textbox") as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "/re", selectionStart: 3 } });
+    const list = screen.getByRole("listbox", { name: "Skills" });
+    const offered = within(list).getAllByRole("option");
+    expect(offered.map((o) => o.textContent)).toEqual(["/release-notes Write the release notes", "/review Review a pull request"]);
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(box.value).toBe("/review ");
+    expect(onSend).not.toHaveBeenCalled();
+
+    fireEvent.change(box, { target: { value: "/review PR 42", selectionStart: 13 } });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    await act(async () => {
+      fireEvent.keyDown(box, { key: "Enter" });
+    });
+    expect(onSend).toHaveBeenCalledWith("/review PR 42");
   });
 });

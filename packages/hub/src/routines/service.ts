@@ -1,0 +1,459 @@
+// Routines (specs/routines): scheduled or webhook-triggered runs of one bot.
+// The scheduler reads time from an injected clock so tests can drive it.
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import type { FastifyInstance } from "fastify";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import Type from "typebox";
+import { Cron } from "croner";
+import type { Routine, RoutineApproval, RoutineRun, RoutineTrigger, Run } from "@orbis/shared";
+import type { HubContext } from "../context.js";
+import type { DraftService } from "../approvals/drafts.js";
+import { badRequest, conflict, HttpError, notFound, unauthorized } from "../errors.js";
+import { newId } from "../ids.js";
+import type { RunHooks } from "../runs/engine.js";
+import type { BeforeToolCall } from "../tools/gateway.js";
+import { TOOL_RESULT_CAP, untrusted, type ToolDefinition } from "../tools/registry.js";
+import { IdParams } from "../api/schemas.js";
+import { ROUTINES_PER_BOT, RoutinesRepo, type RoutineRow } from "./repo.js";
+
+const ACTIVITY_KEY = "user.lastActiveAt";
+const DAY_MS = 86_400_000;
+const WEBHOOK_BODY_LIMIT = 1024 * 1024;
+
+export interface RoutineInput {
+  name: string;
+  trigger: RoutineTrigger;
+  instruction: string;
+  approval?: RoutineApproval;
+}
+
+/** Throws a 400 with the field that is wrong; returns the trigger with its timezone filled in. */
+export function validateTrigger(trigger: RoutineTrigger): RoutineTrigger {
+  if (trigger.type === "webhook") return { type: "webhook" };
+  const timezone = trigger.timezone?.trim() || "UTC";
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: timezone });
+  } catch {
+    throw badRequest("invalid routine", { "trigger.timezone": `"${timezone}" is not an IANA timezone` });
+  }
+  try {
+    new Cron(trigger.cron, { timezone, paused: true }).stop();
+  } catch (err) {
+    throw badRequest("invalid routine", { "trigger.cron": `is not a cron schedule (${err instanceof Error ? err.message : String(err)})` });
+  }
+  return { type: "cron", cron: trigger.cron.trim(), timezone };
+}
+
+export function nextFire(trigger: RoutineTrigger, from: Date): Date | null {
+  if (trigger.type !== "cron") return null;
+  const job = new Cron(trigger.cron, { timezone: trigger.timezone, paused: true });
+  const next = job.nextRun(from);
+  job.stop();
+  return next;
+}
+
+function describeTrigger(trigger: RoutineTrigger): string {
+  return trigger.type === "cron" ? `cron "${trigger.cron}" in ${trigger.timezone}` : "webhook";
+}
+
+export class RoutineService {
+  readonly repo: RoutinesRepo;
+  /** Next fire time (epoch ms) of every enabled, unpaused cron routine. */
+  private readonly next = new Map<string, number>();
+  /** Routine runs in flight: their mode decides whether external tools act. */
+  private readonly active = new Map<string, { routineId: string; name: string; mode: RoutineApproval }>();
+  private timer: NodeJS.Timeout | null = null;
+  private lastActivityWrite = 0;
+
+  constructor(
+    private readonly hub: HubContext,
+    private readonly drafts: DraftService,
+    private readonly now: () => Date = () => new Date(),
+  ) {
+    this.repo = new RoutinesRepo(hub.db);
+    if (!this.repo.setting(ACTIVITY_KEY)) this.repo.setSetting(ACTIVITY_KEY, this.now().toISOString());
+    for (const row of this.repo.listAll()) this.schedule(row);
+  }
+
+  // --- reading -------------------------------------------------------------------
+
+  private row(id: string): RoutineRow {
+    const row = this.repo.get(id);
+    if (!row) throw notFound(`routine ${id}`);
+    return row;
+  }
+
+  view(row: RoutineRow, withSecret = false): Routine & { secret?: string } {
+    const next = this.next.get(row.id);
+    return {
+      id: row.id,
+      botId: row.botId,
+      name: row.name,
+      trigger: row.trigger,
+      instruction: row.instruction,
+      approval: row.approval,
+      enabled: row.enabled,
+      paused: row.paused,
+      webhookPath: row.trigger.type === "webhook" ? `/hooks/routines/${row.id}` : null,
+      nextRunAt: next !== undefined ? new Date(next).toISOString() : null,
+      lastRun: this.repo.lastRun(row.id),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      ...(withSecret ? { secret: row.secret } : {}),
+    };
+  }
+
+  list(botRef: string): Routine[] {
+    return this.repo.listForBot(this.hub.botService.get(botRef).id).map((r) => this.view(r));
+  }
+
+  // --- cards ---------------------------------------------------------------------
+
+  /** A routine card in the bot's direct conversation (created, enabled, disabled, paused). */
+  private card(row: RoutineRow, event: "created" | "enabled" | "disabled" | "paused", text: string): void {
+    const conversation = this.hub.conversationService.directFor(row.botId);
+    this.hub.timeline.post({
+      conversationId: conversation.id,
+      kind: "card",
+      author: { type: "system", id: null },
+      text,
+      runId: null,
+      card: { type: "routine", state: event, data: { routineId: row.id, name: row.name, trigger: row.trigger, approval: row.approval, event } },
+    });
+  }
+
+  // --- writing -------------------------------------------------------------------
+
+  create(botRef: string, input: RoutineInput): Routine & { secret: string } {
+    const bot = this.hub.botService.get(botRef);
+    const name = input.name.trim();
+    if (!name) throw badRequest("invalid routine", { name: "must not be empty" });
+    if (!input.instruction.trim()) throw badRequest("invalid routine", { instruction: "must not be empty" });
+    if (this.repo.countForBot(bot.id) >= ROUTINES_PER_BOT) {
+      throw conflict("routine_limit", `@${bot.handle} already has ${ROUTINES_PER_BOT} routines, the most a bot can hold`);
+    }
+    const at = this.now().toISOString();
+    const row: RoutineRow = {
+      id: newId("rtn"),
+      botId: bot.id,
+      name,
+      trigger: validateTrigger(input.trigger),
+      instruction: input.instruction.trim(),
+      approval: input.approval ?? "normal",
+      enabled: false,
+      paused: false,
+      secret: randomBytes(24).toString("base64url"),
+      createdAt: at,
+      updatedAt: at,
+    };
+    this.repo.insert(row);
+    this.card(row, "created", `Routine "${row.name}" created (${describeTrigger(row.trigger)}). Test it, then enable it.`);
+    return this.view(row, true) as Routine & { secret: string };
+  }
+
+  update(id: string, patch: Partial<RoutineInput>): Routine {
+    const row = this.row(id);
+    const next: Parameters<RoutinesRepo["update"]>[1] = {};
+    if (patch.name !== undefined) {
+      if (!patch.name.trim()) throw badRequest("invalid routine", { name: "must not be empty" });
+      next.name = patch.name.trim();
+    }
+    if (patch.instruction !== undefined) {
+      if (!patch.instruction.trim()) throw badRequest("invalid routine", { instruction: "must not be empty" });
+      next.instruction = patch.instruction.trim();
+    }
+    if (patch.trigger !== undefined) next.trigger = validateTrigger(patch.trigger);
+    if (patch.approval !== undefined) next.approval = patch.approval;
+    this.repo.update(id, next, this.now().toISOString());
+    const updated = this.row(id);
+    this.schedule(updated);
+    return this.view(updated);
+  }
+
+  delete(id: string): void {
+    this.row(id);
+    this.repo.delete(id);
+    this.next.delete(id);
+  }
+
+  enable(id: string, force = false): Routine {
+    const row = this.row(id);
+    if (!force && !this.repo.hasSuccessfulTest(id)) {
+      throw conflict("untested", `routine "${row.name}" has no successful test run; test it first, or enable with force`);
+    }
+    this.repo.update(id, { enabled: true, paused: false }, this.now().toISOString());
+    const updated = this.row(id);
+    this.schedule(updated);
+    this.card(updated, "enabled", `Routine "${updated.name}" enabled (${describeTrigger(updated.trigger)}).`);
+    return this.view(updated);
+  }
+
+  disable(id: string): Routine {
+    this.row(id);
+    this.repo.update(id, { enabled: false }, this.now().toISOString());
+    const updated = this.row(id);
+    this.schedule(updated);
+    this.card(updated, "disabled", `Routine "${updated.name}" disabled.`);
+    return this.view(updated);
+  }
+
+  // --- running -------------------------------------------------------------------
+
+  /** Start a run of the routine's bot in its direct conversation and record it. */
+  fire(row: RoutineRow, opts: { test?: boolean; via?: "routine" | "webhook"; payload?: string; event?: string | null } = {}): RoutineRun {
+    const test = opts.test ?? false;
+    const mode: RoutineApproval = test ? "draft_only" : row.approval;
+    const conversation = this.hub.conversationService.directFor(row.botId);
+    const parts = [`Routine "${row.name}" (${describeTrigger(row.trigger)}${test ? ", test run" : ""}). Do this now:`, row.instruction];
+    if (mode === "draft_only") {
+      parts.push("This run is draft-only: tools that act outside Orbis do not run; each call becomes a draft for the user to review.");
+    }
+    if (opts.payload !== undefined) {
+      parts.push(`The webhook delivered this payload${opts.event ? ` (event: ${opts.event})` : ""}:`);
+      parts.push(untrusted(`webhook:${row.name}`, opts.payload.length > TOOL_RESULT_CAP ? `${opts.payload.slice(0, TOOL_RESULT_CAP)}\n[… truncated]` : opts.payload));
+    }
+    const run = this.hub.engine.enqueue({
+      botId: row.botId,
+      conversationId: conversation.id,
+      trigger: { type: opts.via === "webhook" ? "webhook" : "routine", ref: row.id },
+      input: parts.join("\n\n"),
+      includeHistory: false,
+    });
+    this.active.set(run.id, { routineId: row.id, name: row.name, mode });
+    const record: RoutineRun = { id: newId("rrn"), routineId: row.id, runId: run.id, test, status: run.status, summary: null, startedAt: this.now().toISOString() };
+    this.repo.insertRun(record);
+    return record;
+  }
+
+  test(id: string): RoutineRun {
+    return this.fire(this.row(id), { test: true });
+  }
+
+  /** Recompute a routine's next fire time from the clock. */
+  private schedule(row: RoutineRow): void {
+    this.next.delete(row.id);
+    if (!row.enabled || row.paused || row.trigger.type !== "cron") return;
+    const at = nextFire(row.trigger, this.now());
+    if (at) this.next.set(row.id, at.getTime());
+  }
+
+  /** Fire every routine that is due at `now`; pause scheduled routines after a long absence. */
+  tick(now: Date = this.now()): string[] {
+    this.checkAbsence(now);
+    const fired: string[] = [];
+    for (const [id, at] of [...this.next]) {
+      if (at > now.getTime()) continue;
+      const row = this.repo.get(id);
+      if (!row || !row.enabled || row.paused || row.trigger.type !== "cron") {
+        this.next.delete(id);
+        continue;
+      }
+      this.fire(row);
+      fired.push(id);
+      const after = nextFire(row.trigger, new Date(Math.max(now.getTime(), at) + 1000));
+      if (after) this.next.set(id, after.getTime());
+      else this.next.delete(id);
+    }
+    return fired;
+  }
+
+  start(intervalMs = 15_000): void {
+    if (this.timer) return;
+    this.timer = setInterval(() => {
+      try {
+        this.tick();
+      } catch (err) {
+        console.error("routine scheduler tick failed:", err);
+      }
+    }, intervalMs);
+    this.timer.unref();
+  }
+
+  stop(): void {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+  }
+
+  // --- absence -------------------------------------------------------------------
+
+  /** The user did something (any authenticated change through the API). */
+  recordActivity(): void {
+    const now = this.now();
+    if (now.getTime() - this.lastActivityWrite < 60_000) return;
+    this.lastActivityWrite = now.getTime();
+    this.repo.setSetting(ACTIVITY_KEY, now.toISOString());
+  }
+
+  checkAbsence(now: Date = this.now()): string[] {
+    const last = Date.parse(this.repo.setting(ACTIVITY_KEY) ?? now.toISOString());
+    const days = this.hub.config.absencePauseDays;
+    if (now.getTime() - last <= days * DAY_MS) return [];
+    const paused: string[] = [];
+    for (const row of this.repo.listAll()) {
+      if (!row.enabled || row.paused || row.trigger.type !== "cron") continue;
+      this.repo.update(row.id, { paused: true }, now.toISOString());
+      this.next.delete(row.id);
+      this.card({ ...row, paused: true }, "paused", `Routine "${row.name}" paused: no activity from you for ${days} days (ORBIS_ABSENCE_PAUSE_DAYS). Enable it again to resume.`);
+      paused.push(row.id);
+    }
+    return paused;
+  }
+
+  // --- hooks ----------------------------------------------------------------------
+
+  hooks(): RunHooks {
+    return {
+      onEnded: (run: Run) => {
+        if (!this.active.delete(run.id)) return;
+        const summary = run.status === "done" ? (run.reply ?? "").slice(0, 200) : (run.error ?? run.status);
+        this.repo.finishRun(run.id, run.status, summary || null);
+      },
+    };
+  }
+
+  /** In a draft-only routine run, an external tool becomes a draft card instead of acting. */
+  draftOnlyHook(): BeforeToolCall {
+    return async ({ run, bot }, tool, input) => {
+      const routine = this.active.get(run.id);
+      if (!routine || routine.mode !== "draft_only" || tool.risk !== "external") return;
+      const item = this.drafts.create(run, bot, {
+        channel: "chat",
+        to: tool.name,
+        subject: `Held by the draft-only routine "${routine.name}"`,
+        body: `The routine wanted to call ${tool.name} with:\n${JSON.stringify(input ?? {}, null, 2)}`,
+      });
+      return {
+        output: `draft-only routine: ${tool.name} did not run; the call is draft ${item.id} for the user to review. Continue as if it had not happened, and report what you would have done.`,
+        isError: false,
+      };
+    };
+  }
+
+  // --- tools ----------------------------------------------------------------------
+
+  tools(): ToolDefinition[] {
+    return [
+      {
+        name: "routine.create",
+        description:
+          "Create a routine for yourself: an instruction you run on a cron schedule (with an IANA timezone) or when a signed webhook arrives. It starts disabled; the user tests and enables it.",
+        input: Type.Object({
+          name: Type.String({ minLength: 1, maxLength: 120 }),
+          instruction: Type.String({ minLength: 1, maxLength: 20_000 }),
+          cron: Type.Optional(Type.String({ description: 'five-field cron, e.g. "0 9 * * 1-5"' })),
+          timezone: Type.Optional(Type.String({ description: "IANA timezone, e.g. America/Sao_Paulo (default UTC)" })),
+          webhook: Type.Optional(Type.Boolean({ description: "trigger on a signed webhook instead of a schedule" })),
+          approval: Type.Optional(Type.Union([Type.Literal("normal"), Type.Literal("draft_only")])),
+        }),
+        risk: "write",
+        defaultDecision: "ask",
+        handler: async (input: { name: string; instruction: string; cron?: string; timezone?: string; webhook?: boolean; approval?: RoutineApproval }, ctx) => {
+          if (!input.webhook && !input.cron) return { output: "give a cron schedule, or webhook: true", isError: true };
+          try {
+            const trigger: RoutineTrigger = input.webhook ? { type: "webhook" } : { type: "cron", cron: input.cron!, timezone: input.timezone ?? "UTC" };
+            const routine = this.create(ctx.bot.id, { name: input.name, instruction: input.instruction, trigger, approval: input.approval });
+            return `created routine ${routine.id} "${routine.name}" (${describeTrigger(routine.trigger)}), disabled: the user tests it and enables it in Orbis`;
+          } catch (err) {
+            if (err instanceof HttpError) return { output: `${err.message}${err.fields ? `: ${JSON.stringify(err.fields)}` : ""}`, isError: true };
+            throw err;
+          }
+        },
+      },
+      {
+        name: "routine.list",
+        description: "List your routines with their trigger, state and last run.",
+        input: Type.Object({}),
+        risk: "read",
+        handler: async (_input: object, ctx) => {
+          const routines = this.list(ctx.bot.id);
+          if (routines.length === 0) return "you have no routines";
+          return routines
+            .map((r) => `${r.id} "${r.name}": ${describeTrigger(r.trigger)}, ${r.enabled ? (r.paused ? "paused" : "enabled") : "disabled"}${r.lastRun ? `, last run ${r.lastRun.status} at ${r.lastRun.startedAt}` : ""}`)
+            .join("\n");
+        },
+      },
+    ];
+  }
+
+  // --- REST -----------------------------------------------------------------------
+
+  async routes(root: FastifyInstance): Promise<void> {
+    const app = root.withTypeProvider<TypeBoxTypeProvider>();
+    const Trigger = Type.Union([
+      Type.Object({ type: Type.Literal("cron"), cron: Type.String({ minLength: 1, maxLength: 200 }), timezone: Type.Optional(Type.String({ maxLength: 100 })) }, { additionalProperties: false }),
+      Type.Object({ type: Type.Literal("webhook") }, { additionalProperties: false }),
+    ]);
+    const Approval = Type.Union([Type.Literal("normal"), Type.Literal("draft_only")]);
+    const Body = Type.Object(
+      { name: Type.String({ minLength: 1, maxLength: 120 }), trigger: Trigger, instruction: Type.String({ minLength: 1, maxLength: 20_000 }), approval: Type.Optional(Approval) },
+      { additionalProperties: false },
+    );
+    const Patch = Type.Object(
+      {
+        name: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+        trigger: Type.Optional(Trigger),
+        instruction: Type.Optional(Type.String({ minLength: 1, maxLength: 20_000 })),
+        approval: Type.Optional(Approval),
+      },
+      { additionalProperties: false },
+    );
+    const schema = (extra: object = {}) => ({ tags: ["routines"], params: IdParams, ...extra });
+
+    app.get("/api/v1/bots/:id/routines", { schema: schema() }, async (req) => this.list(req.params.id));
+    app.post("/api/v1/bots/:id/routines", { schema: schema({ body: Body }) }, async (req, reply) => {
+      reply.code(201);
+      return this.create(req.params.id, req.body as RoutineInput);
+    });
+    app.get("/api/v1/routines/:id", { schema: schema() }, async (req) => this.view(this.row(req.params.id), true));
+    app.patch("/api/v1/routines/:id", { schema: schema({ body: Patch }) }, async (req) => this.update(req.params.id, req.body as Partial<RoutineInput>));
+    app.delete("/api/v1/routines/:id", { schema: schema() }, async (req, reply) => {
+      this.delete(req.params.id);
+      reply.code(204);
+      return null;
+    });
+    app.post("/api/v1/routines/:id/test", { schema: schema() }, async (req, reply) => {
+      reply.code(202);
+      return this.test(req.params.id);
+    });
+    // The body is optional here (`{ force: true }` or nothing), so it is checked by hand.
+    app.post("/api/v1/routines/:id/enable", { schema: schema() }, async (req) => {
+      const force = (req.body as { force?: unknown } | undefined | null)?.force;
+      if (force !== undefined && typeof force !== "boolean") throw badRequest("invalid request", { force: "must be a boolean" });
+      return this.enable(req.params.id, force === true);
+    });
+    app.post("/api/v1/routines/:id/disable", { schema: schema() }, async (req) => this.disable(req.params.id));
+    app.get("/api/v1/routines/:id/runs", { schema: schema() }, async (req) => {
+      this.row(req.params.id);
+      return this.repo.runs(req.params.id);
+    });
+
+    // Webhooks: the raw body is what the signature covers, so this scope keeps it as bytes.
+    await root.register(async (hooks) => {
+      hooks.removeAllContentTypeParsers();
+      hooks.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: WEBHOOK_BODY_LIMIT }, (_req, body, done) => done(null, body));
+      hooks.post("/hooks/routines/:id", { schema: { hide: true } }, async (req, reply) => {
+        const row = this.repo.get((req.params as { id: string }).id);
+        if (!row || !row.enabled || row.trigger.type !== "webhook") throw notFound("routine");
+        const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        if (!verifySignature(row.secret, raw, req.headers["x-orbis-signature"] ?? req.headers["x-hub-signature-256"])) throw unauthorized();
+        const event = req.headers["x-github-event"];
+        const record = this.fire(row, { via: "webhook", payload: raw.toString("utf8"), event: typeof event === "string" ? event : null });
+        reply.code(202);
+        return { runId: record.runId };
+      });
+    });
+  }
+}
+
+/** `sha256=<hex>` of HMAC-SHA256(raw body, secret), compared in constant time. */
+export function verifySignature(secret: string, raw: Buffer, header: string | string[] | undefined): boolean {
+  const value = Array.isArray(header) ? header[0] : header;
+  const m = /^sha256=([0-9a-f]{64})$/i.exec(value?.trim() ?? "");
+  if (!m) return false;
+  const expected = createHmac("sha256", secret).update(raw).digest();
+  return timingSafeEqual(Buffer.from(m[1]!, "hex"), expected);
+}
+
+export function sign(secret: string, raw: string | Buffer): string {
+  return `sha256=${createHmac("sha256", secret).update(raw).digest("hex")}`;
+}

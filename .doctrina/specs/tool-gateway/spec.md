@@ -2,11 +2,11 @@
 
 **Capability:** tool-gateway
 **Status:** active
-**Implementation:** planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer and browser tools are verified; the tools of skills, routines and secrets register with their changes
+**Implementation:** planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer, browser, skills and routine tools are verified; `secret.request` registers with the secrets change
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.2.2
+**Version:** 0.2.3
 
 ## Purpose
 

@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** planned — in progress: roster, groups, direct and group chat, approval, draft and handoff cards, thread replies, the approvals inbox, @ autocomplete, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; /skill autocomplete and the settings, skills, routines and usage screens land with their capabilities
+**Implementation:** planned — in progress: roster, groups, direct and group chat, approval, draft, handoff and routine cards, thread replies, the approvals inbox, @ and / autocomplete, the skills screen, the routines panel, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the settings and usage screens land with their capabilities
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -40,12 +40,13 @@ run's steps.
 1. [verified] The roster renders pinned bots first, groups by role, and shows the state label for each bot — verified by `packages/web/test/roster.test.tsx`.
 2. [verified] The timeline renders a message, an event and an approval card, and pressing "Allow once" calls the approvals API — verified by `packages/web/test/timeline.test.tsx`.
 3. [verified] Switching the language to English and back to pt-BR changes the interface texts — verified by `packages/web/test/i18n.test.tsx`.
-4. [unverified] Typing `@` in the composer offers the member handles and `/` offers the skills — verified by `packages/web/test/composer.test.tsx`.
+4. [verified] Typing `@` in the composer offers the member handles and `/` offers the skills — verified by `packages/web/test/composer.test.tsx`.
 5. [verified] In a real browser, a user creates a bot, sends it a message and sees the reply appear — verified by `tests/e2e/skeleton.test.ts`.
 6. [verified] In a real browser, a user creates a group in the dialog, picks a member from the `@` autocomplete, gets only that member's reply, and sees a handoff card with the receiver's answer — verified by `tests/e2e/collaboration.test.ts`.
 7. [verified] A handoff card shows sender, receiver, task, context and state, and the receiver's reply shows which item it answers — verified by `packages/web/test/collab.test.tsx`.
 8. [verified] The computer panel shows the computer's state, the latest screenshot (or noVNC for a desktop), and sends Take over and Hand back — verified by `packages/web/test/computer.test.tsx`.
 9. [verified] In a real browser, after a bot opens a page, the user sees that page in the computer panel, takes over, hands back and switches to full screen — verified by `tests/e2e/computer.test.ts`.
+10. [verified] In a real browser, a user writes a skill in the skills screen, invokes it with the `/` autocomplete, and creates, tests and enables a routine whose cards appear in the conversation — verified by `tests/e2e/skills-routines.test.ts`.
 
 ## Maturity
 

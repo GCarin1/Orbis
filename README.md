@@ -40,13 +40,14 @@ are proven by tests.
 | Brains: `claude-code`, `codex`, `gemini-cli` (subscriptions, session resume), `anthropic` (official SDK), `openai`-compatible (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verified |
 | Context assembly (identity, memories, recent conversation within budget) | ✅ |
 | REST API + WebSocket stream + OpenAPI, bearer token | ✅ |
-| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `group`, `memory`, `approvals`, `runtimes`, `mcp` | ✅ |
+| `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `group`, `memory`, `skills`, `routines`, `approvals`, `runtimes`, `mcp` | ✅ |
 | Web app: roster, groups, timeline with run steps, approval, draft and handoff cards, `@` autocomplete, approvals inbox, computer panel, pt-BR/English, installable | ✅ |
 | Tool gateway over MCP, approvals (once/always/deny), drafts with Send/Discard | ✅ verified |
 | OpenAI-compatible `/v1/chat/completions` (talk to any bot from any OpenAI client) | ✅ |
 | Groups of 2–6 bots, @mentions and @everyone, asynchronous `team.handoff` with a depth limit, memory per bot and team (`memory.save`, `memory.search`, run summaries) | ✅ verified |
 | One computer per bot: `local` and `docker` providers, shell and file tools confined to the workspace, Playwright browser on a per-bot profile, hibernation, live view (screenshot or noVNC), takeover | ✅ verified |
-| Skills, routines, secrets, usage caps, templates, desktop app | next |
+| Skills (SKILL.md, `/name`, Claude Code skills folder) and routines (cron in a timezone, signed webhooks, draft-only tests, absence pause) | ✅ verified |
+| Secrets, usage caps, templates, desktop app | next |
 
 The status of each capability is always current in
 `npx doctrina status` and in each spec's `Implementation:` header.
@@ -111,6 +112,7 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
 More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md),
 [`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration

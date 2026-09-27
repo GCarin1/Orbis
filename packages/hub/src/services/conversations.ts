@@ -1,5 +1,5 @@
 // Conversations and message routing (specs/conversations).
-import { extractMentions, type Conversation, type Run, type TimelineItem } from "@orbis/shared";
+import { extractMentions, type Bot, type Conversation, type Run, type TimelineItem } from "@orbis/shared";
 import type { EventBus } from "../bus.js";
 import type { HubConfig } from "../config.js";
 import { badRequest, conflict, notFound } from "../errors.js";
@@ -21,6 +21,14 @@ export interface MessageRouter {
   route(conversation: Conversation, item: TimelineItem): Run[];
 }
 
+/** How a message reaches one bot: plain text, a skill invocation, or a refused one. */
+export type SkillResolution =
+  | { kind: "none" }
+  | { kind: "skill"; skill: { name: string; body: string }; input: string }
+  | { kind: "unavailable"; name: string };
+
+export type SkillResolver = (bot: Bot, text: string) => SkillResolution;
+
 export interface ConversationServiceDeps {
   config: HubConfig;
   bus: EventBus;
@@ -41,6 +49,7 @@ export interface GroupInput {
 
 export class ConversationService {
   private router: MessageRouter;
+  private skillResolver: SkillResolver | null = null;
 
   constructor(private readonly d: ConversationServiceDeps) {
     this.router = {
@@ -51,6 +60,31 @@ export class ConversationService {
 
   setRouter(router: MessageRouter): void {
     this.router = router;
+  }
+
+  setSkillResolver(resolver: SkillResolver): void {
+    this.skillResolver = resolver;
+  }
+
+  /** Start the bot's run for a user message, or post why a `/skill` cannot run. */
+  private runFor(bot: Bot, conversation: Conversation, item: TimelineItem): Run | null {
+    const resolved = this.skillResolver?.(bot, item.text) ?? { kind: "none" };
+    if (resolved.kind === "unavailable") {
+      this.d.timeline.event(conversation.id, "skill.unavailable", `@${bot.handle} is not offered the skill /${resolved.name}, so it did not run.`, {
+        botId: bot.id,
+        skill: resolved.name,
+      });
+      return null;
+    }
+    return this.d.engine.enqueue({
+      botId: bot.id,
+      conversationId: conversation.id,
+      trigger: { type: "message", ref: item.id },
+      input: resolved.kind === "skill" ? resolved.input : item.text,
+      skill: resolved.kind === "skill" ? resolved.skill : null,
+      triggerItemId: item.id,
+      replyParentId: item.parentId,
+    });
   }
 
   get(id: string): Conversation {
@@ -196,18 +230,10 @@ export class ConversationService {
   /** Direct conversation: every message runs the conversation's single bot. */
   routeDirect(conversation: Conversation, item: TimelineItem): Run[] {
     if (conversation.kind !== "direct") return [];
-    const botId = conversation.members[0];
-    if (!botId) return [];
-    return [
-      this.d.engine.enqueue({
-        botId,
-        conversationId: conversation.id,
-        trigger: { type: "message", ref: item.id },
-        input: item.text,
-        triggerItemId: item.id,
-        replyParentId: item.parentId,
-      }),
-    ];
+    const bot = conversation.members[0] ? this.d.bots.get(conversation.members[0]) : undefined;
+    if (!bot) return [];
+    const run = this.runFor(bot, conversation, item);
+    return run ? [run] : [];
   }
 
   /**
@@ -225,16 +251,7 @@ export class ConversationService {
       const lead = members.find((b) => b.id === conversation.leadBotId) ?? members[0];
       targets = lead ? [lead] : [];
     }
-    return targets.map((bot) =>
-      this.d.engine.enqueue({
-        botId: bot.id,
-        conversationId: conversation.id,
-        trigger: { type: "message", ref: item.id },
-        input: item.text,
-        triggerItemId: item.id,
-        replyParentId: item.parentId,
-      }),
-    );
+    return targets.map((bot) => this.runFor(bot, conversation, item)).filter((run): run is Run => run !== null);
   }
 
   /** The user read the conversation: a bot that was `done` goes back to `idle`. */

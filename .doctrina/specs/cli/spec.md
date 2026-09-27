@@ -2,11 +2,11 @@
 
 **Capability:** cli
 **Status:** active
-**Implementation:** planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, approvals, runtimes and mcp are verified; the skills, routines and usage command groups land with their capabilities
+**Implementation:** planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, skills, routines, approvals, runtimes and mcp are verified; usage and bots export|import land with their capabilities
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -20,7 +20,7 @@ It talks to the hub only through the public API.
 ### Ubiquitous
 
 - The CLI shall resolve the hub URL and token from, in order: the `--url` and `--token` flags, the ORBIS_URL and ORBIS_TOKEN environment variables, the file `~/.config/orbis/config.json`, and for a hub on the same machine the data directory `token` file with the default URL `http://127.0.0.1:7420`.
-- The CLI shall provide the commands `serve`, `login`, `bots list|create|show|edit|delete|duplicate|export|import`, `chat`, `group create|list|chat|add|remove|delete`, `memory list|add|edit|rm`, `approvals list|allow|deny`, `skills list|add|remove`, `routines list|add|test|enable|disable|remove`, `usage`, `runtimes check` and `mcp`.
+- The CLI shall provide the commands `serve`, `login`, `bots list|create|show|edit|delete|duplicate|export|import`, `chat`, `group create|list|chat|add|remove|delete`, `memory list|add|edit|rm`, `approvals list|allow|deny`, `skills list|add|show|remove`, `routines list|add|test|enable|disable|remove|runs`, `usage`, `runtimes check` and `mcp`.
 - The CLI shall print machine-readable JSON for every listing command given `--json`.
 - The CLI shall exit 0 on success, 1 when the requested operation failed and 2 on a usage error.
 
@@ -32,6 +32,7 @@ It talks to the hub only through the public API.
 - When `orbis serve` runs, the CLI shall start the hub in the foreground and print its URL and the path of the token file.
 - When `orbis mcp` runs, the CLI shall act as an MCP stdio server that forwards every request to the hub's `/mcp` endpoint with the run token from ORBIS_RUN_TOKEN.
 - When `orbis group chat <group> "<message>"` runs, the CLI shall post the message to the group, print the steps and replies of every bot the message starts and of the runs those bots start by handoff or mention, and exit when all of them have ended.
+- When `orbis routines test <id>` runs, the CLI shall wait for the draft-only test run to end, print its status and reply, and exit 1 when it failed.
 
 ### Unwanted-behavior (must-not)
 
@@ -44,6 +45,7 @@ It talks to the hub only through the public API.
 3. [verified] `orbis bots create` then `orbis bots list --json` prints the new bot as JSON — verified by `packages/cli/test/bots.test.ts`.
 4. [verified] During `orbis chat`, a pending approval is answered from the prompt and the run completes — verified by `packages/cli/test/chat.test.ts`.
 5. [verified] `orbis group create` then `orbis group chat` prints the reply of the mentioned member, and `orbis memory add --team` then `orbis memory list --team --json` prints the entry — verified by `packages/cli/test/collab.test.ts`.
+6. [verified] `orbis skills add|list|show|remove` manage account and bot skills and a `/skill` chat runs with the skill; `orbis routines add|test|enable|runs|remove` drive a routine from creation to enabled — verified by `packages/cli/test/skills-routines.test.ts`.
 
 ## Maturity
 

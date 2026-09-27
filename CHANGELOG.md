@@ -9,6 +9,19 @@ change that delivered it.
 
 ### Added
 
+- Skills and routines (change 0007-skills-and-routines):
+  - Skills as SKILL.md files at account and bot scope with REST routes,
+    the offered list in every run's context, `skills.list` / `skills.read`,
+    `/name` invocation (a `skill.unavailable` event for one a bot is not
+    offered), and Claude Code's `.claude/skills/` kept in sync.
+  - Routines: cron in an IANA timezone, webhooks signed with
+    `X-Orbis-Signature` or GitHub's `X-Hub-Signature-256`, draft-only test
+    runs (external tools become draft cards), enable after a passing test,
+    last 20 runs, 50 per bot, absence pause, routine cards,
+    `routine.create` (asks first) and `routine.list`.
+  - CLI `orbis skills` and `orbis routines`; web `/` autocomplete, skills
+    screen, routines panel and routine cards.
+
 - Orbis brand (change 0006-brand): the planet-and-orbit mark with its
   cyan-to-violet gradient, one-colour and app-icon versions, dark and light
   logos with the tagline "Open Source Autonomous AI Agents", PWA icons, a

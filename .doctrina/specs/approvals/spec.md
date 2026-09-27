@@ -6,7 +6,7 @@
 **Realizes:** SC5
 **Depends on:** tool-gateway, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.2.1
 
 ## Purpose
 
@@ -58,6 +58,7 @@ a model can never override a locked rule.
 2. [verified] An `ask` decision pauses the run, sets the bot to `waiting`, posts an approval card and broadcasts `approval.requested`; "allow once" resumes the run and executes the call; "deny" returns a denial and executes nothing — verified by `packages/hub/test/approvals/approvals.test.ts`.
 3. [verified] "Allow always" stores a grant so that the next identical call runs without a card — verified by `packages/hub/test/approvals/approvals.test.ts`.
 4. [verified] A draft is delivered only after Send, with the user's edits, and a discarded draft is never delivered — verified by `packages/hub/test/approvals/drafts.test.ts`.
+5. [verified] In a draft-only routine run (every routine test run), an `external` tool call becomes a draft card and does not run, and the bot is told so — verified by `packages/hub/test/routines.test.ts`.
 
 ## Maturity
 

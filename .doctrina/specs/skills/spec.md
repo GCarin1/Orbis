@@ -2,11 +2,11 @@
 
 **Capability:** skills
 **Status:** active
-**Implementation:** planned — built by the skills-and-routines change (product.md delivery order 6)
+**Implementation:** verified — SKILL.md store and routes (`packages/hub/src/skills/`), `/skill` invocation in message routing, the offered list in every run's context, Claude Code materialization
 **Realizes:** SC6
 **Depends on:** tool-gateway, bots
 **Last updated:** 2026-09-27
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -28,6 +28,8 @@ single bot's scope.
 - When a user message starts with `/<skill-name>`, the system shall start the run with that skill's body as instructions and the rest of the message as input.
 - When a `claude-code` run starts, the system shall write the offered skills into the workspace directory `.claude/skills/<name>/SKILL.md` so the CLI's own skill loading finds them.
 - When a user creates or edits a skill, the system shall reject a name outside `[a-z0-9-]{1,64}` or a document without a description.
+- When a message starts with `/<word>` (after any mentions) and no skill of that name exists at any scope, the system shall treat the message as plain text, so the slash commands of agent CLIs pass through.
+- When a Claude Code run starts, the system shall remove from `.claude/skills/` the skills it wrote earlier that the bot is no longer offered, and leave every other folder there untouched.
 
 ### Unwanted-behavior (must-not)
 
@@ -35,10 +37,10 @@ single bot's scope.
 
 ## Acceptance criteria
 
-1. [unverified] Skills are created, listed, edited and deleted at account and bot scope, and a bad name or a missing description answers 400 — verified by `packages/hub/test/skills.test.ts`.
-2. [unverified] A `/<skill-name> input` message starts a run whose brain input holds the skill body and the input — verified by `packages/hub/test/skills.test.ts`.
-3. [unverified] A skill outside the bot's allowlist is not offered and its invocation posts an event — verified by `packages/hub/test/skills.test.ts`.
-4. [unverified] A `claude-code` run finds the offered skills under `.claude/skills/` in its workspace — verified by `packages/hub/test/runtimes/claude-code.test.ts`.
+1. [verified] Skills are created, listed, edited and deleted at account and bot scope, and a bad name or a missing description answers 400 — verified by `packages/hub/test/skills.test.ts`.
+2. [verified] A `/<skill-name> input` message starts a run whose brain input holds the skill body and the input — verified by `packages/hub/test/skills.test.ts`.
+3. [verified] A skill outside the bot's allowlist is not offered and its invocation posts an event — verified by `packages/hub/test/skills.test.ts`.
+4. [verified] A `claude-code` run finds the offered skills under `.claude/skills/` in its workspace — verified by `packages/hub/test/runtimes/claude-code.test.ts`.
 
 ## Maturity
 

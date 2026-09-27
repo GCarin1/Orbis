@@ -9,3 +9,4 @@ One line per archived change, newest last. Appended by
 - 2026-09-27 — 0004-collaboration — collaboration (specs: cli MODIFIED, conversations MODIFIED, handoff MODIFIED, memory MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-09-27 — 0005-computer — computer (specs: computer MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-09-27 — 0006-brand — brand
+- 2026-09-27 — 0007-skills-and-routines — skills-and-routines (specs: approvals MODIFIED, cli MODIFIED, routines MODIFIED, skills MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)

@@ -78,6 +78,7 @@ export class RunEngine {
   private readonly inflight = new Set<Promise<void>>();
   private toolHost: RunToolHost = NO_TOOL_HOST;
   private readonly hooks: RunHooks[] = [];
+  private readonly contextSections: Array<(bot: Bot) => string | null> = [];
   private stopped = false;
 
   constructor(private readonly d: EngineDeps) {}
@@ -88,6 +89,11 @@ export class RunEngine {
 
   addHooks(hooks: RunHooks): void {
     this.hooks.push(hooks);
+  }
+
+  /** Add a section to every run's system text (the offered skills). */
+  addContextSection(section: (bot: Bot) => string | null): void {
+    this.contextSections.push(section);
   }
 
   /** Create a queued run and chain it behind the runs of the same bot and conversation. */
@@ -297,6 +303,8 @@ export class RunEngine {
         },
         { items: this.d.items, memory: this.d.memory, bots: this.d.bots },
       );
+      const sections = this.contextSections.map((section) => section(bot)).filter((text): text is string => Boolean(text));
+      if (sections.length) context.identity = [context.identity, ...sections].join("\n\n");
 
       const events = adapter!.run(
         { runId, bot, conversationId, task: req.input, context, skill: req.skill ?? null },

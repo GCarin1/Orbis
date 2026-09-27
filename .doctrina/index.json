@@ -31,7 +31,7 @@
         "id": "approvals",
         "path": ".doctrina/specs/approvals/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.2.1",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -57,9 +57,9 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, approvals, runtimes and mcp are verified; the skills, routines and usage command groups land with their capabilities",
+        "implementation": "planned — in progress: configuration, serve, bots, chat with inline approvals, group, memory, skills, routines, approvals, runtimes and mcp are verified; usage and bots export|import land with their capabilities",
         "realizes": [
           "SC7"
         ],
@@ -162,9 +162,9 @@
         "id": "routines",
         "path": ".doctrina/specs/routines/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the skills-and-routines change (product.md delivery order 6)",
+        "implementation": "verified — routines service, scheduler and webhooks (`packages/hub/src/routines/`)",
         "realizes": [
           "SC6"
         ],
@@ -193,9 +193,9 @@
         "id": "skills",
         "path": ".doctrina/specs/skills/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — built by the skills-and-routines change (product.md delivery order 6)",
+        "implementation": "verified — SKILL.md store and routes (`packages/hub/src/skills/`), `/skill` invocation in message routing, the offered list in every run's context, Claude Code materialization",
         "realizes": [
           "SC6"
         ],
@@ -224,9 +224,9 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.2.2",
+        "version": "0.2.3",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer and browser tools are verified; the tools of skills, routines and secrets register with their changes",
+        "implementation": "planned — in progress: registry, allowlist, MCP over HTTP and stdio, untrusted envelopes, the result cap and the team, conversation, draft, http, memory, computer, browser, skills and routine tools are verified; `secret.request` registers with the secrets change",
         "realizes": [
           "SC2",
           "SC3"
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
-        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft and handoff cards, thread replies, the approvals inbox, @ autocomplete, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; /skill autocomplete and the settings, skills, routines and usage screens land with their capabilities",
+        "implementation": "planned — in progress: roster, groups, direct and group chat, approval, draft, handoff and routine cards, thread replies, the approvals inbox, @ and / autocomplete, the skills screen, the routines panel, the computer side panel and full screen with takeover, languages and the end-to-end paths are verified; the settings and usage screens land with their capabilities",
         "realizes": [
           "SC7",
           "SC4",
@@ -542,6 +542,40 @@
         "applied": "2026-09-27",
         "specs_affected": [],
         "lane": "chore (confident; signals: readme) — opened as chore"
+      },
+      {
+        "id": "0007-skills-and-routines",
+        "title": "skills-and-routines",
+        "path": ".doctrina/changes/archive/2026-09-27-0007-skills-and-routines",
+        "status": "applied",
+        "applied": "2026-09-27",
+        "specs_affected": [
+          {
+            "capability": "approvals",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "routines",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "skills",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [],

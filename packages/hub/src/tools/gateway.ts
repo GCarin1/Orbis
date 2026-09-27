@@ -29,8 +29,11 @@ export function bridgeEntry(): string | null {
 
 export const PERMISSION_TOOL = "mcp__orbis__approval_prompt";
 
-/** Runs before every tool handler; may wait (a takeover) or throw to refuse. */
-export type BeforeToolCall = (session: RunSession, tool: ToolDefinition) => Promise<void>;
+/**
+ * Runs before every tool handler: it may wait (a takeover), throw to refuse,
+ * or return a result that stands in for the tool (a draft-only routine).
+ */
+export type BeforeToolCall = (session: RunSession, tool: ToolDefinition, input: unknown) => Promise<void | ToolCallResult>;
 
 export class ToolGateway implements RunToolHost {
   private readonly sessions = new Map<string, RunSession>();
@@ -107,8 +110,12 @@ export class ToolGateway implements RunToolHost {
       if (!gate.allowed) return { output: gate.message, isError: true };
     }
     try {
-      for (const hook of this.beforeCall) await hook(session, tool);
-      const result = await tool.handler(args, { run, bot, callId, signal });
+      let result: string | ToolCallResult | undefined;
+      for (const hook of this.beforeCall) {
+        result = (await hook(session, tool, args)) ?? undefined;
+        if (result) break;
+      }
+      result ??= await tool.handler(args, { run, bot, callId, signal });
       const normalized = typeof result === "string" ? { output: result, isError: false } : result;
       return { output: capResult(normalized.output), isError: normalized.isError };
     } catch (err) {

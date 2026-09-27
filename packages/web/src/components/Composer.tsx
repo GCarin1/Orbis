@@ -1,4 +1,4 @@
-// Message box with `@` autocomplete for bot handles (specs/web-app).
+// Message box with autocomplete: `@` for bot handles, `/` for skills (specs/web-app).
 import { useRef, useState, type KeyboardEvent } from "react";
 import type { Bot } from "@orbis/shared";
 import { useT } from "../i18n.js";
@@ -26,13 +26,39 @@ export function filterMentions(options: MentionOption[], query: string, limit = 
   return [...byHandle, ...byName].slice(0, limit);
 }
 
+export interface SkillOption {
+  name: string;
+  description: string;
+}
+
+/** A `/skill` being typed at the start of the message (after any mentions), or null. */
+export function skillAt(text: string, caret: number): { start: number; query: string } | null {
+  const match = /^((?:@[a-z0-9-]+\s+)*)\/([a-z0-9-]*)$/i.exec(text.slice(0, caret));
+  if (!match) return null;
+  return { start: match[1]!.length, query: match[2]!.toLowerCase() };
+}
+
+export function filterSkills(options: SkillOption[], query: string, limit = 8): SkillOption[] {
+  return options.filter((o) => o.name.startsWith(query.toLowerCase())).slice(0, limit);
+}
+
+/** One line of the suggestion list, whatever triggered it. */
+interface Suggestion {
+  key: string;
+  insert: string;
+  label: string;
+  bot?: Bot;
+}
+
 export function Composer({
   name,
   mentions = [],
+  skills = [],
   onSend,
 }: {
   name: string;
   mentions?: MentionOption[];
+  skills?: SkillOption[];
   onSend(text: string): Promise<void>;
 }) {
   const t = useT();
@@ -43,8 +69,14 @@ export function Composer({
   const [dismissed, setDismissed] = useState<number | null>(null);
   const box = useRef<HTMLTextAreaElement>(null);
 
-  const token = mentionAt(text, caret);
-  const suggestions = token && dismissed !== token.start ? filterMentions(mentions, token.query) : [];
+  const skillToken = skillAt(text, caret);
+  const token = skillToken ?? mentionAt(text, caret);
+  const suggestions: Suggestion[] =
+    !token || dismissed === token.start
+      ? []
+      : skillToken
+        ? filterSkills(skills, skillToken.query).map((s) => ({ key: `/${s.name}`, insert: `/${s.name} `, label: s.description }))
+        : filterMentions(mentions, token.query).map((m) => ({ key: `@${m.handle}`, insert: `@${m.handle} `, label: m.label, bot: m.bot }));
   const open = suggestions.length > 0;
 
   const submit = async () => {
@@ -60,9 +92,9 @@ export function Composer({
     }
   };
 
-  const pick = (option: MentionOption) => {
+  const pick = (option: Suggestion) => {
     if (!token) return;
-    const insert = `@${option.handle} `;
+    const insert = option.insert;
     const next = text.slice(0, token.start) + insert + text.slice(caret);
     const at = token.start + insert.length;
     setText(next);
@@ -108,10 +140,10 @@ export function Composer({
       }}
     >
       {open && (
-        <ul className="mention-list" role="listbox" aria-label={t("composer.mentions")}>
+        <ul className="mention-list" role="listbox" aria-label={skillToken ? t("composer.skills") : t("composer.mentions")}>
           {suggestions.map((option, i) => (
             <li
-              key={option.handle}
+              key={option.key}
               role="option"
               aria-selected={i === active}
               className={i === active ? "active" : ""}
@@ -121,7 +153,7 @@ export function Composer({
               }}
             >
               {option.bot && <Avatar bot={option.bot} size={20} />}
-              <strong>@{option.handle}</strong> <span className="muted">{option.label}</span>
+              <strong>{option.key}</strong> <span className="muted">{option.label}</span>
             </li>
           ))}
         </ul>

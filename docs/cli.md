@@ -21,6 +21,13 @@ orbis memory list (@bot | --team) [--kind K]
 orbis memory add (@bot | --team) <text> [--kind preference|role|fact]
 orbis memory edit <id> [text] [--kind K]
 orbis memory rm <id> [...]
+orbis skills list [@bot] [--offered]
+orbis skills add <SKILL.md|-> [@bot] [--replace]
+orbis skills show|remove <name> [@bot]
+orbis routines list @bot
+orbis routines add @bot --name N (--cron "0 9 * * 1-5" [--tz Zone] | --webhook) --instruction "…" [--draft-only]
+orbis routines test <id> [--no-wait]            # draft-only; waits and prints the reply
+orbis routines enable <id> [--force] | disable <id> | remove <id> | runs <id>
 orbis approvals [list [--all]]
 orbis approvals allow <id> [--always]
 orbis approvals deny <id> [--note TEXT]

@@ -160,6 +160,19 @@ export function HandoffCard({ item, bots }: { item: TimelineItem; bots: Record<s
   );
 }
 
+export function RoutineCard({ item }: { item: TimelineItem }) {
+  const t = useT();
+  const state = item.card!.state;
+  return (
+    <div className={`card card-routine card-${state}`} data-testid="routine-card">
+      <div className="card-head">
+        <strong>⏰ {item.text}</strong>
+        <span className={`pill pill-routine-${state}`}>{t(`routine.card.${state}` as TextKey)}</span>
+      </div>
+    </div>
+  );
+}
+
 export function CardView({ item, bot, bots = {} }: { item: TimelineItem; bot?: Bot; bots?: Record<string, Bot> }) {
   switch (item.card?.type) {
     case "approval":
@@ -168,6 +181,8 @@ export function CardView({ item, bot, bots = {} }: { item: TimelineItem; bot?: B
       return <DraftCard item={item} bot={bot} />;
     case "handoff":
       return <HandoffCard item={item} bots={bots} />;
+    case "routine":
+      return <RoutineCard item={item} />;
     default:
       return (
         <div className={`card card-${item.card?.type}`} data-testid="card">

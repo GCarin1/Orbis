@@ -282,3 +282,59 @@ export interface ComputerStatus {
   /** When the latest browser screenshot was taken, for the live view. */
   screenshotAt: string | null;
 }
+
+// --- skills (specs/skills) ---------------------------------------------------
+
+export const SKILL_NAME = /^[a-z0-9-]{1,64}$/;
+
+export interface SkillInfo {
+  name: string;
+  description: string;
+  /** Optional hint of when to use the skill (frontmatter `when`). */
+  when: string | null;
+  scope: "account" | "bot";
+  /** The owning bot for a bot-scope skill, else null. */
+  botId: string | null;
+  updatedAt: string;
+}
+
+export interface Skill extends SkillInfo {
+  /** The whole SKILL.md document. */
+  content: string;
+  /** The Markdown body after the frontmatter. */
+  body: string;
+}
+
+// --- routines (specs/routines) -----------------------------------------------
+
+export type RoutineTrigger = { type: "cron"; cron: string; timezone: string } | { type: "webhook" };
+export type RoutineApproval = "normal" | "draft_only";
+
+export interface RoutineRun {
+  id: string;
+  routineId: string;
+  runId: string | null;
+  test: boolean;
+  status: string;
+  summary: string | null;
+  startedAt: string;
+}
+
+export interface Routine {
+  id: string;
+  botId: string;
+  name: string;
+  trigger: RoutineTrigger;
+  instruction: string;
+  approval: RoutineApproval;
+  enabled: boolean;
+  /** Paused by the absence rule; enabling again clears it. */
+  paused: boolean;
+  /** Where a webhook routine listens (POST, signed), else null. */
+  webhookPath: string | null;
+  /** Next fire time of an enabled cron routine, else null. */
+  nextRunAt: string | null;
+  lastRun: RoutineRun | null;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -113,6 +113,9 @@ machine that runs Orbis; none is injected by CI.
 - `Policy`: `{ rules: [{ tool: "<name or glob>", decision: "allow"|"ask"|"deny", locked?: boolean }], grants: string[] }`.
 - `ComputerConfig`: `{ enabled, provider?: "local"|"docker", image? (default "orbis/desktop:latest"), cpus? (default 1), memoryMb? (default 2048), hibernateAfterMin? (default 30) }`.
 - `ComputerStatus`: `{ botId, enabled, provider: "local"|"docker", status: "stopped"|"running"|"hibernated", takeover: boolean, vncPath: string|null (docker and running only), lastUsedAt: string|null, screenshotAt: string|null }`.
+- `SkillInfo`: `{ name ([a-z0-9-]{1,64}), description, when: string|null, scope: "account"|"bot", botId: string|null, updatedAt }`; `Skill` adds `content` (the SKILL.md document) and `body` (the Markdown after the frontmatter).
+- `Routine`: `{ id, botId, name, trigger: { type: "cron", cron, timezone (IANA) } | { type: "webhook" }, instruction, approval: "normal"|"draft_only", enabled, paused, webhookPath: string|null, nextRunAt: string|null, lastRun: RoutineRun|null, createdAt, updatedAt }`; `RoutineRun`: `{ id, routineId, runId, test, status, summary, startedAt }`.
+- Routine card data: `{ routineId, name, trigger, approval, event }`; states `created`, `enabled`, `disabled`, `paused`. Timeline event `skill.unavailable`: `event.data` = `{ botId, skill }`.
 - `Conversation`: `{ id, kind: "direct"|"group", title, members: string[] (bot ids), leadBotId: string|null, createdAt, lastItemAt }`.
 - `TimelineItem`: `{ id, conversationId, kind: "message"|"event"|"card", author: { type: "user"|"bot"|"system", id: string|null }, text, parentId: string|null, mentions: string[], attachments: string[], reactions: { [emoji]: number }, runId: string|null, card?: Card, event?: { type, data }, createdAt, updatedAt }`.
 - `Card`: `{ type: "approval"|"draft"|"handoff"|"secret-request"|"routine", state: string, data: object }`.
@@ -141,8 +144,8 @@ machine that runs Orbis; none is injected by CI.
 - `GET /runs?botId=&conversationId=&status=` · `GET /runs/:id` · `POST /runs/:id/cancel`.
 - `GET /approvals?status=pending` · `GET /approvals/:id` · `POST /approvals/:id` `{ decision: "allow_once"|"allow_always"|"deny", note? }` → the `Approval`; 409 when it is no longer pending.
 - `POST /cards/:itemId/send` `{ fields?: { to?, subject?, body?, url? } }` → the updated item · `POST /cards/:itemId/discard` → the updated item (drafts; 409 once sent or discarded) · `POST /cards/:itemId/secret` `{ value }` or `{ decline: true }` (secret requests).
-- `GET /skills?botId=` · `POST /skills` `{ content, botId? }` · `GET|PUT|DELETE /skills/:name?botId=`.
-- `GET /bots/:id/routines` · `POST /bots/:id/routines` · `GET|PATCH|DELETE /routines/:id` · `POST /routines/:id/test` · `POST /routines/:id/enable` `{ force? }` · `POST /routines/:id/disable` · `GET /routines/:id/runs`.
+- `GET /skills?botId=&offered=` → `SkillInfo[]`: account skills without `botId`, that bot's own skills with it, and with `offered=true` the skills the bot is offered (its allowlist of account skills plus its own) · `POST /skills` `{ content, botId? }` → 201 `Skill` (400 with `fields.name` / `fields.description`, 409 `skill_exists`) · `GET /skills/:name?botId=` → `Skill` · `PUT /skills/:name?botId=` `{ content }` (the name cannot change) · `DELETE /skills/:name?botId=` → 204.
+- `GET /bots/:id/routines` → `Routine[]` · `POST /bots/:id/routines` `{ name, trigger, instruction, approval? }` → 201 `Routine` with `secret` (409 `routine_limit` past the routines-per-bot budget) · `GET /routines/:id` → `Routine` with `secret` · `PATCH /routines/:id` `{ name?, trigger?, instruction?, approval? }` · `DELETE /routines/:id` → 204 · `POST /routines/:id/test` → 202 `RoutineRun` (a draft-only run) · `POST /routines/:id/enable` `{ force? }` → `Routine` (409 `untested` without a successful test run unless `force`; clears `paused`) · `POST /routines/:id/disable` → `Routine` · `GET /routines/:id/runs` → the last 20 `RoutineRun`, newest first.
 - `GET /usage?from=&to=&botId=` → `{ from, to, total: Usage, bots: [{ botId, usage: Usage, spendCapUsd }] }`.
 - `GET /runtimes/health` → `[{ kind, executable, found, version }]`.
 - `GET /openapi.json` → OpenAPI 3.1 document.
@@ -166,7 +169,7 @@ machine that runs Orbis; none is injected by CI.
 
 ### Webhooks
 
-- `POST /hooks/routines/:id` → 202 `{ runId }`; 401 on a bad signature; 404 for an unknown or disabled routine.
+- `POST /hooks/routines/:id` with any content type (body at most 1 MiB, signed as raw bytes) → 202 `{ runId }`; 401 on a missing or bad signature; 404 for an unknown, disabled or non-webhook routine. The payload reaches the bot inside `<untrusted-content source="webhook:<routine name>">`, with `X-GitHub-Event` named when present.
 
 ## References
 

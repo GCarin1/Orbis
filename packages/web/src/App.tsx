@@ -12,6 +12,9 @@ import { TokenGate } from "./components/TokenGate.js";
 import { ApprovalsInbox } from "./components/ApprovalsInbox.js";
 import { GroupList, NewGroupDialog } from "./components/Groups.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
+import { RoutinesPanel } from "./components/RoutinesPanel.js";
+import { SkillsScreen } from "./components/SkillsScreen.js";
+import type { SkillOption } from "./components/Composer.js";
 import type { MentionOption } from "./components/Composer.js";
 
 export function App() {
@@ -22,7 +25,11 @@ export function App() {
   });
   const [creating, setCreating] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
-  const [computerOpen, setComputerOpen] = useState(false);
+  // One side panel at a time beside a direct conversation.
+  const [panel, setPanel] = useState<"computer" | "routines" | null>(null);
+  const computerOpen = panel === "computer";
+  const setComputerOpen = (open: boolean) => setPanel(open ? "computer" : null);
+  const [view, setView] = useState<"chat" | "skills">("chat");
   const [computerFull, setComputerFull] = useState(false);
   const store = useStore();
 
@@ -61,6 +68,15 @@ export function App() {
   const group = store.selectedGroupId ? store.conversations[store.selectedGroupId] : undefined;
   const groups = useMemo(() => Object.values(store.conversations).filter((c) => c.kind === "group"), [store.conversations]);
   const conversationId = group ? group.id : selected ? store.directByBot[selected.id] : undefined;
+  // `/` autocomplete: the skills offered to the bot, or to any member of the group.
+  const skillBots = group ? group.members : selected ? [selected.id] : [];
+  useEffect(() => {
+    for (const id of skillBots) void useStore.getState().loadOfferedSkills(id).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skillBots.join(",")]);
+  const skillOptions: SkillOption[] = [
+    ...new Map(skillBots.flatMap((id) => store.offeredSkills[id] ?? []).map((s) => [s.name, { name: s.name, description: s.description }])).values(),
+  ];
   // `@` autocomplete: the members (and @everyone) in a group, every visible bot in a direct chat.
   const mentionPool = group ? group.members.map((id) => store.bots[id]).filter((b) => b !== undefined) : bots.filter((b) => !b.hidden);
   const mentions: MentionOption[] = mentionPool.map((b) => ({ handle: b.handle, label: b.role ? `${b.name} — ${b.role}` : b.name, bot: b }));
@@ -86,7 +102,7 @@ export function App() {
   }
 
   return (
-    <div className={`layout${selected && computerOpen && !group ? " with-computer" : ""}`}>
+    <div className={`layout${selected && panel && !group && view === "chat" ? " with-computer" : ""}`}>
       <aside className="sidebar">
         <header className="brand">
           <img src="/icon.svg" alt="" width={34} height={34} />
@@ -95,13 +111,46 @@ export function App() {
           </span>
           <LanguageSwitch />
         </header>
-        <ApprovalsInbox approvals={Object.values(store.approvals)} bots={store.bots} onOpen={(id) => void store.selectBot(id)} />
-        <GroupList groups={groups} bots={store.bots} selectedId={store.selectedGroupId} onSelect={(id) => void store.selectGroup(id)} onNew={() => setCreatingGroup(true)} />
-        <Roster bots={bots} selectedId={store.selectedBotId} onSelect={(id) => void store.selectBot(id)} onNew={() => setCreating(true)} />
+        <nav className="main-nav" aria-label="Orbis">
+          <button className={`nav-item${view === "chat" ? " selected" : ""}`} aria-pressed={view === "chat"} onClick={() => setView("chat")}>
+            💬 {t("nav.chat")}
+          </button>
+          <button className={`nav-item${view === "skills" ? " selected" : ""}`} aria-pressed={view === "skills"} onClick={() => setView("skills")}>
+            📘 {t("nav.skills")}
+          </button>
+        </nav>
+        <ApprovalsInbox
+          approvals={Object.values(store.approvals)}
+          bots={store.bots}
+          onOpen={(id) => {
+            setView("chat");
+            void store.selectBot(id);
+          }}
+        />
+        <GroupList
+          groups={groups}
+          bots={store.bots}
+          selectedId={store.selectedGroupId}
+          onSelect={(id) => {
+            setView("chat");
+            void store.selectGroup(id);
+          }}
+          onNew={() => setCreatingGroup(true)}
+        />
+        <Roster
+          bots={bots}
+          selectedId={store.selectedBotId}
+          onSelect={(id) => {
+            setView("chat");
+            void store.selectBot(id);
+          }}
+          onNew={() => setCreating(true)}
+        />
       </aside>
       <main className="main">
+        {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
-        {group ? (
+        {view === "skills" ? null : group ? (
           <>
             <header className="conv-head">
               <span className="avatar-stack">
@@ -129,7 +178,7 @@ export function App() {
             ) : (
               <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} />
             )}
-            <Composer name={group.title} mentions={mentions} onSend={(text) => store.send(group.id, text)} />
+            <Composer name={group.title} mentions={mentions} skills={skillOptions} onSend={(text) => store.send(group.id, text)} />
           </>
         ) : selected && conversationId ? (
           <>
@@ -145,23 +194,38 @@ export function App() {
                   <StateLabel state={selected.state} />
                 </div>
               </div>
-              <button className="btn conv-computer" aria-pressed={computerOpen} onClick={() => setComputerOpen(!computerOpen)}>
-                🖥 {t("computer.open")}
-                {store.computers[selected.id]?.status === "running" && <span className="dot-running" aria-hidden="true" />}
-              </button>
+              <div className="conv-actions">
+                <button className="btn" aria-pressed={panel === "routines"} onClick={() => setPanel(panel === "routines" ? null : "routines")}>
+                  ⏰ {t("routines.open")}
+                </button>
+                <button className="btn conv-computer" aria-pressed={computerOpen} onClick={() => setComputerOpen(!computerOpen)}>
+                  🖥 {t("computer.open")}
+                  {store.computers[selected.id]?.status === "running" && <span className="dot-running" aria-hidden="true" />}
+                </button>
+              </div>
             </header>
             {items.length === 0 && activeRuns.length === 0 ? (
               <p className="muted empty">{t("conv.start", { name: selected.name })}</p>
             ) : (
               <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} />
             )}
-            <Composer name={selected.name} mentions={mentions} onSend={(text) => store.send(conversationId, text)} />
+            <Composer name={selected.name} mentions={mentions} skills={skillOptions} onSend={(text) => store.send(conversationId, text)} />
           </>
         ) : (
           <p className="muted empty">{t("conv.empty")}</p>
         )}
       </main>
-      {selected && computerOpen && !group && store.api && (
+      {selected && panel === "routines" && !group && view === "chat" && (
+        <RoutinesPanel
+          bot={selected}
+          routines={store.routines[selected.id]}
+          onLoad={() => store.loadRoutines(selected.id)}
+          onCreate={(input) => store.createRoutine(selected.id, input)}
+          onAction={(routine, action, force) => store.routineAction(routine, action, force)}
+          onClose={() => setPanel(null)}
+        />
+      )}
+      {selected && computerOpen && !group && view === "chat" && store.api && (
         <ComputerPanel
           api={store.api}
           bot={selected}

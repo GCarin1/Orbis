@@ -91,6 +91,25 @@ A failing provider (for example no Docker daemon) answers 409
 /api/v1/bots/:id/computer/vnc-session` returns the noVNC URL and sets the
 path-scoped cookie the viewer uses. See [computer.md](computer.md).
 
+## Skills and routines
+
+```bash
+curl -s -H "$H" -H 'content-type: application/json' \
+  -d "$(jq -n --rawfile c SKILL.md '{content: $c}')" http://127.0.0.1:7420/api/v1/skills
+curl -s -H "$H" "http://127.0.0.1:7420/api/v1/skills?botId=ana&offered=true"
+curl -s -H "$H" -H 'content-type: application/json' \
+  -d '{"name":"Daily","trigger":{"type":"cron","cron":"0 9 * * 1-5","timezone":"America/Sao_Paulo"},"instruction":"Post the QA report"}' \
+  http://127.0.0.1:7420/api/v1/bots/ana/routines                     # → 201, with the webhook secret
+curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/routines/<id>/test     # → 202, a draft-only run
+curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/routines/<id>/enable   # 409 untested without a passing test
+# A webhook routine, signed with its secret:
+BODY='{"ref":"refs/heads/main"}'
+SIG="sha256=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -hex | cut -d' ' -f2)"
+curl -s -H "X-Orbis-Signature: $SIG" -H 'content-type: application/json' -d "$BODY" http://127.0.0.1:7420/hooks/routines/<id>
+```
+
+See [skills-and-routines.md](skills-and-routines.md).
+
 ## Stream
 
 `ws://127.0.0.1:7420/api/v1/stream?token=<token>` — send
