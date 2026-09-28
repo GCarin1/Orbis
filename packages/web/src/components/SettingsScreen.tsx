@@ -7,6 +7,7 @@ import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
 import { brainLabel, brainShort, TestResultView, useLocalServers, type TestState } from "./brains.js";
+import { ChatGptCard } from "./ChatGptCard.js";
 import { ComputersSettings } from "./ComputerModes.js";
 import { VoiceSettings } from "./VoiceSettings.js";
 
@@ -103,6 +104,7 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
           </button>
         </div>
       </div>
+      <ChatGptCard api={api} />
       <h2>{t("brains.machine")}</h2>
       <p className="muted settings-help">{t("brains.testHelp")}</p>
 

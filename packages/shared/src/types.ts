@@ -556,3 +556,32 @@ export interface ToolInfo {
   /** The MCP server it comes from, or null for Orbis's own tools. */
   server: string | null;
 }
+
+// --- ChatGPT through the Codex CLI (specs/agent-runtimes) ----------------------
+
+/** An install or sign-in the hub runs for a CLI brain. */
+export interface CliJob {
+  kind: "install" | "login";
+  state: "running" | "done" | "failed";
+  startedAt: string;
+  finishedAt: string | null;
+  /** Sign-in: the page to open. */
+  url: string | null;
+  /** Device sign-in: the one-time code to type on that page. */
+  code: string | null;
+  log: string;
+  error: string | null;
+}
+
+/** The Codex CLI on the hub's machine and whose account it uses (`GET /api/v1/runtimes/codex/account`). */
+export interface CodexAccount {
+  installed: boolean;
+  version: string | null;
+  path: string | null;
+  loggedIn: boolean;
+  /** `chatgpt`: the user's ChatGPT plan, no API key. */
+  method: "chatgpt" | "api-key" | null;
+  /** The last line of `codex login status`. */
+  detail: string | null;
+  job: CliJob | null;
+}

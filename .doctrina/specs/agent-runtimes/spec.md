@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -46,6 +46,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `cursor` run starts with the MCP bridge, the system shall write the Orbis MCP server into the workspace's `.cursor/mcp.json`, allow `Mcp(orbis:*)` in the workspace's `.cursor/cli.json`, and restore both files when the run ends.
 - When a local model server answers that the model does not support tools, the system shall retry the turn once without tools and record that as a thinking step.
 - When a user requests a brain test for a bot or a brain configuration, the system shall ask that brain "What is 17 × 23? Answer with the number only." with no tools, no history and a scratch working directory, and report whether it ran, its reply, its duration and whether the reply holds 391.
+- When the user asks from the settings screen, the system shall install the Codex CLI with `npm install -g @openai/codex@latest`, start its sign-in with the user's ChatGPT account — `codex login` in the browser of the hub's machine, or `codex login --device-auth` with a link and a one-time code for any device — report the link and the code as Codex prints them, report the account from `codex login status`, cancel a sign-in, and sign out with `codex logout`.
 
 ### Unwanted-behavior (must-not)
 
@@ -53,6 +54,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not start a run whose brain configuration is incomplete (executable not found, missing base URL for `openai`, missing API key for a remote API); it shall fail the run at once with a message naming the missing piece.
 - The system shall not execute tool calls from an API brain turn that stopped on `refusal`, or on `max_tokens` while holding a tool call; the run fails naming the reason.
 - The system shall not pass `--force` to the Cursor CLI, so that Cursor's own shell and write tools keep Cursor's permission rules.
+- The system shall not read, store or relay the ChatGPT password or tokens (Codex keeps them), nor drive the chatgpt.com website.
 
 ### Optional
 
@@ -73,6 +75,7 @@ brain are owned by `contracts/cli-harnesses`.
 10. [verified] The ollama and lmstudio brains run against a fake local server at the configured address with no key, and a model that rejects tools answers without them — verified by `packages/hub/test/runtimes/brains-settings.test.ts`.
 11. [verified] The brain test answers `answered: true` for a brain that replies 391 and `false` for the mock's echo, names a missing model and leaves no scratch workspace; the local-servers route lists a server's models or says it is not reachable; the health check finds the Cursor CLI under either name — verified by `packages/hub/test/runtimes/brains-settings.test.ts`.
 12. [verified] On Windows, an npm `.cmd` shim runs its Node.js script with the prompt as one argument, and a batch file with no script fails naming the fix — verified by `packages/hub/test/runtimes/brains-settings.test.ts`.
+13. [verified] With fake `npm` and `codex` executables, the hub reports Codex missing, installs it, starts a device sign-in whose link and code it reports, then the ChatGPT account, signs out, gives the browser sign-in link and reports a cancelled sign-in; the parsers read the output the real Codex CLI prints — verified by `packages/hub/test/runtimes/codex-account.test.ts`.
 
 ## Maturity
 

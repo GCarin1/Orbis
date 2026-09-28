@@ -61,7 +61,26 @@ codex exec --json --skip-git-repo-check --sandbox workspace-write --cd <workspac
 
 Codex runs in its own `workspace-write` sandbox limited to the bot's
 workspace; the thread id of the first run is stored and resumed on the next.
-Setup: `npm i -g @openai/codex`, then `codex login` with your ChatGPT account.
+
+**Your paid ChatGPT plan, no API key.** A ChatGPT plan (Plus, Pro, Business,
+Edu, Enterprise) includes Codex, and the Codex CLI signs in with the ChatGPT
+account — that is OpenAI's own way to use the subscription outside
+chatgpt.com. In **⚙ Settings → Brains → ChatGPT with your subscription**:
+
+1. **Install Codex** runs `npm install -g @openai/codex` (Node.js needed).
+2. **Sign in with ChatGPT** runs `codex login`: an OpenAI page opens on the
+   computer that runs Orbis (the card also links to it). **Sign in with a
+   code** runs `codex login --device-auth`: open
+   `https://auth.openai.com/codex/device` on any device and type the code the
+   card shows. Codex keeps the sign-in in `~/.codex`; Orbis never sees the
+   password or the tokens.
+3. Pick the brain **Codex CLI (your ChatGPT account, no API)** for a bot, and
+   **Test** proves a model answers. Usage counts against your plan's limits.
+
+By hand it is the same: `npm i -g @openai/codex`, `codex login` (or
+`codex login --device-auth`), `codex login status`. Orbis does not drive
+the chatgpt.com website: that is not an interface OpenAI offers for
+programs, and its terms do not allow automating it.
 
 ### Gemini CLI (Google account)
 

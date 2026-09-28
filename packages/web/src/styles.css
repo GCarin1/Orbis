@@ -2233,3 +2233,36 @@ label.check {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 2px 12px;
 }
+
+/* ── ChatGPT through Codex (change 0019) ─────────────────────────────────── */
+.chatgpt-card {
+  margin-bottom: 14px;
+  max-width: 760px;
+}
+.chatgpt-steps {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.chatgpt-steps li.done strong {
+  color: var(--muted);
+}
+.card-actions.inline {
+  display: inline-flex;
+}
+.chatgpt-login {
+  margin-top: 6px;
+}
+.chatgpt-code {
+  font: 600 24px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
+  margin: 6px 0 10px;
+  user-select: all;
+}
+.market-card header .badge,
+.server-card header .badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}

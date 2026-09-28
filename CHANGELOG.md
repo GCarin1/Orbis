@@ -9,6 +9,14 @@ change that delivered it.
 
 ### Added
 
+- ChatGPT through Codex (change 0019-chatgpt-through-codex): **Settings →
+  Brains → ChatGPT with your subscription** installs the Codex CLI
+  (`npm install -g @openai/codex`), signs in with the ChatGPT account in the
+  browser (`codex login`) or with a code on any device (`codex login
+  --device-auth`), shows the account, tests it and signs out; routes under
+  `/api/v1/runtimes/codex/`. The `codex` brain is labelled "Codex CLI (your
+  ChatGPT account, no API)".
+
 - Tools marketplace (change 0018-mcp-marketplace, ADR 0010): the hub is now
   also an MCP client. **🧩 Tools** lists 17 checked MCP servers — no account
   (DeepWiki, Exa, Context7, Hugging Face, Sequential Thinking, Playwright,

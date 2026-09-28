@@ -7,6 +7,7 @@ import type { HubContext } from "../context.js";
 import { badRequest, conflict } from "../errors.js";
 import { localModelServers, runtimeHealth } from "../brains/health.js";
 import { brainTestBot, testBrain } from "../brains/probe.js";
+import type { CodexAccount } from "../brains/codex-account.js";
 import { BrainSchema } from "./schemas.js";
 
 const TestBody = Type.Object(
@@ -19,8 +20,22 @@ const TestBody = Type.Object(
   { additionalProperties: false },
 );
 
-export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubContext): Promise<void> {
+export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubContext, codex: CodexAccount): Promise<void> {
   const app = root.withTypeProvider<TypeBoxTypeProvider>();
+
+  // ChatGPT through the Codex CLI: install it, sign in with the ChatGPT account, sign out.
+  const LoginBody = Type.Object({ device: Type.Optional(Type.Boolean()) }, { additionalProperties: false });
+  app.get("/api/v1/runtimes/codex/account", { schema: { tags: ["runtimes"] } }, async () => codex.status());
+  app.post("/api/v1/runtimes/codex/install", { schema: { tags: ["runtimes"] } }, async (_req, reply) => {
+    reply.code(202);
+    return codex.install();
+  });
+  app.post("/api/v1/runtimes/codex/login", { schema: { tags: ["runtimes"], body: LoginBody } }, async (req, reply) => {
+    reply.code(202);
+    return codex.login(req.body.device ?? false);
+  });
+  app.post("/api/v1/runtimes/codex/cancel", { schema: { tags: ["runtimes"] } }, async () => codex.cancel());
+  app.post("/api/v1/runtimes/codex/logout", { schema: { tags: ["runtimes"] } }, async () => codex.logout());
   const { config, brains, botService, secretResolvers } = ctx;
   // One test at a time per bot or brain kind: each one may start a CLI process.
   const running = new Set<string>();

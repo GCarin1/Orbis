@@ -216,6 +216,15 @@ for `claude-code`, `codex`, `gemini-cli` and `cursor`.
 `GET /api/v1/runtimes/local` → `[{ kind, baseUrl, reachable, models, error }]`
 for the `ollama` and `lmstudio` servers (`GET <baseUrl>/models`).
 
+`GET /api/v1/runtimes/codex/account` → `{ installed, version, path, loggedIn, method: "chatgpt"|"api-key"|null, detail, job }`
+(from `codex --version` and `codex login status`). `POST …/codex/install`
+(runs `npm install -g @openai/codex@latest`), `POST …/codex/login`
+`{ "device": true }` (runs `codex login --device-auth`; without `device`,
+`codex login`, which opens the browser on the hub's machine) and
+`POST …/codex/cancel` answer the job `{ kind, state, url, code, log, error }`
+— poll the account while `job.state` is `running`; `url` and `code` appear as
+Codex prints them. `POST …/codex/logout` runs `codex logout`.
+
 `POST /api/v1/runtimes/test` with `{ "botId": "ana" }` (that bot's brain and
 secrets) or `{ "brain": { "kind": "ollama", "model": "llama3.2" } }` asks the
 brain `What is 17 × 23? Answer with the number only.` with no tools and

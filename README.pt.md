@@ -23,6 +23,9 @@ vista de todos e o chefe volta até você sozinho quando tudo termina.
   <img src="docs/screenshots/new-bot-pt.jpg" alt="A tela de novo bot: escolha uma cor e um dos oito rostos, um gestor e um cérebro, ou comece por uma sugestão" width="560">
   <img src="docs/screenshots/phone-pt.jpg" alt="Orbis no celular: os rostos da equipe e a lista de conversas" width="200">
 </p>
+<p align="center">
+  <img src="docs/screenshots/tools-pt.jpg" alt="A tela Ferramentas no tema escuro: servidores MCP para conectar com um clique, sem conta, entrando com a conta ou com uma chave" width="900">
+</p>
 
 O cérebro de cada bot é escolha sua, bot a bot:
 
@@ -69,6 +72,7 @@ fecha quando os critérios de aceite são provados por testes.
 | Equipe com hierarquia: gestores delegam aos subordinados e prestam contas sozinhos quando tudo termina; menções por handle ou por função (`@qa`); bots chamam uns aos outros para a conversa | ✅ verificado |
 | O visual do Orbis: rostos dos bots (8 formas, 10 cores, olhos que seguem o estado), uma lista de conversas com bolinha de não lida, o painel do bot (tela, rotinas, equipe), a tela de novo bot, modo escuro e celular | ✅ verificado |
 | Três tipos de computador por bot: uma pasta isolada, **o seu computador** (uma pasta que você escolhe, seus programas, navegador visível; com consentimento explícito, gravações pedem aprovação) ou um contêiner Docker com área de trabalho ao vivo, com preparo da imagem em um clique | ✅ verificado |
+| ChatGPT com o seu plano pago e sem API: as Configurações instalam o Codex CLI e entram com a sua conta do ChatGPT (navegador ou código em qualquer aparelho) | ✅ verificado |
 | Marketplace de ferramentas: conecte servidores MCP com um clique — sem conta (DeepWiki, Exa, Context7, Hugging Face…), entrando com a sua conta (Notion, Linear, Jira e Confluence, Sentry, Supabase, Canva) ou com uma chave (GitHub, Brave, Tavily, Firecrawl) — ou o seu próprio; escolha as ferramentas e os servidores de cada bot com chaves | ✅ verificado |
 | Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 

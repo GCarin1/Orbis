@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.13.0
+**Version:** 0.13.1
 
 ## Purpose
 
@@ -37,6 +37,7 @@ run's steps.
 - The web app shall let the user pick each bot's computer among three cards — a private folder, "My computer" with the folder it works in, and a Docker container — show what Docker needs with a button that prepares the desktop image, and name the bot's kind of computer under its screen.
 - The web app shall provide a Tools screen: a catalog of MCP servers with search and categories, each card saying whether it needs no account, a sign-in or a key, connecting in one click (a form for a key, with where to get it; a sign-in link for an account); the connected servers with their state, tools, the bots that may use each one and Reconnect and Disconnect; and a form for a custom server.
 - The web app shall let the user choose each bot's tools in its settings with switches for Orbis's tool groups and for each connected server, written to the bot's allowlist.
+- The web app shall show, at the top of the brains settings, a ChatGPT card in three steps — install the Codex CLI, sign in with the ChatGPT account (in the browser, or with the one-time code shown large and the page to open), use it in a bot with a test — and the account once connected.
 
 ### Event-driven
 
@@ -83,6 +84,8 @@ run's steps.
 24. [verified] In a real browser, the user gives a bot their own folder with the consent, the panel names it, the bot's file write waits for "Allow once" and then lands in that folder, and the settings screen explains the three kinds — verified by `tests/e2e/computer-modes.test.ts`.
 25. [verified] The catalog shows how each server connects, searches and filters by category, connects one with no account in one click, asks for a key with where to get it, shows the sign-in link of a server that needs an account, gives a server to the bots ticked, and the bot's tool switches write `!group.*`, `mcp.<server>.*` and `!*` for nothing — verified by `packages/web/test/marketplace.test.tsx`.
 26. [verified] In a real browser, the user browses the catalog, adds their own MCP server, gives it to one bot, sees it among that bot's tools, and the bot's call reaches the server with its key and argument — verified by `tests/e2e/marketplace.test.ts`.
+27. [verified] The ChatGPT card installs Codex, starts a sign-in with a code, shows the code and the OpenAI page, shows the connected account after it polls, and tests the ChatGPT brain — verified by `packages/web/test/chatgpt.test.tsx`.
+28. [verified] In a real browser with fake `npm` and `codex`, the user installs Codex from Settings, signs in with a code shown on the card, and sees the connected ChatGPT account — verified by `tests/e2e/chatgpt.test.ts`.
 
 ## Maturity
 
