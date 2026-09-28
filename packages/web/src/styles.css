@@ -2045,16 +2045,16 @@ button:focus-visible {
 .settings-section h2 {
   margin: 18px 0 6px;
 }
-.settings-form {
+.prefs-form {
   display: grid;
   gap: 10px;
   max-width: 560px;
 }
-.settings-form label {
+.prefs-form label {
   display: grid;
   gap: 4px;
 }
-.settings-form input {
+.prefs-form input {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -2110,8 +2110,12 @@ label.check {
   gap: 6px;
   margin-bottom: 8px;
 }
-.mode-detail input {
+.mode-detail input:not([type="checkbox"]) {
   width: 100%;
+}
+.checkbox.consent input {
+  flex: none;
+  margin-top: 3px;
 }
 .checkbox.consent {
   align-items: flex-start;
@@ -2265,4 +2269,48 @@ label.check {
 .server-card header .badge {
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* The computer cards in the narrow bot settings panel: one per row. */
+.settings-panel .mode-cards {
+  grid-template-columns: 1fr;
+}
+.settings-panel .mode-card {
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+}
+.settings-panel .mode-icon {
+  grid-row: span 2;
+}
+.settings-panel .mode-detail input:not([type="checkbox"]) {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+}
+.tool-picker .field-label {
+  font-weight: 600;
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+.brain-card > .btn,
+.brain-card > .link,
+.brain-card > p > .btn {
+  align-self: flex-start;
+}
+.brain-card .server-bots label.checkbox,
+.card-actions label.check {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.prefs-form .lang-switch select {
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  max-width: 260px;
 }

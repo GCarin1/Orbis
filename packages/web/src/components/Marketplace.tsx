@@ -176,7 +176,7 @@ function CatalogCard({ api, entry, server, onConnected }: { api: Api; entry: Cat
         </p>
       ) : open ? (
         <form
-          className="settings-form"
+          className="prefs-form"
           onSubmit={(e) => {
             e.preventDefault();
             void connect();
@@ -266,7 +266,7 @@ function CustomServer({ api, onConnected }: { api: Api; onConnected(id: string):
     <details className="custom-server">
       <summary>{t("market.custom")}</summary>
       <form
-        className="settings-form"
+        className="prefs-form"
         onSubmit={(e) => {
           e.preventDefault();
           void submit();

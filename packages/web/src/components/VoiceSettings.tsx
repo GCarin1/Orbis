@@ -68,7 +68,7 @@ export function VoiceSettings({ api }: { api: Api }) {
   return (
     <div className="settings-section" data-testid="voice-settings">
       <h2>{t("appearance.title")}</h2>
-      <div className="settings-form">
+      <div className="prefs-form">
         <div>
           <p className="field-label">{t("theme.label")}</p>
           <ThemeChoice />
@@ -112,7 +112,7 @@ export function VoiceSettings({ api }: { api: Api }) {
         )}
       </p>
       <form
-        className="settings-form"
+        className="prefs-form"
         onSubmit={(e) => {
           e.preventDefault();
           void save({ url: url.trim() || null, model: model.trim() || null, ...(apiKey ? { apiKey } : {}) });

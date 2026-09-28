@@ -848,6 +848,15 @@
           }
         ],
         "lane": "product (confident; signals: feature)"
+      },
+      {
+        "id": "0020-settings-panel-layout-fix",
+        "title": "Settings panel layout fix",
+        "path": ".doctrina/changes/archive/2026-09-28-0020-settings-panel-layout-fix",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [],
+        "lane": "chore"
       }
     ],
     "skills": [
