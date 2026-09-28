@@ -281,6 +281,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const collaboration = new Collaboration(ctx);
   tools.register(collaboration.handoffTool());
   engine.addHooks(collaboration.hooks());
+  engine.addContextSection((bot) => collaboration.contextSection(bot));
   const memoryService = new MemoryService(ctx);
   for (const tool of memoryService.tools()) tools.register(tool);
   engine.addHooks(memoryService.hooks());

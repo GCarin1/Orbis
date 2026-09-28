@@ -46,7 +46,7 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -57,7 +57,7 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.8.0",
+        "version": "0.9.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
@@ -87,7 +87,7 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -102,7 +102,7 @@
         "id": "desktop-app",
         "path": ".doctrina/specs/desktop-app/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — Electron shell in `packages/desktop` (hub launcher, hardened window, notifications, tray); run with `npm run desktop`",
         "realizes": [
@@ -117,9 +117,9 @@
         "id": "handoff",
         "path": ".doctrina/specs/handoff/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
-        "implementation": "verified",
+        "implementation": "verified — handoff tool (to a handle, or a role one bot holds), cards, threaded replies, one report back per delegating run, bot.report events, bot-to-bot mentions in any conversation, depth limit",
         "realizes": [
           "SC4"
         ],
@@ -688,6 +688,36 @@
           }
         ],
         "lane": "product (confident; signals: support)"
+      },
+      {
+        "id": "0014-team-hierarchy",
+        "title": "team-hierarchy",
+        "path": ".doctrina/changes/archive/2026-09-28-0014-team-hierarchy",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "desktop-app",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "handoff",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: collaboration)"
       }
     ],
     "skills": [

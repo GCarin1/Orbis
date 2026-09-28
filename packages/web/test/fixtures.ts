@@ -9,6 +9,7 @@ export function bot(overrides: Partial<Bot> & { name: string }): Bot {
     description: "",
     avatar: { initials: overrides.name.slice(0, 2).toUpperCase(), color: "#4f46e5" },
     brain: { kind: "mock" },
+    reportsTo: null,
     policy: { rules: [], grants: [] },
     computer: { enabled: true },
     tools: ["*"],

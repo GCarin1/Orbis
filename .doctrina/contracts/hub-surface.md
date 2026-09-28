@@ -37,7 +37,7 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | ORBIS_MASTER_KEY         | no       | —                               | 64-hex-characters        |
 | ORBIS_MAX_BOTS           | no       | —                               | 50                       |
 | ORBIS_MAX_GROUP_SIZE     | no       | —                               | 6                        |
-| ORBIS_MAX_HANDOFF_DEPTH  | no       | —                               | 4                        |
+| ORBIS_MAX_HANDOFF_DEPTH  | no       | —                               | 6                        |
 | ORBIS_ABSENCE_PAUSE_DAYS | no       | —                               | 14                       |
 | ORBIS_COMPUTER_PROVIDER  | no       | `local\|docker`                 | local                    |
 | ORBIS_LOG_LEVEL          | no       | `debug\|info\|warn\|error`      | info                     |
@@ -104,7 +104,7 @@ machine that runs Orbis; none is injected by CI.
 | bots-per-installation          | input     | 50 bots        |
 | routines-per-bot               | input     | 50 routines    |
 | routine-runs-kept              | output    | 20 runs        |
-| handoff-depth                  | input     | 4 hops         |
+| handoff-depth                  | input     | 6 hops         |
 
 ## Interfaces
 
@@ -118,7 +118,7 @@ machine that runs Orbis; none is injected by CI.
 
 ### Resource shapes
 
-- `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, policy: Policy, computer: ComputerConfig, tools: string[] (allowlist globs, default ["*"]), skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, lastMessage: { text, at }|null, createdAt, updatedAt }`.
+- `Bot`: `{ id, handle, name, role, description, avatar: { initials, color }, brain: Brain, reportsTo: string|null (the manager's id; create and patch accept an id or handle, `null` clears), policy: Policy, computer: ComputerConfig, tools: string[] (allowlist globs, default ["*"]), skills: string[], spendCapUsd: number|null, capIncludesSubscription: boolean, pinned, hidden, state, lastMessage: { text, at }|null, createdAt, updatedAt }`.
 - `Brain`: `{ kind: "mock"|"anthropic"|"openai"|"claude-code"|"codex"|"gemini-cli"|"custom-cli", model?, baseUrl?, apiKeySecret?, command?, args?, maxSteps?, timeoutSec? }`.
 - `Policy`: `{ rules: [{ tool: "<name or glob>", decision: "allow"|"ask"|"deny", locked?: boolean }], grants: string[] }`.
 - `ComputerConfig`: `{ enabled, provider?: "local"|"docker", image? (default "orbis/desktop:latest"), cpus? (default 1), memoryMb? (default 2048), hibernateAfterMin? (default 30) }`.
@@ -132,12 +132,12 @@ machine that runs Orbis; none is injected by CI.
 - `Conversation`: `{ id, kind: "direct"|"group", title, members: string[] (bot ids), leadBotId: string|null, createdAt, lastItemAt }`.
 - `TimelineItem`: `{ id, conversationId, kind: "message"|"event"|"card", author: { type: "user"|"bot"|"system", id: string|null }, text, parentId: string|null, mentions: string[], attachments: string[], reactions: { [emoji]: number }, runId: string|null, card?: Card, event?: { type, data }, createdAt, updatedAt }`.
 - `Card`: `{ type: "approval"|"draft"|"handoff"|"secret-request"|"routine", state: string, data: object }`.
-- `Run`: `{ id, botId, conversationId, trigger: { type: "message"|"handoff"|"mention"|"routine"|"webhook"|"api", ref }, depth, status: "queued"|"running"|"waiting"|"done"|"failed"|"cancelled", steps: Step[], usage: { inputTokens, outputTokens, cachedTokens, costUsd, subscription }, error: string|null, createdAt, startedAt, finishedAt }`.
+- `Run`: `{ id, botId, conversationId, trigger: { type: "message"|"handoff"|"mention"|"report"|"routine"|"webhook"|"api", ref } (`report`: the sender's single follow-up once every handoff of its run ended, `ref` = that run's id), depth, status: "queued"|"running"|"waiting"|"done"|"failed"|"cancelled", steps: Step[], usage: { inputTokens, outputTokens, cachedTokens, costUsd, subscription }, error: string|null, createdAt, startedAt, finishedAt }`.
 - `Step`: `{ type: "thinking"|"text"|"tool_call"|"tool_result", at, text?, tool?, callId?, input?, output?, isError? }`.
 - `Approval`: `{ id, runId, botId, conversationId, itemId, tool, input (secrets masked), reason, status: "pending"|"approved"|"denied"|"expired", decision: "allow_once"|"allow_always"|"deny"|null, note, createdAt, decidedAt }`.
 - Approval card data: `{ approvalId, botId, tool, input, reason, locked?, decision?, note? }`; states `pending`, `approved`, `denied`, `expired`.
 - Draft card data: `{ channel: "email"|"chat"|"social"|"webhook", to, subject?, body, url?, botId, delivery?: { channel, at, ok, detail } }`; states `pending`, `sent`, `failed`, `discarded`.
-- Handoff card data: `{ from, to (bot ids), task, context: string|null, returnResult: boolean, receiverRunId: string|null, returnRunId?, error? }`; states `queued`, `running`, `done`, `failed`. The receiver's reply has `parentId` = the card's item id.
+- Handoff card data: `{ from, to (bot ids), task, context: string|null, returnResult: boolean (default true), receiverRunId: string|null, returnRunId?, reportRunId?, error? }`; states `queued`, `running`, `done`, `failed`. The receiver's reply has `parentId` = the card's item id. Every card of one sender run carries the same `reportRunId` once its `report` run is queued.
 - `MemoryEntry`: `{ id, botId: string|null (null = team), kind: "preference"|"role"|"fact"|"summary", text, source ("user" or "run:<id>"), createdAt, updatedAt }`.
 - Timeline event `handoff.depth_exceeded`: `event.data` = `{ from, to, depth, limit }`, posted when a handoff or a bot-to-bot mention would start a run deeper than the handoff-depth budget.
 
@@ -169,7 +169,7 @@ machine that runs Orbis; none is injected by CI.
 
 - Client → hub: `{ "type": "subscribe", "conversations"?: string[] }`, `{ "type": "ping" }`.
 - Hub → client: `{ "type": "subscribed", "data": { conversations }, ... }` acknowledges each subscribe; events after it are never missed.
-- Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `conversation.updated` `{ conversation }`, `conversation.deleted` `{ conversationId }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `computer.updated` `{ botId, computer: ComputerStatus }`, `pong`. Account-wide (sent to every subscriber): `bot.*`, `approval.*`, `computer.updated`, `pong`.
+- Hub → client: `{ "type": "<event>", "data": {...}, "ts": "<ISO-8601>" }` where `<event>` is one of `bot.state` `{ botId, state }`, `bot.updated` `{ bot }`, `bot.deleted` `{ botId }`, `bot.report` `{ botId, conversationId, itemId, text }` (a bot's `report` run replied: it came back to the user on its own), `conversation.updated` `{ conversation }`, `conversation.deleted` `{ conversationId }`, `timeline.item` `{ conversationId, item }`, `run.updated` `{ run }` (steps omitted), `run.step` `{ runId, conversationId, botId, step }`, `approval.requested` `{ approval }`, `approval.resolved` `{ approval }`, `computer.updated` `{ botId, computer: ComputerStatus }`, `pong`. Account-wide (sent to every subscriber): `bot.*`, `approval.*`, `computer.updated`, `pong`.
 
 ### MCP (`/mcp`)
 

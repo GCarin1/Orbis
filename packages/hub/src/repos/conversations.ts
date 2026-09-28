@@ -204,6 +204,11 @@ export class ItemsRepo {
     return rows.reverse().map(toItem);
   }
 
+  /** The cards a run posted (its handoffs), oldest first. */
+  cardsOf(runId: string): TimelineItem[] {
+    return all(this.db, "SELECT * FROM items WHERE run_id = ? AND kind = 'card' ORDER BY seq ASC", runId).map(toItem);
+  }
+
   /** The bot message a run posted as its reply. */
   replyOf(runId: string): TimelineItem | undefined {
     const row = get(

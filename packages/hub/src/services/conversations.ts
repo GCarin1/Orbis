@@ -1,5 +1,5 @@
 // Conversations and message routing (specs/conversations).
-import { extractMentions, type Bot, type Conversation, type Run, type TimelineItem } from "@orbis/shared";
+import { extractMentions, resolveMentions, type Bot, type Conversation, type Run, type TimelineItem } from "@orbis/shared";
 import type { EventBus } from "../bus.js";
 import type { HubConfig } from "../config.js";
 import { badRequest, conflict, notFound } from "../errors.js";
@@ -227,7 +227,17 @@ export class ConversationService {
     return { item, runs: this.router.route(conversation, item) };
   }
 
-  /** Direct conversation: every message runs the conversation's single bot. */
+  /** The bots of the team a message mentions, by handle or by role (`@qa`). */
+  private mentioned(item: TimelineItem): Bot[] {
+    const mentions = item.mentions.filter((m) => m !== "everyone");
+    return mentions.length ? resolveMentions(mentions, this.d.bots.list({ includeHidden: true })) : [];
+  }
+
+  /**
+   * Direct conversation: the conversation's own bot answers every message and
+   * coordinates; it brings in the colleagues the user mentions by delegating
+   * to them or mentioning them in its reply.
+   */
   routeDirect(conversation: Conversation, item: TimelineItem): Run[] {
     if (conversation.kind !== "direct") return [];
     const bot = conversation.members[0] ? this.d.bots.get(conversation.members[0]) : undefined;
@@ -237,17 +247,15 @@ export class ConversationService {
   }
 
   /**
-   * Group: `@everyone` runs every member; mentioned members run; with no
-   * mention the lead runs. Mentions of bots outside the group are ignored.
+   * Group: `@everyone` runs every member; the bots mentioned by handle or role
+   * run, members or not; with no mention the lead runs.
    */
   routeGroup(conversation: Conversation, item: TimelineItem): Run[] {
     const members = conversation.members
       .map((id) => this.d.bots.get(id))
       .filter((b): b is NonNullable<typeof b> => b !== undefined);
-    let targets = item.mentions.includes("everyone")
-      ? members
-      : members.filter((b) => item.mentions.includes(b.handle));
-    if (targets.length === 0 && !item.mentions.includes("everyone")) {
+    let targets = item.mentions.includes("everyone") ? members : this.mentioned(item);
+    if (targets.length === 0) {
       const lead = members.find((b) => b.id === conversation.leadBotId) ?? members[0];
       targets = lead ? [lead] : [];
     }

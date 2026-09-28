@@ -58,25 +58,31 @@ describe("handoff", () => {
     expect(bobRun.steps[0]!.text).toBe("Reading the task (0 earlier items in context)");
   });
 
-  it("wakes the sender with the receiver's answer when returnResult is set (criterion 2)", async () => {
+  it("wakes the sender with the receiver's answer, and not with returnResult false (criterion 2)", async () => {
     t = await testHub();
     const ana = await createBot(t, { name: "Ana" });
     await createBot(t, { name: "Bob" });
-    await chat(t, ana.id, handoff({ to: "@bob", task: "/reply 3 flaky tests", returnResult: true }));
+    await chat(t, ana.id, handoff({ to: "@bob", task: "/reply 3 flaky tests" }));
     await t.hub.engine.idle();
     const anaRuns = runsOf(t, ana.id);
     expect(anaRuns).toHaveLength(2);
-    expect(anaRuns[1]).toMatchObject({ status: "done", trigger: { type: "handoff" }, depth: 2 });
-    expect(anaRuns[1]!.input).toBe('@bob finished the task you handed off ("/reply 3 flaky tests"). Its answer:\n3 flaky tests');
+    expect(anaRuns[1]).toMatchObject({ status: "done", trigger: { type: "report", ref: anaRuns[0]!.id }, depth: 2 });
+    expect(anaRuns[1]!.input).toBe(
+      'The task you handed off has ended.\nTell the user the outcome in one message: what was done, what failed and what needs them. Do not hand the same tasks off again.\n\n@bob (Bob, QA) — "/reply 3 flaky tests" — done. Answer:\n3 flaky tests',
+    );
+
+    await chat(t, ana.id, handoff({ to: "@bob", task: "fire and forget", returnResult: false }));
+    await t.hub.engine.idle();
+    expect(runsOf(t, ana.id)).toHaveLength(3);
   });
 
-  it("stops two bots handing work back and forth at depth 4 and posts an event (criterion 3)", async () => {
-    t = await testHub();
+  it("stops two bots handing work back and forth at the depth limit and posts an event (criterion 3)", async () => {
+    t = await testHub({ config: { maxHandoffDepth: 4 } });
     const ana = await createBot(t, { name: "Ana" });
     const bob = await createBot(t, { name: "Bob" });
     // A chain of handoffs six levels deep, alternating @bob and @ana.
     let task = "/reply the end";
-    for (let level = 6; level >= 1; level--) task = handoff({ to: level % 2 ? "@bob" : "@ana", task });
+    for (let level = 6; level >= 1; level--) task = handoff({ to: level % 2 ? "@bob" : "@ana", task, returnResult: false });
     const { conversation } = await chat(t, ana.id, task);
     await t.hub.engine.idle();
     const all = [...runsOf(t, ana.id), ...runsOf(t, bob.id)];
@@ -89,7 +95,7 @@ describe("handoff", () => {
   });
 
   it("stops bot-to-bot mentions in a group at the same depth limit", async () => {
-    t = await testHub();
+    t = await testHub({ config: { maxHandoffDepth: 4 } });
     const ana = await createBot(t, { name: "Ana" });
     const bob = await createBot(t, { name: "Bob" });
     const group = (await t.api("POST", "/api/v1/conversations", { title: "Ping", members: [ana.id, bob.id] })).body;

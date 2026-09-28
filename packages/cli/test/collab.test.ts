@@ -33,7 +33,7 @@ describe("orbis group", () => {
     expect((await runCli(["group", "chat", "Release", "anyone?"], hub.env)).stdout).toContain("@bob: [Bob] anyone?");
   });
 
-  it("follows a handoff until the receiver has answered", async () => {
+  it("follows a handoff until the receiver has answered and the sender has reported back", async () => {
     hub = await startTestHub();
     await twoBots(hub.env);
     const task = JSON.stringify({ to: "@bob", task: "/reply the logs are clean" });
@@ -41,6 +41,9 @@ describe("orbis group", () => {
     expect(res.code).toBe(0);
     expect(res.stdout).toContain("⇢ @ana → @bob: /reply the logs are clean");
     expect(res.stdout).toContain("@bob: the logs are clean");
+    // Ana's report to the user, after Bob's answer (the mock brain echoes its input).
+    expect(res.stdout).toMatch(/@ana: \[Ana\] The task you handed off has ended\./);
+    expect(res.stdout.indexOf("@bob: the logs are clean")).toBeLessThan(res.stdout.indexOf("@ana: [Ana] The task you handed off"));
   });
 
   it("adds and removes members and refuses a group of one", async () => {

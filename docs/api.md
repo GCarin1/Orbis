@@ -29,6 +29,7 @@ curl -s -H "$H" -H 'content-type: application/json' \
 curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots            # roster (pinned first)
 curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana        # by handle or id
 curl -s -X PATCH -H "$H" -H 'content-type: application/json' -d '{"pinned":true}' http://127.0.0.1:7420/api/v1/bots/ana
+curl -s -X PATCH -H "$H" -H 'content-type: application/json' -d '{"reportsTo":"chief"}' http://127.0.0.1:7420/api/v1/bots/ana   # manager (null clears)
 curl -s -X POST -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/duplicate
 curl -s -X DELETE -H "$H" http://127.0.0.1:7420/api/v1/bots/ana   # destroys memory, secrets, computer
 curl -s -H "$H" http://127.0.0.1:7420/api/v1/bots/ana/export > ana.orbis.yaml   # a template (templates.md)
@@ -131,9 +132,13 @@ See [secrets-and-usage.md](secrets-and-usage.md).
 `ws://127.0.0.1:7420/api/v1/stream?token=<token>` — send
 `{"type":"subscribe","conversations":["cnv_…"]}` (omit `conversations` for
 everything). Events: `bot.state`, `bot.updated`, `bot.deleted`,
+`bot.report` (a manager came back on its own: `{ botId, conversationId, itemId, text }`),
 `conversation.updated`, `conversation.deleted`, `timeline.item`, `run.updated`, `run.step`,
 `approval.requested`, `approval.resolved`, `computer.updated`. Account-wide
 events (`bot.*`, `approval.*`, `computer.updated`) reach every subscriber.
+A run's `trigger.type` is `message`, `handoff`, `mention`, `report` (a bot's
+follow-up once everything it handed off in one run has ended), `routine`,
+`webhook` or `api`. See [collaboration.md](collaboration.md).
 
 ## OpenAI-compatible endpoint
 

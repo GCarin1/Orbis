@@ -15,11 +15,12 @@ function brainKind(value: string | undefined): BrainKind | undefined {
   return value as BrainKind;
 }
 
-export function formatBot(ctx: CommandContext, bot: Bot): string {
+export function formatBot(ctx: CommandContext, bot: Bot, manager?: Bot): string {
   const c = paint(ctx.io);
   const flags = [bot.pinned ? "pinned" : "", bot.hidden ? "hidden" : ""].filter(Boolean).join(", ");
+  const reportsTo = bot.reportsTo ? `   reports to ${manager ? `@${manager.handle}` : bot.reportsTo}` : "";
   return [
-    `${c.bold(bot.name)} ${c.dim(`@${bot.handle}`)}${bot.role ? ` — ${bot.role}` : ""}`,
+    `${c.bold(bot.name)} ${c.dim(`@${bot.handle}`)}${bot.role ? ` — ${bot.role}` : ""}${reportsTo}`,
     `  state: ${bot.state}   brain: ${bot.brain.kind}${bot.brain.model ? ` (${bot.brain.model})` : ""}${flags ? `   ${flags}` : ""}`,
     `  id: ${bot.id}${bot.spendCapUsd !== null ? `   spend cap: $${bot.spendCapUsd}/month` : ""}`,
     ...(bot.description ? [`  ${bot.description.split("\n").join("\n  ")}`] : []),
@@ -61,7 +62,8 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
       const bots = await client.get<Bot[]>(`/api/v1/bots${values.all ? "?includeHidden=true" : ""}`);
       if (ctx.json) return json(ctx.io, bots), 0;
       if (bots.length === 0) out(ctx.io, "No bots yet. Create one: orbis bots create --name \"Ana\" --role \"QA\"");
-      for (const bot of bots) out(ctx.io, formatBot(ctx, bot) + "\n");
+      const byId = new Map(bots.map((b) => [b.id, b]));
+      for (const bot of bots) out(ctx.io, formatBot(ctx, bot, bot.reportsTo ? byId.get(bot.reportsTo) : undefined) + "\n");
       return 0;
     }
     case "create":
@@ -75,6 +77,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
           description: { type: "string" },
           "spend-cap": { type: "string" },
           tools: { type: "string" },
+          "reports-to": { type: "string" },
           ...brainOptions,
         },
         strict: true,
@@ -85,6 +88,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
         ...(values.handle ? { handle: values.handle } : {}),
         ...(values.role ? { role: values.role } : {}),
         ...(values.description ? { description: values.description } : {}),
+        ...(values["reports-to"] ? { reportsTo: values["reports-to"].replace(/^@/, "") } : {}),
         ...(values["spend-cap"] ? { spendCapUsd: Number(values["spend-cap"]) } : {}),
         ...(values.tools ? { tools: splitList(values.tools) } : {}),
         ...(brainFrom(values) ? { brain: brainFrom(values) } : {}),
@@ -100,7 +104,8 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
       if (!positionals[0]) throw new UsageError("bots show needs a bot (@handle or id)");
       const bot = await client.get<Bot>(botPath(positionals[0]));
       if (ctx.json) return json(ctx.io, bot), 0;
-      out(ctx.io, formatBot(ctx, bot));
+      const manager = bot.reportsTo ? await client.get<Bot>(botPath(bot.reportsTo)).catch(() => undefined) : undefined;
+      out(ctx.io, formatBot(ctx, bot, manager));
       return 0;
     }
     case "edit":
@@ -119,6 +124,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
           unpin: { type: "boolean" },
           hide: { type: "boolean" },
           unhide: { type: "boolean" },
+          "reports-to": { type: "string" },
           ...brainOptions,
         },
         strict: true,
@@ -135,6 +141,7 @@ export async function botsCommand(args: string[], ctx: CommandContext): Promise<
         ...(values.tools !== undefined ? { tools: splitList(values.tools) } : {}),
         ...(values.pin ? { pinned: true } : values.unpin ? { pinned: false } : {}),
         ...(values.hide ? { hidden: true } : values.unhide ? { hidden: false } : {}),
+        ...(values["reports-to"] !== undefined ? { reportsTo: values["reports-to"] === "none" ? null : values["reports-to"].replace(/^@/, "") } : {}),
         ...(brain ? { brain } : {}),
       };
       const bot = await client.patch<Bot>(botPath(current.id), patch);

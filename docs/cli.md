@@ -5,10 +5,10 @@ orbis serve [--port N] [--host H] [--data-dir D] [--quiet]
 orbis open
 orbis login [--url U] [--token T] [--show-token] [--status]
 orbis bots list [--all]
-orbis bots create --name N [--handle H] [--role R] [--description D] [--spend-cap USD] [--tools a,b.*]
+orbis bots create --name N [--handle H] [--role R] [--description D] [--spend-cap USD] [--tools a,b.*] [--reports-to @manager]
                   [--brain KIND] [--model M] [--command C] [--base-url U] [--api-key-secret NAME]
 orbis bots show @bot
-orbis bots edit @bot [same options as create] [--pin|--unpin] [--hide|--unhide]
+orbis bots edit @bot [same options as create] [--pin|--unpin] [--hide|--unhide]   # --reports-to none clears the manager
 orbis bots duplicate @bot
 orbis bots delete @bot --yes
 orbis bots export @bot [--out FILE]               # a YAML template; refused if it looks like it holds a credential

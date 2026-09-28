@@ -118,7 +118,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     masterKey: overrides.masterKey ?? readVar(env, "ORBIS_MASTER_KEY") ?? null,
     maxBots: overrides.maxBots ?? readPositiveInt(env, "ORBIS_MAX_BOTS", 50),
     maxGroupSize: overrides.maxGroupSize ?? readPositiveInt(env, "ORBIS_MAX_GROUP_SIZE", 6),
-    maxHandoffDepth: overrides.maxHandoffDepth ?? readPositiveInt(env, "ORBIS_MAX_HANDOFF_DEPTH", 4),
+    maxHandoffDepth: overrides.maxHandoffDepth ?? readPositiveInt(env, "ORBIS_MAX_HANDOFF_DEPTH", 6),
     absencePauseDays: overrides.absencePauseDays ?? readPositiveInt(env, "ORBIS_ABSENCE_PAUSE_DAYS", 14),
     computerProvider:
       overrides.computerProvider ?? readEnum(env, "ORBIS_COMPUTER_PROVIDER", ["local", "docker"] as const, "local"),

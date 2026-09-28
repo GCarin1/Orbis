@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -29,11 +29,11 @@ timeline changes.
 
 ### Event-driven
 
-- When the user posts a message in a direct conversation, the system shall start a run for that conversation's bot with the message as input.
-- When the user posts a message in a group that mentions one or more member bots by `@handle`, the system shall start one run for each mentioned member.
+- When the user posts a message in a direct conversation, the system shall start a run for that conversation's bot with the message as input, also when the message mentions other bots, whom that bot brings in.
+- When the user posts a message in a group that mentions bots of the team by `@handle` or by role (`@qa` names every bot whose role is QA), the system shall start one run for each mentioned bot, member of the group or not.
 - When the user posts a message in a group that contains `@everyone`, the system shall start one run for every member bot.
 - When the user posts a message in a group with no mention, the system shall start a run for the group's lead bot only.
-- When a bot's reply in a group mentions another member bot by `@handle`, the system shall start a run for the mentioned bot, subject to the chain depth limit of `specs/handoff`.
+- When a bot's reply in a direct or group conversation mentions other bots of the team by `@handle` or by role, the system shall start a run for each of them in that conversation, subject to the chain depth limit and the exceptions of `specs/handoff`.
 - When a client asks for the direct conversation of a bot that has none, the system shall create it, so that each bot has at most one direct conversation.
 - When a client adds or removes a reaction on a timeline item, the system shall update the item's reactions and broadcast the change.
 
@@ -44,7 +44,7 @@ timeline changes.
 ### Unwanted-behavior (must-not)
 
 - The system shall not add a bot to a group that already holds ORBIS_MAX_GROUP_SIZE members.
-- The system shall not start a run for a mentioned handle that is not a member of the group.
+- The system shall not treat `@everyone` in a group as a mention of bots outside the group.
 - The system shall not accept a message with empty text and no attachment.
 
 ## Acceptance criteria
@@ -54,6 +54,7 @@ timeline changes.
 3. [verified] Adding a seventh member to a group with the default limit answers 409 — verified by `packages/hub/test/conversations.test.ts`.
 4. [verified] A thread reply stores its parent id, and a reaction change is broadcast as a `timeline.item` event — verified by `packages/hub/test/conversations.test.ts`.
 5. [verified] Two messages sent while a run is in progress start two further runs in arrival order — verified by `packages/hub/test/runs.test.ts`.
+6. [verified] A bot's reply in a direct conversation that mentions a colleague by role starts that colleague's run in the same conversation, and a user message in a group that mentions a role runs the bot holding it even outside the group — verified by `packages/hub/test/team.test.ts`.
 
 ## Maturity
 

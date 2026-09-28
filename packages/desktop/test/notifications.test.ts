@@ -70,4 +70,20 @@ describe("notifications", () => {
     expect(center.fromEvent(approval("approved"))).toBeNull();
     expect(center.fromEvent({ type: "bot.state", ts, data: { botId: "bot_ana", state: "working" } })).toBeNull();
   });
+
+  it("raises one notification when a manager reports back on its own", () => {
+    const center = new NotificationCenter((id) => (id === "bot_chief" ? "Chief" : undefined));
+    const report: StreamEvent = {
+      type: "bot.report",
+      ts,
+      data: { botId: "bot_chief", conversationId: "cnv_chief", itemId: "itm_report", text: "Done: the banner is ready and QA found 3 bugs." },
+    };
+    expect(center.fromEvent(report)).toEqual({
+      id: "itm_report",
+      title: "Chief reported back",
+      body: "Done: the banner is ready and QA found 3 bugs.",
+      conversationId: "cnv_chief",
+    });
+    expect(center.fromEvent(report)).toBeNull();
+  });
 });

@@ -26,6 +26,8 @@ export interface BotInput {
   description?: string;
   avatarColor?: string;
   brain?: Brain;
+  /** The manager's id or handle; null for none. */
+  reportsTo?: string | null;
   policy?: Policy;
   computer?: ComputerConfig;
   tools?: string[];
@@ -82,6 +84,22 @@ export class BotService {
     }
   }
 
+  /**
+   * The manager a bot may report to: an existing other bot that does not
+   * already report, directly or not, to this one.
+   */
+  private manager(ref: string | null | undefined, selfId?: string): string | null {
+    if (ref === null || ref === undefined || ref === "") return null;
+    const manager = this.d.bots.get(ref);
+    if (!manager) throw badRequest("invalid bot", { reportsTo: `no bot ${ref}` });
+    if (manager.id === selfId) throw badRequest("invalid bot", { reportsTo: "a bot cannot report to itself" });
+    for (let up: string | null = manager.reportsTo, hops = 0; up && hops < 1000; hops++) {
+      if (up === selfId) throw badRequest("invalid bot", { reportsTo: `@${manager.handle} already reports to this bot` });
+      up = this.d.bots.get(up)?.reportsTo ?? null;
+    }
+    return manager.id;
+  }
+
   create(input: BotInput): Bot {
     if (this.d.bots.count() >= this.d.config.maxBots) {
       throw conflict("limit_reached", `this installation already holds the maximum of ${this.d.config.maxBots} bots`);
@@ -105,6 +123,7 @@ export class BotService {
       description: input.description ?? "",
       avatar: { initials: initialsOf(name), color: input.avatarColor ?? colorFor(role || name) },
       brain: input.brain ?? DEFAULT_BRAIN,
+      reportsTo: this.manager(input.reportsTo),
       policy: input.policy ?? DEFAULT_POLICY,
       computer: input.computer ?? DEFAULT_COMPUTER,
       tools: input.tools ?? ["*"],
@@ -140,6 +159,7 @@ export class BotService {
     if (patch.description !== undefined) bot.description = patch.description;
     if (patch.avatarColor !== undefined) bot.avatar.color = patch.avatarColor;
     if (patch.brain !== undefined) bot.brain = patch.brain;
+    if (patch.reportsTo !== undefined) bot.reportsTo = this.manager(patch.reportsTo, bot.id);
     if (patch.policy !== undefined) bot.policy = patch.policy;
     if (patch.computer !== undefined) bot.computer = patch.computer;
     if (patch.tools !== undefined) bot.tools = patch.tools;
@@ -163,6 +183,7 @@ export class BotService {
       description: source.description,
       avatarColor: source.avatar.color,
       brain: structuredClone(source.brain),
+      reportsTo: source.reportsTo,
       policy: { rules: structuredClone(source.policy.rules), grants: [] },
       computer: structuredClone(source.computer),
       tools: [...source.tools],
@@ -183,7 +204,13 @@ export class BotService {
     this.d.engine.cancelBot(bot.id);
     await Promise.all(active.map((r) => this.d.engine.wait(r.id)));
     for (const hook of this.deleteHooks) await hook(bot);
-    transaction(this.d.db, () => this.d.bots.delete(bot.id));
+    // Its reports now report to its own manager, so the team stays connected.
+    const reports = this.d.bots.reportsOf(bot.id);
+    transaction(this.d.db, () => {
+      this.d.bots.reassignReports(bot.id, bot.reportsTo);
+      this.d.bots.delete(bot.id);
+    });
+    for (const report of reports) this.d.bus.publish("bot.updated", { bot: this.get(report.id) });
     await this.d.computer.destroy(bot);
     this.d.bus.publish("bot.deleted", { botId: bot.id });
   }

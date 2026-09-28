@@ -87,8 +87,8 @@ describe("conversations", () => {
     expect(await send("@ana please check the logs")).toEqual([ana.id]);
     expect(await send("@everyone standup in 5")).toEqual([ana.id, bob.id, cara.id].sort());
     expect(await send("who can look at this?")).toEqual([bob.id]);
-    // A mention of a bot outside the group starts nothing for it.
-    expect(await send(`@${outsider.handle} are you there?`)).toEqual([bob.id]);
+    // A bot of the team outside the group answers here when mentioned.
+    expect(await send(`@${outsider.handle} are you there?`)).toEqual([outsider.id]);
     expect((await t.api("GET", "/api/v1/conversations")).body.map((c: { id: string }) => c.id)).toContain(group.id);
   });
 

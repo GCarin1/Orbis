@@ -103,6 +103,7 @@ export function brainTestBot(brain: Bot["brain"]): Bot {
     description: "",
     avatar: { initials: "OR", color: "#6d5dfc" },
     brain,
+    reportsTo: null,
     policy: { rules: [], grants: [] },
     computer: { enabled: false },
     tools: [],

@@ -16,3 +16,4 @@ One line per archived change, newest last. Appended by
 - 2026-09-28 — 0011-clean-checkout — clean-checkout
 - 2026-09-28 — 0012-composer-caret — composer-caret
 - 2026-09-28 — 0013-brains-settings — brains-settings (specs: agent-runtimes MODIFIED, cli MODIFIED, web-app MODIFIED)
+- 2026-09-28 — 0014-team-hierarchy — team-hierarchy (specs: bots MODIFIED, cli MODIFIED, conversations MODIFIED, desktop-app MODIFIED, handoff MODIFIED)

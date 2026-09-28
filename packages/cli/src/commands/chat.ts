@@ -69,8 +69,8 @@ async function answerApproval(io: Io, client: HubClient, prompter: Prompter, app
   }
 }
 
-/** Runs a bot starts on its own in the conversation (a handoff, a mention) that the chat follows. */
-const FOLLOWED_TRIGGERS = new Set(["handoff", "mention"]);
+/** Runs a bot starts on its own in the conversation (a handoff, a mention, a report back) that the chat follows. */
+const FOLLOWED_TRIGGERS = new Set(["handoff", "mention", "report"]);
 
 /**
  * Send one message and stream until every run it started has ended, and

@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.8.0
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -23,6 +23,7 @@ It talks to the hub only through the public API.
 - The CLI shall provide the commands `serve`, `login`, `bots list|create|show|edit|delete|duplicate|export|import`, `chat`, `group create|list|chat|add|remove|delete`, `memory list|add|edit|rm`, `approvals list|allow|deny`, `skills list|add|show|remove`, `routines list|add|test|enable|disable|remove|runs`, `secrets list|set|rm`, `usage`, `runtimes check|test` and `mcp`.
 - The CLI shall print machine-readable JSON for every listing command given `--json`.
 - The CLI shall exit 0 on success, 1 when the requested operation failed and 2 on a usage error.
+- The CLI shall set a bot's manager with `--reports-to @handle` on `bots create` and `bots edit` (`none` clears it), and name the manager in `bots list` and `bots show`.
 
 ### Event-driven
 
@@ -34,6 +35,7 @@ It talks to the hub only through the public API.
 - When `orbis group chat <group> "<message>"` runs, the CLI shall post the message to the group, print the steps and replies of every bot the message starts and of the runs those bots start by handoff or mention, and exit when all of them have ended.
 - When `orbis routines test <id>` runs, the CLI shall wait for the draft-only test run to end, print its status and reply, and exit 1 when it failed.
 - When `orbis runtimes test <kind>` or `orbis runtimes test @<handle>` runs, the CLI shall print the brain's reply to the test question and its duration, say when no model answered, and exit 1 when the test failed.
+- When `orbis chat` follows a message, the CLI shall also stream the runs that handoffs, mentions and reports back start in that conversation, and exit when all of them have ended.
 
 ### Unwanted-behavior (must-not)
 
@@ -51,6 +53,8 @@ It talks to the hub only through the public API.
 7. [verified] `orbis secrets set` stores a value piped on stdin and `orbis secrets list` shows names only; `orbis usage` prints this month's runs, cost and cap per bot and the total — verified by `packages/cli/test/secrets-usage.test.ts`.
 8. [verified] `orbis bots export` writes a template (to stdout or `--out`), `orbis bots import` creates a new bot from a file or stdin, and an export holding a GitHub token fails naming its line — verified by `packages/cli/test/templates.test.ts`.
 9. [verified] `orbis runtimes check` lists the subscription CLIs and the local model servers, and `orbis runtimes test` prints a bot's test reply, flags the mock's echo and exits 1 on a failed test — verified by `packages/cli/test/runtimes.test.ts`.
+10. [verified] `orbis bots create --reports-to @chief` and `orbis bots edit --reports-to none` set and clear the manager, `bots list` and `bots show` name it, and a reporting loop exits 1 naming it — verified by `packages/cli/test/bots.test.ts`.
+11. [verified] `orbis chat` after a handoff prints the receiver's answer and then the sender's report back before it exits — verified by `packages/cli/test/collab.test.ts`.
 
 ## Maturity
 

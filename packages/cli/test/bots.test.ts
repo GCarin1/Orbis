@@ -41,6 +41,21 @@ describe("orbis bots", () => {
     expect(JSON.parse((await runCli(["bots", "list", "--json"], hub.env)).stdout)).toHaveLength(1);
   });
 
+  it("sets and clears who a bot reports to (--reports-to)", async () => {
+    hub = await startTestHub();
+    await runCli(["bots", "create", "--name", "Chief", "--role", "Chief of Staff", "--brain", "mock"], hub.env);
+    const dana = await runCli(["bots", "create", "--name", "Dana", "--role", "Designer", "--reports-to", "@chief", "--brain", "mock", "--json"], hub.env);
+    const chief = JSON.parse((await runCli(["bots", "show", "@chief", "--json"], hub.env)).stdout);
+    expect(JSON.parse(dana.stdout).reportsTo).toBe(chief.id);
+    expect((await runCli(["bots", "list"], hub.env)).stdout).toContain("Dana @dana — Designer   reports to @chief");
+    expect((await runCli(["bots", "show", "@dana"], hub.env)).stdout).toContain("reports to @chief");
+    const loop = await runCli(["bots", "edit", "@chief", "--reports-to", "@dana"], hub.env);
+    expect(loop.code).toBe(1);
+    expect(loop.stderr).toContain("@dana already reports to this bot");
+    const cleared = await runCli(["bots", "edit", "@dana", "--reports-to", "none", "--json"], hub.env);
+    expect(JSON.parse(cleared.stdout).reportsTo).toBeNull();
+  });
+
   it("exits 2 on usage errors and 1 on API errors", async () => {
     hub = await startTestHub();
     expect((await runCli(["bots", "create"], hub.env)).code).toBe(2);

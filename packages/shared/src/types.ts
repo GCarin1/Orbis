@@ -85,6 +85,8 @@ export interface Bot {
   description: string;
   avatar: Avatar;
   brain: Brain;
+  /** The bot this one reports to (its manager), or null at the top of the team. */
+  reportsTo: string | null;
   policy: Policy;
   computer: ComputerConfig;
   /** Tool allowlist (names or globs such as `computer.*`); `["*"]` offers every registered tool. */
@@ -155,7 +157,8 @@ export interface TimelineItem {
 export const RUN_STATUSES = ["queued", "running", "waiting", "done", "failed", "cancelled"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
-export type RunTriggerType = "message" | "handoff" | "mention" | "routine" | "webhook" | "api";
+/** `report`: a bot's follow-up once every task it handed off in one run has ended. */
+export type RunTriggerType = "message" | "handoff" | "mention" | "report" | "routine" | "webhook" | "api";
 
 export interface RunTrigger {
   type: RunTriggerType;
@@ -268,6 +271,8 @@ export interface HandoffCardData {
   returnResult: boolean;
   receiverRunId: string | null;
   returnRunId?: string | null;
+  /** The sender's single follow-up once every handoff of its run has ended. */
+  reportRunId?: string | null;
   error?: string | null;
   [key: string]: unknown;
 }

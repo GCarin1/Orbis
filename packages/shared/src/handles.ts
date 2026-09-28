@@ -77,3 +77,31 @@ export function extractMentions(text: string): string[] {
   }
   return out;
 }
+
+/** A role as a mention: "Customer Support" → `customer-support` (same rules as handles). */
+export function roleSlug(role: string): string | null {
+  const trimmed = role.trim();
+  if (!trimmed) return null;
+  const slug = slugifyHandle(trimmed);
+  return slug === "bot" && !/^bot$/i.test(trimmed) ? null : slug;
+}
+
+/**
+ * The bots a list of mentions names: a handle names that bot; a mention that is
+ * no handle names every bot whose role slug matches it (`@qa`, `@designer`).
+ */
+export function resolveMentions<T extends { handle: string; role: string }>(mentions: string[], bots: readonly T[]): T[] {
+  const out: T[] = [];
+  const add = (bot: T) => {
+    if (!out.includes(bot)) out.push(bot);
+  };
+  for (const mention of mentions) {
+    const byHandle = bots.find((b) => b.handle === mention);
+    if (byHandle) {
+      add(byHandle);
+      continue;
+    }
+    for (const bot of bots) if (roleSlug(bot.role) === mention) add(bot);
+  }
+  return out;
+}

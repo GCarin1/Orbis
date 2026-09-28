@@ -1,6 +1,7 @@
 // Native notifications for what needs the user (specs/desktop-app): an approval
-// request, a new secret request. One notification per request, carrying the
-// conversation a click should open.
+// request, a new secret request, a manager reporting what its team finished.
+// One notification per request or report, carrying the conversation a click
+// should open.
 import type { Approval, Bot, StreamEvent, TimelineItem } from "@orbis/shared";
 
 export interface DesktopNotification {
@@ -36,6 +37,16 @@ export class NotificationCenter {
         title: `${name} asks to use ${approval.tool}`,
         body: approval.reason ? clip(approval.reason) : "Allow once, always, or deny in Orbis.",
         conversationId: approval.conversationId,
+      };
+    }
+    if (event.type === "bot.report") {
+      // A manager came back on its own with what its team finished.
+      const report = event.data as { botId: string; conversationId: string; itemId: string; text: string };
+      return {
+        id: report.itemId,
+        title: `${this.botName(report.botId) ?? "A bot"} reported back`,
+        body: clip(report.text),
+        conversationId: report.conversationId,
       };
     }
     if (event.type === "timeline.item") {

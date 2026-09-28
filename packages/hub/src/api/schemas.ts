@@ -54,6 +54,7 @@ const botFields = {
   description: Type.Optional(Type.String({ maxLength: 20_000 })),
   avatarColor: Type.Optional(Type.String({ pattern: "^#[0-9a-fA-F]{6}$" })),
   brain: Type.Optional(BrainSchema),
+  reportsTo: Type.Optional(Type.Union([Type.String({ maxLength: 64 }), Type.Null()])),
   policy: Type.Optional(PolicySchema),
   computer: Type.Optional(ComputerSchema),
   tools: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 200 }), { maxItems: 200 })),

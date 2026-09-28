@@ -18,6 +18,7 @@ function toBot(r: Row): Bot {
     description: r.description as string,
     avatar: { initials: initialsOf(name), color: r.avatar_color as string },
     brain: json<Brain>(r.brain, { kind: "mock" }),
+    reportsTo: (r.reports_to as string | null) ?? null,
     policy: json<Policy>(r.policy, { rules: [], grants: [] }),
     computer: json<ComputerConfig>(r.computer, { enabled: true }),
     tools: json<string[]>(r.tools, ["*"]),
@@ -63,9 +64,9 @@ export class BotsRepo {
   insert(bot: Bot): void {
     run(
       this.db,
-      `INSERT INTO bots (id, handle, name, role, description, avatar_color, brain, policy, computer, tools, skills,
+      `INSERT INTO bots (id, handle, name, role, description, avatar_color, brain, reports_to, policy, computer, tools, skills,
          spend_cap_usd, cap_includes_subscription, pinned, hidden, state, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       bot.id,
       bot.handle,
       bot.name,
@@ -73,6 +74,7 @@ export class BotsRepo {
       bot.description,
       bot.avatar.color,
       JSON.stringify(bot.brain),
+      bot.reportsTo,
       JSON.stringify(bot.policy),
       JSON.stringify(bot.computer),
       JSON.stringify(bot.tools),
@@ -91,7 +93,7 @@ export class BotsRepo {
   save(bot: Bot): void {
     run(
       this.db,
-      `UPDATE bots SET handle = ?, name = ?, role = ?, description = ?, avatar_color = ?, brain = ?, policy = ?,
+      `UPDATE bots SET handle = ?, name = ?, role = ?, description = ?, avatar_color = ?, brain = ?, reports_to = ?, policy = ?,
          computer = ?, tools = ?, skills = ?, spend_cap_usd = ?, cap_includes_subscription = ?, pinned = ?, hidden = ?,
          updated_at = ?
        WHERE id = ?`,
@@ -101,6 +103,7 @@ export class BotsRepo {
       bot.description,
       bot.avatar.color,
       JSON.stringify(bot.brain),
+      bot.reportsTo,
       JSON.stringify(bot.policy),
       JSON.stringify(bot.computer),
       JSON.stringify(bot.tools),
@@ -120,6 +123,16 @@ export class BotsRepo {
 
   setLastMessage(id: string, text: string, at: string): void {
     run(this.db, "UPDATE bots SET last_message_text = ?, last_message_at = ? WHERE id = ?", text.slice(0, 280), at, id);
+  }
+
+  /** Bots that report to `managerId`. */
+  reportsOf(managerId: string): Bot[] {
+    return all(this.db, "SELECT * FROM bots WHERE reports_to = ? ORDER BY name COLLATE NOCASE", managerId).map(toBot);
+  }
+
+  /** Move every report of `fromId` to `toId` (or to the top of the team). */
+  reassignReports(fromId: string, toId: string | null): void {
+    run(this.db, "UPDATE bots SET reports_to = ? WHERE reports_to = ?", toId, fromId);
   }
 
   delete(id: string): void {

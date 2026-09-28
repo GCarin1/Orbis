@@ -7,20 +7,16 @@ change that delivered it.
 
 ## [Unreleased]
 
-### Fixed
-
-- Windows: CLI brains installed with `npm i -g` (`claude.cmd`, `codex.cmd`,
-  `gemini.cmd`) run through the Node.js script the `.cmd` file points to;
-  Node.js refused to start them directly (change 0013-brains-settings).
-- Composer autocomplete (change 0012-composer-caret): keys typed right after
-  picking an `@mention` or `/skill` suggestion stay where they were typed;
-  the caret is placed in the same render as the picked text instead of a
-  later animation frame.
-- Clean checkout (change 0011-clean-checkout): installing the workspace
-  compiles the TypeScript packages (`prepare` scripts), so a fresh clone
-  runs the tests and the CLI without a separate build.
-
 ### Added
+
+- A team with a hierarchy (change 0014-team-hierarchy): each bot can report to
+  a manager (`reportsTo`, `--reports-to`), and every bot's prompt names its
+  manager, reports and colleagues. Everything a bot hands off in one run comes
+  back to it together once all of it has ended: it runs once more (trigger
+  `report`) and tells the user the outcome on its own, with a `bot.report`
+  stream event and a desktop notification. Mentions name a handle or a role
+  (`@qa`, `@designer`); a bot's reply that mentions colleagues brings them into
+  that conversation, so bots talk to each other without the user relaying.
 
 - Brains you can see and test (change 0013-brains-settings): the web app's
   ⚙ Settings screen lists the brains on the hub's machine (Claude Code,
@@ -168,3 +164,23 @@ change that delivered it.
   - `orbis` CLI: `serve`, `open`, `login`, `bots`, `chat`.
   - Web app: roster with state rings and labels, timeline with collapsible
     run steps, composer, bot creation, pt-BR and English, installable PWA.
+
+### Changed
+
+- `team.handoff` reports back by default (`returnResult` defaults to true) and
+  accepts a role one bot holds; a mention in a group runs the bot even when it
+  is not a member; `ORBIS_MAX_HANDOFF_DEPTH` defaults to 6 (change
+  0014-team-hierarchy).
+
+### Fixed
+
+- Windows: CLI brains installed with `npm i -g` (`claude.cmd`, `codex.cmd`,
+  `gemini.cmd`) run through the Node.js script the `.cmd` file points to;
+  Node.js refused to start them directly (change 0013-brains-settings).
+- Composer autocomplete (change 0012-composer-caret): keys typed right after
+  picking an `@mention` or `/skill` suggestion stay where they were typed;
+  the caret is placed in the same render as the picked text instead of a
+  later animation frame.
+- Clean checkout (change 0011-clean-checkout): installing the workspace
+  compiles the TypeScript packages (`prepare` scripts), so a fresh clone
+  runs the tests and the CLI without a separate build.

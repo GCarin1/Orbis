@@ -182,4 +182,9 @@ CREATE TABLE settings (
     version: 2,
     sql: `ALTER TABLE bots ADD COLUMN tools TEXT NOT NULL DEFAULT '["*"]';`,
   },
+  {
+    // specs/bots: the manager a bot reports to (change 0014-team-hierarchy).
+    version: 3,
+    sql: `ALTER TABLE bots ADD COLUMN reports_to TEXT REFERENCES bots(id) ON DELETE SET NULL;`,
+  },
 ];

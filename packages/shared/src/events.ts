@@ -5,6 +5,8 @@ export interface StreamEventMap {
   "bot.state": { botId: string; state: BotState };
   "bot.updated": { bot: Bot };
   "bot.deleted": { botId: string };
+  /** A bot came back to the user on its own: a manager reporting what its team finished. */
+  "bot.report": { botId: string; conversationId: string; itemId: string; text: string };
   "conversation.updated": { conversation: Conversation };
   "conversation.deleted": { conversationId: string };
   "timeline.item": { conversationId: string; item: TimelineItem };
@@ -29,6 +31,7 @@ export const GLOBAL_EVENTS: readonly StreamEventType[] = [
   "bot.state",
   "bot.updated",
   "bot.deleted",
+  "bot.report",
   "approval.requested",
   "approval.resolved",
   "computer.updated",
