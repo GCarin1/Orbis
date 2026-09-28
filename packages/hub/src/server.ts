@@ -58,6 +58,8 @@ import { builtinTools } from "./tools/builtin.js";
 import { permissionTool } from "./tools/permission.js";
 import { registerMcp } from "./mcp/protocol.js";
 import { SecretResolvers, type HubContext } from "./context.js";
+import { SettingsRepo } from "./repos/settings.js";
+import { VoiceService } from "./voice/service.js";
 
 export interface HubOptions {
   env?: Env;
@@ -78,6 +80,7 @@ export interface Hub extends HubContext {
   routines: RoutineService;
   secrets: SecretService;
   usage: UsageService;
+  voice: VoiceService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -294,6 +297,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const secrets = new SecretService(ctx);
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
+  const voice = new VoiceService(config, new SettingsRepo(db), secrets.hubSecrets);
   const usage = new UsageService(ctx, opts.clock);
   engine.addHooks(usage.hooks());
   const routines = new RoutineService(ctx, drafts, opts.clock);
@@ -329,6 +333,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await usage.routes(app);
   await templates.routes(app);
   await registerRuntimeRoutes(app, ctx);
+  await voice.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -350,6 +355,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     routines,
     secrets,
     usage,
+    voice,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });

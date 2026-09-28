@@ -8,17 +8,22 @@ import type { HubContext } from "../context.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import type { ToolDefinition } from "../tools/registry.js";
 import { IdParams } from "../api/schemas.js";
+import { SettingsRepo } from "../repos/settings.js";
+import { HubSecrets } from "./hub-secrets.js";
 import { hasPlaceholder, loadMasterKey, SECRET_NAME, Vault } from "./vault.js";
 
 type Answer = "fulfilled" | "declined" | "expired";
 
 export class SecretService {
   readonly vault: Vault;
+  /** Secrets of the hub itself (a transcription key, MCP server tokens). */
+  readonly hubSecrets: HubSecrets;
   /** Runs waiting on a secret-request card, by card item id. */
   private readonly waiting = new Map<string, (answer: Answer) => void>();
 
   constructor(private readonly hub: HubContext) {
     this.vault = new Vault(hub.db, loadMasterKey(hub.config.dataDir, hub.config.masterKey));
+    this.hubSecrets = new HubSecrets(new SettingsRepo(hub.db), this.vault);
   }
 
   /** Plug the vault into every place a value could leak or be needed. */

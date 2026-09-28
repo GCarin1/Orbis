@@ -9,6 +9,17 @@ change that delivered it.
 
 ### Added
 
+- Voice and theme (change 0016-voice-and-theme): a microphone in the
+  message box — the browser's dictation in Chrome and Edge, and elsewhere
+  (the desktop app, Firefox) a recording the hub sends to any
+  OpenAI-compatible transcription service (OpenAI, Groq, a local Whisper),
+  set in the new **Settings → Voice and appearance** tab or with
+  `ORBIS_TRANSCRIBE_URL`, `ORBIS_TRANSCRIBE_MODEL`, `ORBIS_TRANSCRIBE_API_KEY`
+  (the key kept encrypted); `/api/v1/voice` routes; a Listen button on bot
+  messages and a switch that reads new replies aloud with the system's
+  voices; a System/Light/Dark theme switch, remembered; the desktop app lets
+  the page use the microphone (audio only).
+
 - The Orbis look (change 0015-orbis-look): bots have faces — eight shapes
   (the Orbis orb with its orbit ring, blob, square, pill, triangle, hexagon,
   cloud, drop) in ten colors with two eyes that move with the bot's state —

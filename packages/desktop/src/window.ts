@@ -34,6 +34,20 @@ export function isAllowedNavigation(target: string, hubUrl: string): boolean {
   }
 }
 
+/**
+ * What the hub's page may ask for: notifications, and the microphone alone
+ * for voice input (never the camera or the screen). Other pages get nothing.
+ */
+export function allowPermission(permission: string, details: { mediaTypes?: string[] }, pageUrl: string, hubUrl: string): boolean {
+  if (!isAllowedNavigation(pageUrl, hubUrl)) return false;
+  if (permission === "notifications") return true;
+  if (permission === "media") {
+    const types = details.mediaTypes ?? [];
+    return types.length > 0 && types.every((type) => type === "audio");
+  }
+  return false;
+}
+
 /** Links to other web sites open in the system browser; anything else is refused. */
 export function externalTarget(target: string): string | null {
   try {

@@ -102,7 +102,7 @@
         "id": "desktop-app",
         "path": ".doctrina/specs/desktop-app/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — Electron shell in `packages/desktop` (hub launcher, hardened window, notifications, tray); run with `npm run desktop`",
         "realizes": [
@@ -133,7 +133,7 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.10.0",
+        "version": "0.11.0",
         "last_updated": "2026-09-27",
-        "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout; timeline cards, the skills, usage, routines, computer, bot settings and brains settings screens, approvals inbox, languages, PWA and the end-to-end paths",
+        "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
           "SC7",
           "SC4",
@@ -740,6 +740,28 @@
           }
         ],
         "lane": "product (confident; signals: design)"
+      },
+      {
+        "id": "0016-voice-and-theme",
+        "title": "Voice and theme",
+        "path": ".doctrina/changes/archive/2026-09-28-0016-voice-and-theme",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [
+          {
+            "capability": "desktop-app",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
       }
     ],
     "skills": [

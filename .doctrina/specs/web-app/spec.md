@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and "Messages from", mention chips, the pill composer, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout; timeline cards, the skills, usage, routines, computer, bot settings and brains settings screens, approvals inbox, languages, PWA and the end-to-end paths
+**Implementation:** verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and "Messages from", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.10.0
+**Version:** 0.11.0
 
 ## Purpose
 
@@ -22,8 +22,8 @@ run's steps.
 
 - The web app shall show a sidebar with a search field and one list of conversations — each visible bot and each group — pinned first and then by latest activity, each with the bot's face (or its members' faces), its name, what it is doing or said last, the time and an unread dot.
 - The web app shall show a conversation's timeline with the user's messages on the right in dark bubbles and the bots' on the left in light bubbles, a time separator after a pause of 20 minutes, a "Messages from …" label when other bots speak in a bot's own conversation, mentions drawn in the mentioned bot's color with its face, reactions, the approval, draft, handoff, secret-request and routine cards, thread replies, and each run's steps as a collapsible list.
-- The web app shall provide a composer with a button that starts a mention, autocomplete for `@handle` and `@role` mentions and `/skill` invocations, and a send button.
-- The web app shall provide screens for bot settings (identity, description, brain, policy, computer, spend cap), skills, routines, usage, settings (the brains on the hub's machine and the brain of each bot), the approvals inbox, and the computer view as a side panel and full screen.
+- The web app shall provide a composer with a button that starts a mention, autocomplete for `@handle` and `@role` mentions and `/skill` invocations, a microphone, a switch that reads replies aloud, and a send button.
+- The web app shall provide screens for bot settings (identity, description, brain, policy, computer, spend cap), skills, routines, usage, settings in tabs (the brains on the hub's machine and the brain of each bot; voice and appearance), the approvals inbox, and the computer view as a side panel and full screen.
 - The web app shall show every text in pt-BR or English, following the browser language, with a manual switch that is remembered.
 - The web app shall ship a web app manifest and a service worker so it can be installed on desktop and mobile browsers.
 - The web app shall state each bot's state in words: in its face's accessible name, and as a visible label while the bot is not idle.
@@ -33,6 +33,7 @@ run's steps.
 - The web app shall provide a new-bot screen with a live preview of the face, ten colors and the eight shapes to choose from, name, role, manager and brain fields, suggestions that fill them in, and template import.
 - The web app shall show beside a bot's conversation a panel with the bot's screen, its routines with their schedule in words, the bot it reports to and its reports, and its brain.
 - The web app shall, on a screen narrower than 760 px, show either the conversation list or one conversation with a back button.
+- The web app shall offer three themes — follow the system, light and dark — from a switch in the sidebar and in the settings screen, remembered per browser and applied before the first paint.
 
 ### Event-driven
 
@@ -43,6 +44,12 @@ run's steps.
 - When the user presses Test on a brain or a bot in the settings screen, the web app shall call the brain test and show the reply and its duration, a warning when no model answered, or the error.
 - When the user picks the `ollama` or `lmstudio` brain for a bot, the web app shall suggest the models that server has and say when it is not running.
 - When a timeline item arrives in a conversation the user is not looking at, the web app shall mark that conversation unread until the user opens it.
+- When the user presses the microphone, the web app shall write what the user says into the composer after the text already there, with the browser's speech recognition in the interface language, or, where the browser has none, by recording until the user presses stop and sending the recording to the hub's transcription service; the user reviews the text and sends it.
+- When a bot message arrives in the open conversation while reading aloud is on, the web app shall read it with the system's voices in the interface language; any bot message can be read on demand with its Listen button.
+
+### Unwanted-behavior (must-not)
+
+- If neither the browser nor the hub can transcribe, or the microphone is blocked, the web app shall not record, and shall say how to fix it instead.
 
 ## Acceptance criteria
 
@@ -66,6 +73,8 @@ run's steps.
 18. [verified] A face draws its shape and color with two eyes, the orb with its ring and happy eyes when done; the timeline separates pauses with the time, introduces colleagues once per stretch as "Messages from", colors mentions and shows reactions; the bot panel shows the screen, routines in words, the team and the brain — verified by `packages/web/test/look.test.tsx`.
 19. [verified] The new-bot screen previews the chosen color and shape, sends name, role, manager, brain and face, and a suggestion fills everything in, a specialist reporting to the team's chief — verified by `packages/web/test/newbot.test.tsx`.
 20. [verified] In a real browser, the user asks the chief, the chief delegates to its reports, their answers appear under "Messages from", the chief reports back on its own, a message elsewhere lights that conversation's unread dot, and the bot panel links the team — verified by `tests/e2e/team.test.ts`.
+21. [verified] The microphone writes what the browser hears after the typed text and stops on send; without browser dictation it records and sends the audio to the hub and writes the returned text; with neither it explains the setup; Listen reads a reply, reading aloud reads only new bot replies; the voice settings save the service without showing the key back and test it; the theme switch cycles System, Light and Dark, applies and remembers it — verified by `packages/web/test/voice.test.tsx`.
+22. [verified] In a real browser with a fake microphone and no dictation, the user speaks, the recording goes through the hub to a transcription service, the words land in the composer and are sent, and the dark theme picked in the sidebar survives a reload — verified by `tests/e2e/voice.test.ts`.
 
 ## Maturity
 

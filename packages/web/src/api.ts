@@ -86,11 +86,26 @@ export class Api {
     if (!res.ok) throw new ApiError(res.status, null);
     return res.blob();
   }
+  /** Send a recording to the hub's transcription service; resolves with the text. */
+  async transcribe(audio: Blob, lang: string): Promise<string> {
+    const res = await fetch(`${this.base}/api/v1/voice/transcribe?lang=${encodeURIComponent(lang)}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${this.token}`, "content-type": audio.type || "audio/webm" },
+      body: audio,
+    });
+    const text = await res.text();
+    const parsed = text ? (JSON.parse(text) as { text?: string } & ApiErrorBody) : null;
+    if (!res.ok) throw new ApiError(res.status, parsed);
+    return parsed?.text ?? "";
+  }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>("POST", path, body);
   }
   patch<T>(path: string, body: unknown) {
     return this.request<T>("PATCH", path, body);
+  }
+  put<T>(path: string, body: unknown) {
+    return this.request<T>("PUT", path, body);
   }
   delete<T>(path: string) {
     return this.request<T>("DELETE", path);

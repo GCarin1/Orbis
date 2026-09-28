@@ -9,7 +9,7 @@ import { ensureHub, type LaunchedHub } from "./hub-launcher.js";
 import { botDirectory, NotificationCenter } from "./notifications.js";
 import { loadSettings, saveSettings } from "./settings.js";
 import { followStream } from "./stream.js";
-import { guardWebContents, isAllowedNavigation, windowOptions } from "./window.js";
+import { allowPermission, guardWebContents, isAllowedNavigation, windowOptions } from "./window.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const assets = path.join(here, "..", "assets");
@@ -32,8 +32,8 @@ function showWindow(conversationId?: string | null): void {
 function createWindow(launched: LaunchedHub): BrowserWindow {
   const win = new BrowserWindow(windowOptions(path.join(here, "preload.cjs"), path.join(assets, "icon.png")));
   guardWebContents(win.webContents, launched.url, (url) => void shell.openExternal(url));
-  win.webContents.session.setPermissionRequestHandler((contents, permission, allow) => {
-    allow(permission === "notifications" && isAllowedNavigation(contents.getURL(), launched.url));
+  win.webContents.session.setPermissionRequestHandler((contents, permission, allow, details) => {
+    allow(allowPermission(permission, details as { mediaTypes?: string[] }, contents.getURL(), launched.url));
   });
   win.once("ready-to-show", () => win.show());
   // Closing the window keeps Orbis in the tray; bots keep working.

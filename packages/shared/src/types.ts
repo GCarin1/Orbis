@@ -415,3 +415,22 @@ export interface BrainTestResult {
   /** The reply holds the answer to the test question: a model answered, not an echo. */
   answered: boolean;
 }
+
+/** Where recorded speech becomes text when the browser cannot do it (specs/hub-api: voice). */
+export interface TranscriptionStatus {
+  configured: boolean;
+  /** What set it up: the settings screen, the environment, or the OpenAI key alone. */
+  source: "settings" | "env" | "openai" | null;
+  /** Base address of an OpenAI-compatible service (`…/audio/transcriptions` is appended). */
+  url: string | null;
+  model: string | null;
+  /** A key is stored; its value never leaves the hub. */
+  hasKey: boolean;
+}
+
+export interface TranscriptionTestResult {
+  ok: boolean;
+  text: string;
+  durationMs: number;
+  error: string | null;
+}

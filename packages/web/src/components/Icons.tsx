@@ -125,3 +125,43 @@ export const BotIcon = (p: P) => (
     <path d="M10 11v3M14 11v3" />
   </Icon>
 );
+export const MicIcon = (p: P) => (
+  <Icon {...p}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+  </Icon>
+);
+export const StopIcon = (p: P) => (
+  <Icon {...p}>
+    <rect x="7" y="7" width="10" height="10" rx="2" />
+  </Icon>
+);
+export const SpeakerIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </Icon>
+);
+export const SpeakerOffIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
+    <path d="m16 9.5 5 5M21 9.5l-5 5" />
+  </Icon>
+);
+export const SunIcon = (p: P) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />
+  </Icon>
+);
+export const MoonIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+  </Icon>
+);
+export const AutoThemeIcon = (p: P) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor" />
+  </Icon>
+);

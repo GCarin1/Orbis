@@ -68,6 +68,7 @@ fecha quando os critérios de aceite são provados por testes.
 | App desktop (Electron: encontra ou inicia o hub, janela protegida, notificações nativas, bandeja) | ✅ verificado |
 | Equipe com hierarquia: gestores delegam aos subordinados e prestam contas sozinhos quando tudo termina; menções por handle ou por função (`@qa`); bots chamam uns aos outros para a conversa | ✅ verificado |
 | O visual do Orbis: rostos dos bots (8 formas, 10 cores, olhos que seguem o estado), uma lista de conversas com bolinha de não lida, o painel do bot (tela, rotinas, equipe), a tela de novo bot, modo escuro e celular | ✅ verificado |
+| Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
 no cabeçalho `Implementation:` de cada spec.
@@ -131,7 +132,7 @@ Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
-[`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 
@@ -148,6 +149,7 @@ Todas as variáveis são opcionais; veja [`.env.example`](.env.example).
 | `ORBIS_BROWSER_EXECUTABLE` | Chromium do Playwright | Chromium das ferramentas de navegador locais |
 | `ORBIS_DOCKER` | `docker` | a CLI do docker usada pelo provedor docker |
 | `ORBIS_URL` | `http://127.0.0.1:7420` | URL do hub para a CLI |
+| `ORBIS_TRANSCRIBE_URL` / `_MODEL` / `_API_KEY` | nenhum (o da OpenAI com `OPENAI_API_KEY`) / `whisper-1` | serviço de transcrição da voz onde o navegador não transcreve; Configurações → Voz e aparência tem prioridade |
 
 ## Desenvolvimento
 

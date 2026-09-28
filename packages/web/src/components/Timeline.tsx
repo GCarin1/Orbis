@@ -6,8 +6,10 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { resolveMentions, type Bot, type Step, type TimelineItem } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import type { RunView } from "../store.js";
+import { canSpeak, speak } from "../voice.js";
 import { Avatar, BotFace } from "./Avatar.js";
 import { CardView } from "./Cards.js";
+import { SpeakerIcon } from "./Icons.js";
 
 const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}…` : text);
 /** A pause this long starts a new time separator. */
@@ -203,6 +205,17 @@ export function Timeline({
                     </span>
                   )}
                 </div>
+                {!mine && canSpeak() && (
+                  <button
+                    type="button"
+                    className="bubble-listen"
+                    aria-label={t("voice.listen")}
+                    title={t("voice.listen")}
+                    onClick={() => speak(item.text, lang)}
+                  >
+                    <SpeakerIcon size={14} />
+                  </button>
+                )}
                 {run && <Steps run={run} />}
               </div>
             </div>,

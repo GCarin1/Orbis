@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -22,6 +22,7 @@ when a bot needs the user, and stays in the tray while bots keep working.
 - The desktop app shall run its renderer with context isolation on, Node integration off and the sandbox on, exposing through its preload script only notification and settings functions.
 - The desktop app shall keep running in the system tray when its window closes, and quit from the tray menu.
 - The desktop app shall hand the local hub's API token to the web app in the URL fragment of the page it loads, and shall expose no token through its preload.
+- The desktop app shall grant the hub's page notifications and the microphone alone (for voice input), and refuse the camera, the screen and every permission to other pages.
 
 ### Event-driven
 
@@ -40,6 +41,7 @@ when a bot needs the user, and stays in the tray while bots keep working.
 2. [verified] An `approval.requested` event and a secret-request card each map to one notification that targets their conversation — verified by `packages/desktop/test/notifications.test.ts`.
 3. [verified] The window options set context isolation on, Node integration off and the sandbox on, and block navigation to other origins — verified by `packages/desktop/test/window.test.ts`.
 4. [verified] A `bot.report` event maps to one notification titled "<bot> reported back" with the report text and its conversation, once — verified by `packages/desktop/test/notifications.test.ts`.
+5. [verified] The hub's page gets notifications and an audio-only microphone request, while a request with video, the screen, or from another origin is refused — verified by `packages/desktop/test/window.test.ts`.
 
 ## Maturity
 

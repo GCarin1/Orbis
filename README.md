@@ -67,6 +67,7 @@ are proven by tests.
 | Desktop app (Electron: finds or starts the hub, hardened window, native notifications, tray) | ✅ verified |
 | A team with a hierarchy: managers delegate to their reports and report back on their own when all the work is done; mentions by handle or role (`@qa`); bots bring each other into a conversation | ✅ verified |
 | The Orbis look: bot faces (8 shapes, 10 colors, eyes that follow the bot's state), one conversation list with unread dots, the bot panel (screen, routines, team), the new-bot screen, dark mode and phones | ✅ verified |
+| Voice and theme: talk to a bot with the microphone (browser dictation, or any OpenAI-compatible transcription service — OpenAI, Groq, a local Whisper — for the desktop app), replies read aloud, and a System/Light/Dark theme switch | ✅ verified |
 
 The status of each capability is always current in
 `npx doctrina status` and in each spec's `Implementation:` header.
@@ -140,7 +141,7 @@ More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
-[`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration
 
@@ -157,6 +158,7 @@ Every variable is optional; see [`.env.example`](.env.example).
 | `ORBIS_BROWSER_EXECUTABLE` | Playwright's Chromium | Chromium for the local browser tools |
 | `ORBIS_DOCKER` | `docker` | the docker CLI used by the docker provider |
 | `ORBIS_URL` | `http://127.0.0.1:7420` | hub URL for the CLI |
+| `ORBIS_TRANSCRIBE_URL` / `_MODEL` / `_API_KEY` | none (OpenAI's with `OPENAI_API_KEY`) / `whisper-1` | transcription service for voice input where the browser has none; Settings → Voice and appearance overrides them |
 
 ## Development
 

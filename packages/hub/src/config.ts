@@ -31,6 +31,10 @@ export interface HubConfig {
   ollamaBaseUrl: string;
   /** OpenAI-compatible address of the local LM Studio server, for `lmstudio` brains that name none. */
   lmstudioBaseUrl: string;
+  /** OpenAI-compatible transcription service for voice input; the settings screen overrides it. */
+  transcribeUrl: string | null;
+  transcribeModel: string | null;
+  transcribeApiKey: string | null;
   /** Directory of the built web app; null disables static serving. */
   webDir: string | null;
   /** Chromium for the local browser tools; null uses Playwright's own browser. */
@@ -127,6 +131,9 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     openaiApiKey: overrides.openaiApiKey ?? readVar(env, "OPENAI_API_KEY") ?? null,
     ollamaBaseUrl: overrides.ollamaBaseUrl ?? readVar(env, "ORBIS_OLLAMA_URL") ?? DEFAULT_OLLAMA_URL,
     lmstudioBaseUrl: overrides.lmstudioBaseUrl ?? readVar(env, "ORBIS_LMSTUDIO_URL") ?? DEFAULT_LMSTUDIO_URL,
+    transcribeUrl: overrides.transcribeUrl ?? readVar(env, "ORBIS_TRANSCRIBE_URL") ?? null,
+    transcribeModel: overrides.transcribeModel ?? readVar(env, "ORBIS_TRANSCRIBE_MODEL") ?? null,
+    transcribeApiKey: overrides.transcribeApiKey ?? readVar(env, "ORBIS_TRANSCRIBE_API_KEY") ?? null,
     webDir: overrides.webDir === undefined ? null : overrides.webDir,
     browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
     prices: overrides.prices ?? loadPrices(dataDir),

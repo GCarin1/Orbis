@@ -160,6 +160,30 @@ ending in `data: [DONE]` (a `: working` comment every 10 seconds keeps
 connections alive while the bot works). An unknown model answers 404
 `model_not_found`; a failed run answers 502 `run_failed`.
 
+## Voice
+
+`GET /api/v1/voice` → `{ transcription: { configured, source, url, model, hasKey } }`:
+the service that turns recordings into text, from the settings screen
+(`source: "settings"`), `ORBIS_TRANSCRIBE_URL` (`"env"`) or OpenAI with
+`OPENAI_API_KEY` (`"openai"`). The key itself is never returned.
+
+`PUT /api/v1/voice/transcription` `{ url?, model?, apiKey? }` saves it (a value
+replaces, `null` or `""` clears, a missing field keeps); the key is stored
+encrypted with the vault's key. `POST /api/v1/voice/test` sends a second of
+silence and answers `{ ok, text, durationMs, error }`.
+
+`POST /api/v1/voice/transcribe?lang=pt-BR` with the recording as the body
+(`Content-Type: audio/webm`, `audio/ogg`, `audio/mp4`, `audio/wav`… up to
+25 MiB) answers `{ "text": "…" }`. The hub forwards it to
+`<url>/audio/transcriptions` as OpenAI's API expects; 503
+`transcription_unavailable` without a service, 502 `transcription_failed`
+when the service fails.
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" -H "Content-Type: audio/webm" \
+  --data-binary @note.webm "http://127.0.0.1:7420/api/v1/voice/transcribe?lang=en-US"
+```
+
 ## Runtimes
 
 `GET /api/v1/runtimes/health` → `[{ kind, executable, found, path, version }]`

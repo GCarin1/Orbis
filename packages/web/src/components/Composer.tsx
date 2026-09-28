@@ -1,9 +1,11 @@
-// Message box with autocomplete: `@` for bot handles, `/` for skills (specs/web-app).
+// Message box with autocomplete: `@` for bot handles, `/` for skills, and the
+// microphone and read-aloud switch (specs/web-app).
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Bot } from "@orbis/shared";
-import { useT } from "../i18n.js";
+import { useLang, useT, type TextKey } from "../i18n.js";
+import { canSpeak, useDictation, useVoice } from "../voice.js";
 import { Avatar } from "./Avatar.js";
-import { PlusIcon, SendIcon } from "./Icons.js";
+import { MicIcon, PlusIcon, SendIcon, SpeakerIcon, SpeakerOffIcon, StopIcon } from "./Icons.js";
 
 export interface MentionOption {
   handle: string;
@@ -55,14 +57,19 @@ export function Composer({
   name,
   mentions = [],
   skills = [],
+  transcribe = null,
   onSend,
 }: {
   name: string;
   mentions?: MentionOption[];
   skills?: SkillOption[];
+  /** The hub's transcription service, used where the browser cannot take dictation. */
+  transcribe?: ((audio: Blob, lang: string) => Promise<string>) | null;
   onSend(text: string): Promise<void>;
 }) {
   const t = useT();
+  const lang = useLang((s) => s.lang);
+  const { readAloud, setReadAloud } = useVoice();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [caret, setCaret] = useState(0);
@@ -80,6 +87,20 @@ export function Composer({
     pendingCaret.current = null;
   });
 
+  /** The text before the dictation started: what is said goes after it. */
+  const spokenBase = useRef("");
+  const dictation = useDictation({
+    lang,
+    transcribe,
+    onText: (spoken) => {
+      const base = spokenBase.current;
+      const next = base && spoken && !/\s$/.test(base) ? `${base} ${spoken}` : base + spoken;
+      setText(next);
+      setCaret(next.length);
+    },
+  });
+  const micOn = dictation.state === "listening" || dictation.state === "recording";
+
   const skillToken = skillAt(text, caret);
   const token = skillToken ?? mentionAt(text, caret);
   const suggestions: Suggestion[] =
@@ -93,6 +114,7 @@ export function Composer({
   const submit = async () => {
     const value = text.trim();
     if (!value || busy) return;
+    dictation.cancel();
     setBusy(true);
     try {
       await onSend(value);
@@ -199,6 +221,38 @@ export function Composer({
         aria-expanded={open}
         rows={1}
       />
+      {canSpeak() && (
+        <button
+          type="button"
+          className="composer-plus composer-read"
+          aria-pressed={readAloud}
+          aria-label={t("voice.readAloud")}
+          title={t("voice.readAloud")}
+          onClick={() => setReadAloud(!readAloud)}
+        >
+          {readAloud ? <SpeakerIcon /> : <SpeakerOffIcon />}
+        </button>
+      )}
+      <button
+        type="button"
+        className={`composer-plus composer-mic${micOn ? " on" : ""}`}
+        aria-pressed={micOn}
+        aria-label={micOn ? t("voice.stop") : t("voice.speak")}
+        title={micOn ? t("voice.stop") : t("voice.speak")}
+        disabled={dictation.state === "transcribing"}
+        onClick={() => {
+          if (!micOn) spokenBase.current = text;
+          dictation.toggle();
+        }}
+      >
+        {micOn ? <StopIcon /> : <MicIcon />}
+      </button>
+      {(dictation.hint || dictation.state !== "idle") && (
+        <p className="composer-hint" role="status" data-testid="voice-status">
+          {dictation.hint ? t(`voice.hint.${dictation.hint}` as TextKey) : t(`voice.state.${dictation.state}` as TextKey)}
+          {dictation.detail ? ` ${dictation.detail}` : ""}
+        </p>
+      )}
       <button className="composer-send" type="submit" disabled={busy || !text.trim()} aria-label={t("composer.send")} title={t("composer.send")}>
         <SendIcon />
       </button>

@@ -49,6 +49,9 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | OPENAI_API_KEY           | no       | —                               | sk-...                   |
 | ORBIS_OLLAMA_URL         | no       | —                               | http://127.0.0.1:11434/v1 |
 | ORBIS_LMSTUDIO_URL       | no       | —                               | http://127.0.0.1:1234/v1 |
+| ORBIS_TRANSCRIBE_URL     | no       | —                               | https://api.groq.com/openai/v1 |
+| ORBIS_TRANSCRIBE_MODEL   | no       | —                               | whisper-1                |
+| ORBIS_TRANSCRIBE_API_KEY | no       | —                               | gsk_...                  |
 
 An empty value is treated as unset everywhere, so a blank line in `.env`
 falls back to the default instead of becoming an empty string.
@@ -83,6 +86,9 @@ machine that runs Orbis; none is injected by CI.
 | OPENAI_API_KEY           | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_OLLAMA_URL         | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_LMSTUDIO_URL       | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_TRANSCRIBE_URL     | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_TRANSCRIBE_MODEL   | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_TRANSCRIBE_API_KEY | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_URL                | local  | —        | —        | packages/cli/src/config.ts        |
 | ORBIS_RUN_TOKEN          | local  | —        | —        | packages/hub/src/mcp/bridge.ts    |
 
@@ -163,6 +169,7 @@ machine that runs Orbis; none is injected by CI.
 - `GET /runtimes/health` → `[{ kind, executable, found, path, version }]` for `claude-code`, `codex`, `gemini-cli` and `cursor`.
 - `GET /runtimes/local` → `[{ kind, baseUrl, reachable, models, error }]` for `ollama` and `lmstudio`.
 - `POST /runtimes/test` `{ botId }` (the bot's brain, with its secrets) or `{ brain }` → `{ kind, ok, reply, error, durationMs, answered }`; `409 test_running` while the same bot or brain kind is being tested.
+- `GET /voice` → `{ transcription: { configured, source: "settings"|"env"|"openai"|null, url, model, hasKey } }` (never the key) · `PUT /voice/transcription` `{ url?, model?, apiKey? }` (a value replaces, `null` or `""` clears, absent keeps; 400 for a non-http URL) → the same · `POST /voice/test` → `{ ok, text, durationMs, error }` (a second of silence sent to the service) · `POST /voice/transcribe?lang=<pt-BR|en-US>` with an `audio/*` or `application/octet-stream` body up to 25 MiB → `{ text }`; 503 `transcription_unavailable` when no service is set up, 502 `transcription_failed` when it fails. The hub forwards the audio as `multipart/form-data` (`file` named `speech.<ext>` after the content type, `model`, `language` as two letters, `response_format=json`) to `<url>/audio/transcriptions` with `Authorization: Bearer <key>` when a key is set. The service is the one saved from the settings screen (the key encrypted with the vault's key in the `settings` table), else `ORBIS_TRANSCRIBE_URL`, else `https://api.openai.com/v1` with `OPENAI_API_KEY`; the model defaults to `whisper-1`.
 - `GET /openapi.json` → OpenAPI 3.1 document.
 
 ### Stream (`/api/v1/stream`)

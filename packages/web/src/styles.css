@@ -34,25 +34,25 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121216;
-    --sidebar-bg: #18181d;
-    --panel: #18181d;
-    --panel-2: #202026;
-    --text: #ececf1;
-    --muted: #9a9aa5;
-    --border: #2a2a31;
-    --hover: #24242b;
-    --selected: #2c2c34;
-    --bot-bubble: #25252c;
-    --user-bubble: #f2f2f5;
-    --user-text: #111113;
-    --accent: #f2f2f5;
-    --accent-text: #111113;
-    --link: #7aa7ff;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 30%);
-  }
+/* Dark: chosen, or the system's while the theme follows it (theme.ts sets data-theme). */
+:root[data-theme="dark"] {
+  --bg: #121216;
+  --sidebar-bg: #18181d;
+  --panel: #18181d;
+  --panel-2: #202026;
+  --text: #ececf1;
+  --muted: #9a9aa5;
+  --border: #2a2a31;
+  --hover: #24242b;
+  --selected: #2c2c34;
+  --bot-bubble: #25252c;
+  --user-bubble: #f2f2f5;
+  --user-text: #111113;
+  --accent: #f2f2f5;
+  --accent-text: #111113;
+  --link: #7aa7ff;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 30%);
+  color-scheme: dark;
 }
 
 * {
@@ -779,14 +779,12 @@ iframe.computer-screen {
 .brains-table td {
   vertical-align: top;
 }
-@media (prefers-color-scheme: dark) {
-  .badge.ok,
-  .brain-test.answered {
-    color: #4ade80;
-  }
-  .brain-test.echo {
-    color: #fbbf24;
-  }
+:root[data-theme="dark"] .badge.ok,
+:root[data-theme="dark"] .brain-test.answered {
+  color: #4ade80;
+}
+:root[data-theme="dark"] .brain-test.echo {
+  color: #fbbf24;
 }
 .brains-screen h3 {
   margin: 20px 0 8px;
@@ -1923,4 +1921,158 @@ button:focus-visible {
 }
 .card-handoff details {
   font-size: 12.5px;
+}
+
+/* ── voice (change 0016) ─────────────────────────────────────────────────── */
+.composer-mic.on {
+  background: var(--danger);
+  color: #fff;
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+.composer-mic.on:hover {
+  background: var(--danger);
+  color: #fff;
+}
+.composer-plus:disabled {
+  opacity: 0.4;
+  cursor: progress;
+}
+.composer-read[aria-pressed="true"] {
+  color: var(--link);
+}
+@keyframes mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-mic.on {
+    animation: none;
+  }
+}
+.composer-hint {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 14px;
+  right: 14px;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.bubble-listen {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  padding: 2px 4px;
+  margin-top: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.message:hover .bubble-listen,
+.bubble-listen:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .bubble-listen {
+    opacity: 0.7;
+  }
+}
+.bubble-listen:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+/* ── theme switch and settings tabs ──────────────────────────────────────── */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  border-radius: 9px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--muted);
+}
+.segmented button.on {
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.settings-tabs button {
+  border: 0;
+  background: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+.settings-tabs button[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+.settings-section {
+  max-width: 720px;
+}
+.settings-section h2 {
+  margin: 18px 0 6px;
+}
+.settings-form {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+}
+.settings-form label {
+  display: grid;
+  gap: 4px;
+}
+.settings-form input {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.field-label {
+  margin: 0 0 4px;
+}
+label.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.voice-examples {
+  margin: 0;
+  padding-left: 18px;
+}
+.settings-intro {
+  margin-bottom: 8px;
 }

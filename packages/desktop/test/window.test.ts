@@ -1,6 +1,6 @@
 // specs/desktop-app — acceptance criterion 3 (the hardened window).
 import { describe, expect, it, vi } from "vitest";
-import { externalTarget, guardWebContents, isAllowedNavigation, windowOptions } from "../src/window.js";
+import { allowPermission, externalTarget, guardWebContents, isAllowedNavigation, windowOptions } from "../src/window.js";
 
 describe("window", () => {
   it("isolates the renderer: context isolation on, Node integration off, sandbox on (criterion 3)", () => {
@@ -49,5 +49,15 @@ describe("window", () => {
     expect(openHandler!({ url: "https://docs.example/page" })).toEqual({ action: "deny" });
     expect(openHandler!({ url: "file:///tmp/x" })).toEqual({ action: "deny" });
     expect(opened).toEqual(["https://github.com/GCarin1/Orbis", "https://docs.example/page"]);
+  });
+
+  it("lets the hub's page use notifications and the microphone, never the camera or the screen (change 0016)", () => {
+    const hub = "http://127.0.0.1:7420";
+    expect(allowPermission("notifications", {}, `${hub}/`, hub)).toBe(true);
+    expect(allowPermission("media", { mediaTypes: ["audio"] }, `${hub}/`, hub)).toBe(true);
+    expect(allowPermission("media", { mediaTypes: ["audio", "video"] }, `${hub}/`, hub)).toBe(false);
+    expect(allowPermission("media", { mediaTypes: [] }, `${hub}/`, hub)).toBe(false);
+    expect(allowPermission("display-capture", {}, `${hub}/`, hub)).toBe(false);
+    expect(allowPermission("media", { mediaTypes: ["audio"] }, "https://evil.example/", hub)).toBe(false);
   });
 });

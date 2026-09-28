@@ -9,6 +9,7 @@ import { ApprovalsInbox } from "./ApprovalsInbox.js";
 import { Avatar, Mascot, StateLabel } from "./Avatar.js";
 import { PlusIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon } from "./Icons.js";
 import { LanguageSwitch } from "./LanguageSwitch.js";
+import { ThemeSwitch } from "./ThemeSwitch.js";
 
 export type View = "chat" | "skills" | "usage" | "settings" | "new-bot";
 
@@ -272,6 +273,7 @@ export function Sidebar({
         <div className="me">
           <Mascot size={28} />
           <span className="me-name">{t("sidebar.you")}</span>
+          <ThemeSwitch />
           <LanguageSwitch />
         </div>
       </div>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { roleSlug, type Bot } from "@orbis/shared";
+import { roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
 import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
 import { useT } from "./i18n.js";
 import { useStore } from "./store.js";
+import { useReadAloud, useVoice } from "./voice.js";
 import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
 import { NewBotScreen } from "./components/NewBotScreen.js";
@@ -60,7 +61,12 @@ export function App() {
 
   useEffect(() => {
     if (!token) return;
-    store.setApi(new Api(token));
+    const api = new Api(token);
+    store.setApi(api);
+    void api
+      .get<{ transcription: TranscriptionStatus }>("/api/v1/voice")
+      .then((voice) => useVoice.getState().setTranscription(voice.transcription))
+      .catch(() => undefined);
     void useStore.getState().loadApprovals().catch(() => undefined);
     void useStore.getState().loadConversations().catch(() => undefined);
     void useStore.getState().loadBots().catch((err: unknown) => {
@@ -134,6 +140,11 @@ export function App() {
   useEffect(() => {
     if (conversationId && view === "chat") useStore.getState().markSeen(conversationId);
   }, [conversationId, lastItem, view]);
+
+  // Voice: new replies of the open conversation are read aloud when the user asked for it.
+  useReadAloud(conversationId, items, conversationId !== undefined && store.items[conversationId] !== undefined);
+  const transcription = useVoice((s) => s.transcription);
+  const transcribe = store.api && transcription?.configured ? (audio: Blob, spokenLang: string) => store.api!.transcribe(audio, spokenLang) : null;
 
   if (!token) {
     return (
@@ -245,7 +256,7 @@ export function App() {
             ) : (
               <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={null} />
             )}
-            <Composer name={group.title} mentions={mentions} skills={skillOptions} onSend={(text) => store.send(group.id, text)} />
+            <Composer name={group.title} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(group.id, text)} />
           </>
         ) : selected && conversationId ? (
           <>
@@ -287,7 +298,7 @@ export function App() {
             ) : (
               <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={selected.id} />
             )}
-            <Composer name={selected.name} mentions={mentions} skills={skillOptions} onSend={(text) => store.send(conversationId, text)} />
+            <Composer name={selected.name} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(conversationId, text)} />
           </>
         ) : (
           <div className="empty conv-empty">
