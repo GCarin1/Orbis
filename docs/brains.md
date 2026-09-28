@@ -1,4 +1,4 @@
-# Brains: API or subscription
+# Brains: subscription, local or API
 
 Every bot has a `brain` configuration:
 
@@ -8,12 +8,16 @@ Every bot has a `brain` configuration:
 
 | Field | Used by | Meaning |
 |-------|---------|---------|
-| `kind` | all | `claude-code`, `codex`, `gemini-cli`, `custom-cli`, `anthropic`, `openai`, `mock` |
-| `model` | most | model id or alias passed to the brain |
-| `command` | CLI brains | executable; defaults to `claude`, `codex` or `gemini` |
+| `kind` | all | `claude-code`, `codex`, `gemini-cli`, `cursor`, `ollama`, `lmstudio`, `anthropic`, `openai`, `custom-cli`, `mock` |
+| `model` | most | model id or alias passed to the brain (required for `openai`, `ollama`, `lmstudio`) |
+| `command` | CLI brains | executable; defaults to `claude`, `codex`, `gemini`, or `cursor-agent`/`agent` |
 | `args` | CLI brains | arguments placed before the adapter's own (for `custom-cli`, the whole argv; `{prompt}` is replaced by the prompt) |
 | `timeoutSec` | all | run timeout, default 900 |
-| `baseUrl`, `apiKeySecret` | API brains | endpoint and the name of the bot secret holding the key |
+| `baseUrl`, `apiKeySecret` | API and local brains | endpoint and the name of the bot secret holding the key (local servers need none) |
+
+A new bot uses **Claude Code** unless you pick another brain. To see which
+brains your machine has and prove one answers, open **⚙ Settings** in the web
+app (below).
 
 ## Subscription brains (no API key)
 
@@ -67,11 +71,87 @@ run token never stays on disk), then runs
 `gemini -p <prompt> --output-format stream-json [-m <model>]`. Setup:
 `npm i -g @google/gemini-cli`, run `gemini` once and sign in with Google.
 
-### Which CLIs do I have?
+### Cursor CLI (Cursor subscription)
+
+Before each run Orbis writes the Orbis MCP server into
+`<workspace>/.cursor/mcp.json` and allows its tools with `Mcp(orbis:*)` in
+`<workspace>/.cursor/cli.json` (both restored afterwards, so the run token
+never stays on disk), then runs
+
+```
+agent -p --output-format stream-json --trust --workspace <workspace> --approve-mcps \
+  [--model <model>] [--resume <chat-id>] <prompt>
+```
+
+The chat id of the first run is stored and resumed on the next. Orbis never
+passes `--force`: Cursor's own shell and file-writing tools follow Cursor's
+permission rules, and the bot's Orbis tools follow the Orbis policy and
+approvals. Cursor reports no token counts, so its runs show in the usage
+screen with zero tokens. Setup: install the Cursor CLI
+(`curl https://cursor.com/install -fsS | bash`, or on Windows
+`irm 'https://cursor.com/install?win32=true' | iex`), then `agent login`.
 
 ```bash
-orbis runtimes check     # ✓ claude-code 2.1.x  ✗ codex "codex" not found on PATH  …
+orbis bots create --name "Dev" --brain cursor
 ```
+
+### Windows
+
+A CLI installed with `npm i -g` is a `.cmd` file on Windows. Node.js cannot
+start it without `cmd.exe`, which cuts a multi-line prompt at its first line
+break, so Orbis reads the `.cmd` file and runs the Node.js script it points
+to directly. Programs installed as `.exe` (such as Claude Code's native
+installer) run as they are. A batch file that points to no script fails the
+run with a message asking you to set the brain's `command` to the program's
+`.exe` or `.js` file.
+
+## Which brains do I have, and does it really answer?
+
+**⚙ Settings** in the web app lists:
+
+- the subscription CLIs on the hub's machine (installed or not, version,
+  path, and how to install the missing ones);
+- the local model servers (Ollama, LM Studio): running or not, and their
+  models;
+- your bots with the brain and model each one uses, and a **Configure**
+  button that opens the bot's settings.
+
+**Test** asks the brain `What is 17 × 23? Answer with the number only.` with
+no tools and no history, in a scratch folder removed afterwards, and shows
+the reply and how long it took. A model answers **391**; the mock brain only
+echoes the question, so the screen says no model answered. On a subscription
+brain the test uses a little of your quota. The same from a terminal:
+
+```bash
+orbis runtimes check                   # CLIs and local servers
+orbis runtimes test claude-code        # ✓ claude-code answered in 4.2s: 391
+orbis runtimes test ollama --model llama3.2
+orbis runtimes test @ana               # the bot's own brain, with its secrets
+```
+
+When a CLI brain runs, the hub log also shows `POST /mcp` requests: that is
+the CLI (Claude Code, Codex, Gemini CLI or Cursor) connecting to the Orbis
+tool server, one short handshake per run.
+
+## Local models (`ollama`, `lmstudio`) — no API, no subscription
+
+The model runs on your computer; Orbis talks to the server's
+OpenAI-compatible API with no key. `model` is required, and the web app
+suggests the models the server has.
+
+| Brain | Default address | Setup |
+|-------|-----------------|-------|
+| `ollama` | `http://127.0.0.1:11434/v1` (`ORBIS_OLLAMA_URL`) | install Ollama, `ollama pull llama3.2`, keep it running |
+| `lmstudio` | `http://127.0.0.1:1234/v1` (`ORBIS_LMSTUDIO_URL`) | download a model in LM Studio, then Developer → Start server |
+
+```bash
+orbis bots create --name "Llama" --brain ollama --model llama3.2
+orbis bots create --name "Qwen" --brain lmstudio --model qwen3-4b --base-url http://192.168.0.10:1234/v1
+```
+
+Many small local models cannot call tools. When the server answers that the
+model does not support tools, the run carries on without them and says so in
+its steps; the bot then answers from the conversation alone.
 
 ## API brains
 
@@ -94,12 +174,11 @@ orbis bots create --name "Researcher" --brain anthropic --model claude-opus-5
 ### OpenAI-compatible (`openai`)
 
 Chat Completions with streaming and function calling, for any compatible
-server. `model` is required; `baseUrl` defaults to OpenAI. A server on
-localhost needs no key:
+server (OpenAI, OpenRouter, Groq, vLLM). `model` is required; `baseUrl`
+defaults to OpenAI. A server on localhost needs no key (for Ollama and LM
+Studio, prefer their own brains above):
 
 ```bash
-# Ollama (free, local)
-orbis bots create --name "Llama" --brain openai --model llama3.2 --base-url http://localhost:11434/v1
 # OpenRouter
 OPENAI_API_KEY=sk-or-... orbis serve
 orbis bots create --name "Router" --brain openai --model anthropic/claude-sonnet-5 --base-url https://openrouter.ai/api/v1

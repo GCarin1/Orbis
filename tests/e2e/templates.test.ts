@@ -41,7 +41,7 @@ describe("bot settings and templates in a browser", () => {
     await page.goto(`${url}/#token=${TOKEN}`);
     await page.getByTestId("bot-ana").click();
 
-    await page.getByRole("button", { name: /Settings/ }).click();
+    await page.getByRole("button", { name: "⚙ Bot settings" }).click();
     const panel = page.getByTestId("settings-panel");
     await panel.getByLabel("Role").fill("Release QA");
     await panel.getByLabel("Description and durable rules").fill("You check every release. Never send anything without my approval.");

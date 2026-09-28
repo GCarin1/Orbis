@@ -33,7 +33,8 @@ Usage: orbis <command> [options]
   secrets list|set|rm @bot [NAME]              credentials bots use as {{secret:NAME}} (value: hidden prompt or stdin)
   usage [@bot] [--from D] [--to D]             tokens, cost and spend caps (this month by default)
   approvals [list|allow <id> [--always]|deny <id> [--note N]]   answer what bots wait for
-  runtimes check                               which subscription CLIs (claude, codex, gemini) are installed
+  runtimes check                               the brains this machine has: subscription CLIs and local model servers
+  runtimes test <kind>|@bot [--model M]        ask a brain "17 × 23" and show whether a model answered
   mcp                                          stdio MCP bridge to the hub (needs ORBIS_RUN_TOKEN)
 
 Global options:

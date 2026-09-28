@@ -35,7 +35,8 @@ orbis usage [@bot] [--from DATE] [--to DATE]
 orbis approvals [list [--all]]
 orbis approvals allow <id> [--always]
 orbis approvals deny <id> [--note TEXT]
-orbis runtimes check            # claude / codex / gemini installed? which version?
+orbis runtimes check            # subscription CLIs (claude, codex, gemini, cursor) and local servers (ollama, lmstudio)
+orbis runtimes test <kind>|@bot [--model M] [--base-url U]   # ask "17 × 23": did a model answer?
 orbis mcp                       # stdio MCP bridge; needs ORBIS_RUN_TOKEN
 ```
 

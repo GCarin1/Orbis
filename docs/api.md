@@ -158,4 +158,14 @@ connections alive while the bot works). An unknown model answers 404
 ## Runtimes
 
 `GET /api/v1/runtimes/health` → `[{ kind, executable, found, path, version }]`
-for `claude-code`, `codex` and `gemini-cli`.
+for `claude-code`, `codex`, `gemini-cli` and `cursor`.
+
+`GET /api/v1/runtimes/local` → `[{ kind, baseUrl, reachable, models, error }]`
+for the `ollama` and `lmstudio` servers (`GET <baseUrl>/models`).
+
+`POST /api/v1/runtimes/test` with `{ "botId": "ana" }` (that bot's brain and
+secrets) or `{ "brain": { "kind": "ollama", "model": "llama3.2" } }` asks the
+brain `What is 17 × 23? Answer with the number only.` with no tools and
+answers `{ kind, ok, reply, error, durationMs, answered }`; `answered` is true
+when the reply holds 391. A second test of the same bot or brain kind while
+one runs answers 409 `test_running`.

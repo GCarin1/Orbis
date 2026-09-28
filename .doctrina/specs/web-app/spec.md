@@ -2,11 +2,11 @@
 
 **Capability:** web-app
 **Status:** active
-**Implementation:** verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer and bot settings screens, approvals inbox, languages, PWA and the end-to-end paths
+**Implementation:** verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer, bot settings and brains settings screens, approvals inbox, languages, PWA and the end-to-end paths
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.8.1
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -23,11 +23,12 @@ run's steps.
 - The web app shall show a roster sidebar with each bot's initials avatar ringed by its state color and icon, name, role, last message and its time, pinned bots first and bots grouped by role.
 - The web app shall show a conversation's timeline with messages, events and the approval, draft, handoff, secret-request and routine cards, thread replies and reactions, and each run's steps as a collapsible list.
 - The web app shall provide a composer with autocomplete for `@handle` mentions and `/skill` invocations.
-- The web app shall provide screens for bot settings (identity, description, brain, policy, computer, spend cap), skills, routines, usage, the approvals inbox, and the computer view as a side panel and full screen.
+- The web app shall provide screens for bot settings (identity, description, brain, policy, computer, spend cap), skills, routines, usage, settings (the brains on the hub's machine and the brain of each bot), the approvals inbox, and the computer view as a side panel and full screen.
 - The web app shall show every text in pt-BR or English, following the browser language, with a manual switch that is remembered.
 - The web app shall ship a web app manifest and a service worker so it can be installed on desktop and mobile browsers.
 - The web app shall state each bot state with a text label next to its color, for accessibility.
 - The web app shall list the group conversations in the sidebar, provide a dialog that creates a group of 2 to 6 bots with a lead, and show a group's members, lead and their states above its timeline.
+- The web app shall show the brain and model of the open bot next to its name.
 
 ### Event-driven
 
@@ -35,6 +36,8 @@ run's steps.
 - When the user answers an approval card or sends or discards a draft card, the web app shall call the API and show the card's new state.
 - When the stream connection drops, the web app shall reconnect with backoff and reload the open timeline.
 - When the desktop app reports a notification click, the web app shall open that notification's conversation — the group, or the bot of a direct conversation.
+- When the user presses Test on a brain or a bot in the settings screen, the web app shall call the brain test and show the reply and its duration, a warning when no model answered, or the error.
+- When the user picks the `ollama` or `lmstudio` brain for a bot, the web app shall suggest the models that server has and say when it is not running.
 
 ## Acceptance criteria
 
@@ -53,6 +56,8 @@ run's steps.
 13. [verified] The bot settings panel edits identity, brain, policy rules and grants, computer, allowlists and the spend cap in one patch, and asks before deleting — verified by `packages/web/test/settings.test.tsx`.
 14. [verified] In a real browser, a user edits a bot's settings, exports it as a template file and imports that file as a new bot — verified by `tests/e2e/templates.test.ts`.
 15. [verified] Opening a conversation by id selects the group, or the bot whose direct conversation it is — verified by `packages/web/test/desktop.test.tsx`.
+16. [verified] The settings screen shows installed and missing CLIs with install hints, local servers with their models (or off), and each bot's brain; it tests a brain or a bot and shows the answer, the echo warning or the error, and Configure opens the bot; the new-bot dialog offers Cursor, Ollama and LM Studio and suggests the Ollama models — verified by `packages/web/test/brains.test.tsx`.
+17. [verified] In a real browser, a user opens Settings, sees a local server's models, tests it and a bot on the Cursor CLI (both answer 391), sees the mock bot flagged as an echo, and opens a bot's brain settings from the list — verified by `tests/e2e/settings.test.ts`.
 
 ## Maturity
 

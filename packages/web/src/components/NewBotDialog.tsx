@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { BrainKind } from "@orbis/shared";
+import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
-
-const BRAINS: BrainKind[] = ["claude-code", "codex", "gemini-cli", "anthropic", "openai", "custom-cli", "mock"];
+import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 
 export interface NewBotInput {
   name: string;
@@ -12,10 +12,13 @@ export interface NewBotInput {
 }
 
 export function NewBotDialog({
+  api,
   onCreate,
   onImport,
   onCancel,
 }: {
+  /** Lets the dialog suggest the models of the local servers. */
+  api?: Api | null;
   onCreate(input: NewBotInput): Promise<void>;
   onImport?(yaml: string): Promise<void>;
   onCancel(): void;
@@ -30,6 +33,8 @@ export function NewBotDialog({
   const [baseUrl, setBaseUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { servers } = useLocalServers(api, isLocalKind(kind));
+  const defaultUrl = isLocalKind(kind) ? servers?.find((s) => s.kind === kind)?.baseUrl : undefined;
 
   return (
     <div className="dialog-backdrop" role="presentation">
@@ -51,7 +56,7 @@ export function NewBotDialog({
                 kind,
                 ...(model.trim() ? { model: model.trim() } : {}),
                 ...(command.trim() ? { command: command.trim() } : {}),
-                ...(baseUrl.trim() && (kind === "openai" || kind === "anthropic") ? { baseUrl: baseUrl.trim() } : {}),
+                ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
               },
             });
           } catch (err) {
@@ -84,16 +89,11 @@ export function NewBotDialog({
             ))}
           </select>
         </label>
-        {kind !== "mock" && kind !== "custom-cli" && (
-          <label>
-            {t("newbot.model")}
-            <input value={model} onChange={(e) => setModel(e.target.value)} name="model" />
-          </label>
-        )}
-        {(kind === "openai" || kind === "anthropic") && (
+        {takesModel(kind) && <ModelField kind={kind} value={model} onChange={setModel} name="model" servers={servers} />}
+        {takesBaseUrl(kind) && (
           <label>
             {t("newbot.baseUrl")}
-            <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={kind === "openai" ? "http://localhost:11434/v1" : ""} name="baseUrl" />
+            <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={defaultUrl ?? (kind === "openai" ? "https://api.openai.com/v1" : "")} name="baseUrl" />
           </label>
         )}
         {kind === "custom-cli" && (

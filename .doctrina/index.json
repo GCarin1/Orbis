@@ -15,9 +15,9 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
-        "implementation": "verified",
+        "implementation": "verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims",
         "realizes": [
           "SC2"
         ],
@@ -57,7 +57,7 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.8.1",
+        "version": "0.9.0",
         "last_updated": "2026-09-27",
-        "implementation": "verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer and bot settings screens, approvals inbox, languages, PWA and the end-to-end paths",
+        "implementation": "verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer, bot settings and brains settings screens, approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
           "SC7",
           "SC4",
@@ -666,6 +666,28 @@
         "applied": "2026-09-28",
         "specs_affected": [],
         "lane": "product (uncertain) — opened as chore"
+      },
+      {
+        "id": "0013-brains-settings",
+        "title": "brains-settings",
+        "path": ".doctrina/changes/archive/2026-09-28-0013-brains-settings",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: support)"
       }
     ],
     "skills": [
@@ -681,13 +703,13 @@
         "id": "cli-harnesses",
         "path": ".doctrina/contracts/cli-harnesses.md",
         "status": "active",
-        "last_updated": "2026-09-27"
+        "last_updated": "2026-09-28"
       },
       {
         "id": "hub-surface",
         "path": ".doctrina/contracts/hub-surface.md",
         "status": "active",
-        "last_updated": "2026-09-27"
+        "last_updated": "2026-09-28"
       }
     ],
     "entrypoint": {

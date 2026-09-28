@@ -27,6 +27,10 @@ export interface HubConfig {
   logLevel: LogLevel;
   anthropicApiKey: string | null;
   openaiApiKey: string | null;
+  /** OpenAI-compatible address of the local Ollama server, for `ollama` brains that name none. */
+  ollamaBaseUrl: string;
+  /** OpenAI-compatible address of the local LM Studio server, for `lmstudio` brains that name none. */
+  lmstudioBaseUrl: string;
   /** Directory of the built web app; null disables static serving. */
   webDir: string | null;
   /** Chromium for the local browser tools; null uses Playwright's own browser. */
@@ -34,6 +38,9 @@ export interface HubConfig {
   /** USD per million tokens by model prefix: the shipped table with `<data>/prices.json` over it. */
   prices: Record<string, Price>;
 }
+
+export const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434/v1";
+export const DEFAULT_LMSTUDIO_URL = "http://127.0.0.1:1234/v1";
 
 export type Env = Record<string, string | undefined>;
 
@@ -118,6 +125,8 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     logLevel: overrides.logLevel ?? readEnum(env, "ORBIS_LOG_LEVEL", ["debug", "info", "warn", "error"] as const, "info"),
     anthropicApiKey: overrides.anthropicApiKey ?? readVar(env, "ANTHROPIC_API_KEY") ?? null,
     openaiApiKey: overrides.openaiApiKey ?? readVar(env, "OPENAI_API_KEY") ?? null,
+    ollamaBaseUrl: overrides.ollamaBaseUrl ?? readVar(env, "ORBIS_OLLAMA_URL") ?? DEFAULT_OLLAMA_URL,
+    lmstudioBaseUrl: overrides.lmstudioBaseUrl ?? readVar(env, "ORBIS_LMSTUDIO_URL") ?? DEFAULT_LMSTUDIO_URL,
     webDir: overrides.webDir === undefined ? null : overrides.webDir,
     browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
     prices: overrides.prices ?? loadPrices(dataDir),

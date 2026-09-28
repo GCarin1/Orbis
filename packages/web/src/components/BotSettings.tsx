@@ -2,9 +2,9 @@
 // brain, tool policy, computer, allowlists, spend cap; export, duplicate, delete.
 import { useEffect, useState } from "react";
 import type { Bot, BrainKind, PolicyDecision } from "@orbis/shared";
+import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
-
-const BRAINS: BrainKind[] = ["claude-code", "codex", "gemini-cli", "anthropic", "openai", "custom-cli", "mock"];
+import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 const DECISIONS: PolicyDecision[] = ["allow", "ask", "deny"];
 const list = (text: string) =>
   text
@@ -19,6 +19,7 @@ interface Rule {
 }
 
 export function BotSettings({
+  api,
   bot,
   onSave,
   onExport,
@@ -26,6 +27,8 @@ export function BotSettings({
   onDelete,
   onClose,
 }: {
+  /** Lets the panel suggest the models of the local servers. */
+  api?: Api | null;
   bot: Bot;
   onSave(patch: object): Promise<void>;
   onExport(): Promise<void>;
@@ -55,6 +58,8 @@ export function BotSettings({
   const [hidden, setHidden] = useState(bot.hidden);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const { servers } = useLocalServers(api, isLocalKind(kind));
+  const defaultUrl = isLocalKind(kind) ? servers?.find((s) => s.kind === kind)?.baseUrl : undefined;
 
   // A grant given from an approval card elsewhere shows up here.
   useEffect(() => setGrants(bot.policy.grants), [bot.policy.grants]);
@@ -83,8 +88,8 @@ export function BotSettings({
             kind,
             ...(model.trim() ? { model: model.trim() } : {}),
             ...(command.trim() ? { command: command.trim() } : {}),
-            ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}),
-            ...(apiKeySecret.trim() ? { apiKeySecret: apiKeySecret.trim() } : {}),
+            ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
+            ...(apiKeySecret.trim() && takesBaseUrl(kind) ? { apiKeySecret: apiKeySecret.trim() } : {}),
           },
           policy: { rules: rules.filter((r) => r.tool.trim()).map((r) => ({ tool: r.tool.trim(), decision: r.decision, ...(r.locked ? { locked: true } : {}) })), grants },
           computer: {
@@ -146,23 +151,18 @@ export function BotSettings({
               ))}
             </select>
           </label>
-          {kind !== "mock" && kind !== "custom-cli" && (
-            <label>
-              {t("newbot.model")}
-              <input value={model} onChange={(e) => setModel(e.target.value)} name="settings-model" />
-            </label>
-          )}
+          {takesModel(kind) && <ModelField kind={kind} value={model} onChange={setModel} name="settings-model" servers={servers} />}
           {kind === "custom-cli" && (
             <label>
               {t("newbot.command")}
               <input value={command} onChange={(e) => setCommand(e.target.value)} name="settings-command" />
             </label>
           )}
-          {(kind === "openai" || kind === "anthropic") && (
+          {takesBaseUrl(kind) && (
             <>
               <label>
                 {t("newbot.baseUrl")}
-                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} name="settings-base-url" />
+                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={defaultUrl} name="settings-base-url" />
               </label>
               <label>
                 {t("settings.apiKeySecret")}

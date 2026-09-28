@@ -2,7 +2,7 @@
 
 **Contract:** cli-harnesses
 **Status:** active
-**Last updated:** 2026-09-27
+**Last updated:** 2026-09-28
 
 ## Purpose
 
@@ -80,6 +80,21 @@ Orbis tools appear to the CLI with dots replaced by underscores
 - Fallback: when no stdout line is a JSON object with a `type`, the whole stdout is read as `--output-format json` (`{ response, stats, error? }`).
 - The settings file is restored (or removed) when the run ends, so the run token does not stay in the workspace.
 
+### cursor (Cursor CLI, Cursor login)
+
+- Executable: the bot's `command`, else the first of `cursor-agent` and `agent` on PATH (Cursor's installer names it `agent`).
+- The hub writes, for the run only, `<workspace>/.cursor/mcp.json` with `{ "mcpServers": { "orbis": { "type": "stdio", ...server entry } } }` and adds `Mcp(orbis:*)` to `permissions.allow` in `<workspace>/.cursor/cli.json`, keeping whatever else the files hold; both are restored (or removed) when the run ends, so the run token does not stay in the workspace.
+- argv: `agent -p --output-format stream-json --trust --workspace <workspace> [--approve-mcps] [--model <model>] [--resume <chat-id>] <prompt>`; `--approve-mcps` only when the run has the MCP bridge. Orbis never passes `--force`: Cursor's own shell and write tools keep Cursor's permission rules, and the bot's Orbis tools keep the Orbis policy.
+- The prompt is the whole prompt (identity, context, task), last on the command line.
+- The first run of a bot in a conversation starts a new chat; later runs pass `--resume` with the stored `session_id`. A stored chat that fails before printing any event is forgotten and the run starts a new chat.
+- stdout: one JSON object per line. Mapping: `{"type":"system","subtype":"init"}` → `run.started` (session id kept); `{"type":"assistant"}` text blocks → `step.text`; `{"type":"tool_call","subtype":"started"}` → `step.tool_call` and `"completed"` → `step.tool_result`, the tool named by the `tool_call` key without its `ToolCall` suffix (`readToolCall` → `read`), by `function.name`, or by the tool name inside an MCP call's `args`, and the result failing when it holds no `success`; `{"type":"result"}` → `run.usage` with zero tokens (Cursor reports none; subscription-covered), then `run.finished` with `result` as the reply, or `run.failed` when `is_error` is true or `subtype` is not `success`. Every other `type` is ignored.
+
+### ollama and lmstudio (local model servers, no login)
+
+- Not child processes: the hub calls the server's OpenAI-compatible Chat Completions API like the `openai` brain, at the bot's `baseUrl`, else `ORBIS_OLLAMA_URL` (default `http://127.0.0.1:11434/v1`) or `ORBIS_LMSTUDIO_URL` (default `http://127.0.0.1:1234/v1`), with no key unless the bot names an `apiKeySecret`.
+- Model list: `GET <baseUrl>/models` → `{ data: [{ id }] }`.
+- A 4xx answer saying the model does not support tools makes the run retry once without tools and note it as a thinking step.
+
 ### custom-cli (any command)
 
 - argv: the bot's `command` and `args`, where the literal `{prompt}` in an argument is replaced by the prompt; with no `{prompt}` argument the prompt is written to stdin.
@@ -88,6 +103,14 @@ Orbis tools appear to the CLI with dots replaced by underscores
 ### Exit status
 
 - Exit 0 with a reply → `run.finished`. Non-zero exit, a timeout, or no reply → `run.failed` carrying the last 8192 bytes of stderr.
+
+### Windows `.cmd` shims
+
+- On Windows a CLI installed by npm (and installers like it) is a `.cmd` or `.bat` file, which Node.js cannot start without `cmd.exe`, and `cmd.exe` cuts a multi-line prompt at its first line break. The hub reads the shim, finds the quoted `.js`/`.mjs`/`.cjs` script under `%dp0%`/`%~dp0`, and runs it with the `node.exe` next to the shim, else the hub's own Node.js, followed by the harness argv. A batch file naming no such script fails the run, asking for the program's `.exe` or `.js` as the brain's `command`. The health check runs `--version` the same way.
+
+### Brain test
+
+- `POST /api/v1/runtimes/test` runs a harness once with the task `What is 17 × 23? Answer with the number only.`, a one-line identity, no history, no MCP server and no tools, in a scratch directory under `<data>/brain-tests/` that is removed afterwards; `answered` is true when the reply holds `391`.
 
 ## References
 

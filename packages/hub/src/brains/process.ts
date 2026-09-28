@@ -1,6 +1,6 @@
 // Child-process runner shared by the CLI brains (contracts/cli-harnesses).
-import { spawn } from "node:child_process";
-import { accessSync, constants, statSync } from "node:fs";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline";
 
@@ -85,6 +85,52 @@ export function resolveExecutable(command: string, envPath = process.env.PATH ??
   return null;
 }
 
+/**
+ * The Node script behind a Windows `.cmd` shim (npm's cmd-shim and installers
+ * like it), so the brain runs without cmd.exe: a shell would cut a multi-line
+ * prompt at its first line break. Null when the file names no such script.
+ */
+export function unwrapCmdShim(
+  shimPath: string,
+  text: string,
+  fileExists: (file: string) => boolean = existsSync,
+  nodePath: string = process.execPath,
+): { command: string; args: string[] } | null {
+  const win = path.win32;
+  const dir = win.dirname(shimPath);
+  const script = [...text.matchAll(/"([^"\r\n]+)"/g)].map((m) => m[1]!).find((q) => /%~?dp0%?/i.test(q) && /\.[cm]?js$/i.test(q));
+  if (!script) return null;
+  const localNode = win.join(dir, "node.exe");
+  return {
+    command: fileExists(localNode) ? localNode : nodePath,
+    args: [win.normalize(script.replace(/%~dp0|%dp0%/gi, `${dir}\\`))],
+  };
+}
+
+/** How to start a command here: on Windows a `.cmd`/`.bat` shim runs its Node script directly. */
+export function launchCommand(
+  command: string,
+  args: string[],
+  platform: NodeJS.Platform = process.platform,
+  read: (file: string) => string = (file) => readFileSync(file, "utf8"),
+  fileExists: (file: string) => boolean = existsSync,
+): { command: string; args: string[] } {
+  if (platform !== "win32" || !/\.(cmd|bat)$/i.test(command)) return { command, args };
+  let text = "";
+  try {
+    text = read(command);
+  } catch {
+    /* reported below */
+  }
+  const target = unwrapCmdShim(command, text, fileExists);
+  if (!target) {
+    throw new Error(
+      `${command} is a Windows batch file, which Orbis cannot run without cmd.exe (it cuts multi-line prompts); set the brain's command to the program's .exe or its .js entry`,
+    );
+  }
+  return { command: target.command, args: [...target.args, ...args] };
+}
+
 export interface ProcessSpec {
   command: string;
   args: string[];
@@ -110,13 +156,22 @@ export type ProcessEvent =
 /** Spawn a process and yield its stdout line by line, then one exit event. */
 export async function* runProcess(spec: ProcessSpec): AsyncGenerator<ProcessEvent> {
   const useGroup = process.platform !== "win32";
-  const child = spawn(spec.command, spec.args, {
-    cwd: spec.cwd,
-    env: spec.env,
-    stdio: ["pipe", "pipe", "pipe"],
-    detached: useGroup,
-    windowsHide: true,
-  });
+  let child: ChildProcessWithoutNullStreams;
+  try {
+    const launch = launchCommand(spec.command, spec.args);
+    child = spawn(launch.command, launch.args, {
+      cwd: spec.cwd,
+      env: spec.env,
+      stdio: ["pipe", "pipe", "pipe"],
+      detached: useGroup,
+      windowsHide: true,
+    });
+  } catch (err) {
+    // A shim that cannot be unwrapped, or a spawn refused outright (EINVAL on a .cmd).
+    const message = err instanceof Error ? err.message : String(err);
+    yield { type: "exit", code: null, signal: null, stderrTail: "", timedOut: false, aborted: false, spawnError: message };
+    return;
+  }
 
   let stderr = "";
   let timedOut = false;

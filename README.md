@@ -18,9 +18,12 @@ A bot's brain is your choice, per bot:
 | `claude-code` | Claude Code CLI, headless, with your **Claude subscription** login | **No** |
 | `codex` | OpenAI Codex CLI with your **ChatGPT** login | **No** |
 | `gemini-cli` | Google Gemini CLI with your **Google account** | **No** |
+| `cursor` | Cursor CLI (`agent`) with your **Cursor** login | **No** |
+| `ollama` | a model running in **Ollama** on your computer | **No** |
+| `lmstudio` | a model running in **LM Studio** on your computer | **No** |
 | `custom-cli` | any command that reads a prompt and prints a reply | depends |
 | `anthropic` | Anthropic Messages API | yes |
-| `openai` | any OpenAI-compatible API: OpenAI, OpenRouter, **Ollama**, LM Studio, vLLM | yes, except local servers |
+| `openai` | any OpenAI-compatible API: OpenAI, OpenRouter, Groq, vLLM | yes, except local servers |
 | `mock` | deterministic, offline — for tests and demos | no |
 
 > 🇧🇷 Leia em português: [README.pt.md](README.pt.md)
@@ -37,7 +40,7 @@ are proven by tests.
 |------------|-------|
 | Bots (identity, rules, avatar, state, pin/hide/duplicate/delete) | ✅ verified |
 | Direct conversations, threads, reactions, run queue, live stream | ✅ |
-| Brains: `claude-code`, `codex`, `gemini-cli` (subscriptions, session resume), `anthropic` (official SDK), `openai`-compatible (OpenAI, Ollama, OpenRouter…), `custom-cli`, `mock` | ✅ verified |
+| Brains: `claude-code`, `codex`, `gemini-cli`, `cursor` (subscriptions, session resume), `ollama` and `lmstudio` (local models), `anthropic` (official SDK), `openai`-compatible (OpenAI, OpenRouter…), `custom-cli`, `mock`; the settings screen lists the brains on your machine and tests that a model answers | ✅ verified |
 | Context assembly (identity, memories, recent conversation within budget) | ✅ |
 | REST API + WebSocket stream + OpenAPI, bearer token | ✅ |
 | `orbis` CLI: `serve`, `login`, `open`, `bots`, `chat` (inline approvals), `group`, `memory`, `skills`, `routines`, `secrets`, `usage`, `approvals`, `runtimes`, `mcp` | ✅ |
@@ -83,6 +86,12 @@ orbis open                 # opens the web app already signed in
 ```
 
 Or the **desktop app**, which starts the hub for you: `npm run desktop`.
+
+**Which brain answers?** A new bot uses Claude Code with your login unless
+you pick another brain. Open **⚙ Settings** in the web app to see the brains
+on your machine (Claude Code, Codex, Gemini CLI, Cursor, Ollama, LM Studio)
+and press **Test**: a real model answers `17 × 23` with **391**. From a
+terminal: `orbis runtimes check` and `orbis runtimes test claude-code`.
 
 The hub keeps everything in `~/.orbis` (`ORBIS_DATA_DIR`): the SQLite
 database, the API token (`~/.orbis/token`) and each bot's workspace.

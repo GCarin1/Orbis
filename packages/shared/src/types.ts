@@ -11,18 +11,24 @@ export const BRAIN_KINDS = [
   "claude-code",
   "codex",
   "gemini-cli",
+  "cursor",
+  "ollama",
+  "lmstudio",
   "custom-cli",
 ] as const;
 export type BrainKind = (typeof BRAIN_KINDS)[number];
 
 /** Brains that run as a child process and log in with the user's own subscription. */
-export const CLI_BRAIN_KINDS: readonly BrainKind[] = ["claude-code", "codex", "gemini-cli", "custom-cli"];
+export const CLI_BRAIN_KINDS: readonly BrainKind[] = ["claude-code", "codex", "gemini-cli", "cursor", "custom-cli"];
+
+/** Brains served by a model server on this machine, through the OpenAI-compatible adapter. */
+export const LOCAL_BRAIN_KINDS: readonly BrainKind[] = ["ollama", "lmstudio"];
 
 export interface Brain {
   kind: BrainKind;
   /** Model id or alias understood by the brain (e.g. "sonnet", "gpt-5", "llama3.2"). */
   model?: string;
-  /** Base URL for OpenAI-compatible and Anthropic endpoints. */
+  /** Base URL for OpenAI-compatible and Anthropic endpoints (ollama and lmstudio default to their local address). */
   baseUrl?: string;
   /** Name of the bot secret holding the API key, for API brains. */
   apiKeySecret?: string;
@@ -364,4 +370,40 @@ export interface UsageReport {
     /** What counts toward the cap in the range. */
     cappedCostUsd: number;
   }>;
+}
+
+// --- runtimes (specs/agent-runtimes) ------------------------------------------
+
+/** A subscription CLI on the hub's machine, found on PATH or not. */
+export interface RuntimeHealth {
+  kind: "claude-code" | "codex" | "gemini-cli" | "cursor";
+  /** The executable looked up (the first one found when there are several names). */
+  executable: string;
+  found: boolean;
+  path: string | null;
+  version: string | null;
+}
+
+/** A local model server (Ollama, LM Studio) and the models it serves. */
+export interface LocalModelServer {
+  kind: "ollama" | "lmstudio";
+  baseUrl: string;
+  reachable: boolean;
+  models: string[];
+  error: string | null;
+}
+
+/** The question a brain test asks: only a model answers it; an echo does not. */
+export const BRAIN_TEST_QUESTION = "What is 17 × 23? Answer with the number only.";
+export const BRAIN_TEST_ANSWER = "391";
+
+export interface BrainTestResult {
+  kind: BrainKind;
+  /** The brain ran to the end without failing. */
+  ok: boolean;
+  reply: string;
+  error: string | null;
+  durationMs: number;
+  /** The reply holds the answer to the test question: a model answered, not an echo. */
+  answered: boolean;
 }

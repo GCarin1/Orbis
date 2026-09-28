@@ -2,7 +2,7 @@
 
 **Contract:** hub-surface
 **Status:** active
-**Last updated:** 2026-09-27
+**Last updated:** 2026-09-28
 
 ## Purpose
 
@@ -47,6 +47,8 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | ORBIS_RUN_TOKEN          | no       | —                               | set by the hub per run   |
 | ANTHROPIC_API_KEY        | no       | —                               | sk-ant-...               |
 | OPENAI_API_KEY           | no       | —                               | sk-...                   |
+| ORBIS_OLLAMA_URL         | no       | —                               | http://127.0.0.1:11434/v1 |
+| ORBIS_LMSTUDIO_URL       | no       | —                               | http://127.0.0.1:1234/v1 |
 
 An empty value is treated as unset everywhere, so a blank line in `.env`
 falls back to the default instead of becoming an empty string.
@@ -79,6 +81,8 @@ machine that runs Orbis; none is injected by CI.
 | ORBIS_DOCKER             | local  | —        | —        | packages/hub/src/computer/docker.ts |
 | ANTHROPIC_API_KEY        | local  | —        | —        | packages/hub/src/config.ts        |
 | OPENAI_API_KEY           | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_OLLAMA_URL         | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_LMSTUDIO_URL       | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_URL                | local  | —        | —        | packages/cli/src/config.ts        |
 | ORBIS_RUN_TOKEN          | local  | —        | —        | packages/hub/src/mcp/bridge.ts    |
 
@@ -156,7 +160,9 @@ machine that runs Orbis; none is injected by CI.
 - `GET /skills?botId=&offered=` → `SkillInfo[]`: account skills without `botId`, that bot's own skills with it, and with `offered=true` the skills the bot is offered (its allowlist of account skills plus its own) · `POST /skills` `{ content, botId? }` → 201 `Skill` (400 with `fields.name` / `fields.description`, 409 `skill_exists`) · `GET /skills/:name?botId=` → `Skill` · `PUT /skills/:name?botId=` `{ content }` (the name cannot change) · `DELETE /skills/:name?botId=` → 204.
 - `GET /bots/:id/routines` → `Routine[]` · `POST /bots/:id/routines` `{ name, trigger, instruction, approval? }` → 201 `Routine` with `secret` (409 `routine_limit` past the routines-per-bot budget) · `GET /routines/:id` → `Routine` with `secret` · `PATCH /routines/:id` `{ name?, trigger?, instruction?, approval? }` · `DELETE /routines/:id` → 204 · `POST /routines/:id/test` → 202 `RoutineRun` (a draft-only run) · `POST /routines/:id/enable` `{ force? }` → `Routine` (409 `untested` without a successful test run unless `force`; clears `paused`) · `POST /routines/:id/disable` → `Routine` · `GET /routines/:id/runs` → the last 20 `RoutineRun`, newest first.
 - `GET /usage?from=&to=&botId=` → `UsageReport` for `[from, to)` (default: the current UTC calendar month); 400 when `to` is not after `from`.
-- `GET /runtimes/health` → `[{ kind, executable, found, version }]`.
+- `GET /runtimes/health` → `[{ kind, executable, found, path, version }]` for `claude-code`, `codex`, `gemini-cli` and `cursor`.
+- `GET /runtimes/local` → `[{ kind, baseUrl, reachable, models, error }]` for `ollama` and `lmstudio`.
+- `POST /runtimes/test` `{ botId }` (the bot's brain, with its secrets) or `{ brain }` → `{ kind, ok, reply, error, durationMs, answered }`; `409 test_running` while the same bot or brain kind is being tested.
 - `GET /openapi.json` → OpenAPI 3.1 document.
 
 ### Stream (`/api/v1/stream`)

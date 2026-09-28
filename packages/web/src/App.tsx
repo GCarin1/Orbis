@@ -16,6 +16,8 @@ import { RoutinesPanel } from "./components/RoutinesPanel.js";
 import { BotSettings } from "./components/BotSettings.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
+import { SettingsScreen } from "./components/SettingsScreen.js";
+import { brainLabel, brainShort } from "./components/brains.js";
 import type { SkillOption } from "./components/Composer.js";
 import type { MentionOption } from "./components/Composer.js";
 
@@ -31,7 +33,7 @@ export function App() {
   const [panel, setPanel] = useState<"computer" | "routines" | "settings" | null>(null);
   const computerOpen = panel === "computer";
   const setComputerOpen = (open: boolean) => setPanel(open ? "computer" : null);
-  const [view, setView] = useState<"chat" | "skills" | "usage">("chat");
+  const [view, setView] = useState<"chat" | "skills" | "usage" | "settings">("chat");
   const [computerFull, setComputerFull] = useState(false);
   const store = useStore();
 
@@ -132,6 +134,9 @@ export function App() {
           <button className={`nav-item${view === "usage" ? " selected" : ""}`} aria-pressed={view === "usage"} onClick={() => setView("usage")}>
             📊 {t("nav.usage")}
           </button>
+          <button className={`nav-item${view === "settings" ? " selected" : ""}`} aria-pressed={view === "settings"} onClick={() => setView("settings")}>
+            ⚙ {t("nav.settings")}
+          </button>
         </nav>
         <ApprovalsInbox
           approvals={Object.values(store.approvals)}
@@ -164,6 +169,17 @@ export function App() {
       <main className="main">
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "usage" && store.api ? <UsageScreen api={store.api} bots={store.bots} /> : null}
+        {view === "settings" && store.api ? (
+          <SettingsScreen
+            api={store.api}
+            bots={bots}
+            onConfigureBot={(id) => {
+              setView("chat");
+              setPanel("settings");
+              void store.selectBot(id);
+            }}
+          />
+        ) : null}
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
         {view !== "chat" ? null : group ? (
           <>
@@ -205,7 +221,10 @@ export function App() {
                 </h1>
                 <div className="conv-meta">
                   {selected.role && <span>{selected.role}</span>}
-                  <span className="badge">{selected.brain.kind}</span>
+                  <span className="badge" title={brainLabel(t, selected.brain.kind)} data-testid="brain-badge">
+                    🧠 {brainShort(t, selected.brain.kind)}
+                    {selected.brain.model ? ` · ${selected.brain.model}` : ""}
+                  </span>
                   <StateLabel state={selected.state} />
                 </div>
               </div>
@@ -236,6 +255,7 @@ export function App() {
       {selected && panel === "settings" && !group && view === "chat" && store.api && (
         <BotSettings
           key={selected.id}
+          api={store.api}
           bot={selected}
           onSave={async (patch) => void (await store.updateBot(selected.id, patch))}
           onExport={async () => {
@@ -294,6 +314,7 @@ export function App() {
       )}
       {creating && (
         <NewBotDialog
+          api={store.api}
           onImport={async (yaml) => {
             const bot = await store.importBot(yaml);
             setCreating(false);

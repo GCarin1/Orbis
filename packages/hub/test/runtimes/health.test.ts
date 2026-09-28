@@ -23,6 +23,7 @@ describe("runtimes health", () => {
       { kind: "claude-code", executable: "claude", found: true, path: path.join(bin, "claude"), version: "9.9.9 (fake)" },
       { kind: "codex", executable: "codex", found: false, path: null, version: null },
       { kind: "gemini-cli", executable: "gemini", found: false, path: null, version: null },
+      { kind: "cursor", executable: "cursor-agent", found: false, path: null, version: null },
     ]);
   });
 
@@ -30,6 +31,6 @@ describe("runtimes health", () => {
     t = await testHub();
     const res = await t.api("GET", "/api/v1/runtimes/health");
     expect(res.status).toBe(200);
-    expect(res.body.map((h: { kind: string }) => h.kind)).toEqual(["claude-code", "codex", "gemini-cli"]);
+    expect(res.body.map((h: { kind: string }) => h.kind)).toEqual(["claude-code", "codex", "gemini-cli", "cursor"]);
   });
 });

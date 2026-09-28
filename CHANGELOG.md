@@ -9,6 +9,9 @@ change that delivered it.
 
 ### Fixed
 
+- Windows: CLI brains installed with `npm i -g` (`claude.cmd`, `codex.cmd`,
+  `gemini.cmd`) run through the Node.js script the `.cmd` file points to;
+  Node.js refused to start them directly (change 0013-brains-settings).
 - Composer autocomplete (change 0012-composer-caret): keys typed right after
   picking an `@mention` or `/skill` suggestion stay where they were typed;
   the caret is placed in the same render as the picked text instead of a
@@ -18,6 +21,19 @@ change that delivered it.
   runs the tests and the CLI without a separate build.
 
 ### Added
+
+- Brains you can see and test (change 0013-brains-settings): the web app's
+  ⚙ Settings screen lists the brains on the hub's machine (Claude Code,
+  Codex, Gemini CLI, Cursor, Ollama, LM Studio: installed or running, version,
+  models, how to install) and each bot's brain, with a **Test** button that
+  asks `17 × 23` with no tools and shows the reply (a model answers 391; the
+  mock only echoes); the conversation header shows the open bot's brain and
+  model. New brains: `cursor` (Cursor CLI with your Cursor login, chat
+  resume, Orbis tools over MCP), `ollama` and `lmstudio` (local models at
+  `ORBIS_OLLAMA_URL` / `ORBIS_LMSTUDIO_URL`, no key, model suggestions); a
+  local model that rejects tools answers without them. `GET
+  /api/v1/runtimes/local`, `POST /api/v1/runtimes/test`,
+  `orbis runtimes test <kind>|@bot`.
 
 - Desktop app (change 0010-desktop-app; lands ADR 0007): `packages/desktop`,
   an Electron shell that uses the hub answering `/health` at its configured

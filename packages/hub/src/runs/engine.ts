@@ -296,7 +296,7 @@ export class RunEngine {
       const workspaceDir = this.d.computer.ensureWorkspace(bot.id);
       const conversationId = req.conversationId;
       const sessionKey = conversationId ?? `run:${runId}`;
-      const resumable = bot.brain.kind === "claude-code" || bot.brain.kind === "codex";
+      const resumable = bot.brain.kind === "claude-code" || bot.brain.kind === "codex" || bot.brain.kind === "cursor";
       const storedSession = resumable ? this.d.sessions.get(bot.id, sessionKey, bot.brain.kind) : null;
       // A CLI brain resuming its own session already holds the earlier turns.
       const since = storedSession && conversationId ? (this.d.runs.lastFinished(bot.id, conversationId, runId)?.finishedAt ?? null) : null;

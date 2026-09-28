@@ -824,13 +824,18 @@ iframe.computer-screen {
 
 /* navigation, skills screen, routines panel */
 .main-nav {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
 }
 .nav-item {
-  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
   border: 1px solid var(--border);
   background: none;
   border-radius: 8px;
@@ -1113,4 +1118,81 @@ iframe.computer-screen {
 .dialog .import-field {
   font-weight: 400;
   font-size: 0.85em;
+}
+
+/* Settings screen: brains on this machine (specs/web-app). */
+.brain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.brain-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.brain-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.brain-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+.brain-card .btn {
+  align-self: flex-start;
+}
+.brain-card code {
+  word-break: break-all;
+}
+.badge.ok {
+  background: rgb(22 163 74 / 14%);
+  color: #15803d;
+}
+.badge.off {
+  background: rgb(220 38 38 / 12%);
+  color: var(--danger);
+}
+.small {
+  font-size: 0.8rem;
+}
+.brain-test {
+  margin: 0;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.brain-test.answered {
+  color: #15803d;
+}
+.brain-test.echo {
+  color: #b45309;
+}
+.brain-test.failed {
+  color: var(--danger);
+}
+.brains-table td {
+  vertical-align: top;
+}
+@media (prefers-color-scheme: dark) {
+  .badge.ok,
+  .brain-test.answered {
+    color: #4ade80;
+  }
+  .brain-test.echo {
+    color: #fbbf24;
+  }
+}
+.brains-screen h3 {
+  margin: 20px 0 8px;
 }
