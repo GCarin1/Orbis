@@ -1,16 +1,21 @@
 {
   "name": "@orbis/cli",
   "version": "0.1.0",
-  "description": "orbis — the terminal client of Orbis: serve the hub, manage bots, chat, approve, and bridge MCP.",
+  "description": "orbis \u2014 the terminal client of Orbis: serve the hub, manage bots, chat, approve, and bridge MCP.",
   "license": "MIT",
   "type": "module",
   "bin": {
     "orbis": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@orbis/hub": "0.1.0",
     "@orbis/shared": "0.1.0"
+  },
+  "scripts": {
+    "prepare": "tsc -b"
   }
 }

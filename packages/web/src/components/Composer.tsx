@@ -1,5 +1,5 @@
 // Message box with autocomplete: `@` for bot handles, `/` for skills (specs/web-app).
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Bot } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
@@ -68,6 +68,16 @@ export function Composer({
   const [active, setActive] = useState(0);
   const [dismissed, setDismissed] = useState<number | null>(null);
   const box = useRef<HTMLTextAreaElement>(null);
+  /** Where the caret goes after a pick, applied in the same commit as the new text. */
+  const pendingCaret = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    // Before the browser handles the next key: a later frame would move the caret
+    // back over whatever the user typed in between.
+    if (pendingCaret.current === null || !box.current) return;
+    box.current.focus();
+    box.current.setSelectionRange(pendingCaret.current, pendingCaret.current);
+    pendingCaret.current = null;
+  });
 
   const skillToken = skillAt(text, caret);
   const token = skillToken ?? mentionAt(text, caret);
@@ -97,13 +107,10 @@ export function Composer({
     const insert = option.insert;
     const next = text.slice(0, token.start) + insert + text.slice(caret);
     const at = token.start + insert.length;
+    pendingCaret.current = at;
     setText(next);
     setCaret(at);
     setActive(0);
-    requestAnimationFrame(() => {
-      box.current?.focus();
-      box.current?.setSelectionRange(at, at);
-    });
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {

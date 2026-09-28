@@ -63,8 +63,8 @@ instale e faça login na CLI que você já paga (por exemplo
 
 ```bash
 git clone https://github.com/GCarin1/Orbis && cd Orbis
-npm install
-npm run build
+npm install      # também compila os pacotes TypeScript
+npm run build    # compila tudo, inclusive o app web
 
 # sobe o hub (API + stream + app web) em http://127.0.0.1:7420
 node packages/cli/dist/index.js serve

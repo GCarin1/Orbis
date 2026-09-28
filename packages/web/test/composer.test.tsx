@@ -39,6 +39,12 @@ describe("@ autocomplete", () => {
     expect(offered[0]!.textContent).toContain("@bob Bob — Engineering");
     fireEvent.keyDown(box, { key: "Enter" });
     expect(box.value).toBe("ask @bob ");
+    // Keys typed right after a pick stay where they were typed: nothing moves the
+    // caret back in a later animation frame (that garbled fast typing).
+    fireEvent.change(box, { target: { value: "ask @bob s", selectionStart: 10 } });
+    await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    expect(box.selectionStart).toBe(10);
+    fireEvent.change(box, { target: { value: "ask @bob ", selectionStart: 9 } });
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(onSend).not.toHaveBeenCalled();
 

@@ -12,5 +12,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepare": "tsc -b"
+  }
 }

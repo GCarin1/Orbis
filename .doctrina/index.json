@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -648,6 +648,24 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0011-clean-checkout",
+        "title": "clean-checkout",
+        "path": ".doctrina/changes/archive/2026-09-28-0011-clean-checkout",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [],
+        "lane": "product (confident; signals: build) — opened as chore"
+      },
+      {
+        "id": "0012-composer-caret",
+        "title": "composer-caret",
+        "path": ".doctrina/changes/archive/2026-09-28-0012-composer-caret",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [],
+        "lane": "product (uncertain) — opened as chore"
       }
     ],
     "skills": [

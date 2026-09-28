@@ -13,3 +13,5 @@ One line per archived change, newest last. Appended by
 - 2026-09-27 — 0008-secrets-and-usage — secrets-and-usage (specs: cli MODIFIED, secrets MODIFIED, tool-gateway MODIFIED, usage MODIFIED, web-app MODIFIED)
 - 2026-09-27 — 0009-templates-and-settings — templates-and-settings (specs: cli MODIFIED, templates MODIFIED, web-app MODIFIED)
 - 2026-09-27 — 0010-desktop-app — desktop-app (specs: desktop-app MODIFIED, web-app MODIFIED)
+- 2026-09-28 — 0011-clean-checkout — clean-checkout
+- 2026-09-28 — 0012-composer-caret — composer-caret

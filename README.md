@@ -62,8 +62,8 @@ then `claude` once to log in).
 
 ```bash
 git clone https://github.com/GCarin1/Orbis && cd Orbis
-npm install
-npm run build
+npm install      # also compiles the TypeScript packages
+npm run build    # builds everything, including the web app
 
 # start the hub (API + stream + web app) on http://127.0.0.1:7420
 node packages/cli/dist/index.js serve

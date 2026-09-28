@@ -7,6 +7,16 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Composer autocomplete (change 0012-composer-caret): keys typed right after
+  picking an `@mention` or `/skill` suggestion stay where they were typed;
+  the caret is placed in the same render as the picked text instead of a
+  later animation frame.
+- Clean checkout (change 0011-clean-checkout): installing the workspace
+  compiles the TypeScript packages (`prepare` scripts), so a fresh clone
+  runs the tests and the CLI without a separate build.
+
 ### Added
 
 - Desktop app (change 0010-desktop-app; lands ADR 0007): `packages/desktop`,
