@@ -57,11 +57,19 @@ export interface Policy {
   grants: string[];
 }
 
-export type ComputerProviderKind = "local" | "docker";
+/**
+ * Where a bot's computer lives (specs/computer): `local`, a folder of its own
+ * on the hub's machine; `host`, the user's own machine in a folder they
+ * choose, with a visible browser; `docker`, a container with a desktop.
+ */
+export type ComputerProviderKind = "local" | "host" | "docker";
+export const COMPUTER_PROVIDERS: ComputerProviderKind[] = ["local", "host", "docker"];
 
 export interface ComputerConfig {
   enabled: boolean;
   provider?: ComputerProviderKind;
+  /** `host` only: the folder the bot works in (absolute; default the user's home). */
+  hostDir?: string;
   image?: string;
   cpus?: number;
   memoryMb?: number;
@@ -432,5 +440,33 @@ export interface TranscriptionTestResult {
   ok: boolean;
   text: string;
   durationMs: number;
+  error: string | null;
+}
+
+/** What each kind of computer needs and whether this hub has it (`GET /api/v1/computers`). */
+export interface ComputerProvidersInfo {
+  default: ComputerProviderKind;
+  local: { available: true };
+  host: { available: true; home: string; platform: string; visibleBrowser: boolean };
+  docker: {
+    /** The docker CLI answered and its daemon is running. */
+    available: boolean;
+    installed: boolean;
+    version: string | null;
+    error: string | null;
+    image: string;
+    imagePresent: boolean;
+    /** The Dockerfile of the desktop image ships with this install, so the hub can build it. */
+    canBuild: boolean;
+    build: ImageBuild;
+  };
+}
+
+export interface ImageBuild {
+  state: "idle" | "building" | "done" | "failed";
+  startedAt: string | null;
+  finishedAt: string | null;
+  /** The last lines of `docker build`. */
+  log: string;
   error: string | null;
 }

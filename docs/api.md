@@ -95,6 +95,15 @@ A failing provider (for example no Docker daemon) answers 409
 /api/v1/bots/:id/computer/vnc-session` returns the noVNC URL and sets the
 path-scoped cookie the viewer uses. See [computer.md](computer.md).
 
+
+`GET /api/v1/computers` → what each kind of computer needs here:
+`{ default, local: { available }, host: { available, home, platform, visibleBrowser }, docker: { available, installed, version, error, image, imagePresent, canBuild, build: { state, startedAt, finishedAt, log, error } } }`.
+`POST /api/v1/computers/docker/image` → 202 and the build state, building
+`orbis/desktop:latest` from `docker/desktop/` in the background (409
+`docker_unavailable` when Docker is not running, 409 `no_dockerfile` when the
+install has no Dockerfile). A bot's `computer` takes `provider: "host"` and
+`hostDir` (an absolute path to an existing folder; 400 naming
+`computer.hostDir` otherwise).
 ## Skills and routines
 
 ```bash

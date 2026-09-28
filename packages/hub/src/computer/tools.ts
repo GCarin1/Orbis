@@ -1,7 +1,8 @@
 // Tools of a bot's computer: shell, files and browser (specs/computer, specs/tool-gateway).
-import { appendFileSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import Type from "typebox";
+import type { Bot } from "@orbis/shared";
 import { untrusted, type ToolDefinition } from "../tools/registry.js";
 import type { BrowserService } from "./browser.js";
 import { TakeoverNeeded } from "./browser.js";
@@ -47,7 +48,8 @@ export function formatShell(res: ExecResult, seconds: number): string {
 }
 
 export function computerTools(computers: ComputerManager, browser: BrowserService): ToolDefinition[] {
-  const workspace = (botId: string) => computers.ensureWorkspace(botId);
+  /** The folder file tools reach: the bot's workspace, or the folder the user chose on their machine (`host`). */
+  const workspace = (bot: Bot) => computers.workDir(bot);
   const Target = {
     ref: Type.Optional(Type.String({ description: "a reference from the last snapshot: l3 (link), f1 (field), b2 (button)" })),
     selector: Type.Optional(Type.String({ description: "a CSS selector, when no reference fits" })),
@@ -92,7 +94,7 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
       risk: "read",
       handler: async (input: { path: string; offset?: number }, ctx) => {
         await computers.ensure(ctx.bot);
-        const root = workspace(ctx.bot.id);
+        const root = workspace(ctx.bot);
         const file = confine(root, input.path);
         if (statSync(file).isDirectory()) return { output: `${input.path} is a directory; use computer.list_files`, isError: true };
         const text = readFileSync(file, "utf8");
@@ -112,9 +114,11 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
         append: Type.Optional(Type.Boolean()),
       }),
       risk: "write",
+      // On the user's own machine, writing a file waits for approval unless a rule says otherwise.
+      defaultDecision: (bot: Bot) => (computers.providerKind(bot) === "host" ? "ask" : "allow"),
       handler: async (input: { path: string; content: string; append?: boolean }, ctx) => {
         await computers.ensure(ctx.bot);
-        const root = workspace(ctx.bot.id);
+        const root = workspace(ctx.bot);
         const file = confine(root, input.path);
         mkdirSync(path.dirname(file), { recursive: true });
         // The parent now exists: confine again so a symlinked folder cannot redirect the write.
@@ -134,7 +138,7 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
       risk: "read",
       handler: async (input: { path?: string; recursive?: boolean }, ctx) => {
         await computers.ensure(ctx.bot);
-        const root = workspace(ctx.bot.id);
+        const root = workspace(ctx.bot);
         const dir = confine(root, input.path ?? ".");
         const entries: string[] = [];
         listDir(dir, dir, input.recursive ?? false, entries);
@@ -204,7 +208,9 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
         if (!browser.isOpen(ctx.bot.id)) return { output: "your browser is not open; use browser.open first", isError: true };
         const shot = await browser.screenshot(ctx.bot, true);
         if (!shot?.file) return { output: "no page to capture", isError: true };
-        return `saved ${display(workspace(ctx.bot.id), shot.file)} (${shot.png.length} bytes)`;
+        const root = realpathSync(workspace(ctx.bot));
+        const where = shot.file.startsWith(root + path.sep) ? display(root, shot.file) : shot.file;
+        return `saved ${where} (${shot.png.length} bytes)`;
       },
     },
     {

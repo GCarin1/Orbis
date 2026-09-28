@@ -6,7 +6,7 @@ import type { Bot, Run } from "@orbis/shared";
 import type { ApprovalService } from "../approvals/service.js";
 import type { McpWiring, ToolBridge, ToolCallResult, ToolDescriptor } from "../brains/types.js";
 import type { RunToolHost } from "../runs/engine.js";
-import { capResult, type ToolDefinition, type ToolRegistry } from "./registry.js";
+import { capResult, defaultDecisionOf, type ToolDefinition, type ToolRegistry } from "./registry.js";
 
 export interface RunSession {
   run: Run;
@@ -114,7 +114,7 @@ export class ToolGateway implements RunToolHost {
         run,
         bot,
         tool: tool.name,
-        defaultDecision: tool.defaultDecision ?? "allow",
+        defaultDecision: defaultDecisionOf(tool, bot) ?? "allow",
         input: args,
         reason: typeof (args as { reason?: unknown }).reason === "string" ? (args as { reason: string }).reason : null,
         signal,

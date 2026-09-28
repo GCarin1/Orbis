@@ -102,7 +102,7 @@ export function ComputerPanel({
           {status && (
             <span className="muted">
               <span className={`pill pill-computer-${status.status}`}>{t(`computer.status.${status.status}` as TextKey)}</span>{" "}
-              {t("computer.provider", { provider: status.provider })}
+              {t("computer.provider", { provider: t(`computers.${status.provider}.title` as TextKey) })}
             </span>
           )}
         </div>
@@ -123,6 +123,7 @@ export function ComputerPanel({
             <div className="banner banner-takeover" role="status">
               {t("computer.takeoverActive", { name: bot.name })}
               {status.provider === "local" && <div className="muted">{t("computer.localTakeover")}</div>}
+              {status.provider === "host" && <div className="muted">{t("computer.hostTakeover")}</div>}
             </div>
           )}
           <div className="computer-actions">
@@ -148,6 +149,7 @@ export function ComputerPanel({
           {error && <p className="error">{error}</p>}
           <LiveView api={api} bot={bot} status={status} />
           {status.provider === "local" && <p className="muted computer-note">{t("computer.localWarning")}</p>}
+          {status.provider === "host" && <p className="muted computer-note">{t("computer.hostNote", { dir: bot.computer.hostDir ?? "~" })}</p>}
         </>
       ) : null}
     </aside>

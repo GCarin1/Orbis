@@ -7,10 +7,11 @@ import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
 import { brainLabel, brainShort, TestResultView, useLocalServers, type TestState } from "./brains.js";
+import { ComputersSettings } from "./ComputerModes.js";
 import { VoiceSettings } from "./VoiceSettings.js";
 
-export type SettingsTab = "brains" | "voice";
-const TABS: SettingsTab[] = ["brains", "voice"];
+export type SettingsTab = "brains" | "computers" | "voice";
+const TABS: SettingsTab[] = ["brains", "computers", "voice"];
 
 export function SettingsScreen({
   api,
@@ -47,6 +48,7 @@ export function SettingsScreen({
       </header>
       <div className="screen-body" role="tabpanel" id={`settings-panel-${tab}`} aria-labelledby={`settings-tab-${tab}`}>
         {tab === "brains" && <BrainsTab api={api} bots={bots} onConfigureBot={onConfigureBot} />}
+        {tab === "computers" && <ComputersSettings api={api} />}
         {tab === "voice" && <VoiceSettings api={api} />}
       </div>
     </section>

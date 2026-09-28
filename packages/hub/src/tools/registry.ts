@@ -21,8 +21,8 @@ export interface ToolDefinition {
   description: string;
   input: TSchema;
   risk: RiskClass;
-  /** Decision when no rule and no grant match (specs/approvals: `ask` for shell and routine.create). */
-  defaultDecision?: Exclude<PolicyDecision, "deny">;
+  /** Decision when no rule and no grant match (specs/approvals: `ask` for shell and routine.create), or one per bot. */
+  defaultDecision?: Exclude<PolicyDecision, "deny"> | ((bot: Bot) => Exclude<PolicyDecision, "deny">);
   /** Tools that are themselves the gate (approval_prompt) skip the policy. */
   ungated?: boolean;
   /** The tool acts outside Orbis and may receive `{{secret:NAME}}` values (ADR 0008). */
@@ -30,6 +30,12 @@ export interface ToolDefinition {
   /** Offer the tool only to some bots (approval_prompt: Claude Code runs only). */
   offer?(bot: Bot): boolean;
   handler(input: any, ctx: ToolContext): Promise<string | ToolCallResult>;
+}
+
+/** The decision of a tool when no rule and no grant match, for this bot. */
+export function defaultDecisionOf(tool: Pick<ToolDefinition, "defaultDecision"> | undefined, bot: Bot): Exclude<PolicyDecision, "deny"> | undefined {
+  const d = tool?.defaultDecision;
+  return typeof d === "function" ? d(bot) : d;
 }
 
 export function globToRegExp(pattern: string): RegExp {

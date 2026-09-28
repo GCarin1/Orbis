@@ -1,7 +1,7 @@
 // `approval_prompt`: Claude Code's permission prompts decided by the Orbis policy.
 import Type from "typebox";
 import type { ApprovalService } from "../approvals/service.js";
-import type { ToolDefinition, ToolRegistry } from "./registry.js";
+import { defaultDecisionOf, type ToolDefinition, type ToolRegistry } from "./registry.js";
 
 /** Claude Code built-in tools and the Orbis tool with the same effect (specs/approvals). */
 export const CLAUDE_TOOL_EQUIVALENTS: Record<string, string> = {
@@ -44,7 +44,7 @@ export function permissionTool(approvals: ApprovalService, registry: ToolRegistr
         run: ctx.run,
         bot: ctx.bot,
         tool: equivalent,
-        defaultDecision: registered?.defaultDecision ?? (DEFAULT_ASK.has(equivalent) ? "ask" : "allow"),
+        defaultDecision: defaultDecisionOf(registered, ctx.bot) ?? (DEFAULT_ASK.has(equivalent) ? "ask" : "allow"),
         input: { claudeTool: input.tool_name, input: input.input ?? {} },
         signal: ctx.signal,
       });

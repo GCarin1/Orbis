@@ -9,6 +9,17 @@ change that delivered it.
 
 ### Added
 
+- Three kinds of computer (change 0017-computer-modes, ADR 0009): besides a
+  private folder and a Docker container, a bot can work on **your own
+  computer** (`provider: "host"`) in a folder you choose, with your programs
+  and environment minus Orbis's variables, file tools confined to that
+  folder, a visible browser window (your Chrome or Edge) and file writes
+  that ask first; the app asks for your consent once per bot and templates
+  never carry it. Bot settings show three cards; **Settings → Computers** and
+  `GET /api/v1/computers` say what Docker needs, and **Prepare image**
+  (`POST /api/v1/computers/docker/image`) builds `orbis/desktop`. Each bot is
+  told which computer it has.
+
 - Voice and theme (change 0016-voice-and-theme): a microphone in the
   message box — the browser's dictation in Chrome and Edge, and elsewhere
   (the desktop app, Firefox) a recording the hub sends to any

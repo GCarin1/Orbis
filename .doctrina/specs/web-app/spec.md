@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.11.0
+**Version:** 0.12.0
 
 ## Purpose
 
@@ -23,7 +23,7 @@ run's steps.
 - The web app shall show a sidebar with a search field and one list of conversations — each visible bot and each group — pinned first and then by latest activity, each with the bot's face (or its members' faces), its name, what it is doing or said last, the time and an unread dot.
 - The web app shall show a conversation's timeline with the user's messages on the right in dark bubbles and the bots' on the left in light bubbles, a time separator after a pause of 20 minutes, a "Messages from …" label when other bots speak in a bot's own conversation, mentions drawn in the mentioned bot's color with its face, reactions, the approval, draft, handoff, secret-request and routine cards, thread replies, and each run's steps as a collapsible list.
 - The web app shall provide a composer with a button that starts a mention, autocomplete for `@handle` and `@role` mentions and `/skill` invocations, a microphone, a switch that reads replies aloud, and a send button.
-- The web app shall provide screens for bot settings (identity, description, brain, policy, computer, spend cap), skills, routines, usage, settings in tabs (the brains on the hub's machine and the brain of each bot; voice and appearance), the approvals inbox, and the computer view as a side panel and full screen.
+- The web app shall provide screens for bot settings (identity, description, brain, policy, computer, spend cap), skills, routines, usage, settings in tabs (the brains on the hub's machine and the brain of each bot; the kinds of computer; voice and appearance), the approvals inbox, and the computer view as a side panel and full screen.
 - The web app shall show every text in pt-BR or English, following the browser language, with a manual switch that is remembered.
 - The web app shall ship a web app manifest and a service worker so it can be installed on desktop and mobile browsers.
 - The web app shall state each bot's state in words: in its face's accessible name, and as a visible label while the bot is not idle.
@@ -34,6 +34,7 @@ run's steps.
 - The web app shall show beside a bot's conversation a panel with the bot's screen, its routines with their schedule in words, the bot it reports to and its reports, and its brain.
 - The web app shall, on a screen narrower than 760 px, show either the conversation list or one conversation with a back button.
 - The web app shall offer three themes — follow the system, light and dark — from a switch in the sidebar and in the settings screen, remembered per browser and applied before the first paint.
+- The web app shall let the user pick each bot's computer among three cards — a private folder, "My computer" with the folder it works in, and a Docker container — show what Docker needs with a button that prepares the desktop image, and name the bot's kind of computer under its screen.
 
 ### Event-driven
 
@@ -50,6 +51,7 @@ run's steps.
 ### Unwanted-behavior (must-not)
 
 - If neither the browser nor the hub can transcribe, or the microphone is blocked, the web app shall not record, and shall say how to fix it instead.
+- The web app shall not save "My computer" for a bot that did not have it until the user ticks the consent that says what the bot will be able to do.
 
 ## Acceptance criteria
 
@@ -75,6 +77,8 @@ run's steps.
 20. [verified] In a real browser, the user asks the chief, the chief delegates to its reports, their answers appear under "Messages from", the chief reports back on its own, a message elsewhere lights that conversation's unread dot, and the bot panel links the team — verified by `tests/e2e/team.test.ts`.
 21. [verified] The microphone writes what the browser hears after the typed text and stops on send; without browser dictation it records and sends the audio to the hub and writes the returned text; with neither it explains the setup; Listen reads a reply, reading aloud reads only new bot replies; the voice settings save the service without showing the key back and test it; the theme switch cycles System, Light and Dark, applies and remembers it — verified by `packages/web/test/voice.test.tsx`.
 22. [verified] In a real browser with a fake microphone and no dictation, the user speaks, the recording goes through the hub to a transcription service, the words land in the composer and are sent, and the dark theme picked in the sidebar survives a reload — verified by `tests/e2e/voice.test.ts`.
+23. [verified] Bot settings offer the three kinds of computer; "My computer" takes a folder and saves only after the consent, and not again for a bot that has it; the container shows Docker's state and prepares the image with one click; the computers tab explains the three kinds and what Docker needs; the bot panel names the kind of computer — verified by `packages/web/test/computers.test.tsx`.
+24. [verified] In a real browser, the user gives a bot their own folder with the consent, the panel names it, the bot's file write waits for "Allow once" and then lands in that folder, and the settings screen explains the three kinds — verified by `tests/e2e/computer-modes.test.ts`.
 
 ## Maturity
 

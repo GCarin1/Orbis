@@ -1,5 +1,7 @@
 // The browser of a bot's computer, driven with Playwright (specs/computer).
 // `local`: a persistent Chromium context on the bot's own profile directory.
+// `host`: the same, as a visible window on the user's screen, in the Chrome or
+// Edge installed there when there is one.
 // `docker`: the Chromium inside the bot's container, reached over CDP — the
 // same window the user sees in noVNC. Pages reach the model as text
 // snapshots; interactive elements get references (`l3`, `f1`, `b2`).
@@ -7,6 +9,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { Browser, BrowserContext, Page } from "playwright-core";
 import type { Bot } from "@orbis/shared";
+import { hasDisplay } from "./host.js";
 import type { ComputerManager } from "./manager.js";
 import { READ_PAGE } from "./page-script.js";
 
@@ -80,13 +83,38 @@ export class BrowserService {
     }
     const profile = this.computers.paths(bot.id).browserProfile;
     mkdirSync(profile, { recursive: true, mode: 0o700 });
-    const context = await chromium.launchPersistentContext(profile, {
-      headless: true,
-      viewport: VIEWPORT,
+    const options = {
       acceptDownloads: true,
       downloadsPath: path.join(this.computers.paths(bot.id).workspace, "downloads"),
-      ...(this.executablePath ? { executablePath: this.executablePath } : {}),
-    });
+    };
+    let context: BrowserContext | null = null;
+    if (provider.kind === "host" && hasDisplay()) {
+      // A window the user sees: their Chrome, else Edge (always on Windows), else Playwright's Chromium.
+      const channels: Array<string | undefined> = this.executablePath ? [undefined] : ["chrome", "msedge", undefined];
+      let lastError: unknown = null;
+      for (const channel of channels) {
+        try {
+          context = await chromium.launchPersistentContext(profile, {
+            ...options,
+            headless: false,
+            viewport: null,
+            ...(channel ? { channel } : {}),
+            ...(this.executablePath ? { executablePath: this.executablePath } : {}),
+          });
+          break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      if (!context) throw lastError instanceof Error ? lastError : new Error("no browser could be opened on this computer");
+    } else {
+      context = await chromium.launchPersistentContext(profile, {
+        ...options,
+        headless: true,
+        viewport: VIEWPORT,
+        ...(this.executablePath ? { executablePath: this.executablePath } : {}),
+      });
+    }
     const page = context.pages()[0] ?? (await context.newPage());
     return { context, page, browser: null };
   }

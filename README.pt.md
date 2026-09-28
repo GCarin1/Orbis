@@ -68,6 +68,7 @@ fecha quando os critérios de aceite são provados por testes.
 | App desktop (Electron: encontra ou inicia o hub, janela protegida, notificações nativas, bandeja) | ✅ verificado |
 | Equipe com hierarquia: gestores delegam aos subordinados e prestam contas sozinhos quando tudo termina; menções por handle ou por função (`@qa`); bots chamam uns aos outros para a conversa | ✅ verificado |
 | O visual do Orbis: rostos dos bots (8 formas, 10 cores, olhos que seguem o estado), uma lista de conversas com bolinha de não lida, o painel do bot (tela, rotinas, equipe), a tela de novo bot, modo escuro e celular | ✅ verificado |
+| Três tipos de computador por bot: uma pasta isolada, **o seu computador** (uma pasta que você escolhe, seus programas, navegador visível; com consentimento explícito, gravações pedem aprovação) ou um contêiner Docker com área de trabalho ao vivo, com preparo da imagem em um clique | ✅ verificado |
 | Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
@@ -145,7 +146,7 @@ Todas as variáveis são opcionais; veja [`.env.example`](.env.example).
 | `ORBIS_TOKEN` | gerado em `~/.orbis/token` | token bearer da API |
 | `ORBIS_MAX_BOTS` | `50` | bots por instalação |
 | `ORBIS_MAX_GROUP_SIZE` | `6` | bots por grupo |
-| `ORBIS_COMPUTER_PROVIDER` | `local` | `local` ou `docker` |
+| `ORBIS_COMPUTER_PROVIDER` | `local` | `local`, `host` ou `docker` (cada bot pode escolher o seu) |
 | `ORBIS_BROWSER_EXECUTABLE` | Chromium do Playwright | Chromium das ferramentas de navegador locais |
 | `ORBIS_DOCKER` | `docker` | a CLI do docker usada pelo provedor docker |
 | `ORBIS_URL` | `http://127.0.0.1:7420` | URL do hub para a CLI |

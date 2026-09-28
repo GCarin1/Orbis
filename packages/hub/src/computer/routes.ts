@@ -8,7 +8,9 @@ import { conflict, HttpError, notFound } from "../errors.js";
 import { IdParams } from "../api/schemas.js";
 import type { BrowserService } from "./browser.js";
 import { DockerError } from "./docker.js";
+import { HostFolderError } from "./host.js";
 import { ComputerDisabledError } from "./manager.js";
+import type { ComputerSetup } from "./setup.js";
 
 const VNC_SESSION_MS = 12 * 60 * 60 * 1000;
 export const VNC_COOKIE = "orbis_vnc";
@@ -46,14 +48,25 @@ async function guarded<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (err) {
     if (err instanceof ComputerDisabledError) throw conflict("computer_disabled", err.message);
-    if (err instanceof DockerError) throw conflict("computer_unavailable", err.message);
+    if (err instanceof DockerError || err instanceof HostFolderError) throw conflict("computer_unavailable", err.message);
     if (err instanceof HttpError) throw err;
     throw conflict("computer_unavailable", err instanceof Error ? err.message : String(err));
   }
 }
 
-export async function registerComputerRoutes(root: FastifyInstance, ctx: HubContext, browser: BrowserService, vnc: VncSessions): Promise<void> {
+export async function registerComputerRoutes(root: FastifyInstance, ctx: HubContext, browser: BrowserService, vnc: VncSessions, setup: ComputerSetup): Promise<void> {
   const app = root.withTypeProvider<TypeBoxTypeProvider>();
+
+  // What each kind of computer needs here, and the one-click build of the desktop image.
+  app.get("/api/v1/computers", { schema: { tags: ["computer"] } }, async () => setup.info());
+  app.post("/api/v1/computers/docker/image", { schema: { tags: ["computer"] } }, async (_req, reply) => {
+    const info = await setup.info();
+    if (!info.docker.available) throw conflict("docker_unavailable", info.docker.error ?? "Docker is not running");
+    if (!info.docker.canBuild) throw conflict("no_dockerfile", "the desktop image's Dockerfile is not part of this install; build docker/desktop from the Orbis repository");
+    const { build } = setup.startBuild();
+    reply.code(202);
+    return build;
+  });
   const computers = ctx.computer;
   const bot = (id: string): Bot => ctx.botService.get(id);
   const schema = (extra: object = {}) => ({ tags: ["computer"], params: IdParams, ...extra });

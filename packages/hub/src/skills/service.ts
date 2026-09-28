@@ -93,7 +93,8 @@ export class SkillService {
     return {
       onStarted: (run) => {
         const bot = this.hub.repos.bots.get(run.botId);
-        if (bot?.brain.kind === "claude-code") this.materialize(bot);
+        // On the user's own machine the working folder is theirs: skills are read with skills.read instead.
+        if (bot?.brain.kind === "claude-code" && this.hub.computer.providerKind(bot) !== "host") this.materialize(bot);
       },
     };
   }

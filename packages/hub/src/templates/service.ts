@@ -108,6 +108,16 @@ const TemplateSchema = Type.Object({
 });
 const validateTemplate = Compile(TemplateSchema);
 
+/**
+ * A computer configuration that travels: access to the user's own machine is
+ * never exported nor imported — it is granted on each machine, by its user.
+ */
+export function portableComputer(computer: Bot["computer"]): Bot["computer"] {
+  if (computer.provider !== "host") return computer;
+  const { provider: _provider, hostDir: _hostDir, ...rest } = computer;
+  return rest;
+}
+
 export class TemplateService {
   constructor(
     private readonly hub: HubContext,
@@ -127,7 +137,7 @@ export class TemplateService {
       spec: {
         brain,
         policy: bot.policy,
-        computer: bot.computer,
+        computer: portableComputer(bot.computer),
         tools: bot.tools,
         skills: bot.skills,
         ownSkills: this.skills.store.list(bot.id).map((s) => s.content),
@@ -175,7 +185,7 @@ export class TemplateService {
       avatarShape: t.metadata.avatarShape,
       brain: t.spec.brain,
       policy: t.spec.policy,
-      computer: t.spec.computer,
+      computer: t.spec.computer ? portableComputer(t.spec.computer) : undefined,
       tools: t.spec.tools,
       skills: t.spec.skills,
       spendCapUsd: t.spec.spendCapUsd ?? null,

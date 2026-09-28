@@ -1,11 +1,12 @@
 // A bot's settings beside its conversation (specs/web-app): identity, description,
 // brain, tool policy, computer, allowlists, spend cap; export, duplicate, delete.
 import { useEffect, useState } from "react";
-import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type BrainKind, type PolicyDecision } from "@orbis/shared";
+import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type BrainKind, type ComputerProviderKind, type PolicyDecision } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
 import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
+import { ComputerChoice } from "./ComputerModes.js";
 const DECISIONS: PolicyDecision[] = ["allow", "ask", "deny"];
 const list = (text: string) =>
   text
@@ -55,7 +56,10 @@ export function BotSettings({
   const [rules, setRules] = useState<Rule[]>(bot.policy.rules.map((r) => ({ tool: r.tool, decision: r.decision, locked: r.locked ?? false })));
   const [grants, setGrants] = useState<string[]>(bot.policy.grants);
   const [computerOn, setComputerOn] = useState(bot.computer.enabled);
-  const [provider, setProvider] = useState(bot.computer.provider ?? "");
+  const [provider, setProvider] = useState<ComputerProviderKind | "">(bot.computer.provider ?? "");
+  const [hostDir, setHostDir] = useState(bot.computer.hostDir ?? "");
+  const [hostConsent, setHostConsent] = useState(false);
+  const needsHostConsent = provider === "host" && bot.computer.provider !== "host";
   const [hibernate, setHibernate] = useState(String(bot.computer.hibernateAfterMin ?? ""));
   const [tools, setTools] = useState(bot.tools.join(", "));
   const [skills, setSkills] = useState(bot.skills.join(", "));
@@ -86,8 +90,9 @@ export function BotSettings({
 
   const save = () =>
     run(
-      () =>
-        onSave({
+      async () => {
+        if (needsHostConsent && !hostConsent) throw new Error(t("computers.consentNeeded"));
+        await onSave({
           name: name.trim(),
           role: role.trim(),
           description,
@@ -106,6 +111,7 @@ export function BotSettings({
             ...bot.computer,
             enabled: computerOn,
             ...(provider ? { provider } : { provider: undefined }),
+            hostDir: provider === "host" && hostDir.trim() ? hostDir.trim() : undefined,
             ...(hibernate.trim() ? { hibernateAfterMin: Number(hibernate) } : { hibernateAfterMin: undefined }),
           },
           tools: list(tools),
@@ -114,7 +120,8 @@ export function BotSettings({
           capIncludesSubscription: capSub,
           pinned,
           hidden,
-        }),
+        });
+      },
       t("settings.saved"),
     );
 
@@ -265,15 +272,19 @@ export function BotSettings({
             <input type="checkbox" checked={computerOn} onChange={(e) => setComputerOn(e.target.checked)} name="settings-computer" />
             {t("settings.computerEnabled")}
           </label>
+          {computerOn && (
+            <ComputerChoice
+              api={api}
+              provider={provider}
+              hostDir={hostDir}
+              needsConsent={needsHostConsent}
+              consent={hostConsent}
+              onProvider={setProvider}
+              onHostDir={setHostDir}
+              onConsent={setHostConsent}
+            />
+          )}
           <div className="form-row">
-            <label>
-              {t("settings.provider")}
-              <select value={provider} onChange={(e) => setProvider(e.target.value)} name="settings-provider">
-                <option value="">{t("settings.providerDefault")}</option>
-                <option value="local">local</option>
-                <option value="docker">docker</option>
-              </select>
-            </label>
             <label>
               {t("settings.hibernate")}
               <input type="number" min={1} value={hibernate} placeholder="30" onChange={(e) => setHibernate(e.target.value)} name="settings-hibernate" />

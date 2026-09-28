@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Bot, ComputerStatus, Routine } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useLang, useT, type TextKey } from "../i18n.js";
+import { MODE_ICONS } from "./ComputerModes.js";
 import { Avatar, Mascot } from "./Avatar.js";
 import { brainShort } from "./brains.js";
 import { CheckClockIcon, CloseIcon, ExportIcon, GearIcon, PauseIcon, PlusIcon } from "./Icons.js";
@@ -115,6 +116,12 @@ export function BotPanel({
         {t("panel.screen", { name: bot.name })}
         {status && status.status !== "stopped" && <span className="muted"> · {t(`computer.status.${status.status}` as TextKey)}</span>}
       </p>
+      {bot.computer.enabled && (
+        <p className="screen-mode muted small" data-testid="computer-mode" title={bot.computer.hostDir ?? undefined}>
+          {MODE_ICONS[status?.provider ?? bot.computer.provider ?? "local"]} {t(`computers.${status?.provider ?? bot.computer.provider ?? "local"}.title` as TextKey)}
+          {(status?.provider ?? bot.computer.provider) === "host" && bot.computer.hostDir ? ` · ${bot.computer.hostDir}` : ""}
+        </p>
+      )}
 
       <section className="panel-section">
         <h3>{t("panel.routines")}</h3>

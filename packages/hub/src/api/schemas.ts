@@ -39,7 +39,8 @@ export const PolicySchema = Type.Object(
 export const ComputerSchema = Type.Object(
   {
     enabled: Type.Boolean(),
-    provider: Type.Optional(Type.Union([Type.Literal("local"), Type.Literal("docker")])),
+    provider: Type.Optional(Type.Union([Type.Literal("local"), Type.Literal("host"), Type.Literal("docker")])),
+    hostDir: Type.Optional(Type.String({ minLength: 1, maxLength: 1000 })),
     image: Type.Optional(Type.String({ maxLength: 300 })),
     cpus: Type.Optional(Type.Number({ exclusiveMinimum: 0, maximum: 64 })),
     memoryMb: Type.Optional(Type.Integer({ minimum: 128, maximum: 262_144 })),

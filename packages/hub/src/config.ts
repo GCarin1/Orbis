@@ -125,7 +125,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     maxHandoffDepth: overrides.maxHandoffDepth ?? readPositiveInt(env, "ORBIS_MAX_HANDOFF_DEPTH", 6),
     absencePauseDays: overrides.absencePauseDays ?? readPositiveInt(env, "ORBIS_ABSENCE_PAUSE_DAYS", 14),
     computerProvider:
-      overrides.computerProvider ?? readEnum(env, "ORBIS_COMPUTER_PROVIDER", ["local", "docker"] as const, "local"),
+      overrides.computerProvider ?? readEnum(env, "ORBIS_COMPUTER_PROVIDER", ["local", "host", "docker"] as const, "local"),
     logLevel: overrides.logLevel ?? readEnum(env, "ORBIS_LOG_LEVEL", ["debug", "info", "warn", "error"] as const, "info"),
     anthropicApiKey: overrides.anthropicApiKey ?? readVar(env, "ANTHROPIC_API_KEY") ?? null,
     openaiApiKey: overrides.openaiApiKey ?? readVar(env, "OPENAI_API_KEY") ?? null,

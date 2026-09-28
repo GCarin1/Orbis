@@ -293,7 +293,7 @@ export class RunEngine {
     };
 
     try {
-      const workspaceDir = this.d.computer.ensureWorkspace(bot.id);
+      const workspaceDir = this.d.computer.workDir(bot);
       const conversationId = req.conversationId;
       const sessionKey = conversationId ?? `run:${runId}`;
       const resumable = bot.brain.kind === "claude-code" || bot.brain.kind === "codex" || bot.brain.kind === "cursor";

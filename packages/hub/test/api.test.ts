@@ -72,7 +72,7 @@ describe("configuration", () => {
   it("rejects invalid numbers and enums", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "orbis-cfg-"));
     expect(() => loadConfig({ ORBIS_DATA_DIR: dir, ORBIS_PORT: "abc" })).toThrow(/ORBIS_PORT/);
-    expect(() => loadConfig({ ORBIS_DATA_DIR: dir, ORBIS_COMPUTER_PROVIDER: "vm" })).toThrow(/local\|docker/);
+    expect(() => loadConfig({ ORBIS_DATA_DIR: dir, ORBIS_COMPUTER_PROVIDER: "vm" })).toThrow(/local\|host\|docker/);
     expect(loadConfig({ ORBIS_DATA_DIR: dir, ORBIS_TOKEN: "abc", ORBIS_MAX_BOTS: "7" })).toMatchObject({ token: "abc", tokenFile: null, maxBots: 7 });
   });
 });

@@ -17,6 +17,7 @@ import { DockerProvider } from "./computer/docker.js";
 import { BrowserService } from "./computer/browser.js";
 import { computerTools } from "./computer/tools.js";
 import { registerComputerRoutes, VncSessions } from "./computer/routes.js";
+import { ComputerSetup } from "./computer/setup.js";
 import { SkillService } from "./skills/service.js";
 import { RoutineService } from "./routines/service.js";
 import { SecretService } from "./secrets/service.js";
@@ -66,6 +67,8 @@ export interface HubOptions {
   config?: ConfigOverrides;
   /** Computer providers replacing the built-in ones of the same kind (tests pass a recorded docker), or extra ones. */
   computerProviders?: ComputerProvider[];
+  /** What the computers need on this machine (tests pass one with a recorded docker). */
+  computerSetup?: ComputerSetup;
   /** Replace or add brain adapters (tests register fakes here). */
   brains?: BrainAdapter[];
   /** Fastify request logging; off by default. */
@@ -285,6 +288,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   tools.register(collaboration.handoffTool());
   engine.addHooks(collaboration.hooks());
   engine.addContextSection((bot) => collaboration.contextSection(bot));
+  engine.addContextSection((bot) => computer.contextSection(bot));
   const memoryService = new MemoryService(ctx);
   for (const tool of memoryService.tools()) tools.register(tool);
   engine.addHooks(memoryService.hooks());
@@ -326,7 +330,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerOpenAiCompat(app, ctx);
   await registerGroupRoutes(app, ctx);
   await memoryService.routes(app);
-  await registerComputerRoutes(app, ctx, browser, vncSessions);
+  await registerComputerRoutes(app, ctx, browser, vncSessions, opts.computerSetup ?? new ComputerSetup(config.computerProvider));
   await skillService.routes(app);
   await routines.routes(app);
   await secrets.routes(app);

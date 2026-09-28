@@ -2076,3 +2076,71 @@ label.check {
 .settings-intro {
   margin-bottom: 8px;
 }
+
+/* ── computer modes (change 0017) ────────────────────────────────────────── */
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+.mode-card {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  align-content: start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  cursor: pointer;
+}
+.mode-card:hover {
+  background: var(--hover);
+}
+.mode-card.on {
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+.mode-icon {
+  font-size: 20px;
+}
+.mode-detail {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.mode-detail input {
+  width: 100%;
+}
+.checkbox.consent {
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.build-log {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 11.5px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  white-space: pre-wrap;
+}
+.mode-summary {
+  margin-bottom: 10px;
+}
+.screen-mode {
+  margin: -4px 0 8px;
+  padding: 0 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .mode-cards {
+    grid-template-columns: 1fr;
+  }
+}

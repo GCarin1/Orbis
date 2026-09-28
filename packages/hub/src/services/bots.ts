@@ -15,6 +15,7 @@ import {
 import type { EventBus } from "../bus.js";
 import type { HubConfig } from "../config.js";
 import type { ComputerManager } from "../computer/manager.js";
+import { checkHostDir, HostFolderError } from "../computer/host.js";
 import { transaction, type Database } from "../db/index.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { newId, nowIso } from "../ids.js";
@@ -103,6 +104,17 @@ export class BotService {
     return manager.id;
   }
 
+  /** A computer configuration as stored: a `host` folder must exist and is kept as a full path. */
+  private computerConfig(computer: ComputerConfig): ComputerConfig {
+    if (computer.provider !== "host" || computer.hostDir === undefined) return computer;
+    try {
+      return { ...computer, hostDir: checkHostDir(computer.hostDir.trim()) };
+    } catch (err) {
+      if (err instanceof HostFolderError) throw badRequest("invalid computer", { "computer.hostDir": err.message });
+      throw err;
+    }
+  }
+
   create(input: BotInput): Bot {
     if (this.d.bots.count() >= this.d.config.maxBots) {
       throw conflict("limit_reached", `this installation already holds the maximum of ${this.d.config.maxBots} bots`);
@@ -128,7 +140,7 @@ export class BotService {
       brain: input.brain ?? DEFAULT_BRAIN,
       reportsTo: this.manager(input.reportsTo),
       policy: input.policy ?? DEFAULT_POLICY,
-      computer: input.computer ?? DEFAULT_COMPUTER,
+      computer: input.computer ? this.computerConfig(input.computer) : DEFAULT_COMPUTER,
       tools: input.tools ?? ["*"],
       skills: input.skills ?? ["*"],
       spendCapUsd: input.spendCapUsd ?? null,
@@ -165,7 +177,12 @@ export class BotService {
     if (patch.brain !== undefined) bot.brain = patch.brain;
     if (patch.reportsTo !== undefined) bot.reportsTo = this.manager(patch.reportsTo, bot.id);
     if (patch.policy !== undefined) bot.policy = patch.policy;
-    if (patch.computer !== undefined) bot.computer = patch.computer;
+    if (patch.computer !== undefined) {
+      const before = { ...bot, computer: bot.computer };
+      bot.computer = this.computerConfig(patch.computer);
+      // Moving to another kind of computer stops the old one (its disk is kept).
+      if (this.d.computer.providerKind(before) !== this.d.computer.providerKind(bot)) void this.d.computer.stop(before).catch(() => undefined);
+    }
     if (patch.tools !== undefined) bot.tools = patch.tools;
     if (patch.skills !== undefined) bot.skills = patch.skills;
     if (patch.spendCapUsd !== undefined) bot.spendCapUsd = patch.spendCapUsd;

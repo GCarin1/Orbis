@@ -6,13 +6,14 @@ import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import type { Bot, ComputerProviderKind, ComputerState, ComputerStatus } from "@orbis/shared";
 import type { EventBus } from "../bus.js";
+import { checkHostDir, HostProvider, hostDir } from "./host.js";
 import { LocalProvider } from "./local.js";
 import { SHELL_OUTPUT_CAP, type ComputerPaths, type ComputerProvider, type ExecOptions, type ExecResult } from "./provider.js";
 
 export type { ComputerProvider } from "./provider.js";
 
 export const DEFAULT_HIBERNATE_AFTER_MIN = 30;
-const BUILTIN_PROVIDERS = new Set(["local", "docker"]);
+const BUILTIN_PROVIDERS = new Set(["local", "host", "docker"]);
 
 interface Slot {
   state: ComputerState;
@@ -26,7 +27,7 @@ interface Slot {
 
 export interface ComputerManagerOptions {
   defaultProvider?: ComputerProviderKind;
-  /** Providers by kind; `local` is always available. Providers of other kinds are only destroyed with a bot. */
+  /** Providers by kind; `local` and `host` are always available. Providers of other kinds are only destroyed with a bot. */
   providers?: ComputerProvider[];
   bus?: EventBus;
   bots?: { get(id: string): Bot | undefined };
@@ -60,6 +61,7 @@ export class ComputerManager {
     opts: ComputerManagerOptions = {},
   ) {
     this.providers.set("local", new LocalProvider());
+    this.providers.set("host", new HostProvider());
     for (const provider of opts.providers ?? []) this.providers.set(provider.kind, provider);
     this.defaultProvider = opts.defaultProvider ?? "local";
     this.bus = opts.bus;
@@ -95,6 +97,31 @@ export class ComputerManager {
     const dir = this.workspaceDir(botId);
     mkdirSync(dir, { recursive: true, mode: 0o700 });
     return dir;
+  }
+
+  /**
+   * Where the bot works — commands, file tools, CLI brains: the folder the
+   * user chose on their machine for `host`, else the bot's own workspace.
+   */
+  workDir(bot: Bot): string {
+    if (this.providerKind(bot) === "host") return checkHostDir(hostDir(bot));
+    return this.ensureWorkspace(bot.id);
+  }
+
+  /** What the bot is told about its computer, in every run's system text. */
+  contextSection(bot: Bot): string | null {
+    if (!bot.computer.enabled) return null;
+    switch (this.providerKind(bot)) {
+      case "host":
+        return [
+          `Your computer is the user's own machine (${process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux"}). You work in ${hostDir(bot)}: commands run there with the user's programs, and file tools reach only that folder.`,
+          "These are the user's real files: never delete or overwrite anything you did not create unless the user asked, and say what you changed. Your browser opens as a window on the user's screen.",
+        ].join(" ");
+      case "docker":
+        return "Your computer is a Linux container of your own with a desktop, Chromium and a terminal; the user can watch it live and take over. Your workspace folder is shared with the user.";
+      default:
+        return "Your computer is a private folder of your own on the Orbis machine: commands and file tools work inside it, and your browser runs without a window.";
+    }
   }
 
   // --- lifecycle ----------------------------------------------------------------
