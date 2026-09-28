@@ -7,11 +7,11 @@ import type { Approval, Bot, Conversation } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import { ApprovalsInbox } from "./ApprovalsInbox.js";
 import { Avatar, Mascot, StateLabel } from "./Avatar.js";
-import { PlusIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon } from "./Icons.js";
+import { PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon } from "./Icons.js";
 import { LanguageSwitch } from "./LanguageSwitch.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 
-export type View = "chat" | "skills" | "usage" | "settings" | "new-bot";
+export type View = "chat" | "skills" | "tools" | "usage" | "settings" | "new-bot";
 
 export interface ChatEntry {
   key: string;
@@ -267,6 +267,7 @@ export function Sidebar({
       <div className="sidebar-bottom">
         <nav className="main-nav" aria-label="Orbis">
           {nav("skills", <SkillsIcon />, t("nav.skills"), "📘")}
+          {nav("tools", <PuzzleIcon />, t("nav.tools"), "🧩")}
           {nav("usage", <UsageIcon />, t("nav.usage"), "📊")}
           {nav("settings", <SlidersIcon />, t("nav.settings"), "⚙")}
         </nav>

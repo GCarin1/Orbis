@@ -1,5 +1,5 @@
 // Stream events (hub → client) from `.doctrina/contracts/hub-surface.md` § Stream.
-import type { Approval, Bot, BotState, ComputerStatus, Conversation, Run, Step, TimelineItem } from "./types.js";
+import type { Approval, Bot, BotState, ComputerStatus, Conversation, McpServer, Run, Step, TimelineItem } from "./types.js";
 
 export interface StreamEventMap {
   "bot.state": { botId: string; state: BotState };
@@ -15,6 +15,9 @@ export interface StreamEventMap {
   "approval.requested": { approval: Approval };
   "approval.resolved": { approval: Approval };
   "computer.updated": { botId: string; computer: ComputerStatus };
+  /** A connected MCP server changed: connecting, connected, needs sign-in, failed (specs/tool-gateway). */
+  "mcp.updated": { server: McpServer };
+  "mcp.deleted": { serverId: string };
   pong: Record<string, never>;
 }
 
@@ -35,6 +38,8 @@ export const GLOBAL_EVENTS: readonly StreamEventType[] = [
   "approval.requested",
   "approval.resolved",
   "computer.updated",
+  "mcp.updated",
+  "mcp.deleted",
   "pong",
 ];
 

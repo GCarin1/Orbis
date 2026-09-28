@@ -9,6 +9,20 @@ change that delivered it.
 
 ### Added
 
+- Tools marketplace (change 0018-mcp-marketplace, ADR 0010): the hub is now
+  also an MCP client. **🧩 Tools** lists 17 checked MCP servers — no account
+  (DeepWiki, Exa, Context7, Hugging Face, Sequential Thinking, Playwright,
+  Filesystem), sign in with your account through OAuth with dynamic client
+  registration and PKCE (Notion, Linear, Jira & Confluence, Sentry,
+  Supabase, Canva), or a key (GitHub, Brave Search, Tavily, Firecrawl) —
+  plus custom servers (a program or an address). Keys and sign-ins are hub
+  secrets; tools become `mcp.<server>.<tool>`, go through the policy and
+  approvals (tools that are not read-only ask first) and reach only the bots
+  you tick. Bot settings choose tools with switches; allowlists gain `!`
+  exclusions, and `*` covers Orbis's own tools only. Routes under
+  `/api/v1/mcp/`, `/api/v1/tools`, `/oauth/mcp/callback`; stream events
+  `mcp.updated`, `mcp.deleted`.
+
 - Three kinds of computer (change 0017-computer-modes, ADR 0009): besides a
   private folder and a Docker container, a bot can work on **your own
   computer** (`provider: "host"`) in a folder you choose, with your programs

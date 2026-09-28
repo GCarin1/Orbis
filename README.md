@@ -68,6 +68,7 @@ are proven by tests.
 | A team with a hierarchy: managers delegate to their reports and report back on their own when all the work is done; mentions by handle or role (`@qa`); bots bring each other into a conversation | ✅ verified |
 | The Orbis look: bot faces (8 shapes, 10 colors, eyes that follow the bot's state), one conversation list with unread dots, the bot panel (screen, routines, team), the new-bot screen, dark mode and phones | ✅ verified |
 | Three kinds of computer per bot: a private folder, **your own computer** (a folder you choose, your programs, a visible browser; by explicit consent, writes ask first) or a Docker container with a desktop you watch live, with one-click image preparation | ✅ verified |
+| Tools marketplace: connect MCP servers in one click — no account (DeepWiki, Exa, Context7, Hugging Face…), signing in with your account (Notion, Linear, Jira & Confluence, Sentry, Supabase, Canva) or with a key (GitHub, Brave, Tavily, Firecrawl) — or your own; choose each bot's tools and servers with switches | ✅ verified |
 | Voice and theme: talk to a bot with the microphone (browser dictation, or any OpenAI-compatible transcription service — OpenAI, Groq, a local Whisper — for the desktop app), replies read aloud, and a System/Light/Dark theme switch | ✅ verified |
 
 The status of each capability is always current in

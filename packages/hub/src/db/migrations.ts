@@ -192,4 +192,27 @@ CREATE TABLE settings (
     version: 4,
     sql: `ALTER TABLE bots ADD COLUMN avatar_shape TEXT NOT NULL DEFAULT 'orb';`,
   },
+  {
+    // specs/tool-gateway: external MCP servers connected to the hub (change 0018-mcp-marketplace).
+    // Their keys and sign-in tokens live encrypted in `settings` (hub secrets), never here.
+    version: 5,
+    sql: `CREATE TABLE mcp_servers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  icon TEXT NOT NULL,
+  catalog_id TEXT,
+  transport TEXT NOT NULL,
+  url TEXT,
+  command TEXT,
+  args TEXT NOT NULL DEFAULT '[]',
+  env_keys TEXT NOT NULL DEFAULT '[]',
+  auth TEXT NOT NULL,
+  read_only INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL,
+  error TEXT,
+  tools TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);`,
+  },
 ];

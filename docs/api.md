@@ -169,6 +169,21 @@ ending in `data: [DONE]` (a `: working` comment every 10 seconds keeps
 connections alive while the bot works). An unknown model answers 404
 `model_not_found`; a failed run answers 502 `run_failed`.
 
+## MCP servers
+
+`GET /api/v1/mcp/catalog` lists the marketplace (how each entry connects and
+whether it is connected). `POST /api/v1/mcp/servers` connects one —
+`{ "catalogId": "github", "values": { "token": "github_pat_…" } }`, or a
+custom `{ "name": "Docs", "transport": "http", "url": "https://…/mcp" }` /
+`{ "name": "Notes", "transport": "stdio", "command": "npx", "args": ["-y", "pkg"], "env": { "KEY": "…" } }`
+— and answers 202 with `status: "connecting"`; `mcp.updated` stream events
+follow (`connected`, `needs_auth` with an `authUrl` to open, or `error`).
+`POST /api/v1/mcp/servers/:id/bots` `{ "botId": "ana", "enabled": true }`
+gives a bot the server's tools; `POST …/reconnect`, `DELETE …` disconnects.
+`GET /api/v1/tools` lists every tool a bot can be given, with its server.
+Sign-ins come back to `GET /oauth/mcp/callback` (no API token; a one-time
+state). Details in [`mcp.md`](mcp.md#connecting-other-mcp-servers-the-tools-screen).
+
 ## Voice
 
 `GET /api/v1/voice` → `{ transcription: { configured, source, url, model, hasKey } }`:

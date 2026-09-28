@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.12.0
+**Version:** 0.13.0
 
 ## Purpose
 
@@ -35,6 +35,8 @@ run's steps.
 - The web app shall, on a screen narrower than 760 px, show either the conversation list or one conversation with a back button.
 - The web app shall offer three themes — follow the system, light and dark — from a switch in the sidebar and in the settings screen, remembered per browser and applied before the first paint.
 - The web app shall let the user pick each bot's computer among three cards — a private folder, "My computer" with the folder it works in, and a Docker container — show what Docker needs with a button that prepares the desktop image, and name the bot's kind of computer under its screen.
+- The web app shall provide a Tools screen: a catalog of MCP servers with search and categories, each card saying whether it needs no account, a sign-in or a key, connecting in one click (a form for a key, with where to get it; a sign-in link for an account); the connected servers with their state, tools, the bots that may use each one and Reconnect and Disconnect; and a form for a custom server.
+- The web app shall let the user choose each bot's tools in its settings with switches for Orbis's tool groups and for each connected server, written to the bot's allowlist.
 
 ### Event-driven
 
@@ -79,6 +81,8 @@ run's steps.
 22. [verified] In a real browser with a fake microphone and no dictation, the user speaks, the recording goes through the hub to a transcription service, the words land in the composer and are sent, and the dark theme picked in the sidebar survives a reload — verified by `tests/e2e/voice.test.ts`.
 23. [verified] Bot settings offer the three kinds of computer; "My computer" takes a folder and saves only after the consent, and not again for a bot that has it; the container shows Docker's state and prepares the image with one click; the computers tab explains the three kinds and what Docker needs; the bot panel names the kind of computer — verified by `packages/web/test/computers.test.tsx`.
 24. [verified] In a real browser, the user gives a bot their own folder with the consent, the panel names it, the bot's file write waits for "Allow once" and then lands in that folder, and the settings screen explains the three kinds — verified by `tests/e2e/computer-modes.test.ts`.
+25. [verified] The catalog shows how each server connects, searches and filters by category, connects one with no account in one click, asks for a key with where to get it, shows the sign-in link of a server that needs an account, gives a server to the bots ticked, and the bot's tool switches write `!group.*`, `mcp.<server>.*` and `!*` for nothing — verified by `packages/web/test/marketplace.test.tsx`.
+26. [verified] In a real browser, the user browses the catalog, adds their own MCP server, gives it to one bot, sees it among that bot's tools, and the bot's call reaches the server with its key and argument — verified by `tests/e2e/marketplace.test.ts`.
 
 ## Maturity
 

@@ -7,6 +7,7 @@ import { useT, type TextKey } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
 import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 import { ComputerChoice } from "./ComputerModes.js";
+import { ToolPicker } from "./ToolPicker.js";
 const DECISIONS: PolicyDecision[] = ["allow", "ask", "deny"];
 const list = (text: string) =>
   text
@@ -290,6 +291,11 @@ export function BotSettings({
               <input type="number" min={1} value={hibernate} placeholder="30" onChange={(e) => setHibernate(e.target.value)} name="settings-hibernate" />
             </label>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>{t("tools.title")}</legend>
+          <ToolPicker api={api} patterns={list(tools)} onChange={(next) => setTools(next.join(", "))} />
           <label>
             {t("settings.tools")}
             <input value={tools} onChange={(e) => setTools(e.target.value)} name="settings-tools" />

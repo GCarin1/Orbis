@@ -20,3 +20,4 @@ One line per archived change, newest last. Appended by
 - 2026-09-28 — 0015-orbis-look — orbis-look (specs: bots MODIFIED, templates MODIFIED, web-app MODIFIED)
 - 2026-09-28 — 0016-voice-and-theme — Voice and theme (specs: desktop-app MODIFIED, hub-api MODIFIED, web-app MODIFIED)
 - 2026-09-28 — 0017-computer-modes — Computer modes (specs: computer MODIFIED, templates MODIFIED, web-app MODIFIED)
+- 2026-09-28 — 0018-mcp-marketplace — MCP marketplace (specs: tool-gateway MODIFIED, web-app MODIFIED)

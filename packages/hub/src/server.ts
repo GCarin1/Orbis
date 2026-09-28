@@ -61,6 +61,8 @@ import { registerMcp } from "./mcp/protocol.js";
 import { SecretResolvers, type HubContext } from "./context.js";
 import { SettingsRepo } from "./repos/settings.js";
 import { VoiceService } from "./voice/service.js";
+import { McpConnections } from "./mcp/connections.js";
+import { registerMcpRoutes } from "./mcp/routes.js";
 
 export interface HubOptions {
   env?: Env;
@@ -84,6 +86,7 @@ export interface Hub extends HubContext {
   secrets: SecretService;
   usage: UsageService;
   voice: VoiceService;
+  mcp: McpConnections;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -302,6 +305,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
   const voice = new VoiceService(config, new SettingsRepo(db), secrets.hubSecrets);
+  const mcp = new McpConnections(ctx, secrets.hubSecrets, { redirectUri: () => `${url()}/oauth/mcp/callback` });
+  mcp.start();
   const usage = new UsageService(ctx, opts.clock);
   engine.addHooks(usage.hooks());
   const routines = new RoutineService(ctx, drafts, opts.clock);
@@ -338,6 +343,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await templates.routes(app);
   await registerRuntimeRoutes(app, ctx);
   await voice.routes(app);
+  await registerMcpRoutes(app, mcp);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -360,6 +366,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     secrets,
     usage,
     voice,
+    mcp,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });
@@ -371,6 +378,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       closed = true;
       routines.stop();
       await engine.shutdown();
+      await mcp.shutdown();
       await browser.shutdown();
       await computer.shutdown();
       await app.close();

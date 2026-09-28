@@ -1,8 +1,11 @@
 // The account-level tool registry (specs/tool-gateway, ADR 0004).
 import type { TSchema } from "typebox";
 import { Compile } from "typebox/compile";
-import type { Bot, PolicyDecision, Run } from "@orbis/shared";
+import { globToRegExp, toolAllowed, type Bot, type PolicyDecision, type Run } from "@orbis/shared";
 import type { ToolCallResult, ToolDescriptor } from "../brains/types.js";
+
+/** The allowlist helpers live in @orbis/shared so the apps read allowlists the same way. */
+export { globToRegExp, toolAllowed };
 
 export type RiskClass = "read" | "write" | "external";
 
@@ -29,6 +32,8 @@ export interface ToolDefinition {
   secrets?: boolean;
   /** Offer the tool only to some bots (approval_prompt: Claude Code runs only). */
   offer?(bot: Bot): boolean;
+  /** The id of the external MCP server the tool comes from: a bot gets it only when its allowlist names it (`mcp.<server>.*`). */
+  external?: string;
   handler(input: any, ctx: ToolContext): Promise<string | ToolCallResult>;
 }
 
@@ -36,11 +41,6 @@ export interface ToolDefinition {
 export function defaultDecisionOf(tool: Pick<ToolDefinition, "defaultDecision"> | undefined, bot: Bot): Exclude<PolicyDecision, "deny"> | undefined {
   const d = tool?.defaultDecision;
   return typeof d === "function" ? d(bot) : d;
-}
-
-export function globToRegExp(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}$`);
 }
 
 export function matchesAny(name: string, patterns: readonly string[]): boolean {
@@ -70,8 +70,18 @@ export class ToolRegistry {
 
   register(tool: ToolDefinition): this {
     this.tools.set(tool.name, tool);
-    this.validators.set(tool.name, Compile(tool.input));
+    try {
+      this.validators.set(tool.name, Compile(tool.input));
+    } catch {
+      // A schema from an external server that does not compile: the server validates its own input.
+      this.validators.delete(tool.name);
+    }
     return this;
+  }
+
+  unregister(name: string): void {
+    this.tools.delete(name);
+    this.validators.delete(name);
   }
 
   get(name: string): ToolDefinition | undefined {
@@ -91,7 +101,7 @@ export class ToolRegistry {
   allowed(bot: Bot, tool: ToolDefinition): boolean {
     if (tool.offer && !tool.offer(bot)) return false;
     if (tool.ungated) return true;
-    return matchesAny(tool.name, bot.tools.length ? bot.tools : ["*"]);
+    return toolAllowed(tool.name, bot.tools, tool.external !== undefined);
   }
 
   forBot(bot: Bot): ToolDefinition[] {

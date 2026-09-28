@@ -7,6 +7,7 @@ import type {
   ComputerStatus,
   Conversation,
   DraftFields,
+  McpServer,
   Routine,
   RoutineApproval,
   RoutineTrigger,
@@ -37,6 +38,8 @@ interface State {
   routines: Record<string, Routine[]>;
   /** When the user last looked at each conversation (ISO time), kept in this browser. */
   readAt: Record<string, string>;
+  /** MCP servers connected to the hub (the marketplace), kept live by the stream. */
+  mcpServers: Record<string, McpServer>;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -57,6 +60,7 @@ interface State {
   send(conversationId: string, text: string): Promise<void>;
   createBot(input: object): Promise<Bot>;
   loadApprovals(): Promise<void>;
+  loadMcpServers(): Promise<void>;
   answerApproval(id: string, decision: ApprovalDecision, note?: string): Promise<void>;
   sendDraft(itemId: string, fields: Partial<DraftFields>): Promise<void>;
   discardDraft(itemId: string): Promise<void>;
@@ -117,6 +121,7 @@ export const useStore = create<State>((set, get) => ({
   offeredSkills: {},
   routines: {},
   readAt: loadReadAt(),
+  mcpServers: {},
   error: null,
 
   setApi: (api) => set({ api }),
@@ -218,6 +223,13 @@ export const useStore = create<State>((set, get) => ({
     const bot = await api.post<Bot>("/api/v1/bots", input);
     set((s) => ({ bots: { ...s.bots, [bot.id]: bot } }));
     return bot;
+  },
+
+  async loadMcpServers() {
+    const api = get().api;
+    if (!api) return;
+    const servers = await api.get<McpServer[]>("/api/v1/mcp/servers");
+    set({ mcpServers: Object.fromEntries(servers.map((m) => [m.id, m])) });
   },
 
   async loadApprovals() {
@@ -326,6 +338,19 @@ export const useStore = create<State>((set, get) => ({
 
   apply(event) {
     switch (event.type) {
+      case "mcp.updated": {
+        const { server } = event.data as { server: McpServer };
+        set((s) => ({ mcpServers: { ...s.mcpServers, [server.id]: server } }));
+        break;
+      }
+      case "mcp.deleted": {
+        const { serverId } = event.data as { serverId: string };
+        set((s) => {
+          const { [serverId]: _gone, ...rest } = s.mcpServers;
+          return { mcpServers: rest };
+        });
+        break;
+      }
       case "computer.updated": {
         const { botId, computer } = event.data as { botId: string; computer: ComputerStatus };
         set((s) => ({ computers: { ...s.computers, [botId]: computer } }));

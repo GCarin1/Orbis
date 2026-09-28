@@ -470,3 +470,89 @@ export interface ImageBuild {
   log: string;
   error: string | null;
 }
+
+// --- MCP servers and the marketplace (specs/tool-gateway) ---------------------
+
+export type McpTransportKind = "stdio" | "http";
+/** How a server proves who is calling: nothing, a key or token the user pastes, or signing in with their account. */
+export type McpAuthKind = "none" | "token" | "oauth";
+export type McpServerStatus = "connecting" | "connected" | "needs_auth" | "error";
+
+export interface Localized {
+  en: string;
+  "pt-BR": string;
+}
+
+/** A value the user fills in to connect: an API key, a token, a folder. */
+export interface McpField {
+  key: string;
+  label: Localized;
+  secret: boolean;
+  /** Where it goes: an environment variable of a stdio server, an argument, or the Authorization header. */
+  target: "env" | "arg" | "bearer";
+  placeholder?: string;
+  help?: Localized;
+  /** Where to get it. */
+  link?: string;
+  optional?: boolean;
+}
+
+/** One entry of the marketplace: a server Orbis knows how to connect. */
+export interface McpCatalogEntry {
+  id: string;
+  name: string;
+  icon: string;
+  category: "research" | "dev" | "work" | "browser" | "files" | "reasoning";
+  description: Localized;
+  transport: McpTransportKind;
+  /** stdio: the command and arguments (e.g. npx -y <package>). */
+  command?: string;
+  args?: string[];
+  /** http: the streamable HTTP endpoint. */
+  url?: string;
+  auth: McpAuthKind;
+  fields: McpField[];
+  homepage: string;
+  /** What the machine needs, e.g. Node.js for npx servers. */
+  needs?: string;
+}
+
+export interface McpServerTool {
+  /** The Orbis name: `mcp.<server>.<tool>`. */
+  name: string;
+  /** The server's own name for the tool. */
+  remoteName: string;
+  description: string;
+  readOnly: boolean;
+}
+
+/** A server connected to this hub. */
+export interface McpServer {
+  id: string;
+  name: string;
+  icon: string;
+  catalogId: string | null;
+  transport: McpTransportKind;
+  url: string | null;
+  command: string | null;
+  args: string[];
+  auth: McpAuthKind;
+  status: McpServerStatus;
+  error: string | null;
+  /** Where the user signs in, while status is `needs_auth` for an OAuth server. */
+  authUrl: string | null;
+  tools: McpServerTool[];
+  /** The bots whose allowlist gives them this server's tools. */
+  bots: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A registered tool, for choosing a bot's tools (`GET /api/v1/tools`). */
+export interface ToolInfo {
+  name: string;
+  description: string;
+  risk: "read" | "write" | "external";
+  /** The MCP server it comes from, or null for Orbis's own tools. */
+  server: string | null;
+}

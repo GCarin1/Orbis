@@ -17,6 +17,7 @@ import { BotPanel } from "./components/BotPanel.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
 import { SettingsScreen } from "./components/SettingsScreen.js";
+import { Marketplace } from "./components/Marketplace.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
 import { brainLabel, brainShort } from "./components/brains.js";
 import { BackIcon, ClockIcon, GearIcon, MonitorIcon, PanelIcon } from "./components/Icons.js";
@@ -69,6 +70,7 @@ export function App() {
       .catch(() => undefined);
     void useStore.getState().loadApprovals().catch(() => undefined);
     void useStore.getState().loadConversations().catch(() => undefined);
+    void useStore.getState().loadMcpServers().catch(() => undefined);
     void useStore.getState().loadBots().catch((err: unknown) => {
       if ((err as { status?: number }).status === 401) {
         saveToken(null);
@@ -83,6 +85,7 @@ export function App() {
         void s.loadBots();
         void s.loadApprovals();
         void s.loadConversations();
+        void s.loadMcpServers().catch(() => undefined);
         const conv = s.selectedGroupId ?? (s.selectedBotId ? s.directByBot[s.selectedBotId] : undefined);
         if (conv) void s.loadTimeline(conv);
       },
@@ -201,6 +204,7 @@ export function App() {
       <main className="main">
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
+        {view === "tools" && store.api ? <Marketplace api={store.api} bots={bots} servers={store.mcpServers} onLoad={() => store.loadMcpServers()} /> : null}
         {view === "usage" && store.api ? <UsageScreen api={store.api} bots={store.bots} /> : null}
         {view === "settings" && store.api ? (
           <SettingsScreen
