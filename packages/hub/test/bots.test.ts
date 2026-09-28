@@ -1,6 +1,7 @@
 // specs/bots — acceptance criteria 1 to 5.
 import { afterEach, describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
+import { AVATAR_COLORS, AVATAR_SHAPES } from "@orbis/shared";
 import type { ComputerProvider } from "../src/computer/manager.js";
 import { newId, nowIso } from "../src/ids.js";
 import { chat, createBot, testHub, type TestHub } from "./helpers.js";
@@ -170,6 +171,20 @@ describe("bots", () => {
     expect(all[0]).toBe(c.id);
     expect(all).toContain(b.id);
     expect(all).toHaveLength(3);
+  });
+
+  it("keeps each bot's face: a shape and a color, derived when not given, kept by a duplicate", async () => {
+    t = await testHub();
+    const given = await t.api("POST", "/api/v1/bots", { name: "Dana", role: "Designer", avatarShape: "cloud", avatarColor: "#ec4899" });
+    expect(given.body.avatar).toEqual({ initials: "DA", color: "#ec4899", shape: "cloud" });
+    const derived = (await t.api("POST", "/api/v1/bots", { name: "Quinn", role: "QA" })).body;
+    expect(AVATAR_SHAPES).toContain(derived.avatar.shape);
+    expect(AVATAR_COLORS).toContain(derived.avatar.color);
+    expect((await t.api("POST", "/api/v1/bots", { name: "Zed", avatarShape: "star" })).status).toBe(400);
+    const edited = await t.api("PATCH", `/api/v1/bots/${given.body.id}`, { avatarShape: "drop" });
+    expect(edited.body.avatar.shape).toBe("drop");
+    const copy = await t.api("POST", `/api/v1/bots/${given.body.id}/duplicate`);
+    expect(copy.body.avatar).toMatchObject({ color: "#ec4899", shape: "drop" });
   });
 
   it("gets a bot by handle and edits it", async () => {

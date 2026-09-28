@@ -1,9 +1,10 @@
 // A bot's settings beside its conversation (specs/web-app): identity, description,
 // brain, tool policy, computer, allowlists, spend cap; export, duplicate, delete.
 import { useEffect, useState } from "react";
-import type { Bot, BrainKind, PolicyDecision } from "@orbis/shared";
+import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type BrainKind, type PolicyDecision } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
+import { BotFace } from "./Avatar.js";
 import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 const DECISIONS: PolicyDecision[] = ["allow", "ask", "deny"];
 const list = (text: string) =>
@@ -21,6 +22,7 @@ interface Rule {
 export function BotSettings({
   api,
   bot,
+  bots = [],
   onSave,
   onExport,
   onDuplicate,
@@ -30,6 +32,8 @@ export function BotSettings({
   /** Lets the panel suggest the models of the local servers. */
   api?: Api | null;
   bot: Bot;
+  /** The team, for "reports to". */
+  bots?: Bot[];
   onSave(patch: object): Promise<void>;
   onExport(): Promise<void>;
   onDuplicate(): Promise<void>;
@@ -40,6 +44,9 @@ export function BotSettings({
   const [name, setName] = useState(bot.name);
   const [role, setRole] = useState(bot.role);
   const [description, setDescription] = useState(bot.description);
+  const [color, setColor] = useState(bot.avatar.color);
+  const [shape, setShape] = useState<AvatarShape>(bot.avatar.shape ?? "orb");
+  const [reportsTo, setReportsTo] = useState(bot.reportsTo ?? "");
   const [kind, setKind] = useState<BrainKind>(bot.brain.kind);
   const [model, setModel] = useState(bot.brain.model ?? "");
   const [command, setCommand] = useState(bot.brain.command ?? "");
@@ -84,6 +91,9 @@ export function BotSettings({
           name: name.trim(),
           role: role.trim(),
           description,
+          avatarColor: color,
+          avatarShape: shape,
+          reportsTo: reportsTo || null,
           brain: {
             kind,
             ...(model.trim() ? { model: model.trim() } : {}),
@@ -137,6 +147,37 @@ export function BotSettings({
             {t("newbot.description")}
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} name="settings-description" />
           </label>
+          <label>
+            {t("newbot.reportsTo")}
+            <select value={reportsTo} onChange={(e) => setReportsTo(e.target.value)} name="settings-reports-to">
+              <option value="">{t("newbot.noManager")}</option>
+              {bots
+                .filter((b) => b.id !== bot.id && !b.hidden)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                    {b.role ? ` — ${b.role}` : ""}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <div className="face-pickers">
+            <BotFace shape={shape} color={color} size={56} />
+            <div>
+              <div className="swatches small" role="radiogroup" aria-label={t("newbot.color")}>
+                {AVATAR_COLORS.map((c) => (
+                  <button key={c} type="button" role="radio" aria-checked={c === color} aria-label={c} className="swatch" style={{ background: c }} onClick={() => setColor(c)} />
+                ))}
+              </div>
+              <div className="shapes small" role="radiogroup" aria-label={t("newbot.shape")}>
+                {AVATAR_SHAPES.map((sh) => (
+                  <button key={sh} type="button" role="radio" aria-checked={sh === shape} aria-label={t(`shape.${sh}` as TextKey)} className="shape" onClick={() => setShape(sh)}>
+                    <BotFace shape={sh} color={color} size={24} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </fieldset>
 
         <fieldset>

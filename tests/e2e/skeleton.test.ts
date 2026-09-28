@@ -48,15 +48,18 @@ describe("walking skeleton in a browser", () => {
     await page.goto(`${url}/#token=${TOKEN}`);
 
     // The token handed over in the fragment is stored and removed from the address bar.
-    await page.getByRole("button", { name: "+ New bot" }).click();
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    await page.getByRole("menuitem", { name: "+ New bot" }).click();
     expect(page.url()).not.toContain("token=");
     await page.getByLabel("Name").fill("Ana");
     await page.getByLabel("Role").fill("QA");
+    await page.getByRole("radiogroup", { name: "Shape" }).getByRole("radio", { name: "Cloud" }).click();
     await page.getByLabel("Brain").selectOption("mock");
     await page.getByRole("button", { name: "Create bot" }).click();
 
-    // The new bot is in the roster and its conversation is open.
+    // The new bot is in the sidebar with the face it was given, and its conversation is open.
     await expect(page.getByTestId("bot-ana").waitFor()).resolves.toBeUndefined();
+    expect(await page.getByTestId("bot-ana").locator("svg.face").getAttribute("class")).toContain("face-cloud");
     const composer = page.getByRole("textbox", { name: /Message Ana/ });
     await composer.fill("hello from the browser");
     await composer.press("Enter");

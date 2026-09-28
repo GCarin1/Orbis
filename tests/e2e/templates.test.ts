@@ -41,7 +41,7 @@ describe("bot settings and templates in a browser", () => {
     await page.goto(`${url}/#token=${TOKEN}`);
     await page.getByTestId("bot-ana").click();
 
-    await page.getByRole("button", { name: "⚙ Bot settings" }).click();
+    await page.getByRole("button", { name: "Bot settings", exact: true }).click();
     const panel = page.getByTestId("settings-panel");
     await panel.getByLabel("Role").fill("Release QA");
     await panel.getByLabel("Description and durable rules").fill("You check every release. Never send anything without my approval.");
@@ -58,7 +58,8 @@ describe("bot settings and templates in a browser", () => {
     await download.saveAs(file);
     expect(readFileSync(file, "utf8")).toContain("kind: BotTemplate");
 
-    await page.getByRole("button", { name: /New bot/ }).click();
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    await page.getByRole("menuitem", { name: "+ New bot" }).click();
     await page.getByLabel("Or import a template (.yaml)").setInputFiles(file);
     await page.getByRole("heading", { level: 1, name: /Ana @ana-2/ }).waitFor();
     expect(hub.botService.get("ana-2")).toMatchObject({ role: "Release QA", spendCapUsd: 15 });

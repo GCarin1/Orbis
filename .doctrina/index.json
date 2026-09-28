@@ -46,7 +46,7 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -208,7 +208,7 @@
         "id": "templates",
         "path": ".doctrina/specs/templates/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — template export, secret scan and import (`packages/hub/src/templates/`)",
         "realizes": [
@@ -255,9 +255,9 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "last_updated": "2026-09-27",
-        "implementation": "verified — roster, groups, timeline and every card type, composer autocomplete, the skills, usage, routines, computer, bot settings and brains settings screens, approvals inbox, languages, PWA and the end-to-end paths",
+        "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout; timeline cards, the skills, usage, routines, computer, bot settings and brains settings screens, approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
           "SC7",
           "SC4",
@@ -718,6 +718,28 @@
           }
         ],
         "lane": "product (confident; signals: collaboration)"
+      },
+      {
+        "id": "0015-orbis-look",
+        "title": "orbis-look",
+        "path": ".doctrina/changes/archive/2026-09-28-0015-orbis-look",
+        "status": "applied",
+        "applied": "2026-09-28",
+        "specs_affected": [
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "templates",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: design)"
       }
     ],
     "skills": [

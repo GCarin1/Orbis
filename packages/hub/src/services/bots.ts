@@ -2,6 +2,8 @@
 import {
   colorFor,
   initialsOf,
+  shapeFor,
+  type AvatarShape,
   isValidHandle,
   slugifyHandle,
   uniqueHandle,
@@ -25,6 +27,7 @@ export interface BotInput {
   role?: string;
   description?: string;
   avatarColor?: string;
+  avatarShape?: AvatarShape;
   brain?: Brain;
   /** The manager's id or handle; null for none. */
   reportsTo?: string | null;
@@ -121,7 +124,7 @@ export class BotService {
       name,
       role,
       description: input.description ?? "",
-      avatar: { initials: initialsOf(name), color: input.avatarColor ?? colorFor(role || name) },
+      avatar: { initials: initialsOf(name), color: input.avatarColor ?? colorFor(role || name), shape: input.avatarShape ?? shapeFor(name) },
       brain: input.brain ?? DEFAULT_BRAIN,
       reportsTo: this.manager(input.reportsTo),
       policy: input.policy ?? DEFAULT_POLICY,
@@ -158,6 +161,7 @@ export class BotService {
     if (patch.role !== undefined) bot.role = patch.role.trim();
     if (patch.description !== undefined) bot.description = patch.description;
     if (patch.avatarColor !== undefined) bot.avatar.color = patch.avatarColor;
+    if (patch.avatarShape !== undefined) bot.avatar.shape = patch.avatarShape;
     if (patch.brain !== undefined) bot.brain = patch.brain;
     if (patch.reportsTo !== undefined) bot.reportsTo = this.manager(patch.reportsTo, bot.id);
     if (patch.policy !== undefined) bot.policy = patch.policy;
@@ -182,6 +186,7 @@ export class BotService {
       role: source.role,
       description: source.description,
       avatarColor: source.avatar.color,
+      avatarShape: source.avatar.shape,
       brain: structuredClone(source.brain),
       reportsTo: source.reportsTo,
       policy: { rules: structuredClone(source.policy.rules), grants: [] },

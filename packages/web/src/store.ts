@@ -35,11 +35,17 @@ interface State {
   /** Skills offered to each bot, for the `/` autocomplete. */
   offeredSkills: Record<string, SkillInfo[]>;
   routines: Record<string, Routine[]>;
+  /** When the user last looked at each conversation (ISO time), kept in this browser. */
+  readAt: Record<string, string>;
   error: string | null;
 
   setApi(api: Api | null): void;
   setConnected(connected: boolean): void;
   setError(error: string | null): void;
+  /** Mark a conversation as read up to now. */
+  markSeen(conversationId: string): void;
+  /** True when a conversation has items newer than the last time the user looked at it. */
+  isUnread(conversationId: string | undefined): boolean;
   loadBots(): Promise<void>;
   selectBot(botId: string | null): Promise<void>;
   loadConversations(): Promise<void>;
@@ -77,6 +83,25 @@ function upsertItem(list: TimelineItem[] | undefined, item: TimelineItem): Timel
   return next;
 }
 
+const READ_KEY = "orbis.readAt";
+
+function loadReadAt(): Record<string, string> {
+  try {
+    const raw = globalThis.localStorage?.getItem(READ_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveReadAt(readAt: Record<string, string>): void {
+  try {
+    globalThis.localStorage?.setItem(READ_KEY, JSON.stringify(readAt));
+  } catch {
+    /* private mode: unread dots last for this tab only */
+  }
+}
+
 export const useStore = create<State>((set, get) => ({
   api: null,
   connected: false,
@@ -91,11 +116,27 @@ export const useStore = create<State>((set, get) => ({
   computers: {},
   offeredSkills: {},
   routines: {},
+  readAt: loadReadAt(),
   error: null,
 
   setApi: (api) => set({ api }),
   setConnected: (connected) => set({ connected }),
   setError: (error) => set({ error }),
+
+  markSeen(conversationId) {
+    const readAt = { ...get().readAt, [conversationId]: new Date().toISOString() };
+    set({ readAt });
+    saveReadAt(readAt);
+  },
+
+  isUnread(conversationId) {
+    if (!conversationId) return false;
+    const conv = get().conversations[conversationId];
+    const last = conv?.lastItemAt;
+    if (!last) return false;
+    const seen = get().readAt[conversationId];
+    return !seen || last > seen;
+  },
 
   async loadBots() {
     const api = get().api;
@@ -114,6 +155,7 @@ export const useStore = create<State>((set, get) => ({
       directByBot: { ...s.directByBot, [botId]: conv.id },
     }));
     await get().loadTimeline(conv.id);
+    get().markSeen(conv.id);
     void api.post(`/api/v1/conversations/${conv.id}/read`).catch(() => undefined);
   },
 
@@ -137,6 +179,7 @@ export const useStore = create<State>((set, get) => ({
     const api = get().api;
     if (!api || !conversationId) return;
     await get().loadTimeline(conversationId);
+    get().markSeen(conversationId);
     void api.post(`/api/v1/conversations/${conversationId}/read`).catch(() => undefined);
   },
 
@@ -332,6 +375,11 @@ export const useStore = create<State>((set, get) => ({
         set((s) => {
           const next: Partial<State> = {};
           if (s.items[conversationId]) next.items = { ...s.items, [conversationId]: upsertItem(s.items[conversationId], item) };
+          // The conversation's latest activity drives the list order and the unread dot.
+          const known = s.conversations[conversationId];
+          if (known && (!known.lastItemAt || item.createdAt > known.lastItemAt)) {
+            next.conversations = { ...s.conversations, [conversationId]: { ...known, lastItemAt: item.createdAt } };
+          }
           // Keep the roster's last message current.
           if (item.kind === "message") {
             const conv = s.conversations[conversationId];

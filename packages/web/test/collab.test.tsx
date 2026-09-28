@@ -2,7 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Conversation, TimelineItem } from "@orbis/shared";
-import { GroupList, NewGroupDialog } from "../src/components/Groups.js";
+import { NewGroupDialog } from "../src/components/Groups.js";
+import { Sidebar } from "../src/components/Sidebar.js";
 import { Timeline } from "../src/components/Timeline.js";
 import { useLang } from "../src/i18n.js";
 import { bot } from "./fixtures.js";
@@ -20,10 +21,25 @@ describe("groups in the sidebar", () => {
   it("lists groups with their members and selects one", () => {
     const group: Conversation = { id: "cnv_g", kind: "group", title: "Release", members: [ana.id, bob.id], leadBotId: bob.id, createdAt: "2026-09-27T10:00:00.000Z", lastItemAt: null };
     const onSelect = vi.fn();
-    render(<GroupList groups={[group]} bots={bots} selectedId={null} onSelect={onSelect} onNew={() => undefined} />);
+    render(
+      <Sidebar
+        bots={bots}
+        conversations={[group]}
+        approvals={[]}
+        selectedBotId={null}
+        selectedGroupId={null}
+        view="chat"
+        isUnread={() => false}
+        onOpenBot={() => undefined}
+        onOpenGroup={onSelect}
+        onNewBot={() => undefined}
+        onNewGroup={() => undefined}
+        onView={() => undefined}
+      />,
+    );
     const item = screen.getByTestId("conv-cnv_g");
     expect(item.textContent).toContain("Release");
-    expect(item.textContent).toContain("@ana @bob");
+    expect(item.textContent).toContain("Ana, Bob");
     fireEvent.click(item);
     expect(onSelect).toHaveBeenCalledWith("cnv_g");
   });

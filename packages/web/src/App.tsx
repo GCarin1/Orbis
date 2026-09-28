@@ -1,25 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
+import { roleSlug, type Bot } from "@orbis/shared";
 import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
 import { useT } from "./i18n.js";
 import { useStore } from "./store.js";
-import { Avatar, StateLabel } from "./components/Avatar.js";
-import { Composer } from "./components/Composer.js";
-import { LanguageSwitch } from "./components/LanguageSwitch.js";
-import { NewBotDialog } from "./components/NewBotDialog.js";
-import { Roster } from "./components/Roster.js";
+import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
+import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
+import { NewBotScreen } from "./components/NewBotScreen.js";
 import { Timeline } from "./components/Timeline.js";
 import { TokenGate } from "./components/TokenGate.js";
-import { ApprovalsInbox } from "./components/ApprovalsInbox.js";
-import { GroupList, NewGroupDialog } from "./components/Groups.js";
+import { NewGroupDialog } from "./components/Groups.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
 import { RoutinesPanel } from "./components/RoutinesPanel.js";
 import { BotSettings } from "./components/BotSettings.js";
+import { BotPanel } from "./components/BotPanel.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
 import { SettingsScreen } from "./components/SettingsScreen.js";
+import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
 import { brainLabel, brainShort } from "./components/brains.js";
-import type { SkillOption } from "./components/Composer.js";
-import type { MentionOption } from "./components/Composer.js";
+import { BackIcon, ClockIcon, GearIcon, MonitorIcon, PanelIcon } from "./components/Icons.js";
+
+type Panel = "details" | "computer" | "routines" | "settings" | null;
+
+const PANEL_KEY = "orbis.detailsPanel";
+const wide = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1180px)").matches;
+
+function initialPanel(): Panel {
+  try {
+    const saved = globalThis.localStorage?.getItem(PANEL_KEY);
+    if (saved === "closed") return null;
+  } catch {
+    /* no storage */
+  }
+  return wide() ? "details" : null;
+}
 
 export function App() {
   const t = useT();
@@ -27,13 +41,20 @@ export function App() {
     captureTokenFromUrl();
     return loadToken();
   });
-  const [creating, setCreating] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   // One side panel at a time beside a direct conversation.
-  const [panel, setPanel] = useState<"computer" | "routines" | "settings" | null>(null);
+  const [panel, setPanelState] = useState<Panel>(initialPanel);
+  const setPanel = (next: Panel) => {
+    setPanelState(next);
+    try {
+      if (next === "details") globalThis.localStorage?.setItem(PANEL_KEY, "open");
+      else if (next === null) globalThis.localStorage?.setItem(PANEL_KEY, "closed");
+    } catch {
+      /* no storage */
+    }
+  };
   const computerOpen = panel === "computer";
-  const setComputerOpen = (open: boolean) => setPanel(open ? "computer" : null);
-  const [view, setView] = useState<"chat" | "skills" | "usage" | "settings">("chat");
+  const [view, setView] = useState<View>("chat");
   const [computerFull, setComputerFull] = useState(false);
   const store = useStore();
 
@@ -76,10 +97,9 @@ export function App() {
   const bots = useMemo(() => Object.values(store.bots), [store.bots]);
   const selected = store.selectedBotId ? store.bots[store.selectedBotId] : undefined;
   useEffect(() => {
-    if (computerOpen && selected) void useStore.getState().loadComputer(selected.id).catch(() => undefined);
-  }, [computerOpen, selected?.id]);
+    if ((computerOpen || panel === "details") && selected) void useStore.getState().loadComputer(selected.id).catch(() => undefined);
+  }, [computerOpen, panel, selected?.id]);
   const group = store.selectedGroupId ? store.conversations[store.selectedGroupId] : undefined;
-  const groups = useMemo(() => Object.values(store.conversations).filter((c) => c.kind === "group"), [store.conversations]);
   const conversationId = group ? group.id : selected ? store.directByBot[selected.id] : undefined;
   // `/` autocomplete: the skills offered to the bot, or to any member of the group.
   const skillBots = group ? group.members : selected ? [selected.id] : [];
@@ -90,9 +110,16 @@ export function App() {
   const skillOptions: SkillOption[] = [
     ...new Map(skillBots.flatMap((id) => store.offeredSkills[id] ?? []).map((s) => [s.name, { name: s.name, description: s.description }])).values(),
   ];
-  // `@` autocomplete: the members (and @everyone) in a group, every visible bot in a direct chat.
-  const mentionPool = group ? group.members.map((id) => store.bots[id]).filter((b) => b !== undefined) : bots.filter((b) => !b.hidden);
+  // `@` autocomplete: every visible bot of the team, then the roles (`@qa`), and @everyone in a group.
+  const visibleBots = bots.filter((b) => !b.hidden);
+  const mentionPool = group ? [...group.members.map((id) => store.bots[id]).filter((b): b is Bot => b !== undefined), ...visibleBots.filter((b) => !group.members.includes(b.id))] : visibleBots;
   const mentions: MentionOption[] = mentionPool.map((b) => ({ handle: b.handle, label: b.role ? `${b.name} — ${b.role}` : b.name, bot: b }));
+  const roles = new Map<string, string>();
+  for (const b of visibleBots) {
+    const slug = roleSlug(b.role);
+    if (slug && !mentionPool.some((m) => m.handle === slug) && !roles.has(slug)) roles.set(slug, b.role);
+  }
+  for (const [slug, role] of roles) mentions.push({ handle: slug, label: t("mention.role", { role }) });
   if (group) mentions.push({ handle: "everyone", label: t("mention.everyone") });
   const items = conversationId ? (store.items[conversationId] ?? []) : [];
   const activeRuns = useMemo(
@@ -102,6 +129,11 @@ export function App() {
       ),
     [store.runs, conversationId],
   );
+  // What arrives in the open conversation is read.
+  const lastItem = items.at(-1)?.id;
+  useEffect(() => {
+    if (conversationId && view === "chat") useStore.getState().markSeen(conversationId);
+  }, [conversationId, lastItem, view]);
 
   if (!token) {
     return (
@@ -114,59 +146,49 @@ export function App() {
     );
   }
 
+  const openBot = (id: string) => {
+    setView("chat");
+    void store.selectBot(id);
+  };
+  const exportBot = async (bot: Bot) => {
+    const yaml = await store.api!.text(`/api/v1/bots/${bot.id}/export`);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([yaml], { type: "text/yaml" }));
+    link.download = `${bot.handle}.orbis.yaml`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+  const chatOpen = view !== "chat" || Boolean(selected || group);
+  const sidePanel = selected && panel && !group && view === "chat";
+
+  const iconButton = (target: Exclude<Panel, null>, label: string, icon: React.ReactNode, extra?: React.ReactNode) => (
+    <button className="icon-btn" aria-label={label} title={label} aria-pressed={panel === target} onClick={() => setPanel(panel === target ? null : target)}>
+      {icon}
+      {extra}
+    </button>
+  );
+
   return (
-    <div className={`layout${selected && panel && !group && view === "chat" ? " with-computer" : ""}`}>
-      <aside className="sidebar">
-        <header className="brand">
-          <img src="/icon.svg" alt="" width={34} height={34} />
-          <span className="wordmark" title={t("brand.tagline")}>
-            Orbis
-          </span>
-          <LanguageSwitch />
-        </header>
-        <nav className="main-nav" aria-label="Orbis">
-          <button className={`nav-item${view === "chat" ? " selected" : ""}`} aria-pressed={view === "chat"} onClick={() => setView("chat")}>
-            💬 {t("nav.chat")}
-          </button>
-          <button className={`nav-item${view === "skills" ? " selected" : ""}`} aria-pressed={view === "skills"} onClick={() => setView("skills")}>
-            📘 {t("nav.skills")}
-          </button>
-          <button className={`nav-item${view === "usage" ? " selected" : ""}`} aria-pressed={view === "usage"} onClick={() => setView("usage")}>
-            📊 {t("nav.usage")}
-          </button>
-          <button className={`nav-item${view === "settings" ? " selected" : ""}`} aria-pressed={view === "settings"} onClick={() => setView("settings")}>
-            ⚙ {t("nav.settings")}
-          </button>
-        </nav>
-        <ApprovalsInbox
-          approvals={Object.values(store.approvals)}
-          bots={store.bots}
-          onOpen={(id) => {
-            setView("chat");
-            void store.selectBot(id);
-          }}
-        />
-        <GroupList
-          groups={groups}
-          bots={store.bots}
-          selectedId={store.selectedGroupId}
-          onSelect={(id) => {
-            setView("chat");
-            void store.selectGroup(id);
-          }}
-          onNew={() => setCreatingGroup(true)}
-        />
-        <Roster
-          bots={bots}
-          selectedId={store.selectedBotId}
-          onSelect={(id) => {
-            setView("chat");
-            void store.selectBot(id);
-          }}
-          onNew={() => setCreating(true)}
-        />
-      </aside>
+    <div className={`app${sidePanel ? " with-panel" : ""}${chatOpen ? " chat-open" : ""}`}>
+      <Sidebar
+        bots={store.bots}
+        conversations={Object.values(store.conversations)}
+        approvals={Object.values(store.approvals)}
+        selectedBotId={store.selectedBotId}
+        selectedGroupId={store.selectedGroupId}
+        view={view}
+        isUnread={(id) => store.isUnread(id)}
+        onOpenBot={openBot}
+        onOpenGroup={(id) => {
+          setView("chat");
+          void store.selectGroup(id);
+        }}
+        onNewBot={() => setView("new-bot")}
+        onNewGroup={() => setCreatingGroup(true)}
+        onView={setView}
+      />
       <main className="main">
+        {!store.connected && <div className="banner">{t("stream.offline")}</div>}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "usage" && store.api ? <UsageScreen api={store.api} bots={store.bots} /> : null}
         {view === "settings" && store.api ? (
@@ -180,14 +202,28 @@ export function App() {
             }}
           />
         ) : null}
-        {!store.connected && <div className="banner">{t("stream.offline")}</div>}
+        {view === "new-bot" && (
+          <NewBotScreen
+            api={store.api}
+            bots={bots}
+            onImport={async (yaml) => {
+              const bot = await store.importBot(yaml);
+              openBot(bot.id);
+            }}
+            onCreate={async (input) => {
+              const bot = await store.createBot(input);
+              openBot(bot.id);
+            }}
+          />
+        )}
         {view !== "chat" ? null : group ? (
           <>
             <header className="conv-head">
-              <span className="avatar-stack">
-                {group.members.map((id) => (store.bots[id] ? <Avatar key={id} bot={store.bots[id]!} size={32} /> : null))}
-              </span>
-              <div>
+              <button className="icon-btn back" aria-label={t("nav.back")} onClick={() => void store.selectGroup(null)}>
+                <BackIcon />
+              </button>
+              <GroupFace group={group} bots={store.bots} size={32} />
+              <div className="conv-title">
                 <h1>{group.title}</h1>
                 <div className="conv-meta">
                   <span>{t("groups.members", { count: group.members.length })}</span>
@@ -207,15 +243,18 @@ export function App() {
             {items.length === 0 && activeRuns.length === 0 ? (
               <p className="muted empty">{t("conv.startGroup", { lead: `@${store.bots[group.leadBotId ?? ""]?.handle ?? "?"}` })}</p>
             ) : (
-              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} />
+              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={null} />
             )}
             <Composer name={group.title} mentions={mentions} skills={skillOptions} onSend={(text) => store.send(group.id, text)} />
           </>
         ) : selected && conversationId ? (
           <>
             <header className="conv-head">
-              <Avatar bot={selected} size={44} />
-              <div>
+              <button className="icon-btn back" aria-label={t("nav.back")} onClick={() => void store.selectBot(null)}>
+                <BackIcon />
+              </button>
+              <Avatar bot={selected} size={32} />
+              <div className="conv-title">
                 <h1>
                   {selected.name} <span className="muted">@{selected.handle}</span>
                 </h1>
@@ -229,43 +268,64 @@ export function App() {
                 </div>
               </div>
               <div className="conv-actions">
-                <button className="btn" aria-pressed={panel === "routines"} onClick={() => setPanel(panel === "routines" ? null : "routines")}>
-                  ⏰ {t("routines.open")}
-                </button>
-                <button className="btn" aria-pressed={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
-                  ⚙ {t("settings.open")}
-                </button>
-                <button className="btn conv-computer" aria-pressed={computerOpen} onClick={() => setComputerOpen(!computerOpen)}>
-                  🖥 {t("computer.open")}
-                  {store.computers[selected.id]?.status === "running" && <span className="dot-running" aria-hidden="true" />}
-                </button>
+                {iconButton("routines", t("routines.open"), <ClockIcon />)}
+                {iconButton("settings", t("settings.open"), <GearIcon />)}
+                {iconButton(
+                  "computer",
+                  t("computer.open"),
+                  <MonitorIcon />,
+                  store.computers[selected.id]?.status === "running" ? <span className="dot-running" aria-hidden="true" /> : null,
+                )}
+                {iconButton("details", t("panel.details"), <PanelIcon />)}
               </div>
             </header>
             {items.length === 0 && activeRuns.length === 0 ? (
-              <p className="muted empty">{t("conv.start", { name: selected.name })}</p>
+              <div className="empty conv-empty">
+                <Avatar bot={selected} size={72} />
+                <p className="muted">{t("conv.start", { name: selected.name })}</p>
+              </div>
             ) : (
-              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} />
+              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={selected.id} />
             )}
             <Composer name={selected.name} mentions={mentions} skills={skillOptions} onSend={(text) => store.send(conversationId, text)} />
           </>
         ) : (
-          <p className="muted empty">{t("conv.empty")}</p>
+          <div className="empty conv-empty">
+            <Mascot size={88} />
+            <p className="muted">{bots.length ? t("conv.empty") : t("sidebar.noChats")}</p>
+            {bots.length === 0 && (
+              <button className="btn btn-primary" onClick={() => setView("new-bot")}>
+                {t("sidebar.createFirst")}
+              </button>
+            )}
+          </div>
         )}
       </main>
+      {selected && panel === "details" && !group && view === "chat" && store.api && (
+        <BotPanel
+          key={selected.id}
+          api={store.api}
+          bot={selected}
+          bots={store.bots}
+          status={store.computers[selected.id]}
+          routines={store.routines[selected.id]}
+          onLoadRoutines={() => store.loadRoutines(selected.id)}
+          onOpenComputer={() => setPanel("computer")}
+          onOpenRoutines={() => setPanel("routines")}
+          onOpenSettings={() => setPanel("settings")}
+          onOpenBot={openBot}
+          onExport={() => exportBot(selected)}
+          onClose={() => setPanel(null)}
+        />
+      )}
       {selected && panel === "settings" && !group && view === "chat" && store.api && (
         <BotSettings
           key={selected.id}
           api={store.api}
           bot={selected}
+          bots={bots}
           onSave={async (patch) => void (await store.updateBot(selected.id, patch))}
-          onExport={async () => {
-            const yaml = await store.api!.text(`/api/v1/bots/${selected.id}/export`);
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(new Blob([yaml], { type: "text/yaml" }));
-            link.download = `${selected.handle}.orbis.yaml`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-          }}
+          onExport={() => exportBot(selected)}
           onDuplicate={async () => {
             const copy = await store.duplicateBot(selected.id);
             await store.selectBot(copy.id);
@@ -274,7 +334,7 @@ export function App() {
             await store.deleteBot(selected.id);
             setPanel(null);
           }}
-          onClose={() => setPanel(null)}
+          onClose={() => setPanel(wide() ? "details" : null)}
         />
       )}
       {selected && panel === "routines" && !group && view === "chat" && (
@@ -284,7 +344,7 @@ export function App() {
           onLoad={() => store.loadRoutines(selected.id)}
           onCreate={(input) => store.createRoutine(selected.id, input)}
           onAction={(routine, action, force) => store.routineAction(routine, action, force)}
-          onClose={() => setPanel(null)}
+          onClose={() => setPanel(wide() ? "details" : null)}
         />
       )}
       {selected && computerOpen && !group && view === "chat" && store.api && (
@@ -296,7 +356,7 @@ export function App() {
           onAction={(action) => store.computerAction(selected.id, action)}
           onFullscreen={setComputerFull}
           onClose={() => {
-            setComputerOpen(false);
+            setPanel(wide() ? "details" : null);
             setComputerFull(false);
           }}
         />
@@ -308,23 +368,8 @@ export function App() {
           onCreate={async (input) => {
             const created = await store.createGroup(input);
             setCreatingGroup(false);
+            setView("chat");
             await store.selectGroup(created.id);
-          }}
-        />
-      )}
-      {creating && (
-        <NewBotDialog
-          api={store.api}
-          onImport={async (yaml) => {
-            const bot = await store.importBot(yaml);
-            setCreating(false);
-            await store.selectBot(bot.id);
-          }}
-          onCancel={() => setCreating(false)}
-          onCreate={async (input) => {
-            const bot = await store.createBot(input);
-            setCreating(false);
-            await store.selectBot(bot.id);
           }}
         />
       )}

@@ -1,57 +1,10 @@
-// Group conversations in the sidebar and the dialog that creates one (specs/web-app, specs/conversations).
+// The dialog that creates a group conversation (specs/web-app, specs/conversations).
 import { useState } from "react";
 import type { Bot, Conversation } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
 
 export const MAX_GROUP_SIZE = 6;
-
-export function GroupList({
-  groups,
-  bots,
-  selectedId,
-  onSelect,
-  onNew,
-}: {
-  groups: Conversation[];
-  bots: Record<string, Bot>;
-  selectedId: string | null;
-  onSelect(id: string): void;
-  onNew(): void;
-}) {
-  const t = useT();
-  const sorted = [...groups].sort((a, b) => (b.lastItemAt ?? b.createdAt).localeCompare(a.lastItemAt ?? a.createdAt));
-  return (
-    <nav className="groups" aria-label={t("groups.title")}>
-      <div className="roster-head">
-        <h2>{t("groups.title")}</h2>
-        <button className="btn" onClick={onNew}>
-          + {t("groups.new")}
-        </button>
-      </div>
-      {sorted.length === 0 && <p className="muted roster-empty">{t("groups.empty")}</p>}
-      <ul>
-        {sorted.map((group) => (
-          <li key={group.id}>
-            <button
-              className={`roster-item${group.id === selectedId ? " selected" : ""}`}
-              onClick={() => onSelect(group.id)}
-              data-testid={`conv-${group.id}`}
-            >
-              <span className="avatar-stack" aria-hidden="true">
-                {group.members.slice(0, 3).map((id) => (bots[id] ? <Avatar key={id} bot={bots[id]!} size={22} /> : null))}
-              </span>
-              <span className="roster-text">
-                <strong>{group.title}</strong>
-                <span className="muted">{group.members.map((id) => `@${bots[id]?.handle ?? "?"}`).join(" ")}</span>
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
 
 export interface NewGroupInput {
   title: string;

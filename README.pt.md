@@ -12,6 +12,18 @@ pedindo sua aprovação antes de qualquer ação arriscada. Você fala com os me
 bots pelo **app web**, pelo **app desktop**, pela **CLI `orbis`** e pela **API
 HTTP**.
 
+Os bots trabalham como **equipe**: você pede ao seu chefe de gabinete, ele
+divide o trabalho entre os bots que respondem a ele, eles conversam entre si à
+vista de todos e o chefe volta até você sozinho quando tudo termina.
+
+<p align="center">
+  <img src="docs/screenshots/chat-pt.jpg" alt="Orbis: o chefe de gabinete passa o banner para a designer e o checkout para o QA, as respostas chegam e o chefe presta contas" width="900">
+</p>
+<p align="center">
+  <img src="docs/screenshots/new-bot-pt.jpg" alt="A tela de novo bot: escolha uma cor e um dos oito rostos, um gestor e um cérebro, ou comece por uma sugestão" width="560">
+  <img src="docs/screenshots/phone-pt.jpg" alt="Orbis no celular: os rostos da equipe e a lista de conversas" width="200">
+</p>
+
 O cérebro de cada bot é escolha sua, bot a bot:
 
 | Cérebro | Como roda | Precisa de chave de API? |
@@ -54,6 +66,8 @@ fecha quando os critérios de aceite são provados por testes.
 | Segredos (cofre AES-256-GCM por bot, `{{secret:NOME}}` resolvido só no gateway de ferramentas, mascaramento, cards de pedido de segredo) e uso (por bot e mês, tabela de preços, teto de gasto) | ✅ verificado |
 | Templates de bot (exportação YAML com varredura de segredos, importação com rotinas desativadas) e a tela de configurações do bot | ✅ verificado |
 | App desktop (Electron: encontra ou inicia o hub, janela protegida, notificações nativas, bandeja) | ✅ verificado |
+| Equipe com hierarquia: gestores delegam aos subordinados e prestam contas sozinhos quando tudo termina; menções por handle ou por função (`@qa`); bots chamam uns aos outros para a conversa | ✅ verificado |
+| O visual do Orbis: rostos dos bots (8 formas, 10 cores, olhos que seguem o estado), uma lista de conversas com bolinha de não lida, o painel do bot (tela, rotinas, equipe), a tela de novo bot, modo escuro e celular | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
 no cabeçalho `Implementation:` de cada spec.

@@ -40,30 +40,46 @@ export function initialsOf(name: string): string {
   return (Array.from(words[0]!)[0]! + Array.from(words[1]!)[0]!).toUpperCase();
 }
 
-/** Colors with at least 4.5:1 contrast against white text. */
+/** The avatar palette: brown, red, orange, amber, green, teal, blue, violet, pink, gray. */
 export const AVATAR_COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#c026d3",
-  "#db2777",
-  "#dc2626",
-  "#c2410c",
-  "#a16207",
-  "#15803d",
-  "#0f766e",
-  "#0e7490",
-  "#4f46e5",
-  "#475569",
+  "#8b5e3c",
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#22c55e",
+  "#14b8a6",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#6b7280",
 ] as const;
 
-/** Deterministic color from a label (the bot's role), via a 32-bit FNV-1a hash. */
-export function colorFor(label: string): string {
+/** The avatar shapes; `orb` is the Orbis planet with its orbit ring. */
+export const AVATAR_SHAPES = ["orb", "blob", "square", "pill", "triangle", "hexagon", "cloud", "drop"] as const;
+export type AvatarShape = (typeof AVATAR_SHAPES)[number];
+
+/** 32-bit FNV-1a hash of a label, case-insensitive. */
+function hashOf(label: string): number {
   let hash = 0x811c9dc5;
   for (const ch of label.toLowerCase()) {
     hash ^= ch.codePointAt(0)!;
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length]!;
+  return hash;
+}
+
+/** Deterministic color from a label (the bot's role). */
+export function colorFor(label: string): string {
+  return AVATAR_COLORS[hashOf(label) % AVATAR_COLORS.length]!;
+}
+
+/** Deterministic shape from a label (the bot's name), so a new team does not look alike. */
+export function shapeFor(label: string): AvatarShape {
+  return AVATAR_SHAPES[(hashOf(label) >>> 4) % AVATAR_SHAPES.length]!;
+}
+
+export function isAvatarShape(value: unknown): value is AvatarShape {
+  return typeof value === "string" && (AVATAR_SHAPES as readonly string[]).includes(value);
 }
 
 const MENTION = /(^|[^a-z0-9_@.-])@([a-z0-9-]{2,32})(?![a-z0-9-])/gi;

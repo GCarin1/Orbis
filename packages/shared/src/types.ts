@@ -1,5 +1,6 @@
 // Domain types shared by the hub, the CLI and the web app.
 // The shapes mirror `.doctrina/contracts/hub-surface.md` (Resource shapes).
+import type { AvatarShape } from "./handles.js";
 
 export const BOT_STATES = ["idle", "thinking", "working", "waiting", "blocked", "done"] as const;
 export type BotState = (typeof BOT_STATES)[number];
@@ -70,6 +71,8 @@ export interface ComputerConfig {
 export interface Avatar {
   initials: string;
   color: string;
+  /** One of AVATAR_SHAPES; drawn with two eyes (specs/web-app). */
+  shape: AvatarShape;
 }
 
 export interface LastMessage {

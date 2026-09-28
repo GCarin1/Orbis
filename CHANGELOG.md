@@ -9,6 +9,18 @@ change that delivered it.
 
 ### Added
 
+- The Orbis look (change 0015-orbis-look): bots have faces — eight shapes
+  (the Orbis orb with its orbit ring, blob, square, pill, triangle, hexagon,
+  cloud, drop) in ten colors with two eyes that move with the bot's state —
+  and a mascot. The web app is laid out like a chat with your team: search
+  and one list of bots and groups with unread dots, a thin header of icon
+  buttons, dark and light bubbles with time separators, "Messages from …"
+  when colleagues speak in a bot's conversation, mentions in each bot's
+  color, a pill composer, a side panel with the bot's screen, routines in
+  words, team and brain, a new-bot screen with a color and shape picker and
+  suggestions, dark mode and a phone layout. `avatarShape` on bots and
+  templates.
+
 - A team with a hierarchy (change 0014-team-hierarchy): each bot can report to
   a manager (`reportsTo`, `--reports-to`), and every bot's prompt names its
   manager, reports and colleagues. Everything a bot hands off in one run comes

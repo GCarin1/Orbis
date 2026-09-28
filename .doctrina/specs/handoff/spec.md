@@ -41,7 +41,7 @@ themselves forever.
 - The system shall not accept a handoff whose receiver is the sending bot.
 - The system shall not give the receiver of a handoff the history of the conversation the handoff was made in; its input is the sender, the task and the context the sender wrote.
 - The system shall not start runs for the bots that a `report` run's reply mentions, for the bots the replying run handed work to, or for the bot that handed the replying run its task.
-- The system shall not accept a handoff to a role that several bots hold; it shall answer with their handles.
+- The system shall not accept a handoff to a role that two or more bots hold; it shall answer with their handles.
 
 ## Acceptance criteria
 

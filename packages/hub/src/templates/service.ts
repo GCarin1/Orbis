@@ -4,7 +4,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
 import { Compile } from "typebox/compile";
 import { parse as parseYaml, stringify as toYaml } from "yaml";
-import type { Bot, Brain, RoutineApproval, RoutineTrigger } from "@orbis/shared";
+import { AVATAR_SHAPES, type AvatarShape, type Bot, type Brain, type RoutineApproval, type RoutineTrigger } from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { badRequest, HttpError } from "../errors.js";
 import type { RoutineService } from "../routines/service.js";
@@ -57,7 +57,7 @@ export class SecretsFoundError extends HttpError {
 interface TemplateDoc {
   apiVersion: string;
   kind: string;
-  metadata: { name: string; role?: string; description?: string; avatarColor?: string };
+  metadata: { name: string; role?: string; description?: string; avatarColor?: string; avatarShape?: AvatarShape };
   spec: {
     brain?: Brain;
     policy?: Bot["policy"];
@@ -79,6 +79,7 @@ const TemplateSchema = Type.Object({
     role: Type.Optional(Type.String({ maxLength: 120 })),
     description: Type.Optional(Type.String({ maxLength: 20_000 })),
     avatarColor: Type.Optional(Type.String({ pattern: "^#[0-9a-fA-F]{6}$" })),
+    avatarShape: Type.Optional(Type.Union(AVATAR_SHAPES.map((s) => Type.Literal(s)))),
   }),
   spec: Type.Object({
     brain: Type.Optional(BrainSchema),
@@ -122,7 +123,7 @@ export class TemplateService {
     const doc: TemplateDoc = {
       apiVersion: API_VERSION,
       kind: KIND,
-      metadata: { name: bot.name, role: bot.role, description: bot.description, avatarColor: bot.avatar.color },
+      metadata: { name: bot.name, role: bot.role, description: bot.description, avatarColor: bot.avatar.color, avatarShape: bot.avatar.shape },
       spec: {
         brain,
         policy: bot.policy,
@@ -171,6 +172,7 @@ export class TemplateService {
       role: t.metadata.role,
       description: t.metadata.description,
       avatarColor: t.metadata.avatarColor,
+      avatarShape: t.metadata.avatarShape,
       brain: t.spec.brain,
       policy: t.spec.policy,
       computer: t.spec.computer,

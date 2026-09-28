@@ -1,10 +1,10 @@
 // specs/web-app — the settings screen (brains on this machine, the brain test,
-// which bot uses which brain) and the local model suggestions in the new-bot dialog.
+// which bot uses which brain) and the local model suggestions on the new-bot screen.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { BrainTestResult, LocalModelServer, RuntimeHealth } from "@orbis/shared";
 import type { Api } from "../src/api.js";
-import { NewBotDialog } from "../src/components/NewBotDialog.js";
+import { NewBotScreen } from "../src/components/NewBotScreen.js";
 import { SettingsScreen } from "../src/components/SettingsScreen.js";
 import { useLang } from "../src/i18n.js";
 import { bot } from "./fixtures.js";
@@ -101,11 +101,11 @@ describe("settings screen", () => {
   });
 });
 
-describe("new-bot dialog brains", () => {
+describe("new-bot screen brains", () => {
   it("offers Cursor, Ollama and LM Studio, and suggests the models Ollama has", async () => {
     const { api } = fakeApi(() => result({}));
     const onCreate = vi.fn(async () => undefined);
-    render(<NewBotDialog api={api} onCreate={onCreate} onCancel={() => undefined} />);
+    render(<NewBotScreen api={api} bots={[]} onCreate={onCreate} />);
     const brain = screen.getByLabelText("Brain") as HTMLSelectElement;
     const options = [...brain.options].map((o) => o.textContent);
     expect(options).toContain("Cursor CLI (subscription, no API)");

@@ -187,4 +187,9 @@ CREATE TABLE settings (
     version: 3,
     sql: `ALTER TABLE bots ADD COLUMN reports_to TEXT REFERENCES bots(id) ON DELETE SET NULL;`,
   },
+  {
+    // specs/bots: the avatar's shape, drawn with two eyes (change 0015-orbis-look).
+    version: 4,
+    sql: `ALTER TABLE bots ADD COLUMN avatar_shape TEXT NOT NULL DEFAULT 'orb';`,
+  },
 ];

@@ -138,24 +138,26 @@ export function HandoffCard({ item, bots }: { item: TimelineItem; bots: Record<s
   const name = (bot: Bot | undefined) => (bot ? `@${bot.handle}` : "?");
   return (
     <div className={`card card-handoff card-${state}`} data-testid="handoff-card">
-      <div className="card-head">
-        <span className="handoff-route">
-          {from && <Avatar bot={from} size={22} />}
-          <span aria-hidden="true">→</span>
-          {to && <Avatar bot={to} size={22} />}
+      <span className="handoff-route" aria-hidden="true">
+        {from && <Avatar bot={from} size={22} />}
+        <span className="handoff-arrow">→</span>
+        {to && <Avatar bot={to} size={22} />}
+      </span>
+      <div className="handoff-body">
+        <div className="handoff-line">
           <strong>{t("handoff.title", { from: name(from), to: name(to) })}</strong>
-        </span>
-        <span className={`pill pill-${state}`}>{t(`handoff.state.${state}` as TextKey)}</span>
+          <span className={`pill pill-${state}`}>{t(`handoff.state.${state}` as TextKey)}</span>
+        </div>
+        <p className="handoff-task">{data.task}</p>
+        {data.context && (
+          <details>
+            <summary>{t("handoff.context")}</summary>
+            <p className="handoff-context">{data.context}</p>
+          </details>
+        )}
+        {data.returnResult && <p className="handoff-returns">{t("handoff.returns", { from: name(from) })}</p>}
+        {state === "failed" && data.error && <p className="error">{data.error}</p>}
       </div>
-      <p className="handoff-task">{data.task}</p>
-      {data.context && (
-        <details>
-          <summary>{t("handoff.context")}</summary>
-          <p className="handoff-context">{data.context}</p>
-        </details>
-      )}
-      {data.returnResult && <p className="muted">{t("handoff.returns", { from: name(from) })}</p>}
-      {state === "failed" && data.error && <p className="error">{data.error}</p>}
     </div>
   );
 }

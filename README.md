@@ -11,6 +11,18 @@ from start to finish, hands work to other bots and stops for your approval
 before anything risky. You reach the same bots from a **web app**, a **desktop
 app**, the **`orbis` CLI** and an **HTTP API**.
 
+Bots work as a **team**: ask your chief of staff, it splits the work across
+the bots that report to it, they talk to each other in the open, and the chief
+comes back to you on its own when everything is done.
+
+<p align="center">
+  <img src="docs/screenshots/chat-en.jpg" alt="Orbis: a chief of staff bot hands the banner to the designer and checkout to QA, their answers arrive, and the chief reports back" width="900">
+</p>
+<p align="center">
+  <img src="docs/screenshots/new-bot-en.jpg" alt="The new-bot screen: pick a color and one of eight faces, a manager and a brain, or start from a suggestion" width="560">
+  <img src="docs/screenshots/phone-en.jpg" alt="Orbis on a phone: the team's faces and the conversation list" width="200">
+</p>
+
 A bot's brain is your choice, per bot:
 
 | Brain | How it runs | Needs an API key? |
@@ -53,6 +65,8 @@ are proven by tests.
 | Secrets (per-bot AES-256-GCM vault, `{{secret:NAME}}` resolved only in the tool gateway, redaction, secret-request cards) and usage (per bot and month, price table, spend caps) | ✅ verified |
 | Bot templates (YAML export with a secret scan, import with routines disabled) and the bot settings screen | ✅ verified |
 | Desktop app (Electron: finds or starts the hub, hardened window, native notifications, tray) | ✅ verified |
+| A team with a hierarchy: managers delegate to their reports and report back on their own when all the work is done; mentions by handle or role (`@qa`); bots bring each other into a conversation | ✅ verified |
+| The Orbis look: bot faces (8 shapes, 10 colors, eyes that follow the bot's state), one conversation list with unread dots, the bot panel (screen, routines, team), the new-bot screen, dark mode and phones | ✅ verified |
 
 The status of each capability is always current in
 `npx doctrina status` and in each spec's `Implementation:` header.

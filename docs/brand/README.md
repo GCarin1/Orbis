@@ -14,6 +14,7 @@ icons from them (Playwright's Chromium, or `ORBIS_BROWSER_EXECUTABLE`).
 | `app-icon-maskable.svg` | full-bleed PWA icon, mark inside the safe zone |
 | `logo-dark.svg` / `logo-light.svg` | horizontal lockup — mark, wordmark, tagline — for dark / light backgrounds |
 | `social-preview.png` | 1280×640 repository social preview |
+| `mascot.svg` | the mascot: the gradient planet with its orbit ring and two eyes — sign-in screen, empty states, the user's own face in the app |
 
 ## Colours
 
@@ -37,3 +38,14 @@ letter-spaced. Secondary line: *More agents. Bigger possibilities.*
   the one-colour versions.
 - Leave clear space around the mark of at least the moon's diameter.
 - Below 24 px, use the mark without the wordmark.
+
+## Faces and the mascot
+
+Bots have faces: one of eight shapes (orb, blob, square, pill, triangle,
+hexagon, cloud, drop) in one of ten colours (brown, red, orange, amber,
+green, teal, blue, violet, pink, gray), softly shaded, with two white eyes.
+The `orb` is the Orbis planet with its orbit ring. The face moves with the
+bot's state: it floats and blinks when idle, looks up while thinking, bounces
+while working, pulses while waiting for the user, shakes when blocked and
+smiles (`^ ^`) when done; with reduced motion it stays still. The mascot
+(`mascot.svg`) is the orb painted with the brand gradient.

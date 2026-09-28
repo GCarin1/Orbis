@@ -1,6 +1,6 @@
 // Request schemas (TypeBox): one declaration validates, types and documents a route.
 import Type from "typebox";
-import { BRAIN_KINDS } from "@orbis/shared";
+import { AVATAR_SHAPES, BRAIN_KINDS } from "@orbis/shared";
 
 export const IdParams = Type.Object({ id: Type.String({ minLength: 1 }) });
 
@@ -53,6 +53,7 @@ const botFields = {
   role: Type.Optional(Type.String({ maxLength: 120 })),
   description: Type.Optional(Type.String({ maxLength: 20_000 })),
   avatarColor: Type.Optional(Type.String({ pattern: "^#[0-9a-fA-F]{6}$" })),
+  avatarShape: Type.Optional(Type.Union(AVATAR_SHAPES.map((s) => Type.Literal(s)))),
   brain: Type.Optional(BrainSchema),
   reportsTo: Type.Optional(Type.Union([Type.String({ maxLength: 64 }), Type.Null()])),
   policy: Type.Optional(PolicySchema),

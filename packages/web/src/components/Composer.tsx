@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Bot } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
+import { PlusIcon, SendIcon } from "./Icons.js";
 
 export interface MentionOption {
   handle: string;
@@ -165,6 +166,23 @@ export function Composer({
           ))}
         </ul>
       )}
+      <button
+        type="button"
+        className="composer-plus"
+        aria-label={t("composer.mention")}
+        title={t("composer.mention")}
+        onClick={() => {
+          const at = box.current?.selectionStart ?? text.length;
+          const before = text.slice(0, at);
+          const insert = before === "" || /\s$/.test(before) ? "@" : " @";
+          pendingCaret.current = at + insert.length;
+          setText(before + insert + text.slice(at));
+          setCaret(at + insert.length);
+          setDismissed(null);
+        }}
+      >
+        <PlusIcon />
+      </button>
       <textarea
         ref={box}
         value={text}
@@ -175,14 +193,14 @@ export function Composer({
         }}
         onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
         onKeyDown={onKey}
-        placeholder={t("composer.placeholder", { name })}
+        placeholder={t("composer.short", { name })}
         aria-label={t("composer.placeholder", { name })}
         aria-autocomplete="list"
         aria-expanded={open}
-        rows={2}
+        rows={1}
       />
-      <button className="btn btn-primary" type="submit" disabled={busy || !text.trim()}>
-        {t("composer.send")}
+      <button className="composer-send" type="submit" disabled={busy || !text.trim()} aria-label={t("composer.send")} title={t("composer.send")}>
+        <SendIcon />
       </button>
     </form>
   );

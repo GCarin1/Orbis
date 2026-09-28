@@ -1,5 +1,6 @@
 import {
   initialsOf,
+  isAvatarShape,
   type Bot,
   type BotState,
   type Brain,
@@ -16,7 +17,7 @@ function toBot(r: Row): Bot {
     name,
     role: r.role as string,
     description: r.description as string,
-    avatar: { initials: initialsOf(name), color: r.avatar_color as string },
+    avatar: { initials: initialsOf(name), color: r.avatar_color as string, shape: isAvatarShape(r.avatar_shape) ? r.avatar_shape : "orb" },
     brain: json<Brain>(r.brain, { kind: "mock" }),
     reportsTo: (r.reports_to as string | null) ?? null,
     policy: json<Policy>(r.policy, { rules: [], grants: [] }),
@@ -64,15 +65,16 @@ export class BotsRepo {
   insert(bot: Bot): void {
     run(
       this.db,
-      `INSERT INTO bots (id, handle, name, role, description, avatar_color, brain, reports_to, policy, computer, tools, skills,
+      `INSERT INTO bots (id, handle, name, role, description, avatar_color, avatar_shape, brain, reports_to, policy, computer, tools, skills,
          spend_cap_usd, cap_includes_subscription, pinned, hidden, state, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       bot.id,
       bot.handle,
       bot.name,
       bot.role,
       bot.description,
       bot.avatar.color,
+      bot.avatar.shape,
       JSON.stringify(bot.brain),
       bot.reportsTo,
       JSON.stringify(bot.policy),
@@ -93,7 +95,7 @@ export class BotsRepo {
   save(bot: Bot): void {
     run(
       this.db,
-      `UPDATE bots SET handle = ?, name = ?, role = ?, description = ?, avatar_color = ?, brain = ?, reports_to = ?, policy = ?,
+      `UPDATE bots SET handle = ?, name = ?, role = ?, description = ?, avatar_color = ?, avatar_shape = ?, brain = ?, reports_to = ?, policy = ?,
          computer = ?, tools = ?, skills = ?, spend_cap_usd = ?, cap_includes_subscription = ?, pinned = ?, hidden = ?,
          updated_at = ?
        WHERE id = ?`,
@@ -102,6 +104,7 @@ export class BotsRepo {
       bot.role,
       bot.description,
       bot.avatar.color,
+      bot.avatar.shape,
       JSON.stringify(bot.brain),
       bot.reportsTo,
       JSON.stringify(bot.policy),

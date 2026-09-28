@@ -6,7 +6,7 @@
 **Realizes:** SC10
 **Depends on:** bots, skills, routines
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -19,7 +19,7 @@ export refuses to write a file that looks like it holds a credential.
 
 ### Ubiquitous
 
-- The system shall export a bot as one YAML document with `apiVersion: orbis/v1`, `kind: BotTemplate`, `metadata` (name, role, description, avatar color) and `spec` (brain without credentials, policy, computer configuration, skills inline as SKILL.md text, routines).
+- The system shall export a bot as one YAML document with `apiVersion: orbis/v1`, `kind: BotTemplate`, `metadata` (name, role, description, avatar color and shape) and `spec` (brain without credentials, policy, computer configuration, skills inline as SKILL.md text, routines).
 - The system shall import a template as a new bot, creating its bot-scoped skills and its routines with the enabled flag off.
 
 ### Event-driven

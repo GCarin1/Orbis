@@ -39,7 +39,7 @@ describe("templates", () => {
     expect(String(exported.headers["content-type"])).toMatch(/^text\/yaml/);
     expect(exported.headers["content-disposition"]).toBe('attachment; filename="ana.orbis.yaml"');
     const doc = parse(exported.body);
-    expect(doc).toMatchObject({ apiVersion: "orbis/v1", kind: "BotTemplate", metadata: { name: "Ana", role: "QA" } });
+    expect(doc).toMatchObject({ apiVersion: "orbis/v1", kind: "BotTemplate", metadata: { name: "Ana", role: "QA", avatarColor: ana.avatar.color, avatarShape: ana.avatar.shape } });
 
     const imported = await t.api("POST", "/api/v1/bots/import", { yaml: exported.body });
     expect(imported.status).toBe(201);
@@ -50,7 +50,7 @@ describe("templates", () => {
       name: "Ana",
       role: "QA",
       description: ana.description,
-      avatar: { color: ana.avatar.color },
+      avatar: { color: ana.avatar.color, shape: ana.avatar.shape },
       brain: { kind: "anthropic", model: "claude-opus-5" },
       policy: ana.policy,
       computer: ana.computer,

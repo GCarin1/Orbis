@@ -101,7 +101,7 @@ export function brainTestBot(brain: Bot["brain"]): Bot {
     name: "Orbis",
     role: "connection test",
     description: "",
-    avatar: { initials: "OR", color: "#6d5dfc" },
+    avatar: { initials: "OR", color: "#6d5dfc", shape: "orb" },
     brain,
     reportsTo: null,
     policy: { rules: [], grants: [] },

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Api } from "../api.js";
 import { useT } from "../i18n.js";
+import { Mascot } from "./Avatar.js";
 
 export function TokenGate({ onToken }: { onToken(token: string): void }) {
   const t = useT();
@@ -21,7 +22,7 @@ export function TokenGate({ onToken }: { onToken(token: string): void }) {
         }}
       >
         <div className="gate-brand">
-          <img src="/icon.svg" alt="" width={88} height={88} />
+          <Mascot size={96} />
           <h1 className="wordmark">Orbis</h1>
           <p className="brand-tagline">{t("brand.tagline")}</p>
           <p className="muted">{t("app.tagline")}</p>

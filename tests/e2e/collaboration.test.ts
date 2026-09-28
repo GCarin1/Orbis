@@ -42,7 +42,8 @@ describe("collaboration in a browser", () => {
     await page.goto(`${url}/#token=${TOKEN}`);
     await page.getByTestId("bot-ana").waitFor();
 
-    await page.getByRole("button", { name: "+ New group" }).click();
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    await page.getByRole("menuitem", { name: "+ New group" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Group name").fill("Release");
     await dialog.getByRole("checkbox", { name: /Ana/ }).check();

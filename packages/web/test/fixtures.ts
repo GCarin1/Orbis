@@ -7,7 +7,7 @@ export function bot(overrides: Partial<Bot> & { name: string }): Bot {
     handle,
     role: "",
     description: "",
-    avatar: { initials: overrides.name.slice(0, 2).toUpperCase(), color: "#4f46e5" },
+    avatar: { initials: overrides.name.slice(0, 2).toUpperCase(), color: "#3b82f6", shape: "orb" },
     brain: { kind: "mock" },
     reportsTo: null,
     policy: { rules: [], grants: [] },
