@@ -48,6 +48,22 @@ export interface ChatHttpOptions {
    * with the bot's name and the task); default true. It costs one model call per new chat.
    */
   titles?: boolean;
+  /**
+   * Headers the browser sent besides the token and `Origin` (`referer`, `user-agent`,
+   * `accept-language`), for a server that refuses a request without them (HTTP 403).
+   */
+  headers?: Record<string, string>;
+}
+
+/** The headers of a pasted cURL that Orbis keeps and sends in `ChatHttpOptions.headers`. */
+export const CHAT_HTTP_HEADER_NAMES = ["user-agent", "referer", "accept-language"] as const;
+
+/** Whether a bot's `chat-http` token is saved and when it expires (`GET /api/v1/bots/:id/chat-token`); the token itself never leaves the vault. */
+export interface ChatTokenStatus {
+  saved: boolean;
+  /** When the saved token's `exp` says it stops working, or null when it names none. */
+  expiresAt: string | null;
+  expired: boolean;
 }
 
 /** The default `chat-http` model (`config.modelId`). */
@@ -617,6 +633,22 @@ export interface CliJob {
   code: string | null;
   log: string;
   error: string | null;
+}
+
+/** What Claude Code reports when its login is gone or expired, so a failed run or test can offer signing in again. */
+export const CLAUDE_AUTH_FAILURE = /oauth|failed to authenticate|authentication|not logged in|please run \/login|invalid api key|session expired|\b401\b/i;
+
+/** The Claude Code CLI on the hub's machine and whose account it uses (`GET /api/v1/runtimes/claude/account`). */
+export interface ClaudeAccount {
+  installed: boolean;
+  version: string | null;
+  path: string | null;
+  loggedIn: boolean;
+  /** How it is signed in (`claude auth status`: `oauth_token`, `api_key`, …). */
+  method: string | null;
+  /** What `claude auth status` said, for a person to read. */
+  detail: string | null;
+  job: CliJob | null;
 }
 
 /** The Codex CLI on the hub's machine and whose account it uses (`GET /api/v1/runtimes/codex/account`). */

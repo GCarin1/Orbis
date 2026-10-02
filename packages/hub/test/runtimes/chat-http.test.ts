@@ -2,10 +2,21 @@
 // chat orchestrator over HTTPS with a Bearer token, replayed by a fake server.
 // The address and token here are made up; Orbis's code holds neither.
 import { afterEach, describe, expect, it } from "vitest";
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { createServer, type IncomingHttpHeaders, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { parseCurl, shellWords, tokenExpiry } from "@orbis/shared";
-import { AnswerReader, answerAfter, chatIds, chatPayload, eventText, historyBase, historyMessages, toolRequest } from "../../src/brains/chat-http.js";
+import { cleanBearer, parseCurl, shellWords, tokenExpiry } from "@orbis/shared";
+import {
+  AnswerReader,
+  answerAfter,
+  chatIds,
+  chatPayload,
+  eventText,
+  historyBase,
+  historyMessages,
+  refusal,
+  requestHeaders,
+  toolRequest,
+} from "../../src/brains/chat-http.js";
 import { chat, createBot, testHub, type TestHub } from "../helpers.js";
 
 let t: TestHub | null = null;
@@ -25,6 +36,7 @@ const FRESH = jwt(Math.floor(Date.now() / 1000) + 3600);
 interface Seen {
   auth: string | undefined;
   origin: string | undefined;
+  headers: IncomingHttpHeaders;
   type: string | undefined;
   path: string | undefined;
   data: { context: { chatId: string }; agent: { agentId: string; version: string }; input: { role: string; content: string }; config: Record<string, unknown> };
@@ -46,6 +58,7 @@ let titleStatus = 200;
 async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number) => void, history?: (path: string) => unknown) {
   const seen: Seen[] = [];
   const reads: string[] = [];
+  const readHeaders: IncomingHttpHeaders[] = [];
   const titles: Array<{ path: string; type: string | undefined; auth: string | undefined; body: unknown }> = [];
   server = createServer(async (req, res) => {
     if (req.method === "POST" && req.url?.endsWith("/generate-title")) {
@@ -57,6 +70,7 @@ async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number)
     }
     if (req.method === "GET") {
       reads.push(req.url ?? "");
+      readHeaders.push(req.headers);
       const doc = history?.(req.url ?? "");
       res.writeHead(doc === undefined ? 404 : 200, { "content-type": "application/json" });
       return res.end(doc === undefined ? "{}" : JSON.stringify(doc));
@@ -64,6 +78,7 @@ async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number)
     const s: Seen = {
       auth: req.headers.authorization,
       origin: req.headers.origin,
+      headers: req.headers,
       type: req.headers["content-type"],
       path: req.url,
       data: await dataField(req),
@@ -72,7 +87,7 @@ async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number)
     answer(s, res, seen.length);
   });
   await new Promise<void>((r) => server!.listen(0, "127.0.0.1", () => r()));
-  return { url: `http://127.0.0.1:${(server!.address() as AddressInfo).port}/internal/v1/chat-orchestrator`, seen, reads, titles };
+  return { url: `http://127.0.0.1:${(server!.address() as AddressInfo).port}/internal/v1/chat-orchestrator`, seen, reads, readHeaders, titles };
 }
 
 const sse = (res: ServerResponse, events: unknown[]) => {
@@ -530,5 +545,148 @@ describe("titles of the chats a bot opens", () => {
     await until(() => fake.titles.length > 0);
     expect(fake.titles).toHaveLength(1);
     titleStatus = 200;
+  });
+});
+
+describe("the Bearer token, saved and sent (audit of change 0033)", () => {
+  it("cleans the token as pasted: a whole header line, quotes, a wrapped paste", () => {
+    for (const pasted of [
+      FRESH,
+      `Bearer ${FRESH}`,
+      `  bearer   ${FRESH}\n`,
+      `Authorization: Bearer ${FRESH}`,
+      `-H 'authorization: Bearer ${FRESH}' \\`,
+      `"${FRESH}"`,
+      `${FRESH.slice(0, 40)}\n${FRESH.slice(40, 90)} ${FRESH.slice(90)}`,
+    ]) {
+      expect(cleanBearer(pasted)).toBe(FRESH);
+    }
+    expect(cleanBearer("   ")).toBe("");
+  });
+
+  it("sends the token the vault holds, bare, whatever way it was pasted", async () => {
+    const fake = await orchestrator((_s, res) => sse(res, [{ content: "ok" }, { chatId: "c-tok" }]));
+    t = await testHub();
+    const bot = await createBot(t, {
+      name: "Ana",
+      brain: { kind: "chat-http", baseUrl: fake.url, apiKeySecret: "CHAT_BEARER_TOKEN", chat: { titles: false } },
+    });
+    await t.api("PUT", `/api/v1/bots/${bot.id}/secrets/CHAT_BEARER_TOKEN`, { value: `Authorization: Bearer ${FRESH}\n` });
+    expect((await chat(t, bot.id, "oi")).runs[0].status).toBe("done");
+    expect(fake.seen[0]!.auth).toBe(`Bearer ${FRESH}`);
+    // The history reads carry it too.
+    expect(fake.readHeaders.every((h) => h.authorization === `Bearer ${FRESH}`)).toBe(true);
+  });
+
+  it("says whether a token is saved and when it expires, never the token", async () => {
+    t = await testHub();
+    const bot = await createBot(t, { name: "Ana", brain: { kind: "chat-http", baseUrl: "http://127.0.0.1:9/x", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    expect((await t.api("GET", `/api/v1/bots/${bot.id}/chat-token`)).body).toEqual({ saved: false, expiresAt: null, expired: false });
+    await t.api("PUT", `/api/v1/bots/${bot.id}/secrets/CHAT_BEARER_TOKEN`, { value: FRESH });
+    const saved = (await t.api("GET", `/api/v1/bots/${bot.id}/chat-token`)).body;
+    expect(saved).toMatchObject({ saved: true, expired: false });
+    expect(saved.expiresAt).toBe(tokenExpiry(FRESH)!.toISOString());
+    expect(JSON.stringify(saved)).not.toContain(FRESH);
+    await t.api("PUT", `/api/v1/bots/${bot.id}/secrets/CHAT_BEARER_TOKEN`, { value: jwt(Math.floor(Date.now() / 1000) - 60) });
+    expect((await t.api("GET", `/api/v1/bots/${bot.id}/chat-token`)).body).toMatchObject({ saved: true, expired: true });
+  });
+});
+
+describe("a refused request (HTTP 403 or 401)", () => {
+  const conn = { token: FRESH };
+
+  it("tells a token the server refused (401) from a valid token it still refuses (403), with what the server said", () => {
+    expect(refusal(401, "", conn)).toMatch(/refused the Bearer token \(HTTP 401\): it expired or is wrong/);
+    const forbidden = refusal(403, "<html><body><h1>Access Denied</h1> Reference #18.abc</body></html>", conn);
+    expect(forbidden).toContain("HTTP 403");
+    expect(forbidden).toContain("the token is valid until");
+    expect(forbidden).toContain("Orbis sent the token, not Origin, Referer, User-Agent");
+    expect(forbidden).toContain("The server said: Access Denied Reference #18.abc");
+    expect(forbidden).not.toContain("<h1>");
+    // With the browser's headers sent, they are not named as missing.
+    const sent = refusal(403, "", {
+      ...conn,
+      origin: "https://chat.example.com",
+      headers: { referer: "https://chat.example.com/", "user-agent": "Mozilla/5.0" },
+    });
+    expect(sent).toContain("Orbis sent the token, Origin, referer, user-agent.");
+    expect(sent).not.toContain("not Origin");
+    expect(sent).toContain("may lack access to this agent");
+    // An expired token is the cause, whatever the status.
+    expect(refusal(403, "", { token: jwt(Math.floor(Date.now() / 1000) - 5) })).toMatch(/Bearer token expired at/);
+    // The token never comes back in the server's words.
+    expect(refusal(403, `bad token ${FRESH}`, conn)).not.toContain(FRESH);
+  });
+
+  it("builds the headers the browser sent, and never lets one replace the token", () => {
+    const headers = requestHeaders(
+      { token: FRESH, origin: "https://chat.example.com", headers: { referer: "https://chat.example.com/", authorization: "Bearer other" } },
+      "*/*",
+    );
+    expect(headers).toMatchObject({
+      accept: "*/*",
+      origin: "https://chat.example.com",
+      referer: "https://chat.example.com/",
+      authorization: `Bearer ${FRESH}`,
+    });
+  });
+
+  it("fails the run with the server's reason and what Orbis sent, and sends the saved browser headers when set", async () => {
+    const fake = await orchestrator((s, res) => {
+      if (s.headers.referer && s.headers["user-agent"] === "Mozilla/5.0 (made up)" && s.origin) return sse(res, [{ content: "ok" }, { chatId: "c-ok" }]);
+      res.writeHead(403, { "content-type": "text/html" });
+      res.end("<html><h1>Forbidden by policy</h1></html>");
+    });
+    t = await testHub();
+    const bare = await chatBot(t, fake.url, { chat: { titles: false } });
+    const refused = (await chat(t, bare.id, "oi")).runs[0];
+    expect(refused.status).toBe("failed");
+    expect(refused.error).toContain("HTTP 403");
+    expect(refused.error).toContain("Forbidden by policy");
+    expect(refused.error).toContain("not Origin, Referer, User-Agent");
+    expect(refused.error).not.toContain(FRESH);
+
+    const browser = await chatBot(t, fake.url, {
+      chat: { titles: false, origin: "https://chat.example.com", headers: { referer: "https://chat.example.com/", "user-agent": "Mozilla/5.0 (made up)" } },
+    });
+    expect((await chat(t, browser.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "ok" });
+  });
+
+  it("keeps only the browser headers Orbis knows, without line breaks", async () => {
+    t = await testHub();
+    const bad = await t.api("POST", "/api/v1/bots", {
+      name: "Ana",
+      brain: { kind: "chat-http", baseUrl: "http://127.0.0.1:9/x", chat: { headers: { cookie: "session=1" } } },
+    });
+    expect(bad.status).toBe(400);
+    const crlf = await t.api("POST", "/api/v1/bots", {
+      name: "Bia",
+      brain: { kind: "chat-http", baseUrl: "http://127.0.0.1:9/x", chat: { headers: { referer: "https://a.example\r\nX-Evil: 1" } } },
+    });
+    expect(crlf.status).toBe(400);
+  });
+
+  it("leaves every address of the brain out of a template: request, Origin, history and browser headers", async () => {
+    t = await testHub();
+    const bot = await createBot(t, {
+      name: "Ana",
+      brain: {
+        kind: "chat-http",
+        baseUrl: "https://chat.example.com/v1/chat",
+        apiKeySecret: "CHAT_BEARER_TOKEN",
+        chat: {
+          agentId: "agente-x",
+          origin: "https://app.example.com",
+          historyUrl: "https://chat.example.com/v1/history/chats",
+          headers: { referer: "https://app.example.com/chat" },
+          titles: false,
+        },
+      },
+    });
+    const yaml = (await t.api("GET", `/api/v1/bots/${bot.id}/export`)).body as string;
+    expect(yaml).toContain("kind: chat-http");
+    expect(yaml).toContain("agente-x");
+    expect(yaml).toContain("titles: false");
+    for (const private_ of ["example.com", "origin", "historyUrl", "referer", "baseUrl"]) expect(yaml).not.toContain(private_);
   });
 });

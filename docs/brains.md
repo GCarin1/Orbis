@@ -51,6 +51,15 @@ and log in with your Claude subscription. Then:
 orbis bots create --name "Dev" --role "Engineering" --brain claude-code --model sonnet
 ```
 
+**The login expires.** Claude Code keeps its own login, and a bot runs on it.
+When it expires, a test or a run fails with *"Failed to authenticate: OAuth
+session expired and could not be refreshed"*. Orbis adds how to renew it, and
+the Claude Code card in ⚙ → Brains has the way: **Sign in again** runs
+`claude auth login` on the hub's machine — the browser opens there; if the page
+shows a code, paste it in the box under the button (the page's address is also
+shown, so it works when you reach Orbis from another device). Sign in, press
+**Test**, done. The same from a terminal: `claude auth login`.
+
 ### Codex (ChatGPT subscription)
 
 ```
@@ -250,6 +259,21 @@ the token, the agent, the model and the `Origin` are read from it.
   (`GET …/history/chats?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`) are
   searched for the one holding the message just sent — a chat you have open in
   the browser is never taken. A server without that history is asked once.
+- **The token you paste is cleaned**: with or without `Bearer`, a whole
+  `Authorization: Bearer …` line, in quotes, or wrapped over lines — Orbis keeps
+  just the token. Below the token field the settings say whether one is saved in
+  the vault and when it expires (`GET /api/v1/bots/<id>/chat-token` answers
+  `{ saved, expiresAt, expired }`; the token itself never leaves the vault).
+- **HTTP 403 with a token that has not expired** is the server refusing
+  something besides the token — usually what the browser sends with it. The
+  run's error says what the server answered, what Orbis sent, and what is
+  missing. Paste the request's cURL (**Fill in from the cURL**): besides the
+  address and the token, Orbis copies `Origin`, `Referer`, `User-Agent` and
+  `Accept-Language` (never a cookie or another header) and sends them with every
+  request to the chat API, the history and the title. A `401`, or a `403` after the token's expiry,
+  is the token: paste a new one.
+- A bot's template export leaves out every address of this brain (the request
+  address, `Origin`, the history address and the browser headers).
 - A chat the bot opens gets a title, as the browser gives one:
   `POST …/history/chats/<chat id>/generate-title` with
   `{"data":{"userMessage":"Orbis · <bot> — <task>"}}`, once per new chat and in

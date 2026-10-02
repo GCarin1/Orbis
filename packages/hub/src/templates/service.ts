@@ -130,9 +130,11 @@ export class TemplateService {
     const bot = this.hub.botService.get(botRef);
     // Only these fields are copied: memory, history, computer state and secrets cannot slip in.
     const { apiKeySecret: _dropped, ...kept } = bot.brain;
-    // A chat-http brain's address is the user's private endpoint: a shared template never carries it.
-    const { baseUrl: _private, ...withoutUrl } = kept;
-    const brain = bot.brain.kind === "chat-http" ? withoutUrl : kept;
+    // A chat-http brain's addresses are the user's private endpoint: a shared template carries none of them
+    // (not the request address, nor the Origin, history address and browser headers beside it).
+    const { baseUrl: _private, chat, ...withoutUrl } = kept;
+    const { origin: _o, historyUrl: _h, headers: _hd, ...sharedChat } = chat ?? {};
+    const brain = bot.brain.kind === "chat-http" ? { ...withoutUrl, ...(Object.keys(sharedChat).length ? { chat: sharedChat } : {}) } : kept;
     const doc: TemplateDoc = {
       apiVersion: API_VERSION,
       kind: KIND,

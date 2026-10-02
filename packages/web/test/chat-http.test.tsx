@@ -1,4 +1,4 @@
-// specs/web-app — the chat-http brain's fields (change 0029-chat-http-brain):
+// specs/web-app — the chat-http brain's fields (changes 0029-chat-http-brain, 0033):
 // address and Bearer token, typed or read from a pasted cURL; the token is
 // saved as the bot's secret, never in the bot. Address and token are made up.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,6 +18,10 @@ const curl = [
   `  --data-raw $'--X\\r\\nContent-Disposition: form-data; name="data"\\r\\n\\r\\n{"agent":{"agentId":"chat-corporativo","version":"1.0.0"},"config":{"modelId":"claude-4-6-opus","temperature":0.25}}\\r\\n--X--\\r\\n'`,
 ].join("\n");
 
+/** What the hub says of a bot's token: none saved, or one saved that names no expiry. */
+const NO_TOKEN = { saved: false, expiresAt: null, expired: false };
+const SAVED = { saved: true, expiresAt: null, expired: false };
+
 beforeEach(() => {
   act(() => useLang.getState().setLang("en"));
 });
@@ -25,7 +29,7 @@ beforeEach(() => {
 describe("the chat-http brain in a bot's settings", () => {
   it("reads a pasted cURL, saves the token as the bot's secret and the rest in the brain", async () => {
     const put = vi.fn(async () => ({ name: "CHAT_BEARER_TOKEN" }));
-    const get = vi.fn(async (path: string) => (path.endsWith("/secrets") ? [] : Promise.reject(new Error("not in this test"))));
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? NO_TOKEN : Promise.reject(new Error("not in this test"))));
     const api = { put, get } as unknown as Api;
     const onSave = vi.fn(async () => undefined);
     const ana = bot({ name: "Ana" });
@@ -63,9 +67,7 @@ describe("the chat-http brain in a bot's settings", () => {
 
   it("keeps a saved token when the field is left empty, and the brain's time and step limits", async () => {
     const put = vi.fn();
-    const get = vi.fn(async (path: string) =>
-      path.endsWith("/secrets") ? [{ name: "CHAT_BEARER_TOKEN", createdAt: "" }] : Promise.reject(new Error("not in this test")),
-    );
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
     const onSave = vi.fn(async () => undefined);
     const ana = bot({
       name: "Ana",
@@ -108,9 +110,7 @@ describe("a new bot with the chat-http brain", () => {
 describe("a pasted cURL that only reads (the history)", () => {
   it("keeps the request address, takes the new token and the history's address", async () => {
     const put = vi.fn(async () => ({ name: "CHAT_BEARER_TOKEN" }));
-    const get = vi.fn(async (path: string) =>
-      path.endsWith("/secrets") ? [{ name: "CHAT_BEARER_TOKEN", createdAt: "" }] : Promise.reject(new Error("not in this test")),
-    );
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
     const onSave = vi.fn(async () => undefined);
     const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat-orchestrator", apiKeySecret: "CHAT_BEARER_TOKEN" } });
     render(
@@ -139,9 +139,7 @@ describe("a pasted cURL that only reads (the history)", () => {
 
 describe("titles of new chats", () => {
   it("are on by default, and the bot can be set not to give them", async () => {
-    const get = vi.fn(async (path: string) =>
-      path.endsWith("/secrets") ? [{ name: "CHAT_BEARER_TOKEN", createdAt: "" }] : Promise.reject(new Error("not in this test")),
-    );
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
     const onSave = vi.fn(async () => undefined);
     const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
     render(
@@ -162,5 +160,102 @@ describe("titles of new chats", () => {
     fireEvent.click(box);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ brain: expect.objectContaining({ chat: { titles: false } }) }));
+  });
+});
+
+describe("the saved token and the browser's headers (audit of change 0033)", () => {
+  const settings = (
+    status: () => Promise<unknown>,
+    brain = { kind: "chat-http" as const, baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" },
+  ) => {
+    const put = vi.fn(async () => ({ name: "CHAT_BEARER_TOKEN" }));
+    const onSave = vi.fn(async () => undefined);
+    const ana = bot({ name: "Ana", brain });
+    render(
+      <BotSettings
+        api={
+          {
+            put,
+            get: vi.fn(async (path: string) => (path.endsWith("/chat-token") ? status() : Promise.reject(new Error("not in this test")))),
+          } as unknown as Api
+        }
+        bot={ana}
+        onSave={onSave}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    return { put, onSave, ana };
+  };
+
+  it("shows that a token is saved and when it expires, or that none is", async () => {
+    const exp = new Date(Date.now() + 3 * 3600_000);
+    settings(async () => ({ saved: true, expiresAt: exp.toISOString(), expired: false }));
+    await act(async () => undefined);
+    expect(screen.getByText(/^✓ Token saved in the vault · expires at /)).toBeTruthy();
+  });
+
+  it("warns when the saved token expired", async () => {
+    const gone = new Date(Date.now() - 3600_000);
+    settings(async () => ({ saved: true, expiresAt: gone.toISOString(), expired: true }));
+    await act(async () => undefined);
+    expect(screen.getByText(/^⚠ Token saved, but it expired at /)).toBeTruthy();
+  });
+
+  it("says no token is saved yet", async () => {
+    settings(async () => NO_TOKEN);
+    await act(async () => undefined);
+    expect(screen.getByText("No token saved yet")).toBeTruthy();
+  });
+
+  it("shows the saved token as saved right after saving a pasted one, cleaned of what came with it", async () => {
+    const { put, onSave, ana } = settings(async () => NO_TOKEN);
+    await act(async () => undefined);
+    fireEvent.change(screen.getByLabelText(/^Bearer token/), { target: { value: `Authorization: Bearer ${token}\n` } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect(put).toHaveBeenCalledWith(`/api/v1/bots/${ana.id}/secrets/CHAT_BEARER_TOKEN`, { value: token });
+    expect(onSave).toHaveBeenCalled();
+    expect((screen.getByLabelText(/^Bearer token/) as HTMLInputElement).value).toBe("");
+    expect(screen.getByText(/^✓ Token saved in the vault · expires at /)).toBeTruthy();
+  });
+
+  it("copies Referer, User-Agent and Accept-Language from a pasted cURL, never a cookie or another token", async () => {
+    const { onSave } = settings(async () => NO_TOKEN);
+    await act(async () => undefined);
+    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^No browser headers copied/);
+    const withHeaders = [
+      "curl --url 'https://chat.example.com/v1/chat-orchestrator' \\",
+      `  -H 'authorization: Bearer ${token}' \\`,
+      "  -H 'referer: https://app.example.com/chat' \\",
+      "  -H 'user-agent: Mozilla/5.0 (made up)' \\",
+      "  -H 'accept-language: pt-BR' \\",
+      "  -H 'cookie: session=do-not-keep' \\",
+      "  -H 'x-api-key: do-not-keep-either' \\",
+      "  --data-raw $'--X\\r\\nContent-Disposition: form-data; name=\"data\"\\r\\n\\r\\n{}\\r\\n--X--\\r\\n'",
+    ].join("\n");
+    fireEvent.change(screen.getByLabelText("Paste the cURL command (optional)"), { target: { value: withHeaders } });
+    fireEvent.click(screen.getByRole("button", { name: "Fill in from the cURL" }));
+    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^Browser headers that will be sent: user-agent, referer, accept-language/);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    const patch = (onSave.mock.calls[0] as unknown as [{ brain: { chat: { headers: Record<string, string> } } }])[0];
+    expect(patch.brain.chat.headers).toEqual({ "user-agent": "Mozilla/5.0 (made up)", referer: "https://app.example.com/chat", "accept-language": "pt-BR" });
+    expect(JSON.stringify(patch)).not.toContain("do-not-keep");
+  });
+
+  it("lets the headers be removed", async () => {
+    const { onSave } = settings(async () => SAVED, {
+      kind: "chat-http" as const,
+      baseUrl: "https://chat.example.com/v1/chat",
+      apiKeySecret: "CHAT_BEARER_TOKEN",
+      chat: { headers: { referer: "https://app.example.com/chat" } },
+    } as never);
+    await act(async () => undefined);
+    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^Browser headers that will be sent: referer/);
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    const patch = (onSave.mock.calls[0] as unknown as [{ brain: Record<string, unknown> }])[0];
+    expect(patch.brain.chat).toBeUndefined();
   });
 });

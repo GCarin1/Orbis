@@ -1,5 +1,6 @@
 // Claude Code as a subscription brain (contracts/cli-harnesses § claude-code).
 import { randomUUID } from "node:crypto";
+import { CLAUDE_AUTH_FAILURE } from "@orbis/shared";
 import { MAX_ARGV_PROMPT, resolveExecutable, runProcess, describeExit, harnessEnv } from "./process.js";
 import { renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, McpWiring } from "./types.js";
@@ -97,7 +98,7 @@ export function mapClaudeMessage(obj: Json, state: ClaudeStreamState): BrainEven
       });
       state.finished = true;
       if (obj.is_error === true || (typeof obj.subtype === "string" && obj.subtype.startsWith("error"))) {
-        out.push({ type: "run.failed", error: String(obj.result ?? obj.subtype ?? "Claude Code reported an error") });
+        out.push({ type: "run.failed", error: withSignInHint(String(obj.result ?? obj.subtype ?? "Claude Code reported an error")) });
       } else {
         out.push({ type: "run.finished", reply: String(obj.result ?? "") });
       }
@@ -110,6 +111,12 @@ export function mapClaudeMessage(obj: Json, state: ClaudeStreamState): BrainEven
 }
 
 const MISSING_SESSION = /no conversation found|session .*not found/i;
+
+/** The error, with the way out when it is about the login: the CLI's own session needs signing in again. */
+export function withSignInHint(error: string): string {
+  if (!CLAUDE_AUTH_FAILURE.test(error) || /sign in/i.test(error)) return error;
+  return `${error} — Claude Code's login needs renewing: sign in again in Orbis (Settings → Brains → Claude Code → Sign in), or run "claude auth login" in a terminal`;
+}
 
 export const claudeCodeBrain: BrainAdapter = {
   kind: "claude-code",
@@ -182,7 +189,7 @@ export const claudeCodeBrain: BrainAdapter = {
         continue;
       }
       if (!state.finished) {
-        yield { type: "run.failed", error: exitMessage ?? "Claude Code ended without a result" };
+        yield { type: "run.failed", error: withSignInHint(exitMessage ?? "Claude Code ended without a result") };
       }
       return;
     }

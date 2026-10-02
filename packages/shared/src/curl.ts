@@ -1,6 +1,7 @@
 // Reading a "Copy as cURL" command (specs/agent-runtimes: chat-http brain): the
 // address, the Bearer token and the chat settings of a request a browser made,
 // so the user pastes one command instead of copying each value by hand.
+import { CHAT_HTTP_HEADER_NAMES } from "./types.js";
 
 /** What a cURL command says about a chat request. */
 export interface ParsedCurl {
@@ -101,7 +102,7 @@ export function parseCurl(command: string): ParsedCurl {
     else if (!url && /^https?:\/\//i.test(w)) url = w;
   }
   const auth = headers.authorization ?? "";
-  const token = /^Bearer\s+(.+)$/i.exec(auth)?.[1]?.trim() ?? null;
+  const token = /^Bearer\s+\S/i.test(auth) ? cleanBearer(auth) || null : null;
   const json = bodyJson(body);
   const j = (json ?? {}) as { agent?: { agentId?: unknown; version?: unknown }; config?: { modelId?: unknown; temperature?: unknown; maxTokens?: unknown } };
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -120,6 +121,32 @@ export function parseCurl(command: string): ParsedCurl {
     temperature: num(j.config?.temperature),
     maxTokens: num(j.config?.maxTokens),
   };
+}
+
+/**
+ * The token as a person may paste it: bare, after "Bearer ", as a whole
+ * `Authorization: Bearer …` line, in quotes, or wrapped over several lines.
+ * A token is one word, so spaces and line breaks inside it are dropped.
+ */
+export function cleanBearer(raw: string): string {
+  const text = raw
+    .trim()
+    // `-H 'authorization: …` or `"Authorization: …`, as a cURL line or a copied header shows it.
+    .replace(/^(?:(?:-H|--header)\s+)?["'`]*\s*(?:authorization\s*:\s*)?/i, "")
+    .replace(/^Bearer\s+/i, "")
+    .replace(/^["'`]+/, "");
+  // A token is one word: spaces and line breaks of a wrapped paste, and a closing quote or line continuation, are not part of it.
+  return text.replace(/\s+/g, "").replace(/["'`\\^]+$/g, "");
+}
+
+/** The headers of a cURL that a server may check besides the token: Referer, User-Agent, Accept-Language. */
+export function browserHeaders(headers: Record<string, string>): Record<string, string> {
+  const kept: Record<string, string> = {};
+  for (const name of CHAT_HTTP_HEADER_NAMES) {
+    const value = headers[name]?.trim();
+    if (value) kept[name] = value;
+  }
+  return kept;
 }
 
 /**

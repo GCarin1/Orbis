@@ -1,7 +1,7 @@
 // Brain choices shared by the new-bot dialog, the bot settings and the settings
 // screen (specs/web-app, specs/agent-runtimes).
 import { useEffect, useState } from "react";
-import type { BrainKind, BrainTestResult, LocalModelServer } from "@orbis/shared";
+import { CLAUDE_AUTH_FAILURE, type BrainKind, type BrainTestResult, type LocalModelServer } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 
@@ -69,6 +69,10 @@ export function ModelField({
 
 export type TestState = { pending: true } | { pending: false; result: BrainTestResult };
 
+/** A Claude Code test that failed because its login is gone or expired. */
+export const claudeLoginExpired = (state: TestState | undefined) =>
+  state !== undefined && !state.pending && !state.result.ok && state.result.kind === "claude-code" && CLAUDE_AUTH_FAILURE.test(state.result.error ?? "");
+
 /** Pending, answered, echoed or failed: what a brain test said. */
 export function TestResultView({ state }: { state: TestState | undefined }) {
   const t = useT();
@@ -86,6 +90,12 @@ export function TestResultView({ state }: { state: TestState | undefined }) {
     return (
       <p className="brain-test failed" role="status">
         ✗ {t("brains.failed", { error: result.error ?? "?" })}
+        {claudeLoginExpired(state) && (
+          <>
+            <br />
+            {t("claude.signInAbove")}
+          </>
+        )}
       </p>
     );
   }

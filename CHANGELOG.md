@@ -9,6 +9,18 @@ change that delivered it.
 
 ### Fixed
 
+- Claude Code with an expired login (change 0033-claude-sign-in-and-chat-http-token-audit): the test showed
+  "OAuth session expired" and offered no way out. A failed run or test now says
+  how to sign in again, and the Claude Code card in ⚙ → Brains signs in from
+  Orbis (`claude auth login`, with the page and the code box).
+- `chat-http`, HTTP 403: the error now says what the server answered, what Orbis
+  sent and what the browser sends that Orbis did not; a pasted cURL also copies
+  `Referer`, `User-Agent` and `Accept-Language`, sent with every request.
+- `chat-http` token: a pasted `Authorization: Bearer …` line, quotes or a
+  wrapped paste are cleaned to the bare token; the bot's settings say whether a
+  token is saved and when it expires.
+- A bot's template export no longer carries a `chat-http` brain's `Origin` or
+  history address.
 - Review of the audits (change 0028-review-of-the-audits): on Windows,
   commands with quotes (`mkdir "Nova Pasta"`) work in `computer.shell` and the
   UTF-16 files PowerShell writes can be read; a resumed Claude Code / Codex

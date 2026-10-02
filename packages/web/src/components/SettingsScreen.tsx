@@ -6,7 +6,8 @@ import type { Bot, BrainTestResult, RuntimeHealth } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
-import { brainLabel, brainShort, TestResultView, useLocalServers, type TestState } from "./brains.js";
+import { brainLabel, brainShort, claudeLoginExpired, TestResultView, useLocalServers, type TestState } from "./brains.js";
+import { ClaudeSignIn } from "./ClaudeSignIn.js";
 import { ChatGptCard } from "./ChatGptCard.js";
 import { ComputersSettings } from "./ComputerModes.js";
 import { VoiceSettings } from "./VoiceSettings.js";
@@ -123,6 +124,9 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
               </p>
             ) : (
               <p className="muted small">{t(`brains.install.${h.kind}` as TextKey)}</p>
+            )}
+            {h.kind === "claude-code" && h.found && (
+              <ClaudeSignIn api={api} expired={claudeLoginExpired(tests[h.kind])} onSignedIn={() => setTests(({ [h.kind]: _old, ...rest }) => rest)} />
             )}
             <button className="btn" disabled={!h.found || busy(h.kind)} onClick={() => void runTest(h.kind, { brain: { kind: h.kind } })}>
               {t("brains.test")}

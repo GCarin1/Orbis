@@ -5,9 +5,11 @@ import {
   AVATAR_COLORS,
   AVATAR_SHAPES,
   CHAT_HTTP_TOKEN_SECRET,
+  tokenExpiry,
   type AvatarShape,
   type Bot,
   type BrainKind,
+  type ChatTokenStatus,
   type ComputerProviderKind,
   type PolicyDecision,
 } from "@orbis/shared";
@@ -65,8 +67,9 @@ export function BotSettings({
   const [baseUrl, setBaseUrl] = useState(bot.brain.baseUrl ?? "");
   const [apiKeySecret, setApiKeySecret] = useState(bot.brain.apiKeySecret ?? "");
   const [chat, setChat] = useState(() => chatHttpValue(bot.brain));
-  /** A chat-http token is already saved for this bot (its value never comes back). */
-  const [hasToken, setHasToken] = useState(false);
+  /** Whether a chat-http token is saved for this bot and until when (its value never comes back). */
+  const [tokenStatus, setTokenStatus] = useState<ChatTokenStatus | null>(null);
+  const hasToken = tokenStatus?.saved === true;
   const [rules, setRules] = useState<Rule[]>(bot.policy.rules.map((r) => ({ tool: r.tool, decision: r.decision, locked: r.locked ?? false })));
   const [grants, setGrants] = useState<string[]>(bot.policy.grants);
   const [computerOn, setComputerOn] = useState(bot.computer.enabled);
@@ -92,8 +95,8 @@ export function BotSettings({
     if (!api || kind !== "chat-http") return;
     let live = true;
     api
-      .get<Array<{ name: string }>>(`/api/v1/bots/${bot.id}/secrets`)
-      .then((list) => live && setHasToken(list.some((s) => s.name === (bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET))))
+      .get<ChatTokenStatus>(`/api/v1/bots/${bot.id}/chat-token`)
+      .then((status) => live && setTokenStatus(status))
       .catch(() => undefined);
     return () => {
       live = false;
@@ -120,8 +123,11 @@ export function BotSettings({
         // The chat-http token goes to the bot's secrets (encrypted), before the brain that uses it.
         if (kind === "chat-http" && chat.token.trim()) {
           if (!api) throw new Error("no connection to the hub");
-          await api.put(`/api/v1/bots/${bot.id}/secrets/${CHAT_HTTP_TOKEN_SECRET}`, { value: cleanToken(chat.token) });
-          setHasToken(true);
+          const token = cleanToken(chat.token);
+          await api.put(`/api/v1/bots/${bot.id}/secrets/${CHAT_HTTP_TOKEN_SECRET}`, { value: token });
+          // The hub says what it now holds (the same token, read back as saved, with its expiry).
+          const expires = tokenExpiry(token);
+          setTokenStatus({ saved: true, expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now() });
           setChat((c) => ({ ...c, token: "" }));
         }
         // Settings the form does not show (time limit, step limit) are kept.
@@ -244,7 +250,7 @@ export function BotSettings({
               <input value={command} onChange={(e) => setCommand(e.target.value)} name="settings-command" />
             </label>
           )}
-          {kind === "chat-http" && <ChatHttpFields value={chat} onChange={setChat} hasToken={hasToken} name="settings-chat" />}
+          {kind === "chat-http" && <ChatHttpFields value={chat} onChange={setChat} hasToken={hasToken} tokenStatus={tokenStatus} name="settings-chat" />}
           {takesBaseUrl(kind) && (
             <>
               <label>

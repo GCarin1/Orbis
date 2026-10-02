@@ -44,6 +44,7 @@ import { codexBrain } from "./brains/codex.js";
 import { geminiBrain } from "./brains/gemini.js";
 import { registerRuntimeRoutes } from "./api/runtimes-routes.js";
 import { cursorBrain } from "./brains/cursor.js";
+import { ClaudeAccount } from "./brains/claude-account.js";
 import { CodexAccount } from "./brains/codex-account.js";
 import { registerOpenAiCompat } from "./api/openai-compat.js";
 import { registerGroupRoutes } from "./api/groups-routes.js";
@@ -355,7 +356,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await usage.routes(app);
   await templates.routes(app);
   const codexAccount = new CodexAccount();
-  await registerRuntimeRoutes(app, ctx, codexAccount);
+  const claudeAccount = new ClaudeAccount();
+  await registerRuntimeRoutes(app, ctx, codexAccount, claudeAccount);
   await voice.routes(app);
   await registerMcpRoutes(app, mcp);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
@@ -394,6 +396,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       await engine.shutdown();
       await mcp.shutdown();
       codexAccount.shutdown();
+      claudeAccount.shutdown();
       await browser.shutdown();
       await computer.shutdown();
       await app.close();

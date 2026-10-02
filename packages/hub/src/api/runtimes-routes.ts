@@ -2,13 +2,14 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
-import type { Bot, BrainTestResult } from "@orbis/shared";
+import { CHAT_HTTP_TOKEN_SECRET, cleanBearer, tokenExpiry, type Bot, type BrainTestResult, type ChatTokenStatus } from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { badRequest, conflict } from "../errors.js";
 import { localModelServers, runtimeHealth } from "../brains/health.js";
 import { brainTestBot, testBrain } from "../brains/probe.js";
+import type { ClaudeAccount } from "../brains/claude-account.js";
 import type { CodexAccount } from "../brains/codex-account.js";
-import { BrainSchema } from "./schemas.js";
+import { BrainSchema, IdParams } from "./schemas.js";
 
 const TestBody = Type.Object(
   {
@@ -20,7 +21,7 @@ const TestBody = Type.Object(
   { additionalProperties: false },
 );
 
-export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubContext, codex: CodexAccount): Promise<void> {
+export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubContext, codex: CodexAccount, claude: ClaudeAccount): Promise<void> {
   const app = root.withTypeProvider<TypeBoxTypeProvider>();
 
   // ChatGPT through the Codex CLI: install it, sign in with the ChatGPT account, sign out.
@@ -36,9 +37,30 @@ export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubConte
   });
   app.post("/api/v1/runtimes/codex/cancel", { schema: { tags: ["runtimes"] } }, async () => codex.cancel());
   app.post("/api/v1/runtimes/codex/logout", { schema: { tags: ["runtimes"] } }, async () => codex.logout());
+
+  // Claude Code: its account and the sign-in (the browser on this machine, or a page and the code it shows).
+  const CodeBody = Type.Object({ code: Type.String({ minLength: 1, maxLength: 2_000 }) }, { additionalProperties: false });
+  app.get("/api/v1/runtimes/claude/account", { schema: { tags: ["runtimes"] } }, async () => claude.status());
+  app.post("/api/v1/runtimes/claude/login", { schema: { tags: ["runtimes"] } }, async (_req, reply) => {
+    reply.code(202);
+    return claude.login();
+  });
+  app.post("/api/v1/runtimes/claude/code", { schema: { tags: ["runtimes"], body: CodeBody } }, async (req) => {
+    if (!claude.submitCode(req.body.code)) throw conflict("no_sign_in", "no sign-in is waiting for a code: press Sign in first");
+    return { sent: true };
+  });
+  app.post("/api/v1/runtimes/claude/cancel", { schema: { tags: ["runtimes"] } }, async () => claude.cancel());
   const { config, brains, botService, secretResolvers } = ctx;
   // One test at a time per bot or brain kind: each one may start a CLI process.
   const running = new Set<string>();
+
+  // Whether a chat-http bot's token is saved and when it expires: the vault never returns the token itself.
+  app.get("/api/v1/bots/:id/chat-token", { schema: { tags: ["runtimes"], params: IdParams } }, async (req): Promise<ChatTokenStatus> => {
+    const bot = botService.get(req.params.id);
+    const token = cleanBearer(secretResolvers.resolve(bot.id, bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET) ?? "");
+    const expires = token ? tokenExpiry(token) : null;
+    return { saved: token !== "", expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now() };
+  });
 
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());
 

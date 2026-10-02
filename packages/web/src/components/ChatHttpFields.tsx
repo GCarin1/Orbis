@@ -3,7 +3,16 @@
 // request's settings. The token never goes into the bot itself: it is saved as
 // the bot's secret, encrypted in the hub's vault.
 import { useState } from "react";
-import { CHAT_HTTP_DEFAULT_MODEL, CHAT_HTTP_TOKEN_SECRET, parseCurl, tokenExpiry, type Brain } from "@orbis/shared";
+import {
+  browserHeaders,
+  CHAT_HTTP_DEFAULT_MODEL,
+  CHAT_HTTP_TOKEN_SECRET,
+  cleanBearer,
+  parseCurl,
+  tokenExpiry,
+  type Brain,
+  type ChatTokenStatus,
+} from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 
 export interface ChatHttpValue {
@@ -18,6 +27,8 @@ export interface ChatHttpValue {
   historyUrl: string;
   /** Give each new chat a title (one model call more per chat). */
   titles: boolean;
+  /** What the browser sent besides the token (Referer, User-Agent…), copied from a pasted cURL. */
+  headers: Record<string, string>;
 }
 
 export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
@@ -30,10 +41,11 @@ export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
   origin: brain?.chat?.origin ?? "",
   historyUrl: brain?.chat?.historyUrl ?? "",
   titles: brain?.chat?.titles !== false,
+  headers: { ...(brain?.chat?.headers ?? {}) },
 });
 
-/** The token as the user may paste it: with or without "Bearer ". */
-export const cleanToken = (token: string) => token.trim().replace(/^Bearer\s+/i, "");
+/** The token as the user may paste it: bare, with "Bearer ", a whole Authorization line, quoted or wrapped. */
+export const cleanToken = cleanBearer;
 
 /** The brain fields to save (the token goes to the bot's secrets, not here). */
 export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
@@ -45,6 +57,7 @@ export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
     ...(v.origin.trim() ? { origin: v.origin.trim() } : {}),
     ...(v.historyUrl.trim() ? { historyUrl: v.historyUrl.trim() } : {}),
     ...(v.titles ? {} : { titles: false }),
+    ...(Object.keys(v.headers).length ? { headers: v.headers } : {}),
   };
   return {
     ...(v.url.trim() ? { baseUrl: v.url.trim() } : {}),
@@ -58,12 +71,15 @@ export function ChatHttpFields({
   value,
   onChange,
   hasToken = false,
+  tokenStatus = null,
   name = "chat",
 }: {
   value: ChatHttpValue;
   onChange(value: ChatHttpValue): void;
   /** A token is already saved for this bot. */
   hasToken?: boolean;
+  /** What the hub says of the saved token: whether it is there and when it expires (never its value). */
+  tokenStatus?: ChatTokenStatus | null;
   name?: string;
 }) {
   const t = useT();
@@ -92,6 +108,8 @@ export function ChatHttpFields({
       temperature: parsed.temperature === null ? value.temperature : String(parsed.temperature),
       origin: parsed.headers.origin ?? value.origin,
       historyUrl: parsed.historyUrl ?? value.historyUrl,
+      // What the browser sent besides the token: a server may refuse (HTTP 403) a request without it.
+      headers: { ...value.headers, ...browserHeaders(parsed.headers) },
     });
     // The command holds the token: it does not stay on screen.
     setCurl("");
@@ -145,6 +163,7 @@ export function ChatHttpFields({
             {expires.getTime() <= Date.now() ? t("chat.tokenExpired", { when: when(expires) }) : t("chat.tokenExpires", { when: when(expires) })}
           </small>
         )}
+        {!expires && tokenStatus && <SavedToken status={tokenStatus} when={when} />}
       </label>
       <label>
         {t("newbot.model")}
@@ -172,6 +191,14 @@ export function ChatHttpFields({
           {t("chat.historyUrl")}
           <input value={value.historyUrl} onChange={set("historyUrl")} placeholder={t("chat.historyUrlHint")} name={`${name}-history`} />
         </label>
+        <p className="muted small" data-testid="chat-http-headers">
+          {Object.keys(value.headers).length ? t("chat.headersKept", { names: Object.keys(value.headers).join(", ") }) : t("chat.headersNone")}{" "}
+          {Object.keys(value.headers).length > 0 && (
+            <button type="button" className="link" onClick={() => onChange({ ...value, headers: {} })}>
+              {t("chat.headersClear")}
+            </button>
+          )}
+        </p>
         <label className="checkbox">
           <input type="checkbox" checked={value.titles} onChange={(e) => onChange({ ...value, titles: e.target.checked })} name={`${name}-titles`} />
           {t("chat.titles")}
@@ -179,4 +206,13 @@ export function ChatHttpFields({
       </details>
     </div>
   );
+}
+
+/** What the vault says of the saved token: there, and until when (a token typed in the field above shows its own expiry instead). */
+function SavedToken({ status, when }: { status: ChatTokenStatus; when(d: Date): string }) {
+  const t = useT();
+  if (!status.saved) return <small className="muted">{t("chat.tokenStatusNone")}</small>;
+  const expires = status.expiresAt ? new Date(status.expiresAt) : null;
+  if (status.expired && expires) return <small className="error">{t("chat.tokenStatusExpired", { when: when(expires) })}</small>;
+  return <small className="muted">{expires ? t("chat.tokenStatusOk", { when: when(expires) }) : t("chat.tokenStatusNoExp")}</small>;
 }

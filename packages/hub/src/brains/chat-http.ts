@@ -7,7 +7,7 @@
 // The orchestrator calls no tools of its own, so Orbis's tools travel as text:
 // the bot is told how to ask for one in a ```tool block, Orbis runs it through
 // the gateway and sends the result back as the next message.
-import { CHAT_HTTP_DEFAULT_MODEL, CHAT_HTTP_TOKEN_SECRET, tokenExpiry, type Bot, type ChatHttpOptions } from "@orbis/shared";
+import { CHAT_HTTP_DEFAULT_MODEL, CHAT_HTTP_TOKEN_SECRET, cleanBearer, tokenExpiry, type Bot, type ChatHttpOptions } from "@orbis/shared";
 import { renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, ToolDescriptor } from "./types.js";
 
@@ -30,8 +30,70 @@ export function chatPayload(o: { content: string; chatId: string | null; model: 
   };
 }
 
-/** The token as stored, without a "Bearer " the user may have pasted with it. */
-export const bareToken = (token: string) => token.trim().replace(/^Bearer\s+/i, "");
+/** The token as stored, without the "Bearer " (or a whole `Authorization:` line, quotes, line breaks) the user may have pasted with it. */
+export const bareToken = cleanBearer;
+
+/** What every request to the chat API carries: the token, and what the browser sent besides it. */
+export interface Connection {
+  token: string;
+  origin?: string;
+  headers?: Record<string, string>;
+}
+
+const connectionOf = (token: string, options: ChatHttpOptions): Connection => ({
+  token,
+  ...(options.origin ? { origin: options.origin } : {}),
+  ...(options.headers ? { headers: options.headers } : {}),
+});
+
+/** The request headers: what the user's browser sent besides the token, then the token (which is never overridden). */
+export function requestHeaders(conn: Connection, accept: string, extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    accept,
+    ...(conn.headers ?? {}),
+    ...(conn.origin ? { origin: conn.origin } : {}),
+    ...extra,
+    authorization: `Bearer ${conn.token}`,
+  };
+}
+
+/** The first words of an error page, without its markup or the token. */
+function bodyHint(body: string, token: string): string {
+  const text = body
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (token ? text.split(token).join("[token]") : text).slice(0, 300);
+}
+
+/**
+ * Why a server answered 401 or 403. A 401 is the token. A 403 with a token that
+ * has not expired is the server refusing something else — usually what the
+ * browser sends besides the token — so the message says what Orbis sent and
+ * what is left to try.
+ */
+export function refusal(status: number, body: string, conn: Connection): string {
+  const hint = bodyHint(body, conn.token);
+  const said = hint ? ` The server said: ${hint}` : "";
+  const expires = tokenExpiry(conn.token);
+  if (status === 401) {
+    return `the server refused the Bearer token (HTTP 401): it expired or is wrong — paste a new token (or the request's cURL) in the bot's settings.${said}`;
+  }
+  if (expires && expires.getTime() <= Date.now()) {
+    return `the server refused the request (HTTP ${status}) and the Bearer token expired at ${expires.toLocaleString()}: paste a new token (or the request's cURL) in the bot's settings.${said}`;
+  }
+  const sent = ["the token", ...(conn.origin ? ["Origin"] : []), ...Object.keys(conn.headers ?? {})].join(", ");
+  const missing = [...(conn.origin ? [] : ["Origin"]), ...(conn.headers?.referer ? [] : ["Referer"]), ...(conn.headers?.["user-agent"] ? [] : ["User-Agent"])];
+  const when = expires ? `the token is valid until ${expires.toLocaleString()}` : "the token's expiry is unknown";
+  return (
+    `the server refused the request (HTTP ${status}); ${when}, so it is refusing something else. Orbis sent ${sent}` +
+    (missing.length
+      ? `, not ${missing.join(", ")}: the browser sends them — paste the request's cURL in the bot's settings (Chat API over cURL) so Orbis copies them`
+      : "") +
+    `. If it still fails, the account may lack access to this agent, or the address is not the one the chat posts to.${said}`
+  );
+}
 
 const secretName = (bot: Bot) => bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET;
 
@@ -198,12 +260,12 @@ class HttpFailure extends Error {
   }
 }
 
-async function ask(url: string, token: string, payload: Record<string, unknown>, origin: string | undefined, signal: AbortSignal): Promise<AnswerReader> {
+async function ask(url: string, conn: Connection, payload: Record<string, unknown>, signal: AbortSignal): Promise<AnswerReader> {
   const form = new FormData();
   form.append("data", JSON.stringify(payload));
   let res: Response;
   try {
-    res = await fetch(url, { method: "POST", headers: { accept: "*/*", authorization: `Bearer ${token}`, ...(origin ? { origin } : {}) }, body: form, signal });
+    res = await fetch(url, { method: "POST", headers: requestHeaders(conn, "*/*"), body: form, signal });
   } catch (err) {
     if (signal.aborted) throw err;
     const cause = (err as { cause?: { code?: string; message?: string } }).cause;
@@ -219,10 +281,7 @@ async function ask(url: string, token: string, payload: Record<string, unknown>,
     );
   }
   if (res.status === 401 || res.status === 403) {
-    throw new HttpFailure(
-      `the server refused the Bearer token (HTTP ${res.status}): it expired or is wrong — paste a new token (or the request's cURL) in the bot's settings`,
-      res.status,
-    );
+    throw new HttpFailure(refusal(res.status, await res.text().catch(() => ""), conn), res.status);
   }
   if (!res.ok || !res.body) {
     const text = (await res.text().catch(() => "")).slice(0, 400);
@@ -379,16 +438,11 @@ export function titleMessage(botName: string, task: string): string {
  * Ask the server to title a new chat, as the browser does after the first
  * message. Best effort: it never holds up nor fails the run.
  */
-export async function generateTitle(base: string, chatId: string, token: string, origin: string | undefined, userMessage: string): Promise<boolean> {
+export async function generateTitle(base: string, chatId: string, conn: Connection, userMessage: string): Promise<boolean> {
   try {
     const res = await fetch(`${base}/${encodeURIComponent(chatId)}/generate-title`, {
       method: "POST",
-      headers: {
-        accept: "application/json, text/plain, */*",
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-        ...(origin ? { origin } : {}),
-      },
+      headers: requestHeaders(conn, "application/json, text/plain, */*", { "content-type": "application/json" }),
       body: JSON.stringify({ data: { userMessage } }),
       signal: AbortSignal.timeout(60_000),
     });
@@ -399,11 +453,8 @@ export async function generateTitle(base: string, chatId: string, token: string,
   }
 }
 
-async function getJson(url: string, token: string, origin: string | undefined, signal: AbortSignal): Promise<unknown> {
-  const res = await fetch(url, {
-    headers: { accept: "application/json, text/plain, */*", authorization: `Bearer ${token}`, ...(origin ? { origin } : {}) },
-    signal,
-  });
+async function getJson(url: string, conn: Connection, signal: AbortSignal): Promise<unknown> {
+  const res = await fetch(url, { headers: requestHeaders(conn, "application/json, text/plain, */*"), signal });
   if (!res.ok) throw new HttpFailure(`the history answered HTTP ${res.status}`, res.status);
   return res.json();
 }
@@ -415,20 +466,19 @@ async function getJson(url: string, token: string, origin: string | undefined, s
  */
 export async function fromHistory(
   base: string,
-  token: string,
-  origin: string | undefined,
+  conn: Connection,
   sent: string,
   chatId: string | null,
   signal: AbortSignal,
 ): Promise<{ chatId: string; reply: string | null; usage: { input: number; output: number } | null } | null> {
   const read = async (id: string) => {
-    const messages = historyMessages(await getJson(`${base}/${encodeURIComponent(id)}`, token, origin, signal));
+    const messages = historyMessages(await getJson(`${base}/${encodeURIComponent(id)}`, conn, signal));
     if (!messages.some((m) => m.role === "user" && m.text.includes(sentMark(sent)))) return null;
     const reply = replyAfter(messages, sent);
     return { chatId: id, reply: reply?.text ?? null, usage: reply?.usage ?? null };
   };
   if (chatId) return read(chatId);
-  const list = await getJson(`${base}?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`, token, origin, signal);
+  const list = await getJson(`${base}?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`, conn, signal);
   for (const id of chatIds(list).slice(0, 3)) {
     const found = await read(id).catch(() => null);
     if (found) return found;
@@ -456,9 +506,9 @@ export const chatHttpBrain: BrainAdapter = {
     } catch {
       return "chat-http brain: the address is not an http(s) URL";
     }
-    const token = secret(secretName(bot));
-    if (!token?.trim()) return "chat-http brain: no Bearer token — paste it (or the request's cURL) in the bot's settings";
-    const expires = tokenExpiry(bareToken(token));
+    const token = bareToken(secret(secretName(bot)) ?? "");
+    if (!token) return "chat-http brain: no Bearer token — paste it (or the request's cURL) in the bot's settings";
+    const expires = tokenExpiry(token);
     if (expires && expires.getTime() <= Date.now()) {
       return `chat-http brain: the Bearer token expired at ${expires.toLocaleString()} — paste a new one (or the request's cURL)`;
     }
@@ -468,8 +518,8 @@ export const chatHttpBrain: BrainAdapter = {
   async *run(input: BrainInput, ctx: BrainContext): AsyncGenerator<BrainEvent> {
     const bot = input.bot;
     const url = bot.brain.baseUrl!.trim();
-    const token = bareToken(ctx.secret(secretName(bot)) ?? "");
     const options = bot.brain.chat ?? {};
+    const conn = connectionOf(bareToken(ctx.secret(secretName(bot)) ?? ""), options);
     const model = bot.brain.model?.trim() || CHAT_HTTP_DEFAULT_MODEL;
     const tools = ctx.tools.list();
     const system = [renderSystem(input), tools.length ? toolProtocol(tools) : ""].filter(Boolean).join("\n\n");
@@ -500,7 +550,7 @@ export const chatHttpBrain: BrainAdapter = {
       const content = chatId !== null && step > 0 ? turns.at(-1)!.text : chatId !== null ? turns[0]!.text : transcript();
       let answer: AnswerReader;
       try {
-        answer = await ask(url, token, chatPayload({ content, chatId, model, options }), options.origin, ctx.signal);
+        answer = await ask(url, conn, chatPayload({ content, chatId, model, options }), ctx.signal);
       } catch (err) {
         if (ctx.signal.aborted) throw err;
         // A stored chat the server no longer has: start a new one, with the whole conversation.
@@ -533,7 +583,7 @@ export const chatHttpBrain: BrainAdapter = {
       const history = historyBase(url, options.historyUrl);
       let found: Awaited<ReturnType<typeof fromHistory>> = null;
       if (history && !historyFailed) {
-        const look = () => fromHistory(history, token, options.origin, content, answer.chatId ?? chatId, ctx.signal);
+        const look = () => fromHistory(history, conn, content, answer.chatId ?? chatId, ctx.signal);
         try {
           found = await look();
           // The answer may be saved a moment after the stream ends: look once more.
@@ -556,7 +606,7 @@ export const chatHttpBrain: BrainAdapter = {
         chatId = answer.chatId;
         ctx.sessions.set(chatId);
         // A chat this run opened gets a title, as the browser gives one (in the background).
-        if (opened && history && options.titles !== false) void generateTitle(history, chatId, token, options.origin, titleMessage(bot.name, input.task));
+        if (opened && history && options.titles !== false) void generateTitle(history, chatId, conn, titleMessage(bot.name, input.task));
       }
       if (!reply) {
         const start = answer.raw.trim().slice(0, 300);
