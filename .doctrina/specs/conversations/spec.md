@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.8.0
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -29,6 +29,7 @@ timeline changes.
 - The system shall give every run a chain id: a user message starts one chain that every bot it runs shares, and the handoffs, reports back and mentions that follow from them carry it on.
 - The system shall tell each run where it takes place: the bot's own conversation, a colleague's conversation it was brought into, or a group with its title, its other members and whether the bot leads it.
 - The system shall write a run's steps to the database at most every 250 ms while it runs and once when it ends, and index the lookups every run makes (items, approvals and routine records by run; runs by conversation and by status).
+- The system shall keep for each group a description, a photo (a small `data:` image URL, or none) and a mute switch, changed with its name and lead through the group's update, and shall give the group's bots its description in their context there.
 
 ### Event-driven
 
@@ -45,6 +46,8 @@ timeline changes.
 - When a bot leaves a group (removed, or deleted), the system shall post a `member.left` event naming it, with what shows its face and the reason.
 - When a bot is deleted, the system shall take it out of every group it is in, pass on the lead, publish each changed group, and delete a group left with no bot.
 - When the user clears a conversation, the system shall delete its items, forget its bots' brain sessions of it and the run summaries its runs left, keep the memories a bot saved on purpose, and publish `conversation.cleared`.
+- When a group's name, description, photo or lead changes, the system shall post an event saying so (`group.renamed`, `group.described`, `group.photo`, `group.lead`), which the bots' history leaves out.
+- When the user searches a conversation, the system shall return its messages that hold the words ignoring case and accents, newest first, and when the user asks for its links, each http(s) address written in its messages once, newest first, with who wrote it.
 
 ### State-driven
 
@@ -60,6 +63,7 @@ timeline changes.
 - The system shall not try again a run that is queued, running, waiting or done; it shall answer 409.
 - The system shall not try again a routine's or a webhook's run outside its routine, which keeps the routine's rules (a test run is draft-only); it shall answer 409 `routine_run`.
 - The system shall not run a bot that left a group and was not added back when a message there mentions it; it shall post a `member.absent` event instead, and shall not clear a conversation while one of its runs is not over.
+- The system shall not accept as a group's photo anything but a PNG, JPEG, WebP or GIF image as a `data:` URL, nor change a direct conversation's group info.
 
 ## Acceptance criteria
 
@@ -75,6 +79,7 @@ timeline changes.
 10. [verified] A run of 40 tool calls stores all its steps with fewer writes than a quarter of them; the database holds the run, conversation and status indexes; a retried run keeps its chain and its reply does not wake again a bot that already answered — verified by `packages/hub/test/audit-cycle5.test.ts`.
 11. [verified] Trying again a failed routine test run answers 409 `routine_run` — verified by `packages/hub/test/review.test.ts`.
 12. [verified] Creating a group and adding a bot post joined events with the bot's face; a bot added later reads the earlier messages; a removed bot is said to have left and a mention of it does not run it but says so, until it is added back; a group shrinks to one bot and not to none; a deleted bot leaves its groups, said in each, the change is published and a group left with no bot is deleted; clearing deletes the items, the sessions and the run summaries, keeps a saved preference, and is refused while a run works — verified by `packages/hub/test/group-membership.test.ts`.
+13. [verified] A group's name, description, photo, lead and mute change and each visible change is said in the group; the same values again and the mute say nothing; a non-image photo and a direct conversation are refused; the description reaches the bots' context and the info events stay out of their history; search ignores case and accents, newest first; links come once each, newest first — verified by `packages/hub/test/group-info.test.ts`.
 
 ## Maturity
 

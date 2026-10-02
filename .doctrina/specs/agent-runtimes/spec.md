@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.18.0
+**Version:** 0.18.1
 
 ## Purpose
 
@@ -109,7 +109,7 @@ brain are owned by `contracts/cli-harnesses`.
 - Where a bot selects the `openai` brain with a base URL on localhost (Ollama, LM Studio, vLLM), the system may run it with no API key.
 - Where the hub configuration declares an `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable, the system may use it for bots that name no key secret of their own.
 - Where a `chat-http` bot has plain chat on, the system may send only the conversation — the bot's name, role and description, its memories and the messages — without Orbis's instructions and tool list, and give that bot no tools.
-- Where an OpenAI-compatible bot's base address contains `{model}`, the system shall put the bot's model there and call that address followed by `/chat/completions`, and where the bot's `apiKeyHeader` is `api-key` the system shall send its key in an `api-key` header instead of `Authorization: Bearer`.
+- Where an OpenAI-compatible bot's base address contains `{model}`, the system may put the bot's model there and call that address followed by `/chat/completions`, and where the bot's `apiKeyHeader` is `api-key` the system may send its key in an `api-key` header instead of `Authorization: Bearer`.
 
 ## Acceptance criteria
 

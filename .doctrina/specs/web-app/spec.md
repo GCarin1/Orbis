@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.24.0
+**Version:** 0.25.0
 
 ## Purpose
 
@@ -27,7 +27,7 @@ run's steps.
 - The web app shall show every text in pt-BR or English, following the browser language, with a manual switch that is remembered.
 - The web app shall ship a web app manifest and a service worker so it can be installed on desktop and mobile browsers.
 - The web app shall state each bot's state in words: in its face's accessible name, and as a visible label while the bot is not idle.
-- The web app shall list group conversations in the same list as the bots, provide a dialog that creates a group of 2 to 6 bots with a lead, and show a group's members, lead and their states above its timeline.
+- The web app shall list group conversations in the same list as the bots, provide a dialog that creates a group of 2 bots up to the hub's group limit with a lead, and show in a group's header its photo (or its members' faces), its name and its members, or who among them is working.
 - The web app shall show the brain and model of the open bot next to its name.
 - The web app shall draw each bot as a face: one of eight shapes (orb, blob, square, pill, triangle, hexagon, cloud, drop) in the bot's color with two eyes, the orb with the Orbis orbit ring, moving with the bot's state unless the user asks for reduced motion.
 - The web app shall provide a new-bot screen with a live preview of the face, ten colors and the eight shapes to choose from, name, role, manager and brain fields, suggestions that fill them in, and template import.
@@ -51,7 +51,7 @@ run's steps.
 - The web app shall offer plain chat in a `chat-http` bot's settings, off by default and explained, and shall name the fields a refused save got wrong.
 - The web app shall show in Settings → Brains, for each chat API that `chat-http` bots use, its token's status and its bots, and take a new token or cURL that applies to all of them; a bot's settings and the new-bot screen shall save the token as its API's.
 - The web app shall let the user change the side panel's width by dragging its left edge or with the arrow keys, keep it within the window, remember it in the browser, and show a wide bot settings panel in two columns.
-- The web app shall show a group's joins and leaves with the bot's face, let the user add a bot from the group's header, remove a member from its chip, clear a group or a direct conversation and delete a group, each after a confirmation, and follow a deleted bot out of its groups.
+- The web app shall show a group's joins, leaves and info changes in its timeline (joins, leaves and a new lead with the bot's face), and offer in the group's ⋮ menu adding members, its info, its links, search, muting, and under More exporting the conversation as text, clearing it and deleting the group, each destructive one after a confirmation, and follow a deleted bot out of its groups.
 
 ### Event-driven
 
@@ -73,6 +73,13 @@ run's steps.
 - When a pasted cURL only reads (no body), the web app shall keep the request address, take its token and, for a history request, the history's address, and say so.
 - When a connection test of a `chat-http` bot finds a way through, the web app shall say that the test sends no message, and that messages still blocked mean the firewall reads them.
 - When the user types an API key for an API brain in a bot's settings or on the new-bot screen and saves, the web app shall send it to the bot's vault, set the bot's `apiKeySecret` to that secret's name, empty the field and show that a key is saved, without the key being part of the bot.
+- When the user clicks a group's photo or name, the web app shall open the group's info beside the conversation (full screen on a phone) with its photo, name and description to change, buttons to add, search, mute and export, its links, its members with their role, state and lead badge (each offering a direct conversation, making it lead and removing it), its notifications, and clearing and deleting it.
+- When the user opens Add members, the web app shall list the visible bots outside the group with a search field, allow picking as many as the group's limit leaves room for, and say when every bot is already in the group (offering a new bot) or the group holds its limit (naming ORBIS_MAX_GROUP_SIZE).
+- When the user picks a search result or a link's line in the group's info, the web app shall load the conversation back to that message, scroll to it and mark it for a moment.
+
+### State-driven
+
+- While a group is muted, the web app shall show a muted mark beside its name in the header and the list, and a gray unread dot.
 
 ### Unwanted-behavior (must-not)
 
@@ -85,7 +92,7 @@ run's steps.
 
 ### Optional
 
-- Where the brain is OpenAI-compatible, the web app shall offer how to send the key (Authorization Bearer or an `api-key` header) and say that `{model}` in the address is replaced by the model.
+- Where the brain is OpenAI-compatible, the web app may offer how to send the key (Authorization Bearer or an `api-key` header) and say that `{model}` in the address is replaced by the model.
 
 ## Acceptance criteria
 
@@ -132,6 +139,8 @@ run's steps.
 41. [verified] The tokens card changes the token of an API's two bots from a pasted cURL, refuses a cURL of another API and text with no token, and hides with no chat API; a new bot of an API with a token needs none typed; a bot's settings ask for the address first and say when a bot uses its own token from before; the panel's width follows the keys and a drag within its limits, is remembered and is reset by a double-click — verified by `packages/web/test/chat-http.test.tsx`.
 42. [verified] In a browser, a group shows its two joins with faces; a bot added from the header and one removed from its chip are said to join and leave and the member count follows; a deleted bot is said to leave and the last bot cannot be removed; clearing empties the conversation and deleting the group closes it — verified by `tests/e2e/groups.test.ts`.
 43. [verified] A typed key goes to `PUT /bots/:id/secrets/API_KEY` and the saved brain holds only the name and the `api-key` choice; a saved key is kept when the field is left empty; a new bot hands its key apart from the bot — verified by `packages/web/test/api-key.test.tsx`.
+44. [verified] The header shows the photo, the members or who works and opens the info; the ⋮ menu lists every option with the rarer ones under More; Add members picks outsiders up to the limit and says when all are in or the group is full; the info changes the photo, description and name, makes a member lead, removes it, opens its conversation, mutes and deletes; search marks the words and shows the message; links show who wrote them; the timeline says the info changes in pt-BR; the export writes one line per message — verified by `packages/web/test/group-info.test.tsx`.
+45. [verified] In a real browser, a user adds a member from the ⋮ menu, opens the group's info on the right edge from its name, sets a description and a photo (shrunk to a JPEG and shown in the header and the list), mutes the group, removes a member from its row, finds a message by searching without accents and sees it marked, then clears and deletes the group from ⋮ → More — verified by `tests/e2e/groups.test.ts`.
 
 ## Maturity
 

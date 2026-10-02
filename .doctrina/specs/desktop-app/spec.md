@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -34,6 +34,7 @@ when a bot needs the user, and stays in the tray while bots keep working.
 ### Unwanted-behavior (must-not)
 
 - The desktop app shall not load remote content other than the configured hub URL in its window.
+- The desktop app shall not raise a notification for a manager's report in a conversation the user muted; approval and secret requests there still notify.
 
 ## Acceptance criteria
 
@@ -42,6 +43,7 @@ when a bot needs the user, and stays in the tray while bots keep working.
 3. [verified] The window options set context isolation on, Node integration off and the sandbox on, and block navigation to other origins — verified by `packages/desktop/test/window.test.ts`.
 4. [verified] A `bot.report` event maps to one notification titled "<bot> reported back" with the report text and its conversation, once — verified by `packages/desktop/test/notifications.test.ts`.
 5. [verified] The hub's page gets notifications and an audio-only microphone request, while a request with video, the screen, or from another origin is refused — verified by `packages/desktop/test/window.test.ts`.
+6. [verified] A report in a muted group raises no notification, an approval there still does, and the mute follows the stream's conversation updates and deletions — verified by `packages/desktop/test/notifications.test.ts`.
 
 ## Maturity
 

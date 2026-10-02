@@ -1,6 +1,7 @@
 # Change 0042-group-info-like-a-chat-app — group info like a chat app
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: feature)
