@@ -9,6 +9,9 @@ change that delivered it.
 
 ### Fixed
 
+- The Windows launcher's icon (change 0036-launcher-creates-its-shortcuts): a `.bat`
+  cannot carry an icon, so `Orbis.bat` now makes the Orbis shortcut (with the Orbis
+  icon) on the Desktop and in the Start menu the first time it runs.
 - `chat-http` behind Cloudflare (change 0035-chat-http-curl-transport): the chat
   answered the browser and `curl` but refused Node's own HTTP client with "Sorry,
   you have been blocked" (HTTP 403). Orbis now makes its requests with the system's

@@ -75,14 +75,60 @@ describe("a restart seen from the old window", () => {
 
 describe("the launcher's options", () => {
   it("takes the options in Portuguese or English, the port from ORBIS_PORT, and refuses what it does not know", () => {
-    expect(launcher.parseArgs([])).toEqual({ build: true, install: false, open: true, help: false });
-    expect(launcher.parseArgs(["--rapido", "--instalar", "--sem-navegador"])).toEqual({ build: false, install: true, open: false, help: false });
-    expect(launcher.parseArgs(["--no-build", "--install", "--no-open"])).toEqual({ build: false, install: true, open: false, help: false });
+    expect(launcher.parseArgs([])).toEqual({ build: true, install: false, open: true, help: false, shortcuts: "once" });
+    expect(launcher.parseArgs(["--rapido", "--instalar", "--sem-navegador"])).toEqual({
+      build: false,
+      install: true,
+      open: false,
+      help: false,
+      shortcuts: "once",
+    });
+    expect(launcher.parseArgs(["--no-build", "--install", "--no-open"])).toEqual({ build: false, install: true, open: false, help: false, shortcuts: "once" });
+    expect(launcher.parseArgs(["--atalhos"]).shortcuts).toBe("now");
+    expect(launcher.parseArgs(["--sem-atalhos"]).shortcuts).toBe("never");
     expect(() => launcher.parseArgs(["--zzz"])).toThrow(/opcao desconhecida/);
     expect(launcher.portOf({})).toBe(7420);
     expect(launcher.portOf({ ORBIS_PORT: "8123" })).toBe(8123);
     expect(launcher.portOf({ ORBIS_PORT: "lixo" })).toBe(7420);
     expect(launcher.DEFAULT_PORT).toBe(DEFAULT_PORT);
+  });
+});
+
+describe("the shortcuts with the Orbis icon", () => {
+  let dir: string;
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  const env = () => ({ ORBIS_DATA_DIR: (dir = mkdtempSync(path.join(os.tmpdir(), "orbis-shortcuts-"))) });
+  const made = "Created C:\\Users\\x\\Desktop\\Orbis.lnk\r\nCreated C:\\Users\\x\\Desktop\\Orbis Token.lnk\r\n";
+
+  it("makes them on the first run only, and a note keeps them from coming back after the owner deletes them", () => {
+    const e = env();
+    const calls: string[][] = [];
+    const run = (_file: string, args: string[]) => (calls.push(args), made);
+    const lines: string[] = [];
+    const log = (line: string) => lines.push(line);
+    expect(launcher.ensureShortcuts({ env: e, run, log, platform: "win32" })).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(expect.arrayContaining(["-NoProfile", "-File"]));
+    expect(calls[0]!.at(-1)).toMatch(/criar-atalhos\.ps1$/);
+    expect(lines.join("\n")).toContain("Use o atalho no lugar do .bat");
+    expect(existsSync(path.join(dir, "atalhos-criados"))).toBe(true);
+    // The second run does not make them again; --atalhos does; --sem-atalhos never does.
+    expect(launcher.ensureShortcuts({ env: e, run, log, platform: "win32" })).toBe(false);
+    expect(launcher.ensureShortcuts({ mode: "now", env: e, run, log, platform: "win32" })).toBe(true);
+    expect(launcher.ensureShortcuts({ mode: "never", env: env(), run, log, platform: "win32" })).toBe(false);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("says so, and leaves no note, when PowerShell could not make them; and does nothing off Windows", () => {
+    const e = env();
+    const lines: string[] = [];
+    expect(launcher.ensureShortcuts({ env: e, run: () => "", log: (l: string) => lines.push(l), platform: "win32" })).toBe(false);
+    expect(lines.join("\n")).toContain("rode Orbis-Atalhos.bat");
+    expect(existsSync(path.join(dir, "atalhos-criados"))).toBe(false);
+    const never = () => {
+      throw new Error("must not run");
+    };
+    expect(launcher.ensureShortcuts({ env: e, run: never, platform: "linux" })).toBe(false);
   });
 });
 

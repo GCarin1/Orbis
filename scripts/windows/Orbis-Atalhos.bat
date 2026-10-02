@@ -8,5 +8,6 @@ if errorlevel 1 (
 ) else (
   echo.
   echo Pronto: procure Orbis e Orbis Token na area de trabalho e no menu Iniciar.
+  echo Use esses atalhos, que tem o icone do Orbis, no lugar dos arquivos .bat.
 )
 pause

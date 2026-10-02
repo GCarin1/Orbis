@@ -9,12 +9,14 @@
 //
 // It lives in Node, not in the .bat, so it reads the same on every system and is tested.
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dataDirOf } from "./token.mjs";
 
-export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+export const ROOT = path.resolve(HERE, "../..");
 /** The hub's default port (packages/shared DEFAULT_PORT; a test keeps the two equal). */
 export const DEFAULT_PORT = 7420;
 /** Written before an old Orbis is stopped, with its process ids, so the window it ran in closes without an error. */
@@ -26,11 +28,13 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // --- reading what the system says ----------------------------------------------------------------
 
 export function parseArgs(argv) {
-  const options = { build: true, install: false, open: true, help: false };
+  const options = { build: true, install: false, open: true, help: false, shortcuts: "once" };
   for (const arg of argv) {
     if (arg === "--rapido" || arg === "--no-build") options.build = false;
     else if (arg === "--instalar" || arg === "--install") options.install = true;
     else if (arg === "--sem-navegador" || arg === "--no-open") options.open = false;
+    else if (arg === "--atalhos") options.shortcuts = "now";
+    else if (arg === "--sem-atalhos") options.shortcuts = "never";
     else if (arg === "--ajuda" || arg === "--help" || arg === "-h") options.help = true;
     else throw new Error(`opcao desconhecida: ${arg} (veja --ajuda)`);
   }
@@ -169,6 +173,26 @@ export function tokenFor(env = process.env) {
   }
 }
 
+/**
+ * The Orbis shortcuts (Desktop and Start menu, with the Orbis icon): a .bat file cannot carry an icon,
+ * a shortcut can. Made on the first run (a note in the data folder keeps it from coming back after you
+ * delete it) or when asked with --atalhos. Windows only; a failure is said, never fatal.
+ */
+export function ensureShortcuts({ mode = "once", env = process.env, log = console.log, platform = process.platform, run = tryRun } = {}) {
+  if (platform !== "win32" || mode === "never") return false;
+  const note = path.join(dataDirOf(env), "atalhos-criados");
+  if (mode === "once" && existsSync(note)) return false;
+  const output = run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(HERE, "criar-atalhos.ps1")]);
+  if (!/^Created /m.test(output)) {
+    log("Nao consegui criar os atalhos com o icone do Orbis; rode Orbis-Atalhos.bat para ver o motivo.");
+    return false;
+  }
+  mkdirSync(path.dirname(note), { recursive: true });
+  writeFileSync(note, `${new Date().toISOString()}\n`);
+  log("Criei o atalho Orbis (com o icone do Orbis) na area de trabalho e no menu Iniciar. Use o atalho no lugar do .bat.");
+  return true;
+}
+
 function build(options, log) {
   const shell = process.platform === "win32"; // npm is npm.cmd there
   const npm = (args) => spawnSync("npm", args, { cwd: ROOT, stdio: "inherit", shell }).status === 0;
@@ -190,6 +214,8 @@ const HELP = `Orbis.bat - inicia o Orbis; se ele ja estiver rodando, reinicia.
   --rapido           nao compila antes de iniciar (use quando nada mudou)
   --instalar         roda o npm install antes
   --sem-navegador    nao abre o navegador
+  --atalhos          cria os atalhos com o icone do Orbis (na area de trabalho e no menu Iniciar)
+  --sem-atalhos      nao cria os atalhos (por padrao eles sao criados na primeira vez, no Windows)
   ORBIS_PORT         porta do Orbis (padrao ${DEFAULT_PORT})
 `;
 
@@ -212,6 +238,7 @@ export async function main(argv, env = process.env, log = console.log) {
   }
   const port = portOf(env);
 
+  ensureShortcuts({ mode: options.shortcuts, env, log });
   const failed = build(options, log);
   if (failed) {
     log(`Erro: ${failed}.`);

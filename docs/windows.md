@@ -12,7 +12,11 @@ put Orbis-icon shortcuts on your Desktop and Start menu. They need Node.js
 
 A `.bat` file cannot carry an icon; a shortcut can. That is why the icon lives in
 the shortcuts (`docs/brand/orbis.ico`, made from the brand's SVG by
-`npm run brand:ico`). Pin the **Orbis** shortcut to the taskbar if you like.
+`npm run brand:ico`): **use the Orbis shortcut, not the `.bat`** (copying the
+`.bat` to the Desktop copies a file with no icon). `Orbis.bat` makes the shortcuts
+itself the first time it runs (`--atalhos` makes them again, `--sem-atalhos` never
+does). Pin the **Orbis** shortcut to the taskbar if you like. To set the icon by
+hand: right-click a shortcut → Properties → Change Icon → `docs\brand\orbis.ico`.
 
 ## `Orbis.bat`
 
