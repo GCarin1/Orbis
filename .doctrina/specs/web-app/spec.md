@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.13.1
+**Version:** 0.14.0
 
 ## Purpose
 
@@ -38,6 +38,8 @@ run's steps.
 - The web app shall provide a Tools screen: a catalog of MCP servers with search and categories, each card saying whether it needs no account, a sign-in or a key, connecting in one click (a form for a key, with where to get it; a sign-in link for an account); the connected servers with their state, tools, the bots that may use each one and Reconnect and Disconnect; and a form for a custom server.
 - The web app shall let the user choose each bot's tools in its settings with switches for Orbis's tool groups and for each connected server, written to the bot's allowlist.
 - The web app shall show, at the top of the brains settings, a ChatGPT card in three steps — install the Codex CLI, sign in with the ChatGPT account (in the browser, or with the one-time code shown large and the page to open), use it in a bot with a test — and the account once connected.
+- The web app shall render messages as Markdown — headings, lists, quotes, code blocks with a copy button, tables, links opening in a new tab, bold, italic and strikethrough — as elements, never as HTML, with mentions in each bot's color.
+- The web app shall show one working bubble per busy bot in a conversation, with the number of its runs waiting behind it, a stop button that cancels them, and "waiting for you" instead of typing dots while the bot waits for the user.
 
 ### Event-driven
 
@@ -50,11 +52,14 @@ run's steps.
 - When a timeline item arrives in a conversation the user is not looking at, the web app shall mark that conversation unread until the user opens it.
 - When the user presses the microphone, the web app shall write what the user says into the composer after the text already there, with the browser's speech recognition in the interface language, or, where the browser has none, by recording until the user presses stop and sending the recording to the hub's transcription service; the user reviews the text and sends it.
 - When a bot message arrives in the open conversation while reading aloud is on, the web app shall read it with the system's voices in the interface language; any bot message can be read on demand with its Listen button.
+- When a run fails, the web app shall offer to try it again on its failure line, once.
+- When the user scrolls up in a conversation, the web app shall keep its place as messages arrive and offer a button to the newest; when older messages exist, a button loads the previous page.
 
 ### Unwanted-behavior (must-not)
 
 - If neither the browser nor the hub can transcribe, or the microphone is blocked, the web app shall not record, and shall say how to fix it instead.
 - The web app shall not save "My computer" for a bot that did not have it until the user ticks the consent that says what the bot will be able to do.
+- The web app shall not clear a message that could not be sent; it shall say why under the composer, and it shall not send on the Enter that confirms an accent or an input-method candidate.
 
 ## Acceptance criteria
 
@@ -86,6 +91,7 @@ run's steps.
 26. [verified] In a real browser, the user browses the catalog, adds their own MCP server, gives it to one bot, sees it among that bot's tools, and the bot's call reaches the server with its key and argument — verified by `tests/e2e/marketplace.test.ts`.
 27. [verified] The ChatGPT card installs Codex, starts a sign-in with a code, shows the code and the OpenAI page, shows the connected account after it polls, and tests the ChatGPT brain — verified by `packages/web/test/chatgpt.test.tsx`.
 28. [verified] In a real browser with fake `npm` and `codex`, the user installs Codex from Settings, signs in with a code shown on the card, and sees the connected ChatGPT account — verified by `tests/e2e/chatgpt.test.ts`.
+29. [verified] Markdown lists, code, tables, links and mentions render and raw HTML stays text; one bubble per bot with "+1 queued" and a stop that cancels both runs; the waiting note; Try again posts the retry once; earlier messages load on request; a failed send keeps the text and says why; a composing Enter does not send — verified by `packages/web/test/chat-audit.test.tsx`.
 
 ## Maturity
 

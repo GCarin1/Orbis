@@ -9,6 +9,29 @@ change that delivered it.
 
 ### Fixed
 
+- Chat and bot deep audit (change 0022-chat-and-bot-deep-audit; see the
+  second round of `docs/bot-behaviour-audit.md`):
+  - **Claude Code, Codex, Gemini and Cursor no longer stopped mid-approval**:
+    their process had its own 15-minute clock, which kept running while you
+    decided; only the run's clock (paused while it waits for you) counts now.
+    The MCP bridge forwards tool calls side by side with no 5-minute cap on
+    an answer, and Codex and the Gemini CLI wait 24 hours for an Orbis tool.
+  - **A gone Codex thread failed every later message** of that conversation;
+    Codex and Claude Code now start a new session with the whole recent
+    conversation. Long prompts go on stdin (Windows caps a command line).
+  - **Memory**: answers to mentions and reports leave no summary, the same
+    summary is kept once (200 per bot), common words no longer match every
+    summary, at most 3 summaries reach a context; the summaries the group
+    loop left are removed (database migration 7).
+  - **Context**: bots know today's date, answer in your language, know where
+    they are and who is there; a long message is cut instead of dropping
+    the whole history; other bots' failures stay out of it.
+  - **Runs**: a bot working in two conversations stays busy; two approvals at
+    once; runs and handoffs left waiting by a stopped hub are closed (no more
+    endless "…"); a denied call can be asked again; LM Studio / Ollama /
+    OpenAI-compatible brains retry 429 and 5xx, run tool calls a server ends
+    with `stop`, and keep `<think>` out of the reply.
+
 - Bot behaviour audit (change 0021-bot-behaviour-audit, ADR 0011; see
   `docs/bot-behaviour-audit.md`):
   - **Bots looping in a group**: a reply listing the team woke every bot it
@@ -28,6 +51,12 @@ change that delivered it.
     after a restart.
 
 ### Added
+
+- Chat: Markdown messages (lists, code with Copy, tables, links), one bubble
+  per busy bot with **■ Stop** and its queue, "waiting for you" during an
+  approval, **Try again** on a failed run (`POST /api/v1/runs/:id/retry`),
+  **Load earlier messages**, scrolling that keeps your place with a "new
+  below" button, and a send error that keeps your text.
 
 - `skills.create`: a bot writes a skill for itself or a colleague (asks
   first).

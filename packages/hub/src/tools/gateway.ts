@@ -133,18 +133,15 @@ export class ToolGateway implements RunToolHost {
     if (invalid) return { output: `invalid input for ${tool.name}: ${invalid}`, isError: true };
 
     // A model calling the same tool with the same input again and again is stuck: stop it here.
-    if (!REPEATABLE.has(tool.name)) {
-      const key = callKey(tool.name, args);
-      const seen = this.calls.get(run.id) ?? new Map<string, number>();
-      this.calls.set(run.id, seen);
-      const count = seen.get(key) ?? 0;
-      if (count >= MAX_IDENTICAL_CALLS) {
-        return {
-          output: `you already called ${tool.name} with exactly this input ${count} times in this task; it was not run again. Use the results you have, change the input, or answer the user.`,
-          isError: true,
-        };
-      }
-      seen.set(key, count + 1);
+    const key = REPEATABLE.has(tool.name) ? null : callKey(tool.name, args);
+    const seen = this.calls.get(run.id) ?? new Map<string, number>();
+    this.calls.set(run.id, seen);
+    const count = key ? (seen.get(key) ?? 0) : 0;
+    if (key && count >= MAX_IDENTICAL_CALLS) {
+      return {
+        output: `you already called ${tool.name} with exactly this input ${count} times in this task; it was not run again. Use the results you have, change the input, or answer the user.`,
+        isError: true,
+      };
     }
 
     if (!tool.ungated) {
@@ -159,6 +156,8 @@ export class ToolGateway implements RunToolHost {
       });
       if (!gate.allowed) return { output: gate.message, isError: true };
     }
+    // Only a call that runs counts: a denied one may be asked again.
+    if (key) seen.set(key, count + 1);
     try {
       let result: string | ToolCallResult | undefined;
       for (const hook of this.beforeCall) {

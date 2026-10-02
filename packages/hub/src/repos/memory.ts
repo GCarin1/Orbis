@@ -15,9 +15,23 @@ function toEntry(r: Row): MemoryEntry {
   };
 }
 
+/**
+ * Words too common to tell entries apart (Portuguese and English): matching
+ * "de" or "the" would rank every summary as relevant to every task.
+ */
+const STOP_WORDS = new Set(
+  (
+    "de da do das dos em no na nos nas um uma uns umas os as ao aos que se por para pra com sem mais mas como ou ja eu tu ele ela nos vos eles elas " +
+    "me te lhe meu minha seu sua isso isto esse essa este esta aquele aquela pelo pela tem ter foi ser sao era muito bem voce voces oi ola obrigado " +
+    "the a an of to in on at for and or but is are was were be been it its this that these those with as by from you your we our they their " +
+    "i me my he she him her do does did not no yes so if then than can will would should could have has had please hi hello thanks"
+  ).split(" "),
+);
+
 /** Turn free text into an FTS5 OR-query of quoted terms, or null when nothing is searchable. */
 export function ftsQuery(text: string): string | null {
-  const terms = [...new Set((text.toLowerCase().match(/[\p{L}\p{N}]{2,}/gu) ?? []).slice(0, 24))];
+  const words = (text.toLowerCase().match(/[\p{L}\p{N}]{2,}/gu) ?? []).filter((w) => !STOP_WORDS.has(w));
+  const terms = [...new Set(words)].slice(0, 24);
   if (terms.length === 0) return null;
   return terms.map((t) => `"${t.replace(/"/g, '""')}"`).join(" OR ");
 }
@@ -92,6 +106,25 @@ export class MemoryRepo {
 
   delete(id: string): void {
     run(this.db, "DELETE FROM memory WHERE id = ?", id);
+  }
+
+  /** True when the bot already has an entry of this kind with exactly this text. */
+  has(botId: string | null, kind: MemoryKind, text: string): boolean {
+    return get(this.db, "SELECT 1 AS x FROM memory WHERE bot_id IS ? AND kind = ? AND text = ? LIMIT 1", botId, kind, text) !== undefined;
+  }
+
+  /** Delete a bot's oldest entries of a kind beyond the newest `keep`. */
+  prune(botId: string, kind: MemoryKind, keep: number): void {
+    run(
+      this.db,
+      `DELETE FROM memory WHERE bot_id = ? AND kind = ? AND id NOT IN (
+         SELECT id FROM memory WHERE bot_id = ? AND kind = ? ORDER BY created_at DESC, rowid DESC LIMIT ?)`,
+      botId,
+      kind,
+      botId,
+      kind,
+      keep,
+    );
   }
 
   countForBot(botId: string): number {

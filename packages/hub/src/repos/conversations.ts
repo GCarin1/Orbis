@@ -204,6 +204,16 @@ export class ItemsRepo {
     return rows.reverse().map(toItem);
   }
 
+  /** Cards of a type still in one of the given states, oldest first. */
+  openCards(type: string, states: string[]): TimelineItem[] {
+    return all(
+      this.db,
+      `SELECT * FROM items WHERE kind = 'card' AND json_extract(card, '$.type') = ? AND json_extract(card, '$.state') IN (${states.map(() => "?").join(", ")}) ORDER BY seq`,
+      type,
+      ...states,
+    ).map(toItem);
+  }
+
   /** The cards a run posted (its handoffs), oldest first. */
   cardsOf(runId: string): TimelineItem[] {
     return all(this.db, "SELECT * FROM items WHERE run_id = ? AND kind = 'card' ORDER BY seq ASC", runId).map(toItem);

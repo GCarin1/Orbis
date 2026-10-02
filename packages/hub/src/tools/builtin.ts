@@ -141,7 +141,10 @@ export function builtinTools(hub: HubContext, drafts: DraftService): ToolDefinit
             isError: !res.ok,
           };
         } catch (err) {
-          return { output: `fetch failed: ${err instanceof Error ? err.message : String(err)}`, isError: true };
+          // Node says only "fetch failed"; the reason (DNS, refused, TLS, timeout) is in its cause.
+          const cause = (err as { cause?: { code?: string; message?: string } }).cause;
+          const why = cause?.code ?? cause?.message;
+          return { output: `fetch failed${why ? ` (${why})` : ""}: ${err instanceof Error && err.name === "TimeoutError" ? "no answer within 30 s" : url.toString()}`, isError: true };
         }
       },
     },

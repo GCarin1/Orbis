@@ -2,19 +2,21 @@
 // the left, time separators, "Messages from …" when colleagues speak in a bot's
 // own conversation, mentions in each bot's color, cards, events and each run's
 // steps, collapsible.
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
-import { resolveMentions, type Bot, type Step, type TimelineItem } from "@orbis/shared";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import type { Bot, Step, TimelineItem } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
-import type { RunView } from "../store.js";
+import { useStore, type RunView } from "../store.js";
 import { canSpeak, speak } from "../voice.js";
 import { Avatar, BotFace } from "./Avatar.js";
 import { CardView } from "./Cards.js";
 import { SpeakerIcon } from "./Icons.js";
+import { Markdown } from "./Markdown.js";
+
+export { RichText } from "./Markdown.js";
 
 const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}…` : text);
 /** A pause this long starts a new time separator. */
 const GAP_MS = 20 * 60_000;
-const MENTION = /(^|[^a-z0-9_@.-])(@[a-z0-9-]{2,32})(?![a-z0-9-])/gi;
 
 function StepLine({ step }: { step: Step }) {
   switch (step.type) {
@@ -54,28 +56,6 @@ export function Steps({ run, open: initiallyOpen = false }: { run: RunView; open
   );
 }
 
-/** Text with each `@handle` or `@role` of the team drawn in that bot's color, with its face. */
-export function RichText({ text, bots }: { text: string; bots: Bot[] }) {
-  const out: ReactNode[] = [];
-  let last = 0;
-  for (const m of text.matchAll(MENTION)) {
-    const token = m[2]!;
-    const start = m.index! + m[1]!.length;
-    const [bot] = resolveMentions([token.slice(1).toLowerCase()], bots);
-    if (!bot) continue;
-    out.push(text.slice(last, start));
-    out.push(
-      <span key={start} className="mention" style={{ color: bot.avatar.color }} title={`${bot.name}${bot.role ? ` — ${bot.role}` : ""}`}>
-        <BotFace shape={bot.avatar.shape} color={bot.avatar.color} size={14} />
-        {token}
-      </span>,
-    );
-    last = start + token.length;
-  }
-  out.push(text.slice(last));
-  return <>{out}</>;
-}
-
 function separatorLabel(iso: string, lang: string, yesterday: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -93,12 +73,44 @@ export function joinNames(names: string[], and: string): string {
   return `${names.slice(0, -1).join(", ")} ${and} ${names.at(-1)}`;
 }
 
+/** How close to the bottom (px) still counts as "reading the latest". */
+const STICK_PX = 120;
+
+/** The element that scrolls the timeline: its nearest scrollable ancestor. */
+function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let node = el?.parentElement ?? null; node; node = node.parentElement) {
+    const overflow = getComputedStyle(node).overflowY;
+    if (overflow === "auto" || overflow === "scroll") return node;
+  }
+  return null;
+}
+
+/** One bot at work: its current run, and how many more of its runs wait in line here. */
+interface Working {
+  bot: Bot | undefined;
+  run: RunView;
+  queued: number;
+  runIds: string[];
+}
+
+/** Active runs grouped by bot: one bubble per bot, never one per queued run. */
+export function workingBots(activeRuns: RunView[], bots: Record<string, Bot>): Working[] {
+  const byBot = new Map<string, RunView[]>();
+  for (const run of activeRuns) byBot.set(run.botId, [...(byBot.get(run.botId) ?? []), run]);
+  return [...byBot.entries()].map(([botId, runs]) => {
+    const current = runs.find((r) => r.status === "running" || r.status === "waiting") ?? runs[0]!;
+    return { bot: bots[botId], run: current, queued: runs.length - 1, runIds: runs.map((r) => r.id) };
+  });
+}
+
 export function Timeline({
   items,
   bots,
   runs,
   activeRuns,
   ownBotId = null,
+  hasEarlier = false,
+  onLoadEarlier,
 }: {
   items: TimelineItem[];
   bots: Record<string, Bot>;
@@ -106,21 +118,82 @@ export function Timeline({
   activeRuns: RunView[];
   /** The bot whose own conversation this is; null for a group. */
   ownBotId?: string | null;
+  /** Older items exist on the hub. */
+  hasEarlier?: boolean;
+  onLoadEarlier?: () => Promise<void>;
 }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
+  const root = useRef<HTMLDivElement>(null);
   const end = useRef<HTMLDivElement>(null);
+  const stick = useRef(true);
+  const [unseen, setUnseen] = useState(0);
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
   const byId = new Map(items.map((i) => [i.id, i]));
   const team = Object.values(bots);
+  const working = workingBots(activeRuns, bots);
+  const conversationId = items[0]?.conversationId ?? activeRuns[0]?.conversationId;
+  const lastItem = items.at(-1);
+  const stepCount = activeRuns.reduce((n, r) => n + r.steps.length, 0);
+
+  // Follow what arrives only while the user reads the latest: scrolling up to
+  // read history is not interrupted; a "new messages" button brings them back.
   useEffect(() => {
+    const scroller = scrollParent(root.current);
+    if (!scroller) return;
+    const onScroll = () => {
+      stick.current = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < STICK_PX;
+      if (stick.current) setUnseen(0);
+    };
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, []);
+  // Opening another conversation starts at its latest message.
+  useLayoutEffect(() => {
+    stick.current = true;
+    setUnseen(0);
     end.current?.scrollIntoView?.({ block: "end" });
-  }, [items.length, activeRuns.length]);
+  }, [conversationId]);
+  useEffect(() => {
+    const mine = lastItem?.author.type === "user";
+    if (stick.current || mine) {
+      stick.current = true;
+      end.current?.scrollIntoView?.({ block: "end" });
+    } else if (lastItem) setUnseen((n) => n + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastItem?.id, working.length]);
+  useEffect(() => {
+    if (stick.current) end.current?.scrollIntoView?.({ block: "end" });
+  }, [stepCount]);
+
+  const loadEarlier = async () => {
+    if (!onLoadEarlier || loadingEarlier) return;
+    const scroller = scrollParent(root.current);
+    const fromBottom = scroller ? scroller.scrollHeight - scroller.scrollTop : 0;
+    setLoadingEarlier(true);
+    try {
+      await onLoadEarlier();
+    } finally {
+      setLoadingEarlier(false);
+      // Keep the message the user was looking at in place.
+      requestAnimationFrame(() => {
+        if (scroller) scroller.scrollTop = scroller.scrollHeight - fromBottom;
+      });
+    }
+  };
 
   const fromOther = (item: TimelineItem | undefined) =>
     item !== undefined && item.author.type === "bot" && ownBotId !== null && item.author.id !== ownBotId && item.kind !== "event";
 
   return (
-    <div className="timeline" role="log" aria-live="polite">
+    <div className="timeline" role="log" aria-live="polite" ref={root}>
+      {hasEarlier && onLoadEarlier && (
+        <div className="load-earlier">
+          <button type="button" className="link" onClick={() => void loadEarlier()} disabled={loadingEarlier}>
+            {loadingEarlier ? t("timeline.loading") : t("timeline.loadEarlier")}
+          </button>
+        </div>
+      )}
       {items.map((item, index) => {
         const prev = items[index - 1];
         const parts: ReactNode[] = [];
@@ -157,9 +230,19 @@ export function Timeline({
         }
 
         if (item.kind === "event") {
+          const failed = item.event?.type === "run.failed" ? (item.event.data as { runId?: string }).runId : undefined;
+          const retried = failed ? Object.values(runs).some((r) => r.retryOf === failed) : false;
           parts.push(
             <div key="item" className={`event event-${item.event?.type ?? "info"}`} data-testid="event">
               {item.text}
+              {failed && !retried && (
+                <>
+                  {" "}
+                  <button type="button" className="link event-action" onClick={() => void useStore.getState().retryRun(failed)}>
+                    {t("run.retry")}
+                  </button>
+                </>
+              )}
             </div>,
           );
         } else if (item.kind === "card") {
@@ -192,7 +275,7 @@ export function Timeline({
                     </div>
                   )}
                   <div className="bubble-text">
-                    <RichText text={item.text} bots={team} />
+                    <Markdown text={item.text} bots={team} />
                   </div>
                   {reactions.length > 0 && (
                     <span className="reactions">
@@ -223,25 +306,59 @@ export function Timeline({
         }
         return <Fragment key={item.id}>{parts}</Fragment>;
       })}
-      {activeRuns.map((run) => {
-        const bot = bots[run.botId];
+      {working.map(({ bot, run, queued, runIds }) => {
+        const name = bot?.name ?? "bot";
+        const waiting = run.status === "waiting";
         return (
-          <div key={run.id} className="message message-bot working" data-testid="working">
+          <div key={run.botId} className={`message message-bot working${waiting ? " waiting" : ""}`} data-testid="working">
             <span className="message-face">{bot && <Avatar bot={bot} size={28} />}</span>
             <div className="bubble-wrap">
-              <div className="bubble typing" aria-label={t("steps.running", { name: bot?.name ?? "bot" })}>
-                <span className="sr-only">{t("steps.running", { name: bot?.name ?? "bot" })}</span>
-                <span className="dots" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                </span>
+              <div className="working-row">
+                {waiting ? (
+                  <div className="bubble waiting-note" data-testid="waiting">
+                    {t("steps.waiting", { name })}
+                  </div>
+                ) : (
+                  <div className="bubble typing" aria-label={t("steps.running", { name })}>
+                    <span className="sr-only">{t("steps.running", { name })}</span>
+                    <span className="dots" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="stop-run"
+                  data-testid="stop-run"
+                  aria-label={t("run.stop", { name })}
+                  title={t("run.stop", { name })}
+                  onClick={() => void useStore.getState().cancelRuns(runIds)}
+                >
+                  ■
+                </button>
               </div>
+              {queued > 0 && <div className="queued-note muted">{t("steps.queued", { count: queued })}</div>}
               <Steps run={run} open />
             </div>
           </div>
         );
       })}
+      {unseen > 0 && (
+        <button
+          type="button"
+          className="new-below"
+          data-testid="new-below"
+          onClick={() => {
+            stick.current = true;
+            setUnseen(0);
+            end.current?.scrollIntoView?.({ block: "end", behavior: "smooth" });
+          }}
+        >
+          ↓ {t("timeline.newBelow", { count: unseen })}
+        </button>
+      )}
       <div ref={end} />
     </div>
   );

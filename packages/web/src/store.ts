@@ -30,6 +30,8 @@ interface State {
   conversations: Record<string, Conversation>;
   directByBot: Record<string, string>;
   items: Record<string, TimelineItem[]>;
+  /** Conversations whose older items are not loaded yet. */
+  hasEarlier: Record<string, boolean>;
   runs: Record<string, RunView>;
   approvals: Record<string, Approval>;
   computers: Record<string, ComputerStatus>;
@@ -57,7 +59,13 @@ interface State {
   selectGroup(conversationId: string | null): Promise<void>;
   createGroup(input: { title: string; members: string[]; leadBotId?: string }): Promise<Conversation>;
   loadTimeline(conversationId: string): Promise<void>;
+  /** Load the page of items before the oldest one shown. */
+  loadEarlier(conversationId: string): Promise<void>;
   send(conversationId: string, text: string): Promise<void>;
+  /** Stop runs (a bot's current one and those waiting behind it). */
+  cancelRuns(runIds: string[]): Promise<void>;
+  /** Try a failed or cancelled run again. */
+  retryRun(runId: string): Promise<void>;
   createBot(input: object): Promise<Bot>;
   loadApprovals(): Promise<void>;
   loadMcpServers(): Promise<void>;
@@ -77,6 +85,9 @@ interface State {
   computerAction(botId: string, action: "start" | "stop" | "takeover" | "release"): Promise<void>;
   apply(event: StreamEvent): void;
 }
+
+/** Items loaded per page of a timeline. */
+export const TIMELINE_PAGE = 200;
 
 function upsertItem(list: TimelineItem[] | undefined, item: TimelineItem): TimelineItem[] {
   const current = list ?? [];
@@ -115,6 +126,7 @@ export const useStore = create<State>((set, get) => ({
   conversations: {},
   directByBot: {},
   items: {},
+  hasEarlier: {},
   runs: {},
   approvals: {},
   computers: {},
@@ -199,13 +211,42 @@ export const useStore = create<State>((set, get) => ({
     const api = get().api;
     if (!api) return;
     const [items, runs] = await Promise.all([
-      api.get<TimelineItem[]>(`/api/v1/conversations/${conversationId}/items?limit=200`),
+      api.get<TimelineItem[]>(`/api/v1/conversations/${conversationId}/items?limit=${TIMELINE_PAGE}`),
       api.get<Run[]>(`/api/v1/runs?conversationId=${conversationId}&limit=100`),
     ]);
     set((s) => ({
       items: { ...s.items, [conversationId]: items },
+      hasEarlier: { ...s.hasEarlier, [conversationId]: items.length >= TIMELINE_PAGE },
       runs: { ...s.runs, ...Object.fromEntries(runs.map((r) => [r.id, r])) },
     }));
+  },
+
+  async loadEarlier(conversationId) {
+    const api = get().api;
+    const oldest = get().items[conversationId]?.[0];
+    if (!api || !oldest) return;
+    const page = await api.get<TimelineItem[]>(`/api/v1/conversations/${conversationId}/items?limit=${TIMELINE_PAGE}&before=${encodeURIComponent(oldest.id)}`);
+    set((s) => {
+      const current = s.items[conversationId] ?? [];
+      const known = new Set(current.map((i) => i.id));
+      return {
+        items: { ...s.items, [conversationId]: [...page.filter((i) => !known.has(i.id)), ...current] },
+        hasEarlier: { ...s.hasEarlier, [conversationId]: page.length >= TIMELINE_PAGE },
+      };
+    });
+  },
+
+  async cancelRuns(runIds) {
+    const api = get().api;
+    if (!api) return;
+    await Promise.all(runIds.map((id) => api.post(`/api/v1/runs/${id}/cancel`).catch(() => undefined)));
+  },
+
+  async retryRun(runId) {
+    const api = get().api;
+    if (!api) return;
+    const run = await api.post<Run>(`/api/v1/runs/${runId}/retry`);
+    set((s) => ({ runs: { ...s.runs, [run.id]: { ...run, ...(s.runs[run.id] ?? {}) } } }));
   },
 
   async send(conversationId, text) {

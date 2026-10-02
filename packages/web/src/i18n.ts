@@ -501,6 +501,16 @@ const pt = {
   "chatgpt.openPage": "Abrir a página da OpenAI",
   "chatgpt.signOut": "Sair",
   "chatgpt.useHelp": "Nas configurações de cada bot, escolha o cérebro “Codex CLI (sua conta do ChatGPT, sem API)”.",
+  "md.copy": "Copiar",
+  "md.copied": "Copiado ✓",
+  "timeline.loadEarlier": "Carregar mensagens anteriores",
+  "timeline.loading": "Carregando…",
+  "timeline.newBelow": "{count} nova(s) abaixo",
+  "run.retry": "Tentar de novo",
+  "run.stop": "Parar {name}",
+  "steps.waiting": "{name} está esperando você (aprovação ou informação acima)",
+  "steps.queued": "+{count} na fila",
+  "composer.failed": "Não foi possível enviar: {error}",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1003,6 +1013,16 @@ const en: Record<TextKey, string> = {
   "chatgpt.openPage": "Open the OpenAI page",
   "chatgpt.signOut": "Sign out",
   "chatgpt.useHelp": "In each bot's settings, pick the brain “Codex CLI (your ChatGPT account, no API)”.",
+  "md.copy": "Copy",
+  "md.copied": "Copied ✓",
+  "timeline.loadEarlier": "Load earlier messages",
+  "timeline.loading": "Loading…",
+  "timeline.newBelow": "{count} new below",
+  "run.retry": "Try again",
+  "run.stop": "Stop {name}",
+  "steps.waiting": "{name} is waiting for you (an approval or an answer above)",
+  "steps.queued": "+{count} queued",
+  "composer.failed": "Could not send: {error}",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

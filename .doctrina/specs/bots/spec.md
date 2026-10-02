@@ -5,7 +5,7 @@
 **Implementation:** verified
 **Realizes:** SC1
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -34,6 +34,11 @@ Everything else in Orbis hangs off a bot.
 - When a run of a bot starts, calls a brain, executes a tool, waits for the user, fails or finishes, the system shall set the bot state to `thinking`, `thinking`, `working`, `waiting`, `blocked` or `done` respectively and broadcast a `bot.state` event.
 - When the user marks the bot's direct conversation as read while the bot is `done`, the system shall set the bot state to `idle`.
 - When a user deletes a bot that other bots report to, the system shall make them report to the deleted bot's own manager, or to no one.
+- When the hub starts, the system shall mark the runs a previous process left running or waiting as failed and those left queued as cancelled.
+
+### State-driven
+
+- While a bot still has a run running or waiting in another conversation, the system shall keep it `working` or `waiting` when one of its runs ends.
 
 ### Unwanted-behavior (must-not)
 
@@ -55,6 +60,7 @@ Everything else in Orbis hangs off a bot.
 6. [verified] A run moves the bot through `thinking`, `working`, `done` and broadcasts one `bot.state` event per transition — verified by `packages/hub/test/runs.test.ts`.
 7. [verified] A bot records the manager it reports to; reporting to itself, to a bot that reports to it or to an unknown bot answers 400; a duplicate keeps the manager; deleting a manager moves its reports to its own manager; each bot's prompt names its manager, its reports and its colleagues — verified by `packages/hub/test/team.test.ts`.
 8. [verified] A bot keeps the avatar shape and color it is given, gets both derived when none is given, refuses an unknown shape with 400, and a duplicate keeps them — verified by `packages/hub/test/bots.test.ts`.
+9. [verified] A bot whose short run ends while its long run goes on stays `working`, then becomes `done`; runs left waiting and their handoff cards are failed after a restart — verified by `packages/hub/test/chat-audit.test.ts`.
 
 ## Maturity
 

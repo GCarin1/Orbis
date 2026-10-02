@@ -22,6 +22,8 @@ export interface EnqueueRequest {
   depth?: number;
   /** The chain this run continues (handoffs, reports, mentions); a new chain when absent. */
   chainId?: string;
+  /** The failed or cancelled run this one tries again. */
+  retryOf?: string | null;
   skill?: { name: string; body: string } | null;
   /** The item carrying the task; left out of the context history. */
   triggerItemId?: string | null;
@@ -118,7 +120,9 @@ export class RunEngine {
   private readonly inflight = new Set<Promise<void>>();
   private toolHost: RunToolHost = NO_TOOL_HOST;
   private readonly hooks: RunHooks[] = [];
-  private readonly contextSections: Array<(bot: Bot) => string | null> = [];
+  private readonly contextSections: Array<(bot: Bot, run: Run) => string | null> = [];
+  /** Per run: how many requests to the user (approvals, secrets) are open. */
+  private readonly waitingCount = new Map<string, number>();
   private redactor: (<T>(botId: string, value: T) => T) | null = null;
   private stopped = false;
 
@@ -137,8 +141,8 @@ export class RunEngine {
     this.redactor = redactor;
   }
 
-  /** Add a section to every run's system text (the offered skills). */
-  addContextSection(section: (bot: Bot) => string | null): void {
+  /** Add a section to every run's system text (the offered skills, the conversation). */
+  addContextSection(section: (bot: Bot, run: Run) => string | null): void {
     this.contextSections.push(section);
   }
 
@@ -152,6 +156,7 @@ export class RunEngine {
       trigger: req.trigger,
       depth: req.depth ?? 0,
       chainId: req.chainId ?? id,
+      retryOf: req.retryOf ?? null,
       status: "queued",
       input: req.input,
       skill: req.skill?.name ?? null,
@@ -177,6 +182,10 @@ export class RunEngine {
       if (this.chains.get(key) === next) this.chains.delete(key);
     });
     return run;
+  }
+
+  get(runId: string): Run | undefined {
+    return this.d.runs.get(runId);
   }
 
   /** Resolve when the run reaches done, failed or cancelled. */
@@ -236,10 +245,19 @@ export class RunEngine {
     return run;
   }
 
-  /** A run starts or stops waiting for the user (an approval or a secret request). */
+  /**
+   * A run starts or stops waiting for the user (an approval or a secret
+   * request). A run can wait on several at once (a brain calling tools in
+   * parallel): it works again only when the last one is answered.
+   */
   markWaiting(runId: string, waiting: boolean): void {
     const run = this.d.runs.get(runId);
     if (!run || !["running", "waiting"].includes(run.status)) return;
+    const open = Math.max(0, (this.waitingCount.get(runId) ?? 0) + (waiting ? 1 : -1));
+    if (open > 0) this.waitingCount.set(runId, open);
+    else this.waitingCount.delete(runId);
+    if (!waiting && open > 0) return;
+    if (waiting && open > 1) return;
     this.d.runs.setStatus(runId, waiting ? "waiting" : "running");
     const clock = this.clocks.get(runId);
     if (waiting) clock?.pause();
@@ -255,9 +273,21 @@ export class RunEngine {
     this.d.bus.publish("bot.state", { botId, state });
   }
 
+  /**
+   * A run of the bot ended with `state`; but a bot working in two
+   * conversations at once is still busy with the other one.
+   */
+  private settleBotState(botId: string, state: BotState): void {
+    const others = this.d.runs.active(botId).filter((r) => r.status === "running" || r.status === "waiting");
+    if (others.some((r) => r.status === "running")) return this.setBotState(botId, "working");
+    if (others.length) return this.setBotState(botId, "waiting");
+    this.setBotState(botId, state);
+  }
+
   private finish(runId: string, status: "done" | "failed" | "cancelled", fields: { error?: string | null; reply?: string | null }): Run {
     this.d.runs.setStatus(runId, status, { finishedAt: nowIso(), ...fields });
     this.pending.delete(runId);
+    this.waitingCount.delete(runId);
     const ended = this.d.runs.get(runId)!;
     // Hooks run before the terminal event, so follow-up runs they start (handoffs,
     // mentions) are announced before the run that caused them is reported as ended.
@@ -358,7 +388,7 @@ export class RunEngine {
         },
         { items: this.d.items, memory: this.d.memory, bots: this.d.bots },
       );
-      const sections = this.contextSections.map((section) => section(bot)).filter((text): text is string => Boolean(text));
+      const sections = this.contextSections.map((section) => section(bot, run)).filter((text): text is string => Boolean(text));
       if (sections.length) context.identity = [context.identity, ...sections].join("\n\n");
 
       const events = adapter!.run(
@@ -443,7 +473,7 @@ export class RunEngine {
       if (timedOut) failure = `timed out after ${Math.round(timeoutMs / 1000)}s of work on this task (time waiting for you does not count); split the task or raise the bot's time limit`;
       else {
         this.finish(runId, "cancelled", { error: "cancelled" });
-        this.setBotState(bot.id, "idle");
+        this.settleBotState(bot.id, "idle");
         this.notifyFinished(runId, bot);
         return;
       }
@@ -471,7 +501,7 @@ export class RunEngine {
       });
     }
     this.finish(runId, "done", { reply });
-    this.setBotState(bot.id, "done");
+    this.settleBotState(bot.id, "done");
     this.notifyFinished(runId, bot);
   }
 
@@ -480,7 +510,7 @@ export class RunEngine {
     if (run.conversationId) {
       this.d.timeline.event(run.conversationId, "run.failed", `${bot.name}: ${error}`, { runId: run.id, botId: bot.id, error }, run.id);
     }
-    this.setBotState(bot.id, "blocked");
+    this.settleBotState(bot.id, "blocked");
     this.notifyFinished(run.id, bot);
   }
 

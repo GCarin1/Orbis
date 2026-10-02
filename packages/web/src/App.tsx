@@ -258,7 +258,7 @@ export function App() {
             {items.length === 0 && activeRuns.length === 0 ? (
               <p className="muted empty">{t("conv.startGroup", { lead: `@${store.bots[group.leadBotId ?? ""]?.handle ?? "?"}` })}</p>
             ) : (
-              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={null} />
+              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={null} hasEarlier={store.hasEarlier[group.id]} onLoadEarlier={() => store.loadEarlier(group.id)} />
             )}
             <Composer name={group.title} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(group.id, text)} />
           </>
@@ -300,7 +300,15 @@ export function App() {
                 <p className="muted">{t("conv.start", { name: selected.name })}</p>
               </div>
             ) : (
-              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={selected.id} />
+              <Timeline
+                items={items}
+                bots={store.bots}
+                runs={store.runs}
+                activeRuns={activeRuns}
+                ownBotId={selected.id}
+                hasEarlier={conversationId ? store.hasEarlier[conversationId] : false}
+                onLoadEarlier={conversationId ? () => store.loadEarlier(conversationId) : undefined}
+              />
             )}
             <Composer name={selected.name} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(conversationId, text)} />
           </>

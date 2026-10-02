@@ -60,6 +60,7 @@ export async function testBrain(adapter: BrainAdapter, bot: Bot, opts: BrainTest
           identity: `You are ${bot.name}, a bot in Orbis. This is a connection test: answer the question directly, without tools.`,
           memories: [],
           history: [],
+          since: null,
         },
         skill: null,
       },

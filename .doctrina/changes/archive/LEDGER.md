@@ -24,3 +24,4 @@ One line per archived change, newest last. Appended by
 - 2026-09-28 — 0019-chatgpt-through-codex — ChatGPT through Codex (specs: agent-runtimes MODIFIED, web-app MODIFIED)
 - 2026-09-28 — 0020-settings-panel-layout-fix — Settings panel layout fix
 - 2026-10-02 — 0021-bot-behaviour-audit — Bot behaviour audit (specs: agent-runtimes MODIFIED, computer MODIFIED, conversations MODIFIED, handoff MODIFIED, skills MODIFIED, tool-gateway MODIFIED)
+- 2026-10-02 — 0022-chat-and-bot-deep-audit — Chat and bot deep audit (specs: agent-runtimes MODIFIED, approvals MODIFIED, bots MODIFIED, conversations MODIFIED, handoff MODIFIED, memory MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)

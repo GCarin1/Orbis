@@ -48,6 +48,11 @@ export interface McpWiring {
 export interface BrainContext {
   signal: AbortSignal;
   workspaceDir: string;
+  /**
+   * The run's working-time limit, for messages. The engine enforces it through
+   * `signal` and pauses it while the run waits for the user, so an adapter
+   * never starts a wall-clock timer of its own.
+   */
   timeoutMs: number;
   sessions: SessionStore;
   tools: ToolBridge;

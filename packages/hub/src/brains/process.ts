@@ -6,6 +6,13 @@ import { createInterface } from "node:readline";
 
 export const STDERR_TAIL_BYTES = 8192;
 
+/**
+ * A prompt longer than this goes to a CLI brain on stdin instead of its
+ * command line: Windows caps a whole command line at 32,767 characters, and a
+ * pasted document plus the conversation can pass that.
+ */
+export const MAX_ARGV_PROMPT = 8_000;
+
 /** Variables a CLI brain may inherit from the hub: shell basics, locale, proxies and its own login. */
 const PASSTHROUGH = [
   "PATH",
@@ -144,7 +151,12 @@ export interface ProcessSpec {
   cwd: string;
   env: Record<string, string>;
   stdin?: string;
-  timeoutMs: number;
+  /**
+   * A wall-clock limit, for callers outside a run (a brain test). A run's
+   * brain leaves it out: the engine's clock stops the process through
+   * `signal`, and does not count the time spent waiting for the user.
+   */
+  timeoutMs?: number;
   signal: AbortSignal;
 }
 
@@ -199,10 +211,13 @@ export async function* runProcess(spec: ProcessSpec): AsyncGenerator<ProcessEven
     setTimeout(() => kill("SIGKILL"), 3000).unref();
   };
 
-  const timer = setTimeout(() => {
-    timedOut = true;
-    terminate();
-  }, spec.timeoutMs);
+  const timer =
+    spec.timeoutMs !== undefined && Number.isFinite(spec.timeoutMs)
+      ? setTimeout(() => {
+          timedOut = true;
+          terminate();
+        }, spec.timeoutMs)
+      : undefined;
   const onAbort = () => {
     aborted = true;
     terminate();

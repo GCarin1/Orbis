@@ -72,6 +72,8 @@ export function Composer({
   const { readAloud, setReadAloud } = useVoice();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Why the last message did not go out; the text stays in the box. */
+  const [sendError, setSendError] = useState<string | null>(null);
   const [caret, setCaret] = useState(0);
   const [active, setActive] = useState(0);
   const [dismissed, setDismissed] = useState<number | null>(null);
@@ -116,10 +118,13 @@ export function Composer({
     if (!value || busy) return;
     dictation.cancel();
     setBusy(true);
+    setSendError(null);
     try {
       await onSend(value);
       setText("");
       setCaret(0);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -155,7 +160,8 @@ export function Composer({
         return;
       }
     }
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Enter that confirms an accent or an IME candidate is not a send.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void submit();
     }
@@ -251,6 +257,11 @@ export function Composer({
         <p className="composer-hint" role="status" data-testid="voice-status">
           {dictation.hint ? t(`voice.hint.${dictation.hint}` as TextKey) : t(`voice.state.${dictation.state}` as TextKey)}
           {dictation.detail ? ` ${dictation.detail}` : ""}
+        </p>
+      )}
+      {sendError && (
+        <p className="composer-hint composer-error" role="alert" data-testid="send-error">
+          {t("composer.failed", { error: sendError })}
         </p>
       )}
       <button className="composer-send" type="submit" disabled={busy || !text.trim()} aria-label={t("composer.send")} title={t("composer.send")}>

@@ -19,11 +19,46 @@ const flag = (name) => {
   const i = argv.indexOf(name);
   return i >= 0 ? argv[i + 1] : undefined;
 };
-const prompt = flag("-p") ?? "";
+const promptArg = flag("-p");
+// A long prompt comes on stdin, with no value after -p.
+const prompt = promptArg === undefined || promptArg.startsWith("--") ? readFileSync(0, "utf8") : promptArg;
+writeFileSync("fake-claude-prompt.txt", prompt);
 const resume = flag("--resume");
 const sessionId = resume ?? flag("--session-id");
 const out = (obj) => process.stdout.write(JSON.stringify(obj) + "\n");
 
+if (prompt.includes("ASK_BASH")) {
+  // Ask the Orbis permission tool about Bash through the MCP bridge, as Claude Code does, then report the answer.
+  const { spawn } = await import("node:child_process");
+  const { createInterface } = await import("node:readline");
+  const server = JSON.parse(flag("--mcp-config")).mcpServers.orbis;
+  const child = spawn(server.command, server.args, { env: { ...process.env, ...server.env }, stdio: ["pipe", "pipe", "inherit"] });
+  const lines = createInterface({ input: child.stdout });
+  const send = (msg) => child.stdin.write(JSON.stringify(msg) + "\n");
+  send({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "fake-claude", version: "1" } },
+  });
+  send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "approval_prompt", arguments: { tool_name: "Bash", input: { command: "ls" } } } });
+  send({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "team_list_bots", arguments: {} } });
+  const order = [];
+  let decision = null;
+  for await (const line of lines) {
+    const msg = JSON.parse(line);
+    order.push(msg.id);
+    if (msg.id === 2) {
+      decision = JSON.parse(msg.result.content[0].text).behavior;
+      break;
+    }
+  }
+  child.kill();
+  const reply = `bash ${decision}; answers in order ${order.join(",")}`;
+  out({ type: "system", subtype: "init", session_id: sessionId, tools: ["Bash"], mcp_servers: [] });
+  out({ type: "result", subtype: "success", is_error: false, result: reply, session_id: sessionId, usage: {} });
+  process.exit(0);
+}
 if (prompt.includes("EXIT_WITH_ERROR")) {
   process.stderr.write("fatal: the model is unavailable\n");
   process.exit(3);

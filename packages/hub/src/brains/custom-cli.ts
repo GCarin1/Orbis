@@ -27,7 +27,6 @@ export const customCliBrain: BrainAdapter = {
       cwd: ctx.workspaceDir,
       env: harnessEnv(),
       stdin: usesArg ? undefined : prompt,
-      timeoutMs: ctx.timeoutMs,
       signal: ctx.signal,
     })) {
       if (ev.type === "line") {

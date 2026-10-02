@@ -264,6 +264,61 @@ export class ConversationService {
     return targets.map((bot) => this.runFor(bot, conversation, item)).filter((run): run is Run => run !== null);
   }
 
+  /**
+   * Try a failed or cancelled run again, as the user asked (after fixing the
+   * bot's brain, say): the same bot, conversation, task and skill, in a chain
+   * of its own. A handoff's card follows the new run.
+   */
+  retry(runId: string): Run {
+    const old = this.d.engine.get(runId);
+    if (!old) throw notFound(`run ${runId}`);
+    if (old.status !== "failed" && old.status !== "cancelled") throw conflict("run_not_ended", `run ${runId} is ${old.status}; only a failed or cancelled run can be tried again`);
+    const bot = this.d.botService.get(old.botId);
+    const trigger = old.trigger.ref ? this.d.items.get(old.trigger.ref) : undefined;
+    const resolved = old.skill && this.skillResolver ? this.skillResolver(bot, `/${old.skill} ${old.input}`) : { kind: "none" as const };
+    const handoff = old.trigger.type === "handoff" && trigger?.card?.type === "handoff" ? trigger : undefined;
+    const run = this.d.engine.enqueue({
+      botId: bot.id,
+      conversationId: old.conversationId,
+      trigger: old.trigger,
+      input: old.input,
+      depth: old.depth,
+      retryOf: old.id,
+      skill: resolved.kind === "skill" ? resolved.skill : null,
+      triggerItemId: old.trigger.type === "message" || old.trigger.type === "mention" ? (old.trigger.ref ?? null) : null,
+      replyParentId: handoff ? handoff.id : old.trigger.type === "message" ? (trigger?.parentId ?? null) : null,
+      includeHistory: old.trigger.type !== "handoff",
+    });
+    if (handoff && (handoff.card!.data as { receiverRunId?: string }).receiverRunId === old.id) {
+      const { error: _error, ...data } = handoff.card!.data as Record<string, unknown>;
+      this.d.timeline.setCard(handoff.id, { type: "handoff", state: "queued", data: { ...data, receiverRunId: run.id } });
+    }
+    return run;
+  }
+
+  /** Where a run takes place, for the bot's context: its own conversation or a group, who else is there. */
+  contextSection(bot: Bot, run: Run): string | null {
+    const conv = run.conversationId ? this.d.conversations.get(run.conversationId) : undefined;
+    if (!conv) return null;
+    if (conv.kind === "direct") {
+      return conv.members[0] === bot.id
+        ? "Where you are: your own conversation with the user. Colleagues you bring in answer here too."
+        : `Where you are: the conversation of @${this.d.bots.get(conv.members[0] ?? "")?.handle ?? "a colleague"} with the user, where you were brought in.`;
+    }
+    const members = conv.members
+      .filter((id) => id !== bot.id)
+      .map((id) => this.d.bots.get(id))
+      .filter((b): b is Bot => b !== undefined)
+      .map((b) => `${b.name} (${b.handle}${b.role ? `, ${b.role}` : ""})`);
+    const lead = conv.leadBotId === bot.id ? "You lead it: the user's messages that name nobody come to you." : null;
+    return [
+      `Where you are: the group "${conv.title}"${conv.members.includes(bot.id) ? "" : ", where you were called in"}, with the user${members.length ? ` and ${members.join(", ")}` : ""}. Everyone here reads every message.`,
+      lead,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
   /** The user read the conversation: a bot that was `done` goes back to `idle`. */
   markRead(conversationId: string): void {
     const conv = this.get(conversationId);

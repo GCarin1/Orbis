@@ -211,16 +211,22 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const gateway = new ToolGateway(tools, approvals, url);
   engine.setToolHost(gateway);
 
-  // Runs left "running" by a previous process cannot resume: close them honestly.
-  for (const run of repos.runs.list({ status: "running", limit: 500 })) {
-    repos.runs.setStatus(run.id, "failed", { finishedAt: new Date().toISOString(), error: "the hub stopped during this run" });
-  }
+  // Runs left running, or waiting for the user, by a previous process cannot resume: close them honestly.
+  const close = (status: string, to: "failed" | "cancelled", error: string) => {
+    for (let batch = repos.runs.list({ status, limit: 500 }); batch.length; batch = repos.runs.list({ status, limit: 500 })) {
+      for (const run of batch) repos.runs.setStatus(run.id, to, { finishedAt: new Date().toISOString(), error });
+    }
+  };
+  close("running", "failed", "the hub stopped during this run");
+  close("waiting", "failed", "the hub stopped during this run");
   // No run survives a restart, so no bot is still thinking or working.
   for (const bot of repos.bots.list({ includeHidden: true })) {
     if (bot.state !== "idle" && bot.state !== "done") repos.bots.setState(bot.id, "idle");
   }
-  for (const run of repos.runs.list({ status: "queued", limit: 500 })) {
-    repos.runs.setStatus(run.id, "cancelled", { finishedAt: new Date().toISOString(), error: "the hub stopped before this run started" });
+  close("queued", "cancelled", "the hub stopped before this run started");
+  // A handoff whose run was closed above never ends on its own: show it failed.
+  for (const item of repos.items.openCards("handoff", ["queued", "running"])) {
+    repos.items.setCard(item.id, { ...item.card!, state: "failed", data: { ...item.card!.data, error: "the hub stopped before this handoff ended" } }, new Date().toISOString());
   }
 
   const app = Fastify({
@@ -297,6 +303,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   engine.addHooks(collaboration.hooks());
   engine.addContextSection((bot) => collaboration.contextSection(bot));
   engine.addContextSection((bot) => computer.contextSection(bot));
+  engine.addContextSection((bot, run) => conversationService.contextSection(bot, run));
   const memoryService = new MemoryService(ctx);
   for (const tool of memoryService.tools()) tools.register(tool);
   engine.addHooks(memoryService.hooks());

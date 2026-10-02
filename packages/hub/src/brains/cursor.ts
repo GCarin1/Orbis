@@ -168,11 +168,17 @@ export const cursorBrain: BrainAdapter = {
         const state: CursorState = { sessionId: null, finished: false, failed: null };
         const args = [
           ...(input.bot.brain.args ?? []),
-          ...cursorArgs({ prompt: renderFullPrompt(input), model: input.bot.brain.model, workspace: ctx.workspaceDir, resume, mcp: ctx.mcp !== null }),
+          ...cursorArgs({
+            prompt: renderFullPrompt(input, resume !== null),
+            model: input.bot.brain.model,
+            workspace: ctx.workspaceDir,
+            resume,
+            mcp: ctx.mcp !== null,
+          }),
         ];
         let emitted = false;
         let exitMessage: string | null = null;
-        for await (const ev of runProcess({ command, args, cwd: ctx.workspaceDir, env: harnessEnv(), timeoutMs: ctx.timeoutMs, signal: ctx.signal })) {
+        for await (const ev of runProcess({ command, args, cwd: ctx.workspaceDir, env: harnessEnv(), signal: ctx.signal })) {
           if (ev.type === "line") {
             let obj: Json;
             try {

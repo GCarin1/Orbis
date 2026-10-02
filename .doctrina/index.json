@@ -15,7 +15,7 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims",
         "realizes": [
@@ -31,7 +31,7 @@
         "id": "approvals",
         "path": ".doctrina/specs/approvals/spec.md",
         "status": "active",
-        "version": "0.2.1",
+        "version": "0.3.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -46,7 +46,7 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -87,7 +87,7 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -117,7 +117,7 @@
         "id": "handoff",
         "path": ".doctrina/specs/handoff/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — handoff tool (to a handle, or a role one bot holds), cards, threaded replies, one report back per delegating run, bot.report events, bot-to-bot mentions in any conversation, depth limit",
         "realizes": [
@@ -148,7 +148,7 @@
         "id": "memory",
         "path": ".doctrina/specs/memory/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -224,7 +224,7 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets)",
         "realizes": [
@@ -255,7 +255,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.13.1",
+        "version": "0.14.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -413,12 +413,12 @@
         "title": "One chain per user message bounds the work bots set off for each other",
         "status": "accepted",
         "date": "2026-10-02",
+        "landed": "2026-10-02 — `packages/hub/src/collab/handoff.ts`, `packages/hub/test/bot-behaviour.test.ts`",
         "scope": [
           "conversations",
           "handoff"
         ],
-        "summary": "Every run carries a chain id: the user message that started the work, or",
-        "landed": "2026-10-02 — `packages/hub/src/collab/handoff.ts`, `packages/hub/test/bot-behaviour.test.ts`"
+        "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
     "changes": [],
@@ -904,6 +904,48 @@
           }
         ],
         "lane": "product (confident; signals: bug, feature)"
+      },
+      {
+        "id": "0022-chat-and-bot-deep-audit",
+        "title": "Chat and bot deep audit",
+        "path": ".doctrina/changes/archive/2026-10-02-0022-chat-and-bot-deep-audit",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "approvals",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "handoff",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "memory",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: bug, audit)"
       }
     ],
     "skills": [

@@ -6,7 +6,7 @@
 **Realizes:** SC5
 **Depends on:** tool-gateway, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.2.1
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -41,6 +41,7 @@ a model can never override a locked rule.
 ### State-driven
 
 - While an approval is pending, the system shall keep the run paused, bounded only by the run's own timeout, and list the approval in every client's approvals inbox.
+- While a run has more than one request to the user open, the system shall keep it `waiting` until the last one is answered.
 
 ### Unwanted-behavior (must-not)
 
@@ -59,6 +60,7 @@ a model can never override a locked rule.
 3. [verified] "Allow always" stores a grant so that the next identical call runs without a card — verified by `packages/hub/test/approvals/approvals.test.ts`.
 4. [verified] A draft is delivered only after Send, with the user's edits, and a discarded draft is never delivered — verified by `packages/hub/test/approvals/drafts.test.ts`.
 5. [verified] In a draft-only routine run (every routine test run), an `external` tool call becomes a draft card and does not run, and the bot is told so — verified by `packages/hub/test/routines.test.ts`.
+6. [verified] A run with two open approvals stays waiting after the first answer and runs again after the second — verified by `packages/hub/test/chat-audit.test.ts`.
 
 ## Maturity
 

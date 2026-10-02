@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -32,6 +32,9 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall use `claude-opus-5` for an `anthropic` brain that names no model, with adaptive thinking on the models that support it.
 - The system shall run the `ollama` and `lmstudio` brains through the OpenAI-compatible adapter at the bot's base URL, else at ORBIS_OLLAMA_URL (default `http://127.0.0.1:11434/v1`) or ORBIS_LMSTUDIO_URL (default `http://127.0.0.1:1234/v1`), with no API key unless the bot names a key secret.
 - The system shall start a Windows `.cmd` or `.bat` CLI brain by running the Node.js script that file points to, so that a multi-line prompt reaches the CLI as one argument.
+- The system shall stop a CLI brain's process at the run's time limit only through the run's own clock, which does not count the time the run waits for the user; the process has no wall-clock limit of its own.
+- The system shall send a CLI brain a prompt longer than 8,000 characters on its standard input instead of its command line (Claude Code `-p` with no prompt argument, Codex `-`).
+- The system shall tell every bot today's date and the hub's time zone, and to answer in the language the user writes in.
 
 ### Event-driven
 
@@ -51,6 +54,10 @@ brain are owned by `contracts/cli-harnesses`.
 - When an API brain cannot reach its server, the system shall fail the run naming the address, the network error code and the server to start.
 - When a bot's brain is not ready (no API key, no CLI), the system shall fail its run with the reason and a pointer to that bot's settings.
 - When the hub starts, the system shall set every bot whose state is neither `idle` nor `done` to `idle`.
+- When a stored Claude Code, Codex or Cursor session can no longer be resumed, the system shall start a new session with the whole recent conversation, not only what came after the last run.
+- When the Codex CLI or the Gemini CLI starts the Orbis MCP server, the system shall set its tool timeout to 24 hours, so a call waiting for the user's approval is not abandoned.
+- When an OpenAI-compatible server answers 429, 500, 502, 503 or 504, the system shall wait for its Retry-After (at most 30 s) or 2 s then 6 s, and send the same step again up to twice.
+- When an OpenAI-compatible server returns tool calls, the system shall run them whatever finish reason it gives, and when a reply holds `<think>` blocks, the system shall show them as thinking and leave them out of the reply.
 
 ### State-driven
 
@@ -86,6 +93,7 @@ brain are owned by `contracts/cli-harnesses`.
 13. [verified] With fake `npm` and `codex` executables, the hub reports Codex missing, installs it, starts a device sign-in whose link and code it reports, then the ChatGPT account, signs out, gives the browser sign-in link and reports a cancelled sign-in; the parsers read the output the real Codex CLI prints — verified by `packages/hub/test/runtimes/codex-account.test.ts`.
 14. [verified] A run that waits 1.5 s for an approval past its 1 s timeout ends done; an LM Studio bot at its step limit answers in a third request with no tools, and a closed server fails naming the address and ECONNREFUSED; an openai bot with no key fails pointing to its settings; bots start idle after a restart — verified by `packages/hub/test/bot-behaviour.test.ts`.
 15. [verified] With the real shim texts, codex.cmd runs its script with node, Claude Code 2's claude.CMD runs claude.exe, npx.cmd runs npx-cli.js, a batch file naming no program is refused, and an MCP server's crash is reported by its error line — verified by `packages/hub/test/runtimes/windows-shims.test.ts`.
+16. [verified] A Claude Code run whose approval is answered after its 1 s limit ends done; a gone Claude Code session and a gone Codex thread restart with the earlier conversation in the prompt, and Codex gets the 24-hour tool timeout; a 12,000-character paste goes on stdin; an LM Studio bot retries a 429, runs a tool call ended with `stop` and keeps `<think>` out of its reply — verified by `packages/hub/test/chat-audit.test.ts`.
 
 ## Maturity
 

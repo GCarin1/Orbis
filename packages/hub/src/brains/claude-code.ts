@@ -1,11 +1,12 @@
 // Claude Code as a subscription brain (contracts/cli-harnesses § claude-code).
 import { randomUUID } from "node:crypto";
-import { resolveExecutable, runProcess, describeExit, harnessEnv } from "./process.js";
+import { MAX_ARGV_PROMPT, resolveExecutable, runProcess, describeExit, harnessEnv } from "./process.js";
 import { renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, McpWiring } from "./types.js";
 
 export interface ClaudeArgsOptions {
-  prompt: string;
+  /** The prompt, or null when it is sent on stdin. */
+  prompt: string | null;
   system: string;
   model?: string;
   sessionId: string;
@@ -14,7 +15,7 @@ export interface ClaudeArgsOptions {
 }
 
 export function claudeArgs(o: ClaudeArgsOptions): string[] {
-  const args = ["-p", o.prompt, "--output-format", "stream-json", "--verbose", "--append-system-prompt", o.system];
+  const args = ["-p", ...(o.prompt === null ? [] : [o.prompt]), "--output-format", "stream-json", "--verbose", "--append-system-prompt", o.system];
   if (o.model) args.push("--model", o.model);
   if (o.mcp) {
     args.push("--mcp-config", JSON.stringify({ mcpServers: { orbis: { type: "stdio", ...o.mcp.server } } }));
@@ -127,10 +128,12 @@ export const claudeCodeBrain: BrainAdapter = {
 
     for (const [index, attempt] of attempts.entries()) {
       const state: ClaudeStreamState = { sessionId: null, toolNames: new Map(), finished: false };
+      const prompt = renderTask(input, attempt.resume);
+      const viaStdin = prompt.length > MAX_ARGV_PROMPT;
       const args = [
         ...(input.bot.brain.args ?? []),
         ...claudeArgs({
-          prompt: renderTask(input),
+          prompt: viaStdin ? null : prompt,
           system: renderSystem(input),
           model: input.bot.brain.model,
           sessionId: attempt.sessionId,
@@ -147,7 +150,7 @@ export const claudeCodeBrain: BrainAdapter = {
         args,
         cwd: ctx.workspaceDir,
         env: harnessEnv(),
-        timeoutMs: ctx.timeoutMs,
+        ...(viaStdin ? { stdin: prompt } : {}),
         signal: ctx.signal,
       })) {
         if (ev.type === "line") {

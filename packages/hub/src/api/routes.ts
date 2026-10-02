@@ -107,4 +107,9 @@ export async function registerCoreRoutes(root: FastifyInstance, ctx: HubContext)
     if (!repos.runs.get(req.params.id)) throw notFound(`run ${req.params.id}`);
     return { cancelled: engine.cancel(req.params.id) };
   });
+
+  app.post("/api/v1/runs/:id/retry", { schema: { tags: ["runs"], params: IdParams } }, async (req, reply) => {
+    reply.code(201);
+    return conversationService.retry(req.params.id);
+  });
 }

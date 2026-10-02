@@ -45,6 +45,8 @@ curl -s -H "$H" -H 'content-type: application/json' -d '{"text":"hello"}' \
   http://127.0.0.1:7420/api/v1/conversations/$CONV/messages     # → { item, runs }
 curl -s -H "$H" "http://127.0.0.1:7420/api/v1/conversations/$CONV/items?limit=50"
 curl -s -H "$H" http://127.0.0.1:7420/api/v1/runs/<runId>          # steps, usage, reply
+curl -s -H "$H" -X POST http://127.0.0.1:7420/api/v1/runs/<runId>/cancel   # stop it (the chat's ■)
+curl -s -H "$H" -X POST http://127.0.0.1:7420/api/v1/runs/<runId>/retry    # try a failed run again → the new run
 ```
 
 ## Groups

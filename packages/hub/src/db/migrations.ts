@@ -222,4 +222,15 @@ CREATE TABLE settings (
     sql: `ALTER TABLE runs ADD COLUMN chain_id TEXT;
 CREATE INDEX idx_runs_chain ON runs(chain_id);`,
   },
+  {
+    // specs/memory: summaries of runs a colleague's mention or a report started
+    // are no memories of the bot's own work; the bot-to-bot loop of change 0021
+    // left many identical ones that pulled bots back into it (change 0022).
+    version: 7,
+    sql: `DELETE FROM memory WHERE kind = 'summary' AND source IN (
+  SELECT 'run:' || id FROM runs WHERE trigger_type IN ('mention', 'report'));
+DELETE FROM memory WHERE kind = 'summary' AND rowid NOT IN (
+  SELECT MIN(rowid) FROM memory WHERE kind = 'summary' GROUP BY COALESCE(bot_id, ''), text);
+ALTER TABLE runs ADD COLUMN retry_of TEXT;`,
+  },
 ];

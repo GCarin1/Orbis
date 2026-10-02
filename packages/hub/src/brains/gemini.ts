@@ -26,7 +26,15 @@ export function installGeminiSettings(workspace: string, mcp: McpWiring | null):
   } catch {
     settings = {};
   }
-  settings.mcpServers = { ...(settings.mcpServers ?? {}), orbis: { command: mcp.server.command, args: mcp.server.args, env: mcp.server.env, trust: true } };
+  settings.mcpServers = { ...(settings.mcpServers ?? {}), orbis: {
+      command: mcp.server.command,
+      args: mcp.server.args,
+      env: mcp.server.env,
+      trust: true,
+      // The Gemini CLI gives up on a tool call after 10 minutes by default; one waiting for the user's approval can take longer.
+      timeout: 86_400_000,
+    },
+  };
   mkdirSync(dir, { recursive: true });
   writeFileSync(file, JSON.stringify(settings, null, 2), { mode: 0o600 });
   return () => {
@@ -105,7 +113,6 @@ export const geminiBrain: BrainAdapter = {
         args: [...(input.bot.brain.args ?? []), ...geminiArgs({ prompt: renderFullPrompt(input), model: input.bot.brain.model })],
         cwd: ctx.workspaceDir,
         env: harnessEnv(),
-        timeoutMs: ctx.timeoutMs,
         signal: ctx.signal,
       })) {
         if (ev.type === "line") {

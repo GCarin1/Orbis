@@ -210,6 +210,8 @@ export interface Run {
    * the chain they form can be bounded (specs/conversations).
    */
   chainId: string;
+  /** The failed or cancelled run the user asked to try again with this one. */
+  retryOf?: string | null;
   status: RunStatus;
   input: string;
   skill: string | null;

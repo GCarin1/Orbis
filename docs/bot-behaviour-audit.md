@@ -45,6 +45,35 @@ may run and how it fails. Every finding below is a regression test in
 - Bots have no built-in web search: connect a search server from
   **🧩 Tools** (Exa needs no account) and tick the bots that may use it.
 
+## Second round: the chat and the bots in depth
+
+Change `0022-chat-and-bot-deep-audit` read every path of a run — the queue,
+what the bot is told, how each brain starts and stops, how tool calls and
+approvals travel, what the bot remembers and how the chat shows it. Every
+finding is a regression test in `packages/hub/test/chat-audit.test.ts` or
+`packages/web/test/chat-audit.test.tsx`.
+
+| # | Finding | Effect for the user | Fix |
+|---|---|---|---|
+| 8 | CLI brains (Claude Code, Codex, Gemini, Cursor) had their own 15-minute process clock besides the run's | The first round's "waiting does not count" fix covered API brains only: a Claude Code bot still died mid-approval | Only the run's clock ends a run, for every brain |
+| 9 | The MCP bridge sent one call at a time with Node's `fetch`, which gives up on an answer after 5 minutes | An approval answered after 5 minutes failed; other calls waited behind it | Calls go side by side over `node:http`, with no answer time limit |
+| 10 | Codex gives up on an MCP tool after 60 s, the Gemini CLI after 10 min | A Codex bot's approved action failed after a minute | 24-hour tool timeout for the Orbis server |
+| 11 | A Codex thread that no longer exists (signed out, sessions cleared) failed with "no rollout found" | **Every** later message to that bot in that conversation failed | A new thread starts, with the whole conversation |
+| 12 | A new session after a lost one got only the messages since the last run | The bot "forgot" the conversation | The whole recent conversation is sent when a session starts |
+| 13 | Prompts went on the command line | A long paste could pass Windows' 32,767-character limit | Prompts over 8,000 characters go on stdin |
+| 14 | Every successful run saved a summary memory, the loop's answers too | Old roster answers came back as "memories" and pulled bots into repeating them | No summaries of mention or report answers, no duplicates, 200 per bot, at most 3 in a context; migration 7 removes the loop's |
+| 15 | Memory search matched words like "de", "que", "the" | Unrelated summaries ranked as relevant | Common Portuguese and English words are left out |
+| 16 | A message longer than 12,000 characters emptied the history | After a long report, the bot saw no conversation at all | Long items are cut to their start and end |
+| 17 | Bots did not know the date, where they were or who was there | Wrong dates; answers in English to Portuguese | Today's date and time zone, "answer in the user's language", the group and its members |
+| 18 | A bot's state followed its last finished run | A bot busy in another conversation showed "done" | It stays busy while any run is running or waiting |
+| 19 | Runs left waiting for an approval by a stopped hub stayed "waiting" | Endless "…" bubbles and a bot stuck "waiting" | They are failed at start, with their handoff cards |
+| 20 | Two approvals open in one run: the first answer resumed it | Its clock ran while the second still waited | The run waits until the last answer |
+| 21 | OpenAI-compatible servers: no retry; tool calls ignored when the server says `stop`; `<think>` text in replies | Rate limits failed runs; tools silently skipped; reasoning shown as the answer | Two retries; tool calls always run; `<think>` shown as thinking |
+| 22 | The chat had no way to stop a bot | During the loop the user could only wait | ■ Stop on each busy bot cancels its run and queue |
+| 23 | Replies are Markdown but showed as raw text | `**`, `-` and tables shown literally | Markdown is rendered as elements (never as HTML) |
+| 24 | A failed run could only be retyped | After fixing a bot's brain the user had to resend | **Try again** on the failure line |
+| 25 | The chat jumped to the bottom on every new item, showed 200 items only, dropped send errors | Lost place while reading; no older messages; a failed send said nothing | Keeps your place with a "new below" button; **Load earlier messages**; the error shows and the text stays |
+
 ## Settings
 
 | Variable | Default | Effect |

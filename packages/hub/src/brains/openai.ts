@@ -54,6 +54,42 @@ export async function* sseChunks(body: ReadableStream<Uint8Array>): AsyncGenerat
   }
 }
 
+/**
+ * Reasoning models served locally (Qwen3, DeepSeek-R1) write their reasoning
+ * inside <think>…</think> in the answer: it is thinking, not the reply. An
+ * unclosed block (the model stopped while thinking) is thinking too.
+ */
+export function splitThinking(content: string): { thinking: string; text: string } {
+  const thinking: string[] = [];
+  let text = content.replace(/<think>([\s\S]*?)<\/think>/gi, (_, inner: string) => {
+    thinking.push(inner.trim());
+    return "";
+  });
+  const open = text.search(/<think>/i);
+  if (open >= 0) {
+    thinking.push(text.slice(open + 7).trim());
+    text = text.slice(0, open);
+  }
+  return { thinking: thinking.filter(Boolean).join("\n\n"), text: text.trim() };
+}
+
+/** Statuses worth one more try after a pause: rate limits and a busy or restarting server. */
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+const RETRY_DELAYS_MS = [2_000, 6_000];
+
+/** How long to wait before retrying: the server's Retry-After (at most 30 s), or the next default delay. */
+export function retryDelay(res: Pick<Response, "headers">, attempt: number): number {
+  const header = Number(res.headers.get("retry-after"));
+  if (Number.isFinite(header) && header > 0) return Math.min(header * 1000, 30_000);
+  return RETRY_DELAYS_MS[attempt] ?? RETRY_DELAYS_MS.at(-1)!;
+}
+
+const sleep = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => (clearTimeout(timer), reject(signal.reason)), { once: true });
+  });
+
 /** Servers that answer "this model cannot use tools" instead of ignoring them (Ollama does). */
 const NO_TOOL_SUPPORT = /does not support tools|tools? (?:are|is) not supported|not support(?:ed)? (?:for )?tool/i;
 
@@ -121,6 +157,7 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
   ];
   const maxSteps = input.bot.brain.maxSteps ?? 25;
   let includeUsage = true;
+  let retries = 0;
   yield { type: "run.started" };
 
   for (let step = 0; step < maxSteps; step++) {
@@ -159,6 +196,15 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
     }
     if (!res.ok || !res.body) {
       const text = await res.text().catch(() => "");
+      // A rate limit or a busy server: wait and try the same step again, twice at most.
+      if (RETRYABLE.has(res.status) && retries < RETRY_DELAYS_MS.length) {
+        const wait = retryDelay(res, retries);
+        retries++;
+        yield { type: "step.thinking", text: `${baseUrl} answered HTTP ${res.status}; trying again in ${Math.round(wait / 1000)}s.` };
+        await sleep(wait, ctx.signal);
+        step--;
+        continue;
+      }
       // Some compatible servers reject stream_options: retry once without it.
       if (res.status === 400 && includeUsage && /stream_options/i.test(text)) {
         includeUsage = false;
@@ -216,10 +262,17 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
       if (choice.finish_reason) finish = choice.finish_reason;
     }
 
-    if (content.trim()) yield { type: "step.text", text: content };
-    const toolCalls = [...calls.entries()].sort(([a], [b]) => a - b).map(([, c], i) => ({ ...c, id: c.id || `call_${step}_${i}` }));
-    if (toolCalls.length === 0 || finish === "stop") {
-      yield { type: "run.finished", reply: content };
+    retries = 0;
+    const split = splitThinking(content);
+    if (split.thinking) yield { type: "step.thinking", text: split.thinking };
+    if (split.text) yield { type: "step.text", text: split.text };
+    // Some servers end a turn that calls tools with finish_reason "stop": the calls decide, not the label.
+    const toolCalls = [...calls.entries()]
+      .filter(([, c]) => c.name)
+      .sort(([a], [b]) => a - b)
+      .map(([, c], i) => ({ ...c, id: c.id || `call_${step}_${i}` }));
+    if (toolCalls.length === 0) {
+      yield { type: "run.finished", reply: split.text };
       return;
     }
     if (finish === "length") {

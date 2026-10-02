@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -27,6 +27,7 @@ timeline changes.
 - The system shall broadcast every created or changed timeline item over the WebSocket stream as a `timeline.item` event.
 - The system shall persist conversations and timelines in the hub database.
 - The system shall give every run a chain id: a user message starts one chain that every bot it runs shares, and the handoffs, reports back and mentions that follow from them carry it on.
+- The system shall tell each run where it takes place: the bot's own conversation, a colleague's conversation it was brought into, or a group with its title, its other members and whether the bot leads it.
 
 ### Event-driven
 
@@ -37,6 +38,7 @@ timeline changes.
 - When a bot's reply in a direct or group conversation mentions one or two other bots of the team by `@handle` or by role, the system shall start one run, triggered as `mention`, for each of them in that conversation, in the chain of the run that replied, subject to the chain limits and the exceptions of `specs/handoff`.
 - When a client asks for the direct conversation of a bot that has none, the system shall create it, so that each bot has at most one direct conversation.
 - When a client adds or removes a reaction on a timeline item, the system shall update the item's reactions and broadcast the change.
+- When the user asks to try a failed or cancelled run again, the system shall start a new run of the same bot in the same conversation with the same task and skill, recording the run it retries, and point a handoff card at the new run.
 
 ### State-driven
 
@@ -49,6 +51,7 @@ timeline changes.
 - The system shall not accept a message with empty text and no attachment.
 - The system shall not wake any bot for a reply that names more than two bots of the team, which reads as a list of the team; it shall post a `mention.list` event instead.
 - The system shall not start a run for a bot that a `mention` run's reply names, nor wake by mention a bot that already ran in the same chain.
+- The system shall not try again a run that is queued, running, waiting or done; it shall answer 409.
 
 ## Acceptance criteria
 
@@ -60,6 +63,7 @@ timeline changes.
 6. [verified] A bot's reply in a direct conversation that mentions a colleague by role starts that colleague's run in the same conversation, and a user message in a group that mentions a role runs the bot holding it even outside the group — verified by `packages/hub/test/team.test.ts`.
 7. [verified] A lead's reply listing three colleagues wakes none and posts `mention.list`; a reply calling one colleague wakes it once as `mention`, and its answer naming the lead back wakes no one; `@everyone` runs each member once — verified by `packages/hub/test/bot-behaviour.test.ts`.
 8. [verified] Two bots one user message mentions, whose replies mention each other, run once each, in one chain — verified by `packages/hub/test/handoff.test.ts`.
+9. [verified] A group run is told the group's title, the other members and that the bot leads it, and a direct run that it is the bot's own conversation; a run that failed for a missing key is tried again after the brain is fixed and replies, and trying a done run again answers 409 — verified by `packages/hub/test/chat-audit.test.ts`.
 
 ## Maturity
 

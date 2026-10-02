@@ -1,5 +1,5 @@
 // OpenAI Codex CLI as a subscription brain (contracts/cli-harnesses § codex).
-import { describeExit, harnessEnv, resolveExecutable, runProcess } from "./process.js";
+import { MAX_ARGV_PROMPT, describeExit, harnessEnv, resolveExecutable, runProcess } from "./process.js";
 import { renderFullPrompt, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, McpWiring } from "./types.js";
 
@@ -18,6 +18,11 @@ export function codexMcpOverrides(mcp: McpWiring | null): string[] {
     `mcp_servers.orbis.args=${toml(mcp.server.args)}`,
     "-c",
     `mcp_servers.orbis.env={${env}}`,
+    // Codex gives up on a tool call after 60 s by default; one waiting for the user's approval takes longer.
+    "-c",
+    "mcp_servers.orbis.tool_timeout_sec=86400",
+    "-c",
+    "mcp_servers.orbis.startup_timeout_sec=60",
   ];
 }
 
@@ -152,6 +157,9 @@ export function mapCodexEvent(obj: Json, state: CodexState): BrainEvent[] {
   return out;
 }
 
+/** What Codex prints when asked to resume a thread it does not have. */
+const MISSING_THREAD = /no rollout found|thread\/resume failed|(thread|session|conversation) .*not found/i;
+
 export const codexBrain: BrainAdapter = {
   kind: "codex",
 
@@ -162,41 +170,60 @@ export const codexBrain: BrainAdapter = {
 
   async *run(input: BrainInput, ctx: BrainContext): AsyncGenerator<BrainEvent> {
     const command = resolveExecutable(input.bot.brain.command ?? "codex")!;
-    const threadId = ctx.sessions.get();
-    const prompt = threadId ? renderTask(input) : renderFullPrompt(input);
-    const state: CodexState = { threadId: null, started: new Set(), lastMessage: null, finished: false, failed: null };
-    let exitMessage: string | null = null;
+    const stored = ctx.sessions.get();
+    const attempts: Array<string | null> = stored ? [stored, null] : [null];
 
-    for await (const ev of runProcess({
-      command,
-      args: [...(input.bot.brain.args ?? []), ...codexArgs({ prompt, workspace: ctx.workspaceDir, model: input.bot.brain.model, threadId, mcp: ctx.mcp })],
-      cwd: ctx.workspaceDir,
-      env: harnessEnv(),
-      timeoutMs: ctx.timeoutMs,
-      signal: ctx.signal,
-    })) {
-      if (ev.type === "line") {
-        let obj: Json;
-        try {
-          obj = JSON.parse(ev.line) as Json;
-        } catch {
-          continue;
+    for (const [index, threadId] of attempts.entries()) {
+      // A resumed thread holds the earlier turns; a new one gets the whole context.
+      const prompt = threadId ? renderTask(input, true) : renderFullPrompt(input);
+      // `-` reads a long prompt from stdin (Windows caps a command line at 32,767 characters).
+      const viaStdin = prompt.length > MAX_ARGV_PROMPT;
+      const state: CodexState = { threadId: null, started: new Set(), lastMessage: null, finished: false, failed: null };
+      let exitMessage: string | null = null;
+      let missingThread = false;
+      let emitted = false;
+
+      for await (const ev of runProcess({
+        command,
+        args: [...(input.bot.brain.args ?? []), ...codexArgs({ prompt: viaStdin ? "-" : prompt, workspace: ctx.workspaceDir, model: input.bot.brain.model, threadId, mcp: ctx.mcp })],
+        cwd: ctx.workspaceDir,
+        env: harnessEnv(),
+        ...(viaStdin ? { stdin: prompt } : {}),
+        signal: ctx.signal,
+      })) {
+        if (ev.type === "line") {
+          let obj: Json;
+          try {
+            obj = JSON.parse(ev.line) as Json;
+          } catch {
+            continue;
+          }
+          for (const mapped of mapCodexEvent(obj, state)) {
+            if (mapped.type !== "run.started") emitted = true;
+            yield mapped;
+          }
+        } else if (ev.code !== 0 || ev.timedOut || ev.aborted || ev.spawnError) {
+          exitMessage = describeExit(ev, ctx.timeoutMs);
+          missingThread = threadId !== null && MISSING_THREAD.test(`${ev.stderrTail}\n${state.failed ?? ""}`);
         }
-        yield* mapCodexEvent(obj, state);
-      } else if (ev.code !== 0 || ev.timedOut || ev.aborted || ev.spawnError) {
-        exitMessage = describeExit(ev, ctx.timeoutMs);
       }
-    }
 
-    if (state.threadId) ctx.sessions.set(state.threadId);
-    if (state.failed) {
-      yield { type: "run.failed", error: state.failed };
-    } else if (exitMessage && !state.finished) {
-      yield { type: "run.failed", error: exitMessage };
-    } else if (!state.lastMessage) {
-      yield { type: "run.failed", error: exitMessage ?? "Codex ended without a reply" };
-    } else {
-      yield { type: "run.finished", reply: state.lastMessage };
+      // A stored thread Codex no longer has (signed out, sessions cleared): forget it and start a new one.
+      if (missingThread && !emitted && !ctx.signal.aborted && index < attempts.length - 1) {
+        ctx.sessions.clear();
+        continue;
+      }
+      if (state.threadId) ctx.sessions.set(state.threadId);
+      if (state.failed) {
+        yield { type: "run.failed", error: state.failed };
+      } else if (exitMessage && !state.finished) {
+        yield { type: "run.failed", error: exitMessage };
+      } else if (!state.lastMessage) {
+        yield { type: "run.failed", error: exitMessage ?? "Codex ended without a reply" };
+      } else {
+        yield { type: "run.finished", reply: state.lastMessage };
+      }
+      return;
     }
   },
 };

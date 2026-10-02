@@ -8,9 +8,15 @@ export function renderMemories(ctx: AssembledContext): string {
   return ["What you remember:", ...lines].join("\n");
 }
 
-export function renderHistory(ctx: AssembledContext): string {
-  if (ctx.history.length === 0) return "";
-  const lines = ctx.history.map((h) => `[${h.author}] ${h.text}`);
+/** The history to send: all of it, or for a resumed session only what came after its last run. */
+export function historyFor(ctx: AssembledContext, resumed: boolean): AssembledContext["history"] {
+  return resumed && ctx.since ? ctx.history.filter((h) => h.at > ctx.since!) : ctx.history;
+}
+
+export function renderHistory(ctx: AssembledContext, resumed = false): string {
+  const history = historyFor(ctx, resumed);
+  if (history.length === 0) return "";
+  const lines = history.map((h) => `[${h.author}] ${h.text}`);
   return ["Recent conversation (oldest first):", ...lines].join("\n");
 }
 
@@ -20,9 +26,9 @@ export function renderSystem(input: BrainInput): string {
 }
 
 /** The user-turn text: recent conversation, the invoked skill and the task. */
-export function renderTask(input: BrainInput): string {
+export function renderTask(input: BrainInput, resumed = false): string {
   const parts: string[] = [];
-  const history = renderHistory(input.context);
+  const history = renderHistory(input.context, resumed);
   if (history) parts.push(history);
   if (input.skill) {
     parts.push(`Follow the skill "${input.skill.name}":\n${input.skill.body.trim()}`);
@@ -32,6 +38,6 @@ export function renderTask(input: BrainInput): string {
 }
 
 /** One prompt holding everything, for brains with no separate system prompt. */
-export function renderFullPrompt(input: BrainInput): string {
-  return `${renderSystem(input)}\n\n${renderTask(input)}`;
+export function renderFullPrompt(input: BrainInput, resumed = false): string {
+  return `${renderSystem(input)}\n\n${renderTask(input, resumed)}`;
 }

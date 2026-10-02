@@ -11,6 +11,8 @@ import type { ToolDefinition } from "../tools/registry.js";
 import { IdParams } from "../api/schemas.js";
 
 const SUMMARY_CHARS = 500;
+/** The run summaries a bot keeps; older ones are forgotten (its own notes and the team's are never pruned). */
+export const MAX_SUMMARIES = 200;
 const Kind = Type.Union([Type.Literal("preference"), Type.Literal("role"), Type.Literal("fact"), Type.Literal("summary")]);
 
 export class MemoryService {
@@ -65,13 +67,22 @@ export class MemoryService {
     ];
   }
 
-  /** A successful run leaves a summary: the task and the start of the reply. */
+  /**
+   * A successful run of the bot's own work (a message, a handoff, a routine,
+   * an API call) leaves a summary: the task and the start of the reply. An
+   * answer to a colleague's mention or a report is not its own work, the same
+   * summary is kept once, and a bot keeps its newest MAX_SUMMARIES.
+   */
   hooks(): RunHooks {
     return {
       onFinished: (run) => {
         if (run.status !== "done" || !run.reply) return;
+        if (run.trigger.type === "mention" || run.trigger.type === "report") return;
         const task = run.input.length > 300 ? `${run.input.slice(0, 300)}…` : run.input;
-        this.add(run.botId, "summary", `Task: ${task}\nResult: ${run.reply.slice(0, SUMMARY_CHARS)}`, `run:${run.id}`);
+        const text = `Task: ${task}\nResult: ${run.reply.slice(0, SUMMARY_CHARS)}`;
+        if (this.hub.repos.memory.has(run.botId, "summary", text)) return;
+        this.add(run.botId, "summary", text, `run:${run.id}`);
+        this.hub.repos.memory.prune(run.botId, "summary", MAX_SUMMARIES);
       },
     };
   }

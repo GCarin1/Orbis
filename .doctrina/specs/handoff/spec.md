@@ -6,7 +6,7 @@
 **Realizes:** SC4
 **Depends on:** conversations, agent-runtimes, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -36,6 +36,7 @@ themselves forever.
 - When every handoff with `returnResult` that one run of a bot made has ended as done or failed, the system shall start one run of that bot, triggered as `report`, in the conversation of the handoffs, whose input holds each receiver's answer or failure and asks the bot to tell the user the outcome.
 - When the receiving bot is deleted before its handoff run starts, the system shall set the handoff card state to `failed`.
 - When a `report` run finishes with a reply, the system shall post the reply as a new message of the conversation, not a thread reply, and broadcast a `bot.report` event naming the bot, the conversation, the item and the text.
+- When the hub starts with handoff cards still `queued` or `running`, the system shall set them to `failed`, as their runs did not survive the restart.
 
 ### Unwanted-behavior (must-not)
 
@@ -55,6 +56,7 @@ themselves forever.
 5. [verified] A run that hands off to two bots wakes its bot once, as a `report` run, after both ended, with the answer of one and the failure of the other; the report is a new message, a `bot.report` event names it, and the report's mentions start no one — verified by `packages/hub/test/team.test.ts`.
 6. [verified] A handoff to a role reaches the one bot holding it, and a role two bots hold is refused naming both — verified by `packages/hub/test/team.test.ts`.
 7. [verified] With ORBIS_MAX_CHAIN_RUNS at 3, a bot handing off to four reports gets two acknowledgments and two refusals, three runs exist and a `chain.limit` event is posted — verified by `packages/hub/test/bot-behaviour.test.ts`.
+8. [verified] A handoff card left running by a stopped hub reads failed after the restart — verified by `packages/hub/test/chat-audit.test.ts`.
 
 ## Maturity
 
