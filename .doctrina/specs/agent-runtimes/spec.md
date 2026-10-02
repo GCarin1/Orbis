@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.16.0
+**Version:** 0.17.0
 
 ## Purpose
 
@@ -45,6 +45,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall keep from a pasted cURL, for every request to the chat API, the browser headers `User-Agent`, `Accept-Language`, `Referer`, `Cache-Control`, `Pragma`, `Priority`, `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform`, `sec-fetch-dest`, `sec-fetch-mode` and `sec-fetch-site`, and shall keep no cookie, no key and no Authorization header.
 - The system shall send a `chat-http` brain's curl requests through the proxy the bot names, else the environment's (HTTPS_PROXY), else on Windows the proxy Windows uses for the chat's address (its Internet settings, a PAC script included), signing in to that proxy as the logged-in user; `direct` shall use none.
 - The system shall accept a `chat-http` curl program whose file name is curl or curl.exe in any letter case.
+- The system shall give a `chat-http` bot the Bearer token its chat API's bots share (the API being the origin of the bot's address), else the bot's own token, and shall say, when there is none or it expired, to paste a new one in Settings → Brains → Chat API tokens, where it applies to every bot of that API.
 
 ### Event-driven
 
@@ -137,6 +138,7 @@ brain are owned by `contracts/cli-harnesses`.
 26. [verified] A firewall that lets through only what comes from the company's proxy refuses a bot with no proxy (naming the way and pointing to the connection test) and passes one through it; the Windows proxy is used when the bot names none and the environment has none, read from PowerShell without the query and with quotes escaped; the connection test marks the proxied curl ok and the direct curl and Node blocked without posting a message; a template neither keeps nor plants a curl program or proxy, and a program not named curl is refused — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 27. [verified] curl is given the proxy with the logged-in user's sign-in and an empty no-proxy list, or no proxy at all for `direct`, or nothing for the environment's; Windows' curl and Git's are found beside the one on PATH, once each; the environment's proxy is read for the address's scheme — verified by `packages/hub/test/runtimes/http-transport.test.ts`.
 28. [verified] A firewall that reads the message blocks Orbis's instructions with an error that points to plain chat, and lets a plain chat through carrying the bot's name, role and description and none of the instructions, tools, shell, placeholder or tag; a plain chat that is still blocked is told so; `C:\\WINDOWS\\system32\\curl.EXE` is accepted and a program not named curl is not — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+29. [verified] Two bots of one API use the token saved once for it and a bot of another API does not; changing it once changes it for both; a bot from before keeps its own token until its API has a shared one, which then wins; the shared token is masked in what a run stores; a missing or expired token points to Settings → Brains — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 

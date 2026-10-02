@@ -6,7 +6,7 @@
 **Realizes:** SC9
 **Depends on:** bots, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -24,6 +24,7 @@ the moment a tool executes, redacting it from everything that comes back.
 - The system shall let tool inputs reference a secret as `{{secret:NAME}}` and replace the placeholder with the value only inside the tool gateway at execution time.
 - The system shall replace every occurrence of a secret value in tool results, run events, timeline items and log lines with `••••` before storing or returning them.
 - The system shall authenticate each encrypted value together with its bot id and name, so a value copied to another bot or name does not decrypt.
+- The system shall keep one Bearer token per chat API, encrypted with the hub's secrets, list each chat API that `chat-http` bots use with its token's status and its bots, and replace an API's token on request; it shall never return the token itself.
 
 ### Event-driven
 
@@ -36,6 +37,7 @@ the moment a tool executes, redacting it from everything that comes back.
 - The system shall not place a secret value in any brain input, timeline item, API response, run event or log line.
 - The system shall not resolve a placeholder against another bot's vault.
 - The system shall not resolve a placeholder in the input of a tool that only posts inside Orbis (drafts, conversation posts, memory, handoffs); only `computer.shell`, `computer.write_file`, `browser.open`, `browser.type` and `http.fetch` receive values.
+- The system shall not keep a value with no token, nor a token for an address that is not http(s), and shall not leave a shared token unmasked in what a run stores or shows.
 
 ## Acceptance criteria
 
@@ -43,6 +45,7 @@ the moment a tool executes, redacting it from everything that comes back.
 2. [verified] The secret-request flow stores the value and resumes the run, and neither the timeline nor any API response contains the value — verified by `packages/hub/test/secrets.test.ts`.
 3. [verified] A shell command using `{{secret:NAME}}` receives the value, and its echoed output returns to the brain with `••••` in place of the value — verified by `packages/hub/test/secrets.test.ts`.
 4. [verified] A placeholder naming another bot's secret is not resolved — verified by `packages/hub/test/secrets.test.ts`.
+5. [verified] Saving a token for an API returns each API with its bots and token status and never the token; a value with no token or a non-http address is refused; the token is masked in a run's stored reply — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 
