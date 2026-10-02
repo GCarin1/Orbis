@@ -86,6 +86,15 @@ change that delivered it.
 
 ### Added
 
+- `chat-http` brain (change 0029-chat-http-brain): bots can use a chat API you
+  reach from the browser with a Bearer token (a `multipart/form-data` request
+  with a `data` field, as "Copy as cURL" shows). Give the request's address and
+  token in the bot's settings — or paste the cURL and press **Fill in from the
+  cURL**. The token is the bot's encrypted secret; the address is never in
+  Orbis's code nor in exported templates. Expired tokens are reported before
+  calling; streamed answers in the usual formats are read; the server's chat
+  is continued; tools work through ```tool blocks.
+
 - Chat: Markdown messages (lists, code with Copy, tables, links), one bubble
   per busy bot with **■ Stop** and its queue, "waiting for you" during an
   approval, **Try again** on a failed run (`POST /api/v1/runs/:id/retry`),

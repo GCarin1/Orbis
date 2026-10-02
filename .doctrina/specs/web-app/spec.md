@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.15.2
+**Version:** 0.16.0
 
 ## Purpose
 
@@ -42,6 +42,7 @@ run's steps.
 - The web app shall show one working bubble per busy bot in a conversation, with the number of its runs waiting behind it, a stop button that cancels them, and "waiting for you" instead of typing dots while the bot waits for the user.
 - The approvals inbox shall say what each approval would do (the command, file, address or recipient) and open the conversation the approval waits in, a group included.
 - The web app shall show the conversation list's last message and read replies aloud without Markdown marks.
+- The web app shall offer, for the `chat-http` brain in the new-bot screen and the bot's settings, the address, a password field for the Bearer token with its expiry, the model, advanced request settings, and a box that fills them from a pasted cURL command and then clears it.
 
 ### Event-driven
 
@@ -68,6 +69,7 @@ run's steps.
 - The web app shall not clear a message the hub did not accept; it shall say why under the composer, and it shall not send on the Enter that confirms an accent or an input-method candidate.
 - The web app shall not count a bot starting to work as a new message below.
 - The web app shall not offer Try again on a routine's run, and shall say why when trying again is refused.
+- The web app shall not put a `chat-http` token in the bot; it shall save it as the bot's secret, keep a saved one when the field is left empty, and never show it back.
 
 ## Acceptance criteria
 
@@ -103,6 +105,7 @@ run's steps.
 30. [verified] A stream that stops answering its ping is closed and replaced and the app reloads; a refused approval answer shows the hub's reason and the expired state; the inbox shows "npm run build" for a Claude Bash approval and opens its conversation; Markdown marks are dropped from a preview — verified by `packages/web/test/audit-cycle2.test.tsx`.
 31. [verified] The send error shown after a refused message goes away when the user edits it — verified by `packages/web/test/audit-cycle5.test.tsx`.
 32. [verified] While the user reads history, a bot starting to work shows no "new below" and a new message shows "1 new below"; a routine's failed run offers no Try again; a refused retry says why; loaded runs keep the steps that streamed in — verified by `packages/web/test/review.test.tsx`.
+33. [verified] A pasted cURL fills the address, token, model, agent and Origin and leaves the screen; saving puts the token in the bot's secret and the rest in the brain; a saved token is kept when the field is empty, with the brain's time and step limits; a new bot hands its token apart from the bot — verified by `packages/web/test/chat-http.test.tsx`.
 
 ## Maturity
 

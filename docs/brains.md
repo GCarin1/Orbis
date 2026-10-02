@@ -8,7 +8,7 @@ Every bot has a `brain` configuration:
 
 | Field | Used by | Meaning |
 |-------|---------|---------|
-| `kind` | all | `claude-code`, `codex`, `gemini-cli`, `cursor`, `ollama`, `lmstudio`, `anthropic`, `openai`, `custom-cli`, `mock` |
+| `kind` | all | `claude-code`, `codex`, `gemini-cli`, `cursor`, `ollama`, `lmstudio`, `anthropic`, `openai`, `chat-http`, `custom-cli`, `mock` |
 | `model` | most | model id or alias passed to the brain (required for `openai`, `ollama`, `lmstudio`) |
 | `command` | CLI brains | executable; defaults to `claude`, `codex`, `gemini`, or `cursor-agent`/`agent` |
 | `args` | CLI brains | arguments placed before the adapter's own (for `custom-cli`, the whole argv; `{prompt}` is replaced by the prompt) |
@@ -205,6 +205,49 @@ orbis bots create --name "Router" --brain openai --model anthropic/claude-sonnet
 
 Costs are computed from the price table in `packages/hub/src/brains/pricing.ts`
 (Anthropic list prices); local models cost nothing.
+
+### A chat API over cURL (`chat-http`)
+
+For a chat you use in the browser (a company assistant, say) whose requests a
+browser shows as a cURL command: a `POST` with a **Bearer token** and a
+`multipart/form-data` body with one `data` field —
+
+```json
+{"context":{"chatId":""},"agent":{"agentId":"chat-corporativo","version":"1.0.0"},
+ "input":{"role":"user","content":"…"},
+ "config":{"temperature":0.25,"maxTokens":64000,"modelId":"claude-4-6-opus", …},
+ "extensions":{"features":{"enableStreaming":true, …}}}
+```
+
+In the bot's settings (⚙ → Brain → **Chat API over cURL**), give the request's
+**address** and the **Bearer token** — or open the chat in the browser, open
+DevTools → Network, send a message, right-click the request → **Copy as cURL**,
+paste it in the bot's settings and press **Fill in from the cURL**: the address,
+the token, the agent, the model and the `Origin` are read from it.
+
+- The token is saved as the bot's secret `CHAT_BEARER_TOKEN`, encrypted in the
+  vault; it never comes back to the browser, never reaches the model, and is
+  never written in the bot or its exported template. The address stays in the
+  bot and is left out of exported templates too: Orbis's code names none.
+- A browser session's token expires (often in an hour or two). Orbis reads its
+  expiry and says so before calling ("the Bearer token expired at …"), and a
+  `401` says the same: paste a new token or cURL and save.
+- The answer may stream as server-sent events, JSON lines, one JSON document or
+  plain text; Orbis takes the text from the usual fields (`content`, `text`,
+  `delta`, `answer`, `message`, OpenAI-style `choices`), joins pieces or takes a
+  growing answer whole, and skips status and reference events. When it finds
+  no text, the run's error shows how the answer began — send that to whoever
+  maintains Orbis to add the format.
+- When the server returns a chat id (`chatId`, `chat_id`, `conversationId`),
+  the bot continues that chat: later messages send only what is new.
+- Such an API calls no tools, so Orbis's tools travel as text: the bot is told
+  to ask for one in a ` ```tool ` block (`{"name": "…", "input": {…}}`), Orbis
+  runs it (approvals included) and sends the result as the next message.
+- From the CLI: `orbis bots create --name Analista --brain chat-http`, then set
+  `baseUrl` with `PATCH /api/v1/bots/<id>` and the token with
+  `orbis secrets set @analista CHAT_BEARER_TOKEN`.
+
+Check with your company that using its chat this way is allowed.
 
 ### Your own command (`custom-cli`)
 

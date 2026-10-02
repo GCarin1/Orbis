@@ -390,7 +390,7 @@ export class RunEngine {
       const workspaceDir = this.d.computer.workDir(bot);
       const conversationId = req.conversationId;
       const sessionKey = conversationId ?? `run:${runId}`;
-      const resumable = bot.brain.kind === "claude-code" || bot.brain.kind === "codex" || bot.brain.kind === "cursor";
+      const resumable = bot.brain.kind === "claude-code" || bot.brain.kind === "codex" || bot.brain.kind === "cursor" || bot.brain.kind === "chat-http";
       const storedSession = resumable ? this.d.sessions.get(bot.id, sessionKey, bot.brain.kind) : null;
       // A CLI brain resuming its own session already holds the earlier turns: up to the start of its
       // last run here, and its own replies of that run (what others wrote meanwhile is new to it).

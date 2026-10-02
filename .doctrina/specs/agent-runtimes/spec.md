@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.8.1
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -35,6 +35,8 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall stop a CLI brain's process at the run's time limit only through the run's own clock, which does not count the time the run waits for the user; the process has no wall-clock limit of its own.
 - The system shall send a CLI brain a prompt longer than 8,000 characters on its standard input instead of its command line (Claude Code `-p` with no prompt argument, Codex `-`).
 - The system shall tell every bot today's date and the hub's time zone, and to answer in the language the user writes in.
+- The system shall provide the `chat-http` brain: a POST to the address the user gives (`baseUrl`) with the Bearer token of a bot secret (`apiKeySecret`, default `CHAT_BEARER_TOKEN`) and a `multipart/form-data` body whose `data` field holds the chat id, the agent, the message, and the model and request settings.
+- The system shall read a `chat-http` answer streamed as server-sent events, JSON lines, one JSON document or plain text, joining pieces or taking a growing answer whole, and skipping status, reference and user-echo events.
 
 ### Event-driven
 
@@ -59,6 +61,8 @@ brain are owned by `contracts/cli-harnesses`.
 - When an OpenAI-compatible server answers 429, 500, 502, 503 or 504, the system shall wait for its Retry-After (at most 30 s) or 2 s then 6 s, and send the same step again up to twice.
 - When an OpenAI-compatible server returns tool calls, the system shall run them whatever finish reason it gives, and when a reply holds `<think>` blocks, the system shall show them as thinking and leave them out of the reply.
 - When a CLI brain resumes its session in a conversation, the system shall send it what was written there since its last run there started, except its own replies of that run.
+- When a `chat-http` answer carries a chat id, the system shall continue that chat in the run's next requests and in the conversation's next runs, sending only what is new, and start a new chat with the whole conversation when the stored one is refused.
+- When a `chat-http` bot has tools, the system shall tell it to ask for one in a ```tool block, run the tool through the gateway and send the result as the next message.
 
 ### State-driven
 
@@ -72,6 +76,8 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not pass `--force` to the Cursor CLI, so that Cursor's own shell and write tools keep Cursor's permission rules.
 - The system shall not read, store or relay the ChatGPT password or tokens (Codex keeps them), nor drive the chatgpt.com website.
 - The system shall not ask an API brain for its final answer more than once in a run, a retried request included.
+- The system shall not call a `chat-http` API without an address, without a token, or with a JWT token past its expiry; it shall say which, and say that the token expired or is wrong when the server answers 401 or 403.
+- The system shall not write a `chat-http` address or token in its code, tests or documentation.
 
 ### Optional
 
@@ -97,6 +103,7 @@ brain are owned by `contracts/cli-harnesses`.
 15. [verified] With the real shim texts, codex.cmd runs its script with node, Claude Code 2's claude.CMD runs claude.exe, npx.cmd runs npx-cli.js, a batch file naming no program is refused, and an MCP server's crash is reported by its error line — verified by `packages/hub/test/runtimes/windows-shims.test.ts`.
 16. [verified] A Claude Code run whose approval is answered after its 1 s limit ends done; a gone Claude Code session and a gone Codex thread restart with the earlier conversation in the prompt, and Codex gets the 24-hour tool timeout; a 12,000-character paste goes on stdin; an LM Studio bot retries a 429, runs a tool call ended with `stop` and keeps `<think>` out of its reply — verified by `packages/hub/test/chat-audit.test.ts`.
 17. [verified] A resumed Claude Code session gets a colleague's message posted during its last run and not its own reply again; an LM Studio bot whose last request is retried after a 429 is asked once for its final answer — verified by `packages/hub/test/review.test.ts`.
+18. [verified] Against a fake orchestrator, a bot posts a multipart `data` field with the Bearer token and Origin, reads a streamed answer and its usage, continues the returned chat with only the new message, uses a tool through a ```tool block, resends the whole run when no chat id comes, starts a new chat when the stored one is refused, reports an expired JWT before calling and a 401 after; answers in SSE, JSON lines, one JSON document and plain text are read; a pasted cURL (bash or cmd) gives the address, token, agent, model and Origin — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 

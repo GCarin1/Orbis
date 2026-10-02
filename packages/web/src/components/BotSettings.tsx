@@ -1,7 +1,17 @@
 // A bot's settings beside its conversation (specs/web-app): identity, description,
 // brain, tool policy, computer, allowlists, spend cap; export, duplicate, delete.
 import { useEffect, useState } from "react";
-import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type BrainKind, type ComputerProviderKind, type PolicyDecision } from "@orbis/shared";
+import {
+  AVATAR_COLORS,
+  AVATAR_SHAPES,
+  CHAT_HTTP_TOKEN_SECRET,
+  type AvatarShape,
+  type Bot,
+  type BrainKind,
+  type ComputerProviderKind,
+  type PolicyDecision,
+} from "@orbis/shared";
+import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
@@ -54,6 +64,9 @@ export function BotSettings({
   const [command, setCommand] = useState(bot.brain.command ?? "");
   const [baseUrl, setBaseUrl] = useState(bot.brain.baseUrl ?? "");
   const [apiKeySecret, setApiKeySecret] = useState(bot.brain.apiKeySecret ?? "");
+  const [chat, setChat] = useState(() => chatHttpValue(bot.brain));
+  /** A chat-http token is already saved for this bot (its value never comes back). */
+  const [hasToken, setHasToken] = useState(false);
   const [rules, setRules] = useState<Rule[]>(bot.policy.rules.map((r) => ({ tool: r.tool, decision: r.decision, locked: r.locked ?? false })));
   const [grants, setGrants] = useState<string[]>(bot.policy.grants);
   const [computerOn, setComputerOn] = useState(bot.computer.enabled);
@@ -75,6 +88,17 @@ export function BotSettings({
 
   // A grant given from an approval card elsewhere shows up here.
   useEffect(() => setGrants(bot.policy.grants), [bot.policy.grants]);
+  useEffect(() => {
+    if (!api || kind !== "chat-http") return;
+    let live = true;
+    api
+      .get<Array<{ name: string }>>(`/api/v1/bots/${bot.id}/secrets`)
+      .then((list) => live && setHasToken(list.some((s) => s.name === (bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET))))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [api, bot.id, kind, bot.brain.apiKeySecret]);
 
   const run = async (fn: () => Promise<void>, ok?: string) => {
     setBusy(true);
@@ -93,6 +117,15 @@ export function BotSettings({
     run(
       async () => {
         if (needsHostConsent && !hostConsent) throw new Error(t("computers.consentNeeded"));
+        // The chat-http token goes to the bot's secrets (encrypted), before the brain that uses it.
+        if (kind === "chat-http" && chat.token.trim()) {
+          if (!api) throw new Error("no connection to the hub");
+          await api.put(`/api/v1/bots/${bot.id}/secrets/${CHAT_HTTP_TOKEN_SECRET}`, { value: cleanToken(chat.token) });
+          setHasToken(true);
+          setChat((c) => ({ ...c, token: "" }));
+        }
+        // Settings the form does not show (time limit, step limit) are kept.
+        const kept = { ...(bot.brain.timeoutSec ? { timeoutSec: bot.brain.timeoutSec } : {}), ...(bot.brain.maxSteps ? { maxSteps: bot.brain.maxSteps } : {}) };
         await onSave({
           name: name.trim(),
           role: role.trim(),
@@ -100,13 +133,17 @@ export function BotSettings({
           avatarColor: color,
           avatarShape: shape,
           reportsTo: reportsTo || null,
-          brain: {
-            kind,
-            ...(model.trim() ? { model: model.trim() } : {}),
-            ...(command.trim() ? { command: command.trim() } : {}),
-            ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
-            ...(apiKeySecret.trim() && takesBaseUrl(kind) ? { apiKeySecret: apiKeySecret.trim() } : {}),
-          },
+          brain:
+            kind === "chat-http"
+              ? { kind, ...kept, ...chatHttpBrainFields(chat) }
+              : {
+                  kind,
+                  ...kept,
+                  ...(model.trim() ? { model: model.trim() } : {}),
+                  ...(command.trim() ? { command: command.trim() } : {}),
+                  ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
+                  ...(apiKeySecret.trim() && takesBaseUrl(kind) ? { apiKeySecret: apiKeySecret.trim() } : {}),
+                },
           policy: { rules: rules.filter((r) => r.tool.trim()).map((r) => ({ tool: r.tool.trim(), decision: r.decision, ...(r.locked ? { locked: true } : {}) })), grants },
           computer: {
             ...bot.computer,
@@ -207,6 +244,7 @@ export function BotSettings({
               <input value={command} onChange={(e) => setCommand(e.target.value)} name="settings-command" />
             </label>
           )}
+          {kind === "chat-http" && <ChatHttpFields value={chat} onChange={setChat} hasToken={hasToken} name="settings-chat" />}
           {takesBaseUrl(kind) && (
             <>
               <label>

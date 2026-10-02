@@ -14,6 +14,18 @@ export const BrainSchema = Type.Object(
     args: Type.Optional(Type.Array(Type.String({ maxLength: 4000 }), { maxItems: 64 })),
     maxSteps: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
     timeoutSec: Type.Optional(Type.Integer({ minimum: 1, maximum: 86_400 })),
+    chat: Type.Optional(
+      Type.Object(
+        {
+          agentId: Type.Optional(Type.String({ maxLength: 200 })),
+          agentVersion: Type.Optional(Type.String({ maxLength: 50 })),
+          temperature: Type.Optional(Type.Number({ minimum: 0, maximum: 2 })),
+          maxTokens: Type.Optional(Type.Integer({ minimum: 1, maximum: 1_000_000 })),
+          origin: Type.Optional(Type.String({ maxLength: 500 })),
+        },
+        { additionalProperties: false },
+      ),
+    ),
   },
   { additionalProperties: false },
 );

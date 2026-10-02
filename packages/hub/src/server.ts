@@ -38,6 +38,7 @@ import { mockBrain } from "./brains/mock.js";
 import { claudeCodeBrain } from "./brains/claude-code.js";
 import { customCliBrain } from "./brains/custom-cli.js";
 import { anthropicBrain } from "./brains/anthropic.js";
+import { chatHttpBrain } from "./brains/chat-http.js";
 import { openaiBrain, ollamaBrain, lmstudioBrain } from "./brains/openai.js";
 import { codexBrain } from "./brains/codex.js";
 import { geminiBrain } from "./brains/gemini.js";
@@ -163,7 +164,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     approvals: new ApprovalsRepo(db),
   };
   const brains = new BrainRegistry();
-  for (const adapter of [mockBrain, anthropicBrain, openaiBrain, ollamaBrain, lmstudioBrain, claudeCodeBrain, codexBrain, geminiBrain, cursorBrain, customCliBrain]) {
+  for (const adapter of [mockBrain, anthropicBrain, openaiBrain, ollamaBrain, lmstudioBrain, claudeCodeBrain, codexBrain, geminiBrain, cursorBrain, customCliBrain, chatHttpBrain]) {
     brains.register(adapter);
   }
   for (const adapter of opts.brains ?? []) brains.register(adapter);

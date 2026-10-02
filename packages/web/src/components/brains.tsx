@@ -6,11 +6,12 @@ import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 
 /** Subscription CLIs first, then local models, then paid APIs. */
-export const BRAINS: BrainKind[] = ["claude-code", "codex", "gemini-cli", "cursor", "ollama", "lmstudio", "anthropic", "openai", "custom-cli", "mock"];
+export const BRAINS: BrainKind[] = ["claude-code", "codex", "gemini-cli", "cursor", "ollama", "lmstudio", "anthropic", "openai", "chat-http", "custom-cli", "mock"];
 
 export const isLocalKind = (kind: BrainKind): kind is "ollama" | "lmstudio" => kind === "ollama" || kind === "lmstudio";
 export const takesBaseUrl = (kind: BrainKind) => kind === "openai" || kind === "anthropic" || isLocalKind(kind);
-export const takesModel = (kind: BrainKind) => kind !== "mock" && kind !== "custom-cli";
+/** chat-http has its own fields (ChatHttpFields), its model among them. */
+export const takesModel = (kind: BrainKind) => kind !== "mock" && kind !== "custom-cli" && kind !== "chat-http";
 /** Brains that cannot run without a model (the others use their program's default). */
 export const needsModel = (kind: BrainKind) => kind === "openai" || isLocalKind(kind);
 

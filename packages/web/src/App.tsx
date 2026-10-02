@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
+import { CHAT_HTTP_TOKEN_SECRET, roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
 import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
 import { useT } from "./i18n.js";
 import { useStore } from "./store.js";
@@ -225,8 +225,10 @@ export function App() {
               const bot = await store.importBot(yaml);
               openBot(bot.id);
             }}
-            onCreate={async (input) => {
+            onCreate={async ({ token, ...input }) => {
               const bot = await store.createBot(input);
+              // The chat-http token is the bot's secret, encrypted in the vault, never part of the bot.
+              if (token) await store.api!.put(`/api/v1/bots/${bot.id}/secrets/${CHAT_HTTP_TOKEN_SECRET}`, { value: token });
               openBot(bot.id);
             }}
           />

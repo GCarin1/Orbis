@@ -2,7 +2,8 @@
 // a live preview — then the name, role, manager and brain, and suggestions that
 // fill everything in; templates import from here too.
 import { useState } from "react";
-import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type BrainKind } from "@orbis/shared";
+import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type Brain, type BrainKind } from "@orbis/shared";
+import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
 import type { Api } from "../api.js";
 import { useLang, useT, type TextKey } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
@@ -15,7 +16,9 @@ export interface NewBotInput {
   avatarColor: string;
   avatarShape: AvatarShape;
   reportsTo?: string;
-  brain: { kind: BrainKind; model?: string; command?: string; baseUrl?: string };
+  brain: Partial<Brain> & { kind: BrainKind };
+  /** chat-http: the Bearer token, saved as the new bot's secret (never in the bot itself). */
+  token?: string;
 }
 
 interface Suggestion {
@@ -60,6 +63,7 @@ export function NewBotScreen({
   const [model, setModel] = useState("");
   const [command, setCommand] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
+  const [chat, setChat] = useState(chatHttpValue());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { servers } = useLocalServers(api, isLocalKind(kind));
@@ -97,12 +101,16 @@ export function NewBotScreen({
                 avatarColor: color,
                 avatarShape: shape,
                 ...(reportsTo ? { reportsTo } : {}),
-                brain: {
-                  kind,
-                  ...(model.trim() ? { model: model.trim() } : {}),
-                  ...(command.trim() ? { command: command.trim() } : {}),
-                  ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
-                },
+                brain:
+                  kind === "chat-http"
+                    ? { kind, ...chatHttpBrainFields(chat) }
+                    : {
+                        kind,
+                        ...(model.trim() ? { model: model.trim() } : {}),
+                        ...(command.trim() ? { command: command.trim() } : {}),
+                        ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
+                      },
+                ...(kind === "chat-http" && chat.token.trim() ? { token: cleanToken(chat.token) } : {}),
               });
             } catch (err) {
               setError(err instanceof Error ? err.message : String(err));
@@ -179,6 +187,11 @@ export function NewBotScreen({
                 {t("newbot.command")}
                 <input value={command} onChange={(e) => setCommand(e.target.value)} required name="command" />
               </label>
+            )}
+            {kind === "chat-http" && (
+              <div className="wide">
+                <ChatHttpFields value={chat} onChange={setChat} name="newbot-chat" />
+              </div>
             )}
             <label className="wide">
               {t("newbot.description")}

@@ -129,7 +129,10 @@ export class TemplateService {
   export(botRef: string): string {
     const bot = this.hub.botService.get(botRef);
     // Only these fields are copied: memory, history, computer state and secrets cannot slip in.
-    const { apiKeySecret: _dropped, ...brain } = bot.brain;
+    const { apiKeySecret: _dropped, ...kept } = bot.brain;
+    // A chat-http brain's address is the user's private endpoint: a shared template never carries it.
+    const { baseUrl: _private, ...withoutUrl } = kept;
+    const brain = bot.brain.kind === "chat-http" ? withoutUrl : kept;
     const doc: TemplateDoc = {
       apiVersion: API_VERSION,
       kind: KIND,

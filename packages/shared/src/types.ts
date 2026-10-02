@@ -16,8 +16,34 @@ export const BRAIN_KINDS = [
   "ollama",
   "lmstudio",
   "custom-cli",
+  "chat-http",
 ] as const;
 export type BrainKind = (typeof BRAIN_KINDS)[number];
+
+/**
+ * Settings of the `chat-http` brain: a chat orchestrator reached over HTTPS
+ * with a Bearer token, its request posted as `multipart/form-data` with one
+ * `data` field (the format a browser's "Copy as cURL" shows). The address and
+ * the token are the user's: the address goes in `baseUrl`, the token in a
+ * bot secret named by `apiKeySecret`; neither is ever written in Orbis's code.
+ */
+export interface ChatHttpOptions {
+  /** `agent.agentId` of the request (default "chat-corporativo"). */
+  agentId?: string;
+  /** `agent.version` of the request (default "1.0.0"). */
+  agentVersion?: string;
+  /** `config.temperature` (default 0.25). */
+  temperature?: number;
+  /** `config.maxTokens` (default 64000). */
+  maxTokens?: number;
+  /** An `Origin` header, for servers that check it. */
+  origin?: string;
+}
+
+/** The default `chat-http` model (`config.modelId`). */
+export const CHAT_HTTP_DEFAULT_MODEL = "claude-4-6-opus";
+/** The bot secret that holds a `chat-http` brain's Bearer token, unless the brain names another. */
+export const CHAT_HTTP_TOKEN_SECRET = "CHAT_BEARER_TOKEN";
 
 /** Brains that run as a child process and log in with the user's own subscription. */
 export const CLI_BRAIN_KINDS: readonly BrainKind[] = ["claude-code", "codex", "gemini-cli", "cursor", "custom-cli"];
@@ -39,6 +65,8 @@ export interface Brain {
   args?: string[];
   maxSteps?: number;
   timeoutSec?: number;
+  /** `chat-http` only: the orchestrator's request settings. */
+  chat?: ChatHttpOptions;
 }
 
 export type PolicyDecision = "allow" | "ask" | "deny";

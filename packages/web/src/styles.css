@@ -2476,3 +2476,32 @@ label.check {
   white-space: nowrap;
   margin: 2px 0 4px;
 }
+
+/* The chat-http brain's fields: address, token, a pasted cURL (change 0029). */
+.chat-http-fields {
+  display: grid;
+  gap: 10px;
+}
+.chat-http-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chat-http-fields textarea {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
+}
+.chat-http-read {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.chat-http-fields details {
+  display: grid;
+  gap: 8px;
+}
+.chat-http-fields details[open] summary {
+  margin-bottom: 6px;
+}

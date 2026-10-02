@@ -40,6 +40,7 @@ O cérebro de cada bot é escolha sua, bot a bot:
 | `custom-cli` | qualquer comando que lê um prompt e imprime a resposta | depende |
 | `anthropic` | API Messages da Anthropic | sim |
 | `openai` | qualquer API compatível com OpenAI: OpenAI, OpenRouter, Groq, vLLM | sim, exceto servidores locais |
+| `chat-http` | uma API de chat que você usa no navegador: o endereço e o **Bearer token** (ou o "Copiar como cURL" colado) | não — o token da sua sessão |
 | `mock` | determinístico, offline — para testes e demonstrações | não |
 
 > 🇺🇸 Read in English: [README.md](README.md)

@@ -6,7 +6,7 @@
 **Realizes:** SC10
 **Depends on:** bots, skills, routines
 **Last updated:** 2026-09-27
-**Version:** 0.3.1
+**Version:** 0.3.2
 
 ## Purpose
 
@@ -34,6 +34,7 @@ export refuses to write a file that looks like it holds a credential.
 - The system shall not enable an imported routine before it passes a test run.
 - The system shall not report a `{{secret:NAME}}` placeholder as a credential finding, and shall not include the matched text in a finding.
 - The system shall not export nor import access to the user's own machine: a `host` computer leaves a template, and enters a bot, as the hub's default computer.
+- The system shall not put a `chat-http` brain's address in an exported template.
 
 ## Acceptance criteria
 
@@ -42,6 +43,7 @@ export refuses to write a file that looks like it holds a credential.
 3. [verified] An exported document holds no memory, history, secret names or values, and no computer state — verified by `packages/hub/test/templates.test.ts`.
 4. [verified] A template with another `apiVersion` or `kind` is rejected naming the field, and one with an invalid skill creates no bot — verified by `packages/hub/test/templates.test.ts`.
 5. [verified] A bot on the user's own machine exports with no `host` access, and a template that names it imports a bot on the default computer — verified by `packages/hub/test/computer/host.test.ts`.
+6. [verified] A `chat-http` bot's exported template names its brain kind but neither its address nor its token — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 
