@@ -33,3 +33,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0028-review-of-the-audits — Review of the audits (specs: agent-runtimes MODIFIED, computer MODIFIED, conversations MODIFIED, memory MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0029-chat-http-brain — chat-http brain (specs: agent-runtimes MODIFIED, templates MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0030-chat-http-history — chat-http history (specs: agent-runtimes MODIFIED, web-app MODIFIED)
+- 2026-10-02 — 0031-chat-http-history-first — chat-http history first (specs: agent-runtimes MODIFIED)

@@ -1,6 +1,7 @@
 # Change 0031-chat-http-history-first — chat-http history first
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: feature)

@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.10.0
+**Version:** 0.11.0
 
 ## Purpose
 
@@ -37,6 +37,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall tell every bot today's date and the hub's time zone, and to answer in the language the user writes in.
 - The system shall provide the `chat-http` brain: a POST to the address the user gives (`baseUrl`) with the Bearer token of a bot secret (`apiKeySecret`, default `CHAT_BEARER_TOKEN`) and a `multipart/form-data` body whose `data` field holds the chat id, the agent, the message, and the model and request settings.
 - The system shall read a `chat-http` answer streamed as server-sent events, JSON lines, one JSON document or plain text, joining pieces or taking a growing answer whole, and skipping status, reference and user-echo events.
+- The system shall take a `chat-http` chat's id from a chat-id key or from the id of a `chat` object in the answer, and count tokens spelled as `promptTokens` and `completionTokens`.
 
 ### Event-driven
 
@@ -65,6 +66,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `chat-http` bot has tools, the system shall tell it to ask for one in a fenced `tool` block, run the tool through the gateway and send the result as the next message.
 - When a `chat-http` answer holds no text Orbis can read, the system shall read the reply that follows the message it sent from the chat's history (`<history>/<chat id>`, the history being `history/chats` beside the request address unless the bot names another).
 - When a `chat-http` answer names no chat, the system shall look among the newest chats of the history for the one holding the message it sent, and continue that chat.
+- When a `chat-http` request ends and the chats' history can be read, the system shall take the reply that follows the sent message, and its tokens, from the chat's history, reading once more after 1.5 s when the reply is not saved yet, and use the streamed text only when the history has no reply.
 
 ### State-driven
 
@@ -108,6 +110,7 @@ brain are owned by `contracts/cli-harnesses`.
 17. [verified] A resumed Claude Code session gets a colleague's message posted during its last run and not its own reply again; an LM Studio bot whose last request is retried after a 429 is asked once for its final answer — verified by `packages/hub/test/review.test.ts`.
 18. [verified] Against a fake orchestrator, a bot posts a multipart `data` field with the Bearer token and Origin, reads a streamed answer and its usage, continues the returned chat with only the new message, uses a tool through a fenced `tool` block, resends the whole run when no chat id comes, starts a new chat when the stored one is refused, reports an expired JWT before calling and a 401 after; answers in SSE, JSON lines, one JSON document and plain text are read; a pasted cURL (bash or cmd) gives the address, token, agent, model and Origin — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 19. [verified] A reply missing from the answer is read from the chat's history; among the newest chats the one holding the sent message is continued and a browser chat beside it is not; a server without the history is asked once and the error shows how the answer began; history shapes of role lists, input/output pairs and user/answer fields are read; a history cURL gives its token and the history's address — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+20. [verified] With a history shaped like the owner's company chat (`data.chat.messages` with `role`, `content` and `usage`), a bot takes the reply and its 5760/194 tokens from the history whatever the stream held, prefers it to a stream read wrong, keeps the chat id given as `chat._id`, and reads neither the user's profile nor the follow-up questions as messages — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 
