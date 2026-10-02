@@ -9,6 +9,15 @@ change that delivered it.
 
 ### Fixed
 
+- `chat-http` behind Cloudflare (change 0035-chat-http-curl-transport): the chat
+  answered the browser and `curl` but refused Node's own HTTP client with "Sorry,
+  you have been blocked" (HTTP 403). Orbis now makes its requests with the system's
+  `curl` (HTTP/2, the same TLS as the cURL that works; `fetch` when there is no
+  curl), sends every browser header of the pasted cURL (`sec-ch-ua*`,
+  `sec-fetch-*`, `User-Agent`…, never a cookie or a key), keeps the token off
+  curl's command line, and names the firewall in the error. The company chat's
+  stream (`message_complete`: reply, chat id, `tokenUsage`) is read directly,
+  without the follow-up-questions block and without the history.
 - Claude Code with an expired login (change 0033-claude-sign-in-and-chat-http-token-audit): the test showed
   "OAuth session expired" and offered no way out. A failed run or test now says
   how to sign in again, and the Claude Code card in ⚙ → Brains signs in from

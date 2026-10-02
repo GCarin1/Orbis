@@ -27,8 +27,10 @@ export interface ChatHttpValue {
   historyUrl: string;
   /** Give each new chat a title (one model call more per chat). */
   titles: boolean;
-  /** What the browser sent besides the token (Referer, User-Agent…), copied from a pasted cURL. */
+  /** What the browser sent besides the token (User-Agent, sec-ch-ua…), copied from a pasted cURL. */
   headers: Record<string, string>;
+  /** How the requests are made: "" is automatic (curl when it is installed). */
+  transport: "" | "curl" | "fetch";
 }
 
 export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
@@ -42,6 +44,7 @@ export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
   historyUrl: brain?.chat?.historyUrl ?? "",
   titles: brain?.chat?.titles !== false,
   headers: { ...(brain?.chat?.headers ?? {}) },
+  transport: brain?.chat?.transport ?? "",
 });
 
 /** The token as the user may paste it: bare, with "Bearer ", a whole Authorization line, quoted or wrapped. */
@@ -58,6 +61,7 @@ export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
     ...(v.historyUrl.trim() ? { historyUrl: v.historyUrl.trim() } : {}),
     ...(v.titles ? {} : { titles: false }),
     ...(Object.keys(v.headers).length ? { headers: v.headers } : {}),
+    ...(v.transport ? { transport: v.transport } : {}),
   };
   return {
     ...(v.url.trim() ? { baseUrl: v.url.trim() } : {}),
@@ -192,13 +196,27 @@ export function ChatHttpFields({
           <input value={value.historyUrl} onChange={set("historyUrl")} placeholder={t("chat.historyUrlHint")} name={`${name}-history`} />
         </label>
         <p className="muted small" data-testid="chat-http-headers">
-          {Object.keys(value.headers).length ? t("chat.headersKept", { names: Object.keys(value.headers).join(", ") }) : t("chat.headersNone")}{" "}
+          {Object.keys(value.headers).length
+            ? t("chat.headersKept", { count: Object.keys(value.headers).length, names: Object.keys(value.headers).join(", ") })
+            : t("chat.headersNone")}{" "}
           {Object.keys(value.headers).length > 0 && (
             <button type="button" className="link" onClick={() => onChange({ ...value, headers: {} })}>
               {t("chat.headersClear")}
             </button>
           )}
         </p>
+        <label>
+          {t("chat.transport")}
+          <select
+            value={value.transport}
+            onChange={(e) => onChange({ ...value, transport: e.target.value as ChatHttpValue["transport"] })}
+            name={`${name}-transport`}
+          >
+            <option value="">{t("chat.transport.auto")}</option>
+            <option value="curl">{t("chat.transport.curl")}</option>
+            <option value="fetch">{t("chat.transport.fetch")}</option>
+          </select>
+        </label>
         <label className="checkbox">
           <input type="checkbox" checked={value.titles} onChange={(e) => onChange({ ...value, titles: e.target.checked })} name={`${name}-titles`} />
           {t("chat.titles")}

@@ -221,7 +221,7 @@ describe("the saved token and the browser's headers (audit of change 0033)", () 
     expect(screen.getByText(/^✓ Token saved in the vault · expires at /)).toBeTruthy();
   });
 
-  it("copies Referer, User-Agent and Accept-Language from a pasted cURL, never a cookie or another token", async () => {
+  it("copies the browser's headers from a pasted cURL, never a cookie or another token", async () => {
     const { onSave } = settings(async () => NO_TOKEN);
     await act(async () => undefined);
     expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^No browser headers copied/);
@@ -231,16 +231,26 @@ describe("the saved token and the browser's headers (audit of change 0033)", () 
       "  -H 'referer: https://app.example.com/chat' \\",
       "  -H 'user-agent: Mozilla/5.0 (made up)' \\",
       "  -H 'accept-language: pt-BR' \\",
+      '  -H \'sec-ch-ua: "Chromium";v="154"\' \\',
+      "  -H 'sec-fetch-mode: cors' \\",
       "  -H 'cookie: session=do-not-keep' \\",
       "  -H 'x-api-key: do-not-keep-either' \\",
       "  --data-raw $'--X\\r\\nContent-Disposition: form-data; name=\"data\"\\r\\n\\r\\n{}\\r\\n--X--\\r\\n'",
     ].join("\n");
     fireEvent.change(screen.getByLabelText("Paste the cURL command (optional)"), { target: { value: withHeaders } });
     fireEvent.click(screen.getByRole("button", { name: "Fill in from the cURL" }));
-    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^Browser headers that will be sent: user-agent, referer, accept-language/);
+    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(
+      /^Browser headers to send \(5\): user-agent, accept-language, referer, sec-ch-ua, sec-fetch-mode/,
+    );
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     const patch = (onSave.mock.calls[0] as unknown as [{ brain: { chat: { headers: Record<string, string> } } }])[0];
-    expect(patch.brain.chat.headers).toEqual({ "user-agent": "Mozilla/5.0 (made up)", referer: "https://app.example.com/chat", "accept-language": "pt-BR" });
+    expect(patch.brain.chat.headers).toEqual({
+      "user-agent": "Mozilla/5.0 (made up)",
+      "accept-language": "pt-BR",
+      referer: "https://app.example.com/chat",
+      "sec-ch-ua": '"Chromium";v="154"',
+      "sec-fetch-mode": "cors",
+    });
     expect(JSON.stringify(patch)).not.toContain("do-not-keep");
   });
 
@@ -252,10 +262,42 @@ describe("the saved token and the browser's headers (audit of change 0033)", () 
       chat: { headers: { referer: "https://app.example.com/chat" } },
     } as never);
     await act(async () => undefined);
-    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^Browser headers that will be sent: referer/);
+    expect(screen.getByTestId("chat-http-headers").textContent).toMatch(/^Browser headers to send \(1\): referer/);
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     const patch = (onSave.mock.calls[0] as unknown as [{ brain: Record<string, unknown> }])[0];
     expect(patch.brain.chat).toBeUndefined();
+  });
+});
+
+describe("how the requests are made (change 0035)", () => {
+  it("is automatic by default, and a bot can be set to Node's fetch", async () => {
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
+    const onSave = vi.fn(async () => undefined);
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put: vi.fn(), get } as unknown as Api}
+        bot={ana}
+        onSave={onSave}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+    const select = screen.getByLabelText("HTTP call") as HTMLSelectElement;
+    expect(select.value).toBe("");
+    expect(Array.from(select.options).map((o) => o.text)).toEqual([
+      "Automatic (curl, if installed)",
+      "curl (gets past firewalls that block Node)",
+      "Node (fetch)",
+    ]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect((onSave.mock.calls[0] as unknown as [{ brain: Record<string, unknown> }])[0].brain.chat).toBeUndefined();
+    fireEvent.change(select, { target: { value: "fetch" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect((onSave.mock.calls[1] as unknown as [{ brain: { chat: unknown } }])[0].brain.chat).toEqual({ transport: "fetch" });
   });
 });

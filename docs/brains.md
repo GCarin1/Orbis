@@ -241,6 +241,12 @@ the token, the agent, the model and the `Origin` are read from it.
 - A browser session's token expires (often in an hour or two). Orbis reads its
   expiry and says so before calling ("the Bearer token expired at …"), and a
   `401` says the same: paste a new token or cURL and save.
+- The company chat's own stream — `stream_started` (with the `chatId`),
+  `message_chunk` (`{"delta": …}`) and `message_complete` (`data.context.content`
+  with the whole answer, `data.metadata.chatId` and `tokenUsage`) — is read
+  directly: the reply, the chat to continue and the tokens come from
+  `message_complete`, without the `[FOLLOW_UP_QUESTIONS]` block, and the history
+  is not asked.
 - The answer may stream as server-sent events, JSON lines, one JSON document or
   plain text; Orbis takes the text from the usual fields (`content`, `text`,
   `delta`, `answer`, `message`, OpenAI-style `choices`), joins pieces or takes a
@@ -264,14 +270,28 @@ the token, the agent, the model and the `Origin` are read from it.
   just the token. Below the token field the settings say whether one is saved in
   the vault and when it expires (`GET /api/v1/bots/<id>/chat-token` answers
   `{ saved, expiresAt, expired }`; the token itself never leaves the vault).
-- **HTTP 403 with a token that has not expired** is the server refusing
-  something besides the token — usually what the browser sends with it. The
-  run's error says what the server answered, what Orbis sent, and what is
-  missing. Paste the request's cURL (**Fill in from the cURL**): besides the
-  address and the token, Orbis copies `Origin`, `Referer`, `User-Agent` and
-  `Accept-Language` (never a cookie or another header) and sends them with every
-  request to the chat API, the history and the title. A `401`, or a `403` after the token's expiry,
-  is the token: paste a new one.
+- **HTTP 403 with a token that has not expired** is the server — or a firewall in
+  front of it, such as Cloudflare ("Sorry, you have been blocked") — refusing
+  something besides the token. Two things matter, and Orbis does both:
+  - **How the request is made.** A firewall looks at how the client speaks
+    (HTTP/2, the TLS handshake), and Node's own HTTP client does not look like a
+    browser. So Orbis makes the requests with the system's **`curl`** (the
+    `curl.exe` of Windows 10 and later, the same program as your "Copy as cURL"),
+    and falls back to Node when there is no curl. In **Advanced → HTTP call**
+    you can force one (`transport`: `curl` or `fetch`). The token travels in a
+    private temporary file, never on curl's command line.
+  - **What the browser sends with it.** Paste the request's cURL (**Fill in
+    from the cURL**): besides the address and the token, Orbis copies `Origin`
+    and the browser's `User-Agent`, `Accept-Language`, `Referer`, `sec-ch-ua*`,
+    `sec-fetch-*`, `cache-control`, `pragma` and `priority` (never a cookie, an
+    API key or `Authorization`) and sends them with every request to the chat
+    API: the message, the history and the title.
+
+  The run's error says what the server answered, whether it was the firewall,
+  what Orbis sent and through which program. A `401`, or a `403` after the
+  token's expiry, is the token: paste a new one. If the same cURL works in your
+  terminal and Orbis is still blocked, compare the proxy or VPN of that
+  terminal with the one Orbis runs under.
 - A bot's template export leaves out every address of this brain (the request
   address, `Origin`, the history address and the browser headers).
 - A chat the bot opens gets a title, as the browser gives one:

@@ -8,6 +8,7 @@
 // the bot is told how to ask for one in a ```tool block, Orbis runs it through
 // the gateway and sends the result back as the next message.
 import { CHAT_HTTP_DEFAULT_MODEL, CHAT_HTTP_TOKEN_SECRET, cleanBearer, tokenExpiry, type Bot, type ChatHttpOptions } from "@orbis/shared";
+import { transportFor, readText, type HttpResponse, type Transport } from "./http-transport.js";
 import { renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, ToolDescriptor } from "./types.js";
 
@@ -33,17 +34,19 @@ export function chatPayload(o: { content: string; chatId: string | null; model: 
 /** The token as stored, without the "Bearer " (or a whole `Authorization:` line, quotes, line breaks) the user may have pasted with it. */
 export const bareToken = cleanBearer;
 
-/** What every request to the chat API carries: the token, and what the browser sent besides it. */
+/** What every request to the chat API carries: the token, what the browser sent besides it, and how the requests are made. */
 export interface Connection {
   token: string;
   origin?: string;
   headers?: Record<string, string>;
+  transport: { name: "curl" | "fetch"; send: Transport };
 }
 
 const connectionOf = (token: string, options: ChatHttpOptions): Connection => ({
   token,
   ...(options.origin ? { origin: options.origin } : {}),
   ...(options.headers ? { headers: options.headers } : {}),
+  transport: transportFor(options.transport),
 });
 
 /** The request headers: what the user's browser sent besides the token, then the token (which is never overridden). */
@@ -68,10 +71,10 @@ function bodyHint(body: string, token: string): string {
 }
 
 /**
- * Why a server answered 401 or 403. A 401 is the token. A 403 with a token that
- * has not expired is the server refusing something else — usually what the
- * browser sends besides the token — so the message says what Orbis sent and
- * what is left to try.
+ * Why a server answered 401 or 403. A 401 is the token. A 403 with a token that has not expired is
+ * the server — or a firewall in front of it, such as Cloudflare — refusing something else: how the
+ * request was made, or what the browser sends besides the token. The message says what Orbis sent
+ * and what is left to try.
  */
 export function refusal(status: number, body: string, conn: Connection): string {
   const hint = bodyHint(body, conn.token);
@@ -83,14 +86,23 @@ export function refusal(status: number, body: string, conn: Connection): string 
   if (expires && expires.getTime() <= Date.now()) {
     return `the server refused the request (HTTP ${status}) and the Bearer token expired at ${expires.toLocaleString()}: paste a new token (or the request's cURL) in the bot's settings.${said}`;
   }
-  const sent = ["the token", ...(conn.origin ? ["Origin"] : []), ...Object.keys(conn.headers ?? {})].join(", ");
-  const missing = [...(conn.origin ? [] : ["Origin"]), ...(conn.headers?.referer ? [] : ["Referer"]), ...(conn.headers?.["user-agent"] ? [] : ["User-Agent"])];
-  const when = expires ? `the token is valid until ${expires.toLocaleString()}` : "the token's expiry is unknown";
+  const names = Object.keys(conn.headers ?? {});
+  const sent = `the token${conn.origin ? ", Origin" : ""}${names.length ? `, ${names.length} browser header${names.length > 1 ? "s" : ""}` : ""}, through ${conn.transport.name}`;
+  const when = expires ? `its token is valid until ${expires.toLocaleString()}` : "its token's expiry is unknown";
+  if (/cloudflare|attention required|you have been blocked|cf-ray/i.test(body)) {
+    return (
+      `the server's firewall (Cloudflare) blocked the request (HTTP ${status}); ${when}. Orbis sent ${sent}. ` +
+      (conn.transport.name === "fetch"
+        ? "Node's own HTTP client is recognised and refused: install curl (Windows 10 and later have it) and leave the bot's HTTP call on automatic. "
+        : "Paste the request's cURL again in the bot's settings so Orbis copies every browser header, and compare with the terminal where that cURL works (its proxy or VPN). ") +
+      said.trim()
+    );
+  }
   return (
     `the server refused the request (HTTP ${status}); ${when}, so it is refusing something else. Orbis sent ${sent}` +
-    (missing.length
-      ? `, not ${missing.join(", ")}: the browser sends them — paste the request's cURL in the bot's settings (Chat API over cURL) so Orbis copies them`
-      : "") +
+    (names.length || conn.origin
+      ? ". If the browser sends more, paste the request's cURL again so Orbis copies it"
+      : ": no browser headers were copied — paste the request's cURL in the bot's settings (Chat API over cURL) so Orbis copies them") +
     `. If it still fails, the account may lack access to this agent, or the address is not the one the chat posts to.${said}`
   );
 }
@@ -148,6 +160,8 @@ function findKey(value: unknown, name: RegExp, depth = 0): unknown {
 /** What one answer held: its text, the chat id the server gave it, an error, usage. */
 export class AnswerReader {
   text = "";
+  /** The complete answer, when the server ends its stream with one (`message_complete`: `data.context.content`). */
+  final: string | null = null;
   chatId: string | null = null;
   error: string | null = null;
   usage = { input: 0, output: 0 };
@@ -158,6 +172,8 @@ export class AnswerReader {
   feed(value: unknown): void {
     this.events++;
     if (isObject(value)) {
+      const done = isObject(value.data) && isObject(value.data.context) ? value.data.context : null;
+      if (done && done.role === "assistant" && typeof done.content === "string" && done.content.trim()) this.final = done.content;
       const err = value.error ?? (typeof value.type === "string" && /error/i.test(value.type) ? (value.message ?? value.detail) : undefined);
       if (err) this.error = typeof err === "string" ? err : isObject(err) && typeof err.message === "string" ? err.message : JSON.stringify(err).slice(0, 300);
       // The chat's id: a chatId-like key, or the id of a `chat` object ({"chat": {"_id": …}}).
@@ -165,7 +181,7 @@ export class AnswerReader {
       const chat = findKey(value, /^chat$/i);
       const id = typeof named === "string" ? named : isObject(chat) ? (chat._id ?? chat.id) : undefined;
       if (typeof id === "string" && id && !this.chatId) this.chatId = id;
-      const usage = usageOf(findKey(value, /^(usage|totalUsage)$/i));
+      const usage = usageOf(findKey(value, /^(usage|totalUsage|tokenUsage)$/i));
       if (usage) {
         this.usage.input = Math.max(this.usage.input, usage.input);
         this.usage.output = Math.max(this.usage.output, usage.output);
@@ -210,6 +226,9 @@ export class AnswerReader {
     return this.events === 0 && !this.raw.trim();
   }
 }
+
+/** Some chats end an answer with `[FOLLOW_UP_QUESTIONS]["…"][/FOLLOW_UP_QUESTIONS]`: suggestions for the person, not part of the reply. */
+export const stripFollowUps = (text: string) => text.replace(/\s*\[FOLLOW_UP_QUESTIONS\][\s\S]*?(?:\[\/FOLLOW_UP_QUESTIONS\]|$)/i, "").trimEnd();
 
 // --- tools as text ----------------------------------------------------------------------------
 
@@ -261,14 +280,17 @@ class HttpFailure extends Error {
 }
 
 async function ask(url: string, conn: Connection, payload: Record<string, unknown>, signal: AbortSignal): Promise<AnswerReader> {
-  const form = new FormData();
-  form.append("data", JSON.stringify(payload));
-  let res: Response;
+  let res: HttpResponse;
   try {
-    res = await fetch(url, { method: "POST", headers: requestHeaders(conn, "*/*"), body: form, signal });
+    res = await conn.transport.send({
+      method: "POST",
+      url,
+      headers: requestHeaders(conn, "*/*"),
+      form: { name: "data", value: JSON.stringify(payload) },
+      signal,
+    });
   } catch (err) {
     if (signal.aborted) throw err;
-    const cause = (err as { cause?: { code?: string; message?: string } }).cause;
     let host = url;
     try {
       host = new URL(url).host;
@@ -276,31 +298,35 @@ async function ask(url: string, conn: Connection, payload: Record<string, unknow
       /* keep what the user gave */
     }
     throw new HttpFailure(
-      `could not reach ${host} (${cause?.code ?? cause?.message ?? (err instanceof Error ? err.message : String(err))}): check the address and your network (VPN)`,
+      `could not reach ${host} (${err instanceof Error ? err.message : String(err)}): check the address and your network (VPN, proxy)`,
       null,
     );
   }
-  if (res.status === 401 || res.status === 403) {
-    throw new HttpFailure(refusal(res.status, await res.text().catch(() => ""), conn), res.status);
-  }
-  if (!res.ok || !res.body) {
-    const text = (await res.text().catch(() => "")).slice(0, 400);
+  if (res.status === 401 || res.status === 403) throw new HttpFailure(refusal(res.status, await readText(res, 4_000), conn), res.status);
+  if (res.status < 200 || res.status >= 300) {
+    const text = (await readText(res, 400)).slice(0, 400);
     throw new HttpFailure(`the chat API answered HTTP ${res.status}${text ? `: ${text}` : ""}`, res.status);
   }
   const reader = new AnswerReader();
-  const type = res.headers.get("content-type") ?? "";
+  const type = res.contentType;
   const eventStream = /event-stream/i.test(type);
   const decoder = new TextDecoder();
   let buffer = "";
-  for await (const part of res.body as unknown as AsyncIterable<Uint8Array>) {
-    const chunk = decoder.decode(part, { stream: true });
-    if (reader.raw.length < 100_000) reader.raw += chunk;
-    buffer += chunk;
-    let cut: number;
-    while ((cut = buffer.indexOf("\n")) >= 0) {
-      reader.line(buffer.slice(0, cut), eventStream);
-      buffer = buffer.slice(cut + 1);
+  try {
+    for await (const part of res.body) {
+      const chunk = decoder.decode(part, { stream: true });
+      if (reader.raw.length < 100_000) reader.raw += chunk;
+      buffer += chunk;
+      let cut: number;
+      while ((cut = buffer.indexOf("\n")) >= 0) {
+        reader.line(buffer.slice(0, cut), eventStream);
+        buffer = buffer.slice(cut + 1);
+      }
     }
+  } catch (err) {
+    if (signal.aborted) throw err;
+    // The connection broke while the answer was coming: what arrived is still read, and the break is the error when nothing did.
+    if (!reader.final && !reader.text) throw new HttpFailure(err instanceof Error ? err.message : String(err), null);
   }
   if (buffer.trim()) reader.line(buffer, eventStream);
   reader.finish(type);
@@ -440,23 +466,25 @@ export function titleMessage(botName: string, task: string): string {
  */
 export async function generateTitle(base: string, chatId: string, conn: Connection, userMessage: string): Promise<boolean> {
   try {
-    const res = await fetch(`${base}/${encodeURIComponent(chatId)}/generate-title`, {
+    const res = await conn.transport.send({
       method: "POST",
+      url: `${base}/${encodeURIComponent(chatId)}/generate-title`,
       headers: requestHeaders(conn, "application/json, text/plain, */*", { "content-type": "application/json" }),
-      body: JSON.stringify({ data: { userMessage } }),
+      json: JSON.stringify({ data: { userMessage } }),
       signal: AbortSignal.timeout(60_000),
     });
-    await res.body?.cancel().catch(() => undefined);
-    return res.ok;
+    await readText(res, 1); // takes the answer's first bytes (and lets the transport finish)
+    return res.status >= 200 && res.status < 300;
   } catch {
     return false;
   }
 }
 
 async function getJson(url: string, conn: Connection, signal: AbortSignal): Promise<unknown> {
-  const res = await fetch(url, { headers: requestHeaders(conn, "application/json, text/plain, */*"), signal });
-  if (!res.ok) throw new HttpFailure(`the history answered HTTP ${res.status}`, res.status);
-  return res.json();
+  const res = await conn.transport.send({ method: "GET", url, headers: requestHeaders(conn, "application/json, text/plain, */*"), signal });
+  const text = await readText(res, 5_000_000);
+  if (res.status < 200 || res.status >= 300) throw new HttpFailure(`the history answered HTTP ${res.status}`, res.status);
+  return JSON.parse(text);
 }
 
 /**
@@ -582,7 +610,8 @@ export const chatHttpBrain: BrainAdapter = {
       // instead of a new one each time). The streamed text is the fallback.
       const history = historyBase(url, options.historyUrl);
       let found: Awaited<ReturnType<typeof fromHistory>> = null;
-      if (history && !historyFailed) {
+      // A stream that ends with the complete answer (message_complete) needs no second look.
+      if (history && !historyFailed && !answer.final) {
         const look = () => fromHistory(history, conn, content, answer.chatId ?? chatId, ctx.signal);
         try {
           found = await look();
@@ -600,7 +629,7 @@ export const chatHttpBrain: BrainAdapter = {
       if (found) answer.chatId ??= found.chatId;
       const usage = found?.usage ?? (answer.usage.input || answer.usage.output ? answer.usage : null);
       if (usage) yield { type: "run.usage", inputTokens: usage.input, outputTokens: usage.output, cachedTokens: 0, costUsd: 0, subscription: true };
-      const reply = (found?.reply ?? answer.text).trim();
+      const reply = (found?.reply ?? answer.final ?? stripFollowUps(answer.text)).trim();
       if (answer.chatId && answer.chatId !== chatId) {
         const opened = chatId === null;
         chatId = answer.chatId;

@@ -1,6 +1,6 @@
 // Request schemas (TypeBox): one declaration validates, types and documents a route.
 import Type from "typebox";
-import { AVATAR_SHAPES, BRAIN_KINDS } from "@orbis/shared";
+import { AVATAR_SHAPES, BRAIN_KINDS, CHAT_HTTP_HEADER_NAMES } from "@orbis/shared";
 
 export const IdParams = Type.Object({ id: Type.String({ minLength: 1 }) });
 
@@ -24,17 +24,14 @@ export const BrainSchema = Type.Object(
           origin: Type.Optional(Type.String({ maxLength: 500 })),
           historyUrl: Type.Optional(Type.String({ maxLength: 1000 })),
           titles: Type.Optional(Type.Boolean()),
-          // The headers a browser sends besides the token (see CHAT_HTTP_HEADER_NAMES); no line breaks.
+          // The headers a browser sends besides the token (CHAT_HTTP_HEADER_NAMES); no line breaks.
           headers: Type.Optional(
-            Type.Object(
-              {
-                "user-agent": Type.Optional(Type.String({ maxLength: 500, pattern: "^[^\\r\\n]*$" })),
-                referer: Type.Optional(Type.String({ maxLength: 1000, pattern: "^[^\\r\\n]*$" })),
-                "accept-language": Type.Optional(Type.String({ maxLength: 200, pattern: "^[^\\r\\n]*$" })),
-              },
-              { additionalProperties: false },
-            ),
+            Type.Record(Type.String({ pattern: `^(${CHAT_HTTP_HEADER_NAMES.join("|")})$` }), Type.String({ maxLength: 1000, pattern: "^[^\\r\\n]*$" }), {
+              additionalProperties: false,
+              maxProperties: CHAT_HTTP_HEADER_NAMES.length,
+            }),
           ),
+          transport: Type.Optional(Type.Union([Type.Literal("curl"), Type.Literal("fetch")])),
         },
         { additionalProperties: false },
       ),

@@ -4,7 +4,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createServer, type IncomingHttpHeaders, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { cleanBearer, parseCurl, shellWords, tokenExpiry } from "@orbis/shared";
+import { browserHeaders, cleanBearer, parseCurl, shellWords, tokenExpiry } from "@orbis/shared";
+import { transportFor } from "../../src/brains/http-transport.js";
 import {
   AnswerReader,
   answerAfter,
@@ -14,6 +15,7 @@ import {
   historyBase,
   historyMessages,
   refusal,
+  stripFollowUps,
   requestHeaders,
   toolRequest,
 } from "../../src/brains/chat-http.js";
@@ -593,29 +595,43 @@ describe("the Bearer token, saved and sent (audit of change 0033)", () => {
 });
 
 describe("a refused request (HTTP 403 or 401)", () => {
-  const conn = { token: FRESH };
+  const conn = { token: FRESH, transport: transportFor("curl", "/usr/bin/curl") };
 
   it("tells a token the server refused (401) from a valid token it still refuses (403), with what the server said", () => {
     expect(refusal(401, "", conn)).toMatch(/refused the Bearer token \(HTTP 401\): it expired or is wrong/);
     const forbidden = refusal(403, "<html><body><h1>Access Denied</h1> Reference #18.abc</body></html>", conn);
     expect(forbidden).toContain("HTTP 403");
-    expect(forbidden).toContain("the token is valid until");
-    expect(forbidden).toContain("Orbis sent the token, not Origin, Referer, User-Agent");
+    expect(forbidden).toContain("its token is valid until");
+    expect(forbidden).toContain("Orbis sent the token, through curl: no browser headers were copied");
     expect(forbidden).toContain("The server said: Access Denied Reference #18.abc");
     expect(forbidden).not.toContain("<h1>");
-    // With the browser's headers sent, they are not named as missing.
+    // With the browser's headers sent, Orbis says how many, and does not blame a header the cURL never had.
     const sent = refusal(403, "", {
       ...conn,
       origin: "https://chat.example.com",
-      headers: { referer: "https://chat.example.com/", "user-agent": "Mozilla/5.0" },
+      headers: { "user-agent": "Mozilla/5.0", "accept-language": "pt-BR", "sec-fetch-mode": "cors" },
     });
-    expect(sent).toContain("Orbis sent the token, Origin, referer, user-agent.");
-    expect(sent).not.toContain("not Origin");
+    expect(sent).toContain("Orbis sent the token, Origin, 3 browser headers, through curl.");
+    expect(sent).not.toContain("no browser headers were copied");
+    expect(sent).not.toContain("Referer");
     expect(sent).toContain("may lack access to this agent");
     // An expired token is the cause, whatever the status.
-    expect(refusal(403, "", { token: jwt(Math.floor(Date.now() / 1000) - 5) })).toMatch(/Bearer token expired at/);
+    expect(refusal(403, "", { ...conn, token: jwt(Math.floor(Date.now() / 1000) - 5) })).toMatch(/Bearer token expired at/);
     // The token never comes back in the server's words.
     expect(refusal(403, `bad token ${FRESH}`, conn)).not.toContain(FRESH);
+  });
+
+  it("names the firewall when Cloudflare is the one that refused, and says what to do through curl or through Node", () => {
+    const page =
+      "<html><title>Attention Required! | Cloudflare</title><body>Sorry, you have been blocked. You are unable to access chat.example.com</body></html>";
+    const viaCurl = refusal(403, page, { ...conn, origin: "https://chat.example.com", headers: { "user-agent": "Mozilla/5.0" } });
+    expect(viaCurl).toContain("firewall (Cloudflare) blocked the request (HTTP 403)");
+    expect(viaCurl).toContain("through curl");
+    expect(viaCurl).toContain("Paste the request's cURL again");
+    expect(viaCurl).toContain("Sorry, you have been blocked");
+    const viaNode = refusal(403, page, { ...conn, transport: transportFor("fetch", null) });
+    expect(viaNode).toContain("through fetch");
+    expect(viaNode).toContain("install curl");
   });
 
   it("builds the headers the browser sent, and never lets one replace the token", () => {
@@ -643,7 +659,7 @@ describe("a refused request (HTTP 403 or 401)", () => {
     expect(refused.status).toBe("failed");
     expect(refused.error).toContain("HTTP 403");
     expect(refused.error).toContain("Forbidden by policy");
-    expect(refused.error).toContain("not Origin, Referer, User-Agent");
+    expect(refused.error).toContain("no browser headers were copied");
     expect(refused.error).not.toContain(FRESH);
 
     const browser = await chatBot(t, fake.url, {
@@ -688,5 +704,125 @@ describe("a refused request (HTTP 403 or 401)", () => {
     expect(yaml).toContain("agente-x");
     expect(yaml).toContain("titles: false");
     for (const private_ of ["example.com", "origin", "historyUrl", "referer", "baseUrl"]) expect(yaml).not.toContain(private_);
+  });
+});
+
+describe("the stream of the company chat (change 0035)", () => {
+  /** The events the real chat sends, with made-up words: a start, chunks (the follow-up block among them), the complete message. */
+  const stream = (res: ServerResponse, chatId: string, reply: string, extra = "") => {
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    const event = (name: string, data: unknown) => res.write(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`);
+    event("stream_started", { requestId: "req-1", chatId });
+    for (const delta of [...reply.match(/.{1,7}/gs)!, `\n\n[FOLLOW_UP_QUESTIONS]\n["Quer ver mais?", "Posso ajudar?"]\n[/FOLLOW_UP_QUESTIONS]`])
+      event("message_chunk", { delta });
+    event("message_complete", {
+      data: {
+        metadata: { requestId: "req-1", chatId, messageId: "chatcmpl-1", tokenUsage: { promptTokens: 6096, completionTokens: 153, totalTokens: 6249 } },
+        context: { content: reply, role: "assistant" },
+        extensions: { followUpQuestions: ["Quer ver mais?", "Posso ajudar?"] },
+      },
+    });
+    res.end(extra);
+  };
+
+  it("takes the answer, the chat and the tokens from message_complete, without the follow-up questions and without the history", async () => {
+    titleStatus = 200;
+    const fake = await orchestrator((_s, res) => stream(res, "chat-sse-1", "Olá! Estou à disposição para o que precisar. 🚀"));
+    t = await testHub();
+    const bot = await chatBot(t, fake.url, { chat: { titles: false } });
+    const run = (await chat(t, bot.id, "ola")).runs[0];
+    expect(run).toMatchObject({ status: "done", reply: "Olá! Estou à disposição para o que precisar. 🚀" });
+    expect(run.usage).toMatchObject({ inputTokens: 6096, outputTokens: 153, subscription: true });
+    expect(fake.reads).toEqual([]); // the stream said it all: the history was not read
+    // The next message continues the chat the stream named.
+    await chat(t, bot.id, "e agora?");
+    expect(fake.seen[1]!.data.context.chatId).toBe("chat-sse-1");
+  });
+
+  it("drops the follow-up block from a streamed answer that has no message_complete", () => {
+    expect(stripFollowUps('Oi!\n\n[FOLLOW_UP_QUESTIONS]\n["a", "b"]\n[/FOLLOW_UP_QUESTIONS]')).toBe("Oi!");
+    expect(stripFollowUps('Oi!\n\n[FOLLOW_UP_QUESTIONS]\n["a", "b"')).toBe("Oi!");
+    expect(stripFollowUps("Sem sugestões.")).toBe("Sem sugestões.");
+    const reader = new AnswerReader();
+    reader.line(
+      'data: {"data": {"metadata": {"chatId": "c1", "tokenUsage": {"promptTokens": 5, "completionTokens": 2}}, "context": {"content": "Pronto.", "role": "assistant"}}}',
+      true,
+    );
+    expect(reader).toMatchObject({ final: "Pronto.", chatId: "c1", usage: { input: 5, output: 2 } });
+  });
+});
+
+describe("a firewall that wants the browser's headers (change 0035)", () => {
+  /** Like a firewall in front of the chat: the request passes only with the headers a browser sends together. */
+  const firewall = (s: Seen, res: ServerResponse) => {
+    const h = s.headers;
+    const browser =
+      /Chrome\//.test(String(h["user-agent"])) &&
+      h["sec-fetch-mode"] === "cors" &&
+      /Chromium/.test(String(h["sec-ch-ua"])) &&
+      h["sec-ch-ua-platform"] === '"Windows"';
+    if (!browser) {
+      res.writeHead(403, { "content-type": "text/html" });
+      return res.end("<html><title>Attention Required! | Cloudflare</title><body>Sorry, you have been blocked.</body></html>");
+    }
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    res.end('data: {"delta":"passou"}\n\ndata: {"chatId":"c-fw"}\n\n');
+  };
+  const headers = {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "accept-language": "pt-BR,pt;q=0.9",
+    "sec-ch-ua": '"Chromium";v="154", "Not A(Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-site",
+    "cache-control": "no-cache",
+    pragma: "no-cache",
+    priority: "u=1, i",
+  };
+
+  it("is named in the error when the browser's headers are missing, and passes when they are sent", async () => {
+    const fake = await orchestrator(firewall);
+    t = await testHub();
+    const bare = await chatBot(t, fake.url, { chat: { titles: false, origin: "https://chat.example.com" } });
+    const blocked = (await chat(t, bare.id, "oi")).runs[0];
+    expect(blocked.status).toBe("failed");
+    expect(blocked.error).toContain("firewall (Cloudflare) blocked the request (HTTP 403)");
+    expect(blocked.error).toContain("through curl");
+    expect(blocked.error).not.toContain(FRESH);
+
+    const browser = await chatBot(t, fake.url, { chat: { titles: false, origin: "https://chat.example.com", headers } });
+    expect((await chat(t, browser.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "passou" });
+    const sent = fake.seen.at(-1)!.headers;
+    // The client hints arrive exactly as the browser wrote them, quotes and all.
+    expect(sent["sec-ch-ua"]).toBe('"Chromium";v="154", "Not A(Brand";v="99"');
+    expect(sent["priority"]).toBe("u=1, i");
+    expect(sent.authorization).toBe(`Bearer ${FRESH}`);
+  });
+
+  it("makes the same request through Node's fetch when the bot asks for it", async () => {
+    const fake = await orchestrator(firewall);
+    t = await testHub();
+    const viaNode = await chatBot(t, fake.url, { chat: { titles: false, transport: "fetch", headers } });
+    expect((await chat(t, viaNode.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "passou" });
+    const blocked = await chatBot(t, fake.url, { chat: { titles: false, transport: "fetch" } });
+    expect((await chat(t, blocked.id, "oi")).runs[0].error).toMatch(/through fetch.*install curl/);
+  });
+
+  it("keeps every browser header the cURL had, but not a cookie or a key", () => {
+    const parsed = parseCurl(
+      [
+        "curl --url 'https://chat.example.com/v1/chat-orchestrator' \\",
+        '  -H \'sec-ch-ua: "Chromium";v="154"\' \\',
+        "  -H 'sec-fetch-mode: cors' \\",
+        "  -H 'cookie: session=nao-guardar' \\",
+        "  -H 'x-api-key: nao-guardar' \\",
+        "  -H 'accept-encoding: gzip, br' \\",
+        "  -H 'user-agent: Mozilla/5.0' \\",
+        "  --data-raw '{}'",
+      ].join("\n"),
+    );
+    expect(browserHeaders(parsed.headers)).toEqual({ "user-agent": "Mozilla/5.0", "sec-ch-ua": '"Chromium";v="154"', "sec-fetch-mode": "cors" });
   });
 });

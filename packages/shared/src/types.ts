@@ -49,14 +49,33 @@ export interface ChatHttpOptions {
    */
   titles?: boolean;
   /**
-   * Headers the browser sent besides the token and `Origin` (`referer`, `user-agent`,
-   * `accept-language`), for a server that refuses a request without them (HTTP 403).
+   * Headers the browser sent besides the token and `Origin` (see `CHAT_HTTP_HEADER_NAMES`), for a
+   * server or a firewall that refuses a request without them (HTTP 403).
    */
   headers?: Record<string, string>;
+  /**
+   * How the requests are made: `curl` (the system's curl program: HTTP/2 and the TLS of a browser-like
+   * client, which firewalls such as Cloudflare accept) or `fetch` (Node's own). Default: curl when it
+   * is installed (Windows 10 and later have it), else fetch.
+   */
+  transport?: "curl" | "fetch";
 }
 
-/** The headers of a pasted cURL that Orbis keeps and sends in `ChatHttpOptions.headers`. */
-export const CHAT_HTTP_HEADER_NAMES = ["user-agent", "referer", "accept-language"] as const;
+/** The headers of a pasted cURL that Orbis keeps and sends in `ChatHttpOptions.headers` (never a cookie, a key or `Authorization`). */
+export const CHAT_HTTP_HEADER_NAMES = [
+  "user-agent",
+  "accept-language",
+  "referer",
+  "cache-control",
+  "pragma",
+  "priority",
+  "sec-ch-ua",
+  "sec-ch-ua-mobile",
+  "sec-ch-ua-platform",
+  "sec-fetch-dest",
+  "sec-fetch-mode",
+  "sec-fetch-site",
+] as const;
 
 /** Whether a bot's `chat-http` token is saved and when it expires (`GET /api/v1/bots/:id/chat-token`); the token itself never leaves the vault. */
 export interface ChatTokenStatus {

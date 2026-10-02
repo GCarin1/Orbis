@@ -524,7 +524,7 @@ const pt = {
   "chat.tokenSaved": "•••• salvo — cole um novo para trocar",
   "chat.tokenExpires": "Expira em {when}",
   "chat.tokenExpired": "Este token expirou em {when}: copie um novo",
-  "chat.advanced": "Avançado: agente, temperatura, Origin, histórico, títulos",
+  "chat.advanced": "Avançado: agente, temperatura, Origin, cabeçalhos, chamada HTTP, histórico, títulos",
   "chat.agentId": "ID do agente",
   "chat.agentVersion": "Versão do agente",
   "chat.temperature": "Temperatura",
@@ -552,9 +552,13 @@ const pt = {
   "chat.tokenStatusNoExp": "✓ Token salvo no cofre (sem data de expiração)",
   "chat.tokenStatusExpired": "⚠ Token salvo, mas expirou em {when}: cole um novo",
   "chat.tokenStatusNone": "Nenhum token salvo ainda",
-  "chat.headersKept": "Cabeçalhos do navegador que serão enviados: {names}",
-  "chat.headersNone": "Nenhum cabeçalho do navegador copiado (se a API responder 403, cole o cURL para copiar Referer e User-Agent).",
+  "chat.headersKept": "Cabeçalhos do navegador a enviar ({count}): {names}",
+  "chat.headersNone": "Nenhum cabeçalho do navegador copiado (se a API responder 403, cole o cURL para copiar User-Agent, sec-ch-ua, sec-fetch…).",
   "chat.headersClear": "Remover",
+  "chat.transport": "Chamada HTTP",
+  "chat.transport.auto": "Automática (curl, se estiver instalado)",
+  "chat.transport.curl": "curl (passa por firewalls que bloqueiam o Node)",
+  "chat.transport.fetch": "Node (fetch)",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1080,7 +1084,7 @@ const en: Record<TextKey, string> = {
   "chat.tokenSaved": "•••• saved — paste a new one to replace it",
   "chat.tokenExpires": "Expires at {when}",
   "chat.tokenExpired": "This token expired at {when}: copy a new one",
-  "chat.advanced": "Advanced: agent, temperature, Origin, history, titles",
+  "chat.advanced": "Advanced: agent, temperature, Origin, headers, HTTP call, history, titles",
   "chat.agentId": "Agent id",
   "chat.agentVersion": "Agent version",
   "chat.temperature": "Temperature",
@@ -1108,9 +1112,13 @@ const en: Record<TextKey, string> = {
   "chat.tokenStatusNoExp": "✓ Token saved in the vault (no expiry date)",
   "chat.tokenStatusExpired": "⚠ Token saved, but it expired at {when}: paste a new one",
   "chat.tokenStatusNone": "No token saved yet",
-  "chat.headersKept": "Browser headers that will be sent: {names}",
-  "chat.headersNone": "No browser headers copied (if the API answers 403, paste the cURL to copy Referer and User-Agent).",
+  "chat.headersKept": "Browser headers to send ({count}): {names}",
+  "chat.headersNone": "No browser headers copied (if the API answers 403, paste the cURL to copy User-Agent, sec-ch-ua, sec-fetch…).",
   "chat.headersClear": "Remove",
+  "chat.transport": "HTTP call",
+  "chat.transport.auto": "Automatic (curl, if installed)",
+  "chat.transport.curl": "curl (gets past firewalls that block Node)",
+  "chat.transport.fetch": "Node (fetch)",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };
