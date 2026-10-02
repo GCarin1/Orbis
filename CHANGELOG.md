@@ -7,6 +7,21 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Added
+
+- Groups like WhatsApp or Telegram (change 0042-group-info-like-a-chat-app): the
+  header shows the group's photo, name and members (or who is working); a **⋮**
+  menu holds every option (add members, group info, links, search, mute, and
+  under More: export, clear, delete); a click on the photo or the name opens the
+  **group info** — a flyout on the right on a wide screen, full screen on a
+  phone — with the photo (pick an image), name and **description** (read by the
+  group's bots), add/search/mute/export buttons, the group's links, the members
+  (message, make lead, remove) and the danger zone. **Add members** is always
+  there: a dialog with the bots outside the group that says when every bot is
+  already in it or the group is full (`ORBIS_MAX_GROUP_SIZE`). Search ignores
+  case and accents and scrolls to the message. A muted group raises no "reported
+  back" desktop notification and shows a gray unread dot.
+
 ### Fixed
 
 - OpenAI-compatible company gateways (change 0041-openai-compatible-gateways): a

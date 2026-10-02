@@ -243,4 +243,12 @@ CREATE INDEX runs_by_status ON runs (status);
 CREATE INDEX approvals_by_run ON approvals (run_id, status);
 CREATE INDEX routine_runs_by_run ON routine_runs (run_id);`,
   },
+  {
+    // specs/conversations: a group's description, photo and mute, as a chat app's group info
+    // shows them (change 0042-group-info-like-a-chat-app).
+    version: 9,
+    sql: `ALTER TABLE conversations ADD COLUMN description TEXT NOT NULL DEFAULT '';
+ALTER TABLE conversations ADD COLUMN photo TEXT;
+ALTER TABLE conversations ADD COLUMN muted INTEGER NOT NULL DEFAULT 0;`,
+  },
 ];

@@ -17,8 +17,8 @@ const ana = bot({ name: "Ana", role: "QA", state: "waiting", lastMessage: { text
 const chief = bot({ name: "Chief", role: "Operations", pinned: true, state: "done", avatar: { initials: "CH", color: "#8b5cf6", shape: "cloud" } });
 const ghost = bot({ name: "Ghost", role: "QA", hidden: true });
 const loner = bot({ name: "Loner", state: "blocked" });
-const group: Conversation = { id: "cnv_g", kind: "group", title: "Launch", members: [ana.id, zed.id], leadBotId: ana.id, createdAt: at("10"), lastItemAt: at("25") };
-const anaDm: Conversation = { id: "cnv_ana", kind: "direct", title: "Ana", members: [ana.id], leadBotId: ana.id, createdAt: at("01"), lastItemAt: at("27") };
+const group: Conversation = { id: "cnv_g", kind: "group", title: "Launch", members: [ana.id, zed.id], leadBotId: ana.id, description: "", photo: null, muted: false, createdAt: at("10"), lastItemAt: at("25") };
+const anaDm: Conversation = { id: "cnv_ana", kind: "direct", title: "Ana", members: [ana.id], leadBotId: ana.id, description: "", photo: null, muted: false, createdAt: at("01"), lastItemAt: at("27") };
 const bots = Object.fromEntries([zed, ana, chief, ghost, loner].map((b) => [b.id, b]));
 
 function renderSidebar(overrides: Partial<Parameters<typeof Sidebar>[0]> = {}) {

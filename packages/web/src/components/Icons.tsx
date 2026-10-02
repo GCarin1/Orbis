@@ -187,3 +187,72 @@ export const TrashIcon = (p: P) => (
     <path d="M9 7V4h6v3" />
   </Icon>
 );
+
+export const MoreIcon = (p: P) => (
+  <Icon {...p}>
+    <circle cx="12" cy="5" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="19" r="1.2" fill="currentColor" />
+  </Icon>
+);
+
+export const UserPlusIcon = (p: P) => (
+  <Icon {...p}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6" />
+  </Icon>
+);
+
+export const BellIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" />
+    <path d="M10 20a2 2 0 0 0 4 0" />
+  </Icon>
+);
+
+export const BellOffIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H8" />
+    <path d="M10 20a2 2 0 0 0 4 0M3 3l18 18" />
+  </Icon>
+);
+
+export const CameraIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </Icon>
+);
+
+export const PencilIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="m4 20 1-4L16 5l3 3L8 19z" />
+    <path d="m14 7 3 3" />
+  </Icon>
+);
+
+export const LinkIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+    <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+  </Icon>
+);
+
+export const InfoIcon = (p: P) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v6M12 7.5v.5" />
+  </Icon>
+);
+
+export const ChevronRightIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="m9 5 7 7-7 7" />
+  </Icon>
+);
+
+export const ChatIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </Icon>
+);

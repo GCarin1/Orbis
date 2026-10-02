@@ -103,8 +103,12 @@ export function workingBots(activeRuns: RunView[], bots: Record<string, Bot>): W
   });
 }
 
-/** The joins and leaves of a group, shown with the bot's face. */
-const MEMBER_EVENTS = new Set(["member.joined", "member.left", "member.absent"]);
+/** The joins and leaves of a group, and a new lead, shown with the bot's face. */
+const MEMBER_EVENTS = new Set(["member.joined", "member.left", "member.absent", "group.lead"]);
+/** A group's name, description or photo changing, said as a chat app says it. */
+const GROUP_EVENTS = new Set(["group.renamed", "group.described", "group.photo"]);
+/** How long a message found by a search stays marked. */
+const FLASH_MS = 2500;
 
 export function Timeline({
   items,
@@ -114,6 +118,7 @@ export function Timeline({
   ownBotId = null,
   hasEarlier = false,
   onLoadEarlier,
+  focus = null,
 }: {
   items: TimelineItem[];
   bots: Record<string, Bot>;
@@ -124,6 +129,8 @@ export function Timeline({
   /** Older items exist on the hub. */
   hasEarlier?: boolean;
   onLoadEarlier?: () => Promise<void>;
+  /** A message to scroll to and mark (a search result); `at` makes the same message shown twice scroll twice. */
+  focus?: { itemId: string; at: number } | null;
 }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -136,6 +143,18 @@ export function Timeline({
   /** Why trying a failed run again did not work, by run. */
   const [retryErrors, setRetryErrors] = useState<Record<string, string>>({});
   const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
+  // Show a message asked for (a search result): scroll to it, stop following the latest, mark it a moment.
+  useEffect(() => {
+    if (!focus) return;
+    const el = document.getElementById(`item-${focus.itemId}`);
+    if (!el) return;
+    stick.current = false;
+    el.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    setFlash(focus.itemId);
+    const timer = setTimeout(() => setFlash(null), FLASH_MS);
+    return () => clearTimeout(timer);
+  }, [focus?.itemId, focus?.at, items.length]);
   const byId = new Map(items.map((i) => [i.id, i]));
   // Stable while the bots do not change, so memoized messages are not parsed again on every step.
   const team = useMemo(() => Object.values(bots), [bots]);
@@ -254,14 +273,33 @@ export function Timeline({
           const text =
             item.event.type === "member.joined"
               ? t("group.joined", { name })
-              : item.event.type === "member.absent"
-                ? t("group.absent", { name })
-                : data.reason === "deleted"
-                  ? t("group.leftDeleted", { name })
-                  : t("group.left", { name });
+              : item.event.type === "group.lead"
+                ? t("group.leadEvent", { name })
+                : item.event.type === "member.absent"
+                  ? t("group.absent", { name })
+                  : data.reason === "deleted"
+                    ? t("group.leftDeleted", { name })
+                    : t("group.left", { name });
           parts.push(
             <div key="item" className={`event event-member event-${item.event.type}`} data-testid="event">
               <Avatar bot={face} size={20} />
+              <span>{text}</span>
+            </div>,
+          );
+        } else if (item.kind === "event" && item.event && GROUP_EVENTS.has(item.event.type)) {
+          const data = item.event.data as { title?: string; removed?: boolean };
+          const text =
+            item.event.type === "group.renamed"
+              ? t("group.renamedEvent", { title: data.title ?? "" })
+              : item.event.type === "group.described"
+                ? data.removed
+                  ? t("group.descriptionRemovedEvent")
+                  : t("group.describedEvent")
+                : data.removed
+                  ? t("group.photoRemovedEvent")
+                  : t("group.photoEvent");
+          parts.push(
+            <div key="item" className={`event event-${item.event.type}`} data-testid="event">
               <span>{text}</span>
             </div>,
           );
@@ -305,7 +343,8 @@ export function Timeline({
           parts.push(
             <div
               key="item"
-              className={`message ${mine ? "message-user" : "message-bot"}${bot && bot.id === ownBotId ? " own" : ""}${sameAuthor ? " continued" : ""}`}
+              id={`item-${item.id}`}
+              className={`message ${mine ? "message-user" : "message-bot"}${bot && bot.id === ownBotId ? " own" : ""}${sameAuthor ? " continued" : ""}${flash === item.id ? " flash" : ""}`}
               data-testid="message"
             >
               {!mine && <span className="message-face">{showWho && bot ? <Avatar bot={bot} size={28} /> : null}</span>}

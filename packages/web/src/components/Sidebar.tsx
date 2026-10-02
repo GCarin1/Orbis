@@ -8,7 +8,7 @@ import type { Approval, Bot, Conversation } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import { ApprovalsInbox } from "./ApprovalsInbox.js";
 import { Avatar, Mascot, StateLabel } from "./Avatar.js";
-import { PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon } from "./Icons.js";
+import { BellOffIcon, PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon } from "./Icons.js";
 import { LanguageSwitch } from "./LanguageSwitch.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 
@@ -78,6 +78,8 @@ export function timeOf(iso: string, lang: string, yesterday: string): string {
 
 /** Up to three members' faces, stacked like a small crowd. */
 export function GroupFace({ group, bots, size = 40 }: { group: Conversation; bots: Record<string, Bot>; size?: number }) {
+  // The group's own photo when it has one, as a chat app shows it; else its members' faces.
+  if (group.photo) return <img className="group-photo" src={group.photo} alt="" width={size} height={size} style={{ width: size, height: size }} />;
   const members = group.members.map((id) => bots[id]).filter((b): b is Bot => b !== undefined).slice(0, 3);
   const small = Math.round(size * 0.62);
   return (
@@ -127,7 +129,12 @@ function Row({
           </span>
           <span className="chat-line">
             <span className="chat-preview">{preview}</span>
-            {unread && <span className="unread-dot" aria-label={t("sidebar.unread")} />}
+            {entry.group?.muted && (
+              <span className="muted-mark" title={t("group.muted")} aria-label={t("group.muted")}>
+                <BellOffIcon size={14} />
+              </span>
+            )}
+            {unread && <span className={`unread-dot${entry.group?.muted ? " muted" : ""}`} aria-label={t("sidebar.unread")} />}
           </span>
         </span>
       </button>

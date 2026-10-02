@@ -1,8 +1,9 @@
-// Group conversations (contracts/hub-surface § REST routes).
+// Group conversations and what a conversation's info shows: search and links (contracts/hub-surface § REST routes).
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
 import type { HubContext } from "../context.js";
+import { GROUP_PHOTO } from "../services/conversations.js";
 import { IdParams } from "./schemas.js";
 
 const GroupBody = Type.Object(
@@ -10,13 +11,22 @@ const GroupBody = Type.Object(
     title: Type.String({ minLength: 1, maxLength: 120 }),
     members: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 64 }),
     leadBotId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    description: Type.Optional(Type.String({ maxLength: 2000 })),
   },
   { additionalProperties: false },
 );
 const GroupPatch = Type.Object(
-  { title: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })), leadBotId: Type.Optional(Type.Union([Type.String(), Type.Null()])) },
+  {
+    title: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+    leadBotId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    description: Type.Optional(Type.String({ maxLength: 2000 })),
+    /** A small image as a `data:` URL (about 300 KB at most), or null to show the members' faces again. */
+    photo: Type.Optional(Type.Union([Type.String({ maxLength: 400_000, pattern: GROUP_PHOTO.source }), Type.Null()])),
+    muted: Type.Optional(Type.Boolean()),
+  },
   { additionalProperties: false },
 );
+const SearchQuery = Type.Object({ q: Type.String({ minLength: 1, maxLength: 200 }), limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })) });
 const MemberBody = Type.Object({ botId: Type.String({ minLength: 1 }) }, { additionalProperties: false });
 const MemberParams = Type.Object({ id: Type.String(), botId: Type.String() });
 
@@ -24,6 +34,12 @@ export async function registerGroupRoutes(root: FastifyInstance, ctx: HubContext
   const app = root.withTypeProvider<TypeBoxTypeProvider>();
   const svc = ctx.conversationService;
 
+  // How many bots a group holds (ORBIS_MAX_GROUP_SIZE), for the web app's member picker.
+  app.get("/api/v1/conversations/limits", { schema: { tags: ["conversations"] } }, async () => ({ maxGroupSize: ctx.config.maxGroupSize }));
+  app.get("/api/v1/conversations/:id/search", { schema: { tags: ["conversations"], params: IdParams, querystring: SearchQuery } }, async (req) =>
+    svc.search(req.params.id, req.query.q, req.query.limit),
+  );
+  app.get("/api/v1/conversations/:id/links", { schema: { tags: ["conversations"], params: IdParams } }, async (req) => svc.links(req.params.id));
   app.post("/api/v1/conversations", { schema: { tags: ["conversations"], body: GroupBody } }, async (req, reply) => {
     reply.code(201);
     return svc.createGroup(req.body);

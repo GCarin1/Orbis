@@ -1,11 +1,11 @@
 // Conversations and message routing (specs/conversations).
-import { extractMentions, resolveMentions, type Bot, type Conversation, type Run, type TimelineItem } from "@orbis/shared";
+import { extractMentions, resolveMentions, type Bot, type Conversation, type ConversationLink, type Run, type TimelineItem } from "@orbis/shared";
 import type { EventBus } from "../bus.js";
 import type { HubConfig } from "../config.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { newId, nowIso } from "../ids.js";
 import type { BotsRepo } from "../repos/bots.js";
-import type { ConversationsRepo, ItemsRepo } from "../repos/conversations.js";
+import type { ConversationsRepo, GroupChanges, ItemsRepo } from "../repos/conversations.js";
 import type { MemoryRepo } from "../repos/memory.js";
 import type { BrainSessionsRepo, RunsRepo } from "../repos/runs.js";
 import type { RunEngine } from "../runs/engine.js";
@@ -50,7 +50,11 @@ export interface GroupInput {
   /** Bot ids or handles. */
   members: string[];
   leadBotId?: string | null;
+  description?: string;
 }
+
+/** A group photo: a small image as a `data:` URL (the web app shrinks what the user picks). */
+export const GROUP_PHOTO = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 export class ConversationService {
   private router: MessageRouter;
@@ -115,6 +119,9 @@ export class ConversationService {
       title: bot.name,
       members: [bot.id],
       leadBotId: bot.id,
+      description: "",
+      photo: null,
+      muted: false,
       createdAt: nowIso(),
       lastItemAt: null,
     };
@@ -169,6 +176,9 @@ export class ConversationService {
       title,
       members,
       leadBotId: lead,
+      description: input.description?.trim() ?? "",
+      photo: null,
+      muted: false,
       createdAt: nowIso(),
       lastItemAt: null,
     };
@@ -177,20 +187,52 @@ export class ConversationService {
     return this.publish(conv.id);
   }
 
-  updateGroup(id: string, patch: { title?: string; leadBotId?: string | null }): Conversation {
+  /**
+   * Change a group's info: its name, description, photo, lead or mute. What everyone in the group sees
+   * changing is said in it, as a chat app says it ("You changed the group's name to …").
+   */
+  updateGroup(id: string, patch: GroupChanges): Conversation {
     const conv = this.group(id);
-    const next: { title?: string; leadBotId?: string | null } = {};
+    const next: GroupChanges = {};
     if (patch.title !== undefined) {
       if (!patch.title.trim()) throw badRequest("invalid group", { title: "must not be empty" });
       next.title = patch.title.trim();
     }
+    if (patch.description !== undefined) next.description = patch.description.trim();
+    if (patch.photo !== undefined) {
+      if (patch.photo !== null && !GROUP_PHOTO.test(patch.photo)) throw badRequest("invalid group", { photo: "a PNG, JPEG, WebP or GIF image as a data: URL" });
+      next.photo = patch.photo;
+    }
+    if (patch.muted !== undefined) next.muted = patch.muted;
+    let lead: Bot | undefined;
     if (patch.leadBotId !== undefined) {
-      const lead = patch.leadBotId === null ? conv.members[0]! : this.d.botService.get(patch.leadBotId).id;
-      if (!conv.members.includes(lead)) throw badRequest("invalid group", { leadBotId: "the lead must be a member" });
-      next.leadBotId = lead;
+      const leadId = patch.leadBotId === null ? conv.members[0]! : this.d.botService.get(patch.leadBotId).id;
+      if (!conv.members.includes(leadId)) throw badRequest("invalid group", { leadBotId: "the lead must be a member" });
+      next.leadBotId = leadId;
+      if (leadId !== conv.leadBotId) lead = this.d.botService.get(leadId);
     }
     this.d.conversations.update(id, next);
+    if (next.title !== undefined && next.title !== conv.title) this.d.timeline.event(id, "group.renamed", `You renamed the group "${next.title}"`, { title: next.title });
+    if (next.description !== undefined && next.description !== conv.description) {
+      this.d.timeline.event(id, "group.described", next.description ? "You changed the group's description" : "You removed the group's description", { removed: !next.description });
+    }
+    if (next.photo !== undefined && next.photo !== conv.photo) {
+      this.d.timeline.event(id, "group.photo", next.photo ? "You changed the group's photo" : "You removed the group's photo", { removed: next.photo === null });
+    }
+    if (lead) this.d.timeline.event(id, "group.lead", `${lead.name} now leads the group`, this.face(lead));
     return this.publish(id);
+  }
+
+  /** The messages of a conversation that hold `query` (any case or accent), newest first. */
+  search(id: string, query: string, limit?: number): TimelineItem[] {
+    this.get(id);
+    return this.d.items.search(id, query, limit);
+  }
+
+  /** The links written in a conversation, newest first. */
+  links(id: string): ConversationLink[] {
+    this.get(id);
+    return this.d.items.links(id);
   }
 
   deleteGroup(id: string): void {
@@ -379,12 +421,14 @@ export class ConversationService {
       .filter((b): b is Bot => b !== undefined)
       .map((b) => `${b.name} (${b.handle}${b.role ? `, ${b.role}` : ""})`);
     const lead = conv.leadBotId === bot.id ? "You lead it: the user's messages that name nobody come to you." : null;
-    return [
+    const description = conv.description.trim() ? `The group's description, written by the user (what this group is for; follow it here):\n${conv.description.trim()}` : null;
+    const where = [
       `Where you are: the group "${conv.title}"${conv.members.includes(bot.id) ? "" : ", where you were called in"}, with the user${members.length ? ` and ${members.join(", ")}` : ""}. Everyone here reads every message.`,
       lead,
     ]
       .filter(Boolean)
       .join(" ");
+    return description ? `${where}\n${description}` : where;
   }
 
   /** The user read the conversation: a bot that was `done` goes back to `idle`. */

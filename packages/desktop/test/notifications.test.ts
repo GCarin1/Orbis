@@ -1,7 +1,7 @@
 // specs/desktop-app — acceptance criterion 2 (native notifications).
 import { describe, expect, it } from "vitest";
 import type { StreamEvent } from "@orbis/shared";
-import { NotificationCenter } from "../src/notifications.js";
+import { mutedConversations, NotificationCenter } from "../src/notifications.js";
 
 const ts = "2026-09-27T10:00:00.000Z";
 const approval = (status = "pending"): StreamEvent => ({
@@ -85,5 +85,37 @@ describe("notifications", () => {
       conversationId: "cnv_chief",
     });
     expect(center.fromEvent(report)).toBeNull();
+  });
+
+  it("raises none for a report in a muted group, and still asks for an approval there (change 0042)", () => {
+    const muted = mutedConversations();
+    const group = {
+      id: "cnv_ana",
+      kind: "group" as const,
+      title: "Time",
+      members: ["bot_ana"],
+      leadBotId: "bot_ana",
+      description: "",
+      photo: null,
+      muted: false,
+      createdAt: ts,
+      lastItemAt: null,
+    };
+    muted.set([group]);
+    const center = new NotificationCenter(
+      () => "Ana",
+      (id) => muted.has(id),
+    );
+    const report = (itemId: string): StreamEvent => ({
+      type: "bot.report",
+      ts,
+      data: { botId: "bot_ana", conversationId: "cnv_ana", itemId, text: "Pronto." },
+    });
+    expect(center.fromEvent(report("itm_1"))).not.toBeNull();
+    muted.apply({ type: "conversation.updated", ts, data: { conversation: { ...group, muted: true } } });
+    expect(center.fromEvent(report("itm_2"))).toBeNull();
+    expect(center.fromEvent(approval())).toMatchObject({ conversationId: "cnv_ana" });
+    muted.apply({ type: "conversation.deleted", ts, data: { conversationId: "cnv_ana" } });
+    expect(center.fromEvent(report("itm_3"))).not.toBeNull();
   });
 });

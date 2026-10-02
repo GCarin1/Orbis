@@ -247,8 +247,22 @@ export interface Conversation {
   /** Member bot ids, in order. */
   members: string[];
   leadBotId: string | null;
+  /** A group's description: what it is for, shown in its info and read by its bots. */
+  description: string;
+  /** A group's photo (a small `data:image/…` URL), or null for its members' faces. */
+  photo: string | null;
+  /** A muted group raises no "reported back" notification and shows its unread count in gray. */
+  muted: boolean;
   createdAt: string;
   lastItemAt: string | null;
+}
+
+/** A link found in a conversation's messages (its "media, links and docs"). */
+export interface ConversationLink {
+  url: string;
+  itemId: string;
+  author: Author;
+  createdAt: string;
 }
 
 export type ItemKind = "message" | "event" | "card";

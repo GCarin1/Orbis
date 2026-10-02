@@ -84,10 +84,48 @@ In the web app, **+ New group** picks the members and the lead; typing `@` in
 the message box lists the bots (and `@everyone` in a group).
 
 Like a chat app, the conversation says who comes and goes — **"Ana joined the
-group"**, **"Ana left the group"** — with the bot's face. In the group's
-header, **+ Add…** adds a bot, the **×** on a member's chip removes it, and the
-two buttons on the right **clear the conversation** and **delete the group**
-(the bots stay).
+group"**, **"Ana left the group"** — with the bot's face.
+
+### The group's header, menu and info
+
+The header shows the group's **photo** (or its members' faces), its **name** and
+its members ("Ana, Bia, Cid", or "Bia working…" while one works). The **⋮** menu
+holds every option: **Add members**, **Group info**, **Group links**, **Search**,
+**Mute notifications**, and under **More** → **Export chat**, **Clear
+conversation** and **Delete group** (the bots stay).
+
+A click on the photo or the name opens the **group info** — a flyout on the right
+on a wide screen (drag its edge to resize it), full screen on a phone:
+
+- **Photo**: click it to pick an image (cut to a square and shrunk in the
+  browser); **Remove photo** brings the members' faces back.
+- **Name** and **description** (✎). The description is the group's purpose:
+  **its bots read it** in their context there and follow it ("answer in
+  bullet points", "this group plans the releases").
+- **Add · Search · Mute · Export** buttons.
+- **Group links**: every link written in the conversation, each once, with who
+  wrote it; a click on its line shows the message.
+- **Members**: **Add members**, then each bot with its role, state and the
+  **Lead** badge; a click on a bot offers **Message <bot>**, **Make lead** and
+  **Remove from the group**.
+- **Notifications**: a muted group raises no desktop notification when a
+  manager reports back there, and its unread dot is gray; approval and secret
+  requests still notify (a bot is waiting on you).
+- **Clear conversation** and **Delete group**.
+
+**Search** finds the group's messages ignoring case and accents ("acao" finds
+"AÇÃO"); a click on a result scrolls to the message and marks it.
+
+**Add members** lists the bots outside the group, with a search box. When every
+bot is already in the group it says so and offers **+ New bot**; when the group
+holds its limit (`ORBIS_MAX_GROUP_SIZE`, 6 by default) it says how to raise it
+— on Windows, `setx ORBIS_MAX_GROUP_SIZE 12` and start Orbis again.
+
+The name, description, photo and lead changing are said in the group ("You
+renamed the group …", "Bia now leads the group"); the bots are told the current
+name, members and description instead of these lines. API: `PATCH
+/api/v1/conversations/<id>` `{ title?, description?, photo?, leadBotId?, muted? }`,
+`GET …/<id>/search?q=`, `GET …/<id>/links`, `GET /api/v1/conversations/limits`.
 
 - **A bot that joins reads the group's history**: what was said before it came
   is in its context the first time it answers there.
@@ -98,7 +136,7 @@ two buttons on the right **clear the conversation** and **delete the group**
   a mention, as before.)
 - **Deleting a bot** takes it out of every group, said in each ("left the group
   (the bot was deleted)"); a group left with no bot is deleted.
-- **Clearing a conversation** (a group or a bot's own, from its header) deletes
+- **Clearing a conversation** (a group's ⋮ menu, or a bot's own header) deletes
   every message, event and card, makes the bots start it over (their sessions of
   it are forgotten) and drops the run summaries it left in their memory; what a
   bot saved on purpose (`memory.save`) stays. It is refused while a bot is

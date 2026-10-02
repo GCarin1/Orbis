@@ -4,9 +4,9 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, shell, Tray } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Bot } from "@orbis/shared";
+import type { Bot, Conversation } from "@orbis/shared";
 import { ensureHub, type LaunchedHub } from "./hub-launcher.js";
-import { botDirectory, NotificationCenter } from "./notifications.js";
+import { botDirectory, mutedConversations, NotificationCenter } from "./notifications.js";
 import { loadSettings, saveSettings } from "./settings.js";
 import { followStream } from "./stream.js";
 import { allowPermission, guardWebContents, isAllowedNavigation, windowOptions } from "./window.js";
@@ -71,15 +71,23 @@ function createTray(): Tray {
 
 async function followNotifications(launched: LaunchedHub): Promise<void> {
   const bots = botDirectory();
+  const muted = mutedConversations();
+  const headers: Record<string, string> = launched.token ? { authorization: `Bearer ${launched.token}` } : {};
   try {
-    const res = await fetch(`${launched.url}/api/v1/bots?includeHidden=true`, { headers: launched.token ? { authorization: `Bearer ${launched.token}` } : {} });
+    const res = await fetch(`${launched.url}/api/v1/bots?includeHidden=true`, { headers });
     if (res.ok) bots.set((await res.json()) as Bot[]);
+    const convs = await fetch(`${launched.url}/api/v1/conversations`, { headers });
+    if (convs.ok) muted.set((await convs.json()) as Conversation[]);
   } catch {
-    /* names fill in from the stream */
+    /* names and mutes fill in from the stream */
   }
-  const center = new NotificationCenter((id) => bots.name(id));
+  const center = new NotificationCenter(
+    (id) => bots.name(id),
+    (id) => muted.has(id),
+  );
   stopStream = followStream(launched.url, launched.token, (event) => {
     bots.apply(event);
+    muted.apply(event);
     const note = center.fromEvent(event);
     if (!note || !Notification.isSupported()) return;
     const native = new Notification({ title: note.title, body: note.body, silent: false });

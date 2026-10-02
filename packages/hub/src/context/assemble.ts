@@ -123,8 +123,9 @@ export function fitHistory(items: ContextItem[], budget = CONTEXT_BUDGET): Conte
 
 /** A failure of another bot is noise in this bot's history; its own failures and other events stay. */
 function relevantTo(item: TimelineItem, bot: Bot): boolean {
-  // Who joined or left a group is shown to the user; the bot is told the members in its context section.
-  if (item.kind === "event" && item.event?.type.startsWith("member.")) return false;
+  // Who joined or left a group, and its name, description or photo changing, are shown to the user; the bot
+  // is told the members, the name and the description in its context section.
+  if (item.kind === "event" && (item.event?.type.startsWith("member.") || item.event?.type.startsWith("group."))) return false;
   if (item.kind !== "event" || item.event?.type !== "run.failed") return true;
   return (item.event.data as { botId?: string }).botId === bot.id;
 }

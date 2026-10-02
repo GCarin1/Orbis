@@ -1,4 +1,4 @@
-import type { Author, Card, Conversation, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
+import type { Author, Card, Conversation, ConversationLink, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
 import { all, get, json, run, type Database, type Row } from "../db/index.js";
 
 function toConversation(r: Row, members: string[]): Conversation {
@@ -8,10 +8,28 @@ function toConversation(r: Row, members: string[]): Conversation {
     title: r.title as string,
     members,
     leadBotId: (r.lead_bot_id as string | null) ?? null,
+    description: (r.description as string | null) ?? "",
+    photo: (r.photo as string | null) ?? null,
+    muted: Number(r.muted ?? 0) === 1,
     createdAt: r.created_at as string,
     lastItemAt: (r.last_item_at as string | null) ?? null,
   };
 }
+
+/** What a group's info can change. */
+export interface GroupChanges {
+  title?: string;
+  leadBotId?: string | null;
+  description?: string;
+  photo?: string | null;
+  muted?: boolean;
+}
+
+/** An http(s) address in text; a closing bracket, quote or angle ends it (Markdown links included). */
+const URL_IN_TEXT = /https?:\/\/[^\s<>()[\]"'`]+/g;
+
+/** Text compared without case or accents. */
+const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 /** Reactions are stored per actor and exposed as counts. */
 type ReactionStore = Record<string, string[]>;
@@ -80,8 +98,8 @@ export class ConversationsRepo {
   insert(conv: Conversation, directBotId: string | null): void {
     run(
       this.db,
-      `INSERT INTO conversations (id, kind, title, lead_bot_id, direct_bot_id, created_at, last_item_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO conversations (id, kind, title, lead_bot_id, direct_bot_id, created_at, last_item_at, description, photo, muted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       conv.id,
       conv.kind,
       conv.title,
@@ -89,6 +107,9 @@ export class ConversationsRepo {
       directBotId,
       conv.createdAt,
       conv.lastItemAt,
+      conv.description ?? "",
+      conv.photo ?? null,
+      conv.muted ? 1 : 0,
     );
     conv.members.forEach((botId, position) => this.addMember(conv.id, botId, position));
   }
@@ -116,8 +137,11 @@ export class ConversationsRepo {
     run(this.db, "DELETE FROM conversation_members WHERE conversation_id = ? AND bot_id = ?", conversationId, botId);
   }
 
-  update(id: string, patch: { title?: string; leadBotId?: string | null }): void {
+  update(id: string, patch: GroupChanges): void {
     if (patch.title !== undefined) run(this.db, "UPDATE conversations SET title = ? WHERE id = ?", patch.title, id);
+    if (patch.description !== undefined) run(this.db, "UPDATE conversations SET description = ? WHERE id = ?", patch.description, id);
+    if (patch.photo !== undefined) run(this.db, "UPDATE conversations SET photo = ? WHERE id = ?", patch.photo, id);
+    if (patch.muted !== undefined) run(this.db, "UPDATE conversations SET muted = ? WHERE id = ?", patch.muted ? 1 : 0, id);
     if (patch.leadBotId !== undefined) {
       run(this.db, "UPDATE conversations SET lead_bot_id = ? WHERE id = ?", patch.leadBotId, id);
     }
@@ -235,6 +259,40 @@ export class ItemsRepo {
             limit,
           );
     return rows.reverse().map(toItem);
+  }
+
+  /** Messages whose text holds `query`, ignoring case and accents ("acao" finds "Ação"), newest first. */
+  search(conversationId: string, query: string, limit = 50): TimelineItem[] {
+    const needle = fold(query.trim());
+    if (!needle) return [];
+    const found: TimelineItem[] = [];
+    for (const row of all(this.db, "SELECT * FROM items WHERE conversation_id = ? AND kind = 'message' ORDER BY seq DESC", conversationId)) {
+      if (!fold(String(row.text)).includes(needle)) continue;
+      found.push(toItem(row));
+      if (found.length >= limit) break;
+    }
+    return found;
+  }
+
+  /** The links written in a conversation's messages, each once (where it was last written), newest first. */
+  links(conversationId: string, limit = 200): ConversationLink[] {
+    const rows = all(
+      this.db,
+      "SELECT id, author_type, author_id, text, created_at FROM items WHERE conversation_id = ? AND kind = 'message' AND instr(text, '://') > 0 ORDER BY seq DESC",
+      conversationId,
+    );
+    const links: ConversationLink[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) {
+      for (const match of String(row.text).matchAll(URL_IN_TEXT)) {
+        const url = match[0].replace(/[.,;:!?*_]+$/, "");
+        if (seen.has(url)) continue;
+        seen.add(url);
+        links.push({ url, itemId: row.id as string, author: { type: row.author_type as Author["type"], id: (row.author_id as string | null) ?? null }, createdAt: row.created_at as string });
+        if (links.length >= limit) return links;
+      }
+    }
+    return links;
   }
 
   /** Cards of a type still in one of the given states, oldest first. */

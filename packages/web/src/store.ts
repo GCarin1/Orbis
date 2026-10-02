@@ -61,6 +61,12 @@ interface State {
   addMember(conversationId: string, botId: string): Promise<void>;
   removeMember(conversationId: string, botId: string): Promise<void>;
   deleteGroup(conversationId: string): Promise<void>;
+  /** Change a group's info: name, description, photo, lead or mute. */
+  updateGroup(conversationId: string, patch: { title?: string; description?: string; photo?: string | null; leadBotId?: string; muted?: boolean }): Promise<void>;
+  /** Load earlier pages until the item is in the timeline (a search result to show); false when it is not there. */
+  revealItem(conversationId: string, itemId: string): Promise<boolean>;
+  /** Every item of a conversation, oldest first (to export it). */
+  allItems(conversationId: string): Promise<TimelineItem[]>;
   /** Delete every item of a conversation; the bots start it over. */
   clearConversation(conversationId: string): Promise<void>;
   loadTimeline(conversationId: string): Promise<void>;
@@ -234,6 +240,29 @@ export const useStore = create<State>((set, get) => ({
       delete conversations[conversationId];
       return { conversations, selectedGroupId: s.selectedGroupId === conversationId ? null : s.selectedGroupId };
     });
+  },
+
+  async updateGroup(conversationId, patch) {
+    const group = await get().api!.patch<Conversation>(`/api/v1/conversations/${conversationId}`, patch);
+    set((s) => ({ conversations: { ...s.conversations, [group.id]: group } }));
+  },
+
+  async revealItem(conversationId, itemId) {
+    const has = () => (get().items[conversationId] ?? []).some((i) => i.id === itemId);
+    if (!get().items[conversationId]) await get().loadTimeline(conversationId);
+    while (!has() && get().hasEarlier[conversationId]) await get().loadEarlier(conversationId);
+    return has();
+  },
+
+  async allItems(conversationId) {
+    const api = get().api!;
+    const all: TimelineItem[] = [];
+    for (;;) {
+      const before = all[0] ? `&before=${encodeURIComponent(all[0].id)}` : "";
+      const page = await api.get<TimelineItem[]>(`/api/v1/conversations/${conversationId}/items?limit=500${before}`);
+      all.unshift(...page);
+      if (page.length < 500) return all;
+    }
   },
 
   async clearConversation(conversationId) {

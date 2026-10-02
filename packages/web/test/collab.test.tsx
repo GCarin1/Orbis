@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe("groups in the sidebar", () => {
   it("lists groups with their members and selects one", () => {
-    const group: Conversation = { id: "cnv_g", kind: "group", title: "Release", members: [ana.id, bob.id], leadBotId: bob.id, createdAt: "2026-09-27T10:00:00.000Z", lastItemAt: null };
+    const group: Conversation = { id: "cnv_g", kind: "group", title: "Release", members: [ana.id, bob.id], leadBotId: bob.id, description: "", photo: null, muted: false, createdAt: "2026-09-27T10:00:00.000Z", lastItemAt: null };
     const onSelect = vi.fn();
     render(
       <Sidebar

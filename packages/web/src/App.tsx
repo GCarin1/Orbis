@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
 import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
-import { useT } from "./i18n.js";
+import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
 import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
@@ -9,7 +9,8 @@ import { Composer, type MentionOption, type SkillOption } from "./components/Com
 import { NewBotScreen } from "./components/NewBotScreen.js";
 import { Timeline } from "./components/Timeline.js";
 import { TokenGate } from "./components/TokenGate.js";
-import { NewGroupDialog } from "./components/Groups.js";
+import { MAX_GROUP_SIZE, NewGroupDialog } from "./components/Groups.js";
+import { AddMembersDialog, conversationText, GroupHeader, GroupInfoPanel, type GroupActions, type GroupView } from "./components/GroupInfo.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
 import { RoutinesPanel } from "./components/RoutinesPanel.js";
 import { BotSettings } from "./components/BotSettings.js";
@@ -21,7 +22,7 @@ import { Marketplace } from "./components/Marketplace.js";
 import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
 import { brainLabel, brainShort } from "./components/brains.js";
-import { BackIcon, ClockIcon, EraseIcon, GearIcon, MonitorIcon, PanelIcon, TrashIcon } from "./components/Icons.js";
+import { BackIcon, ClockIcon, EraseIcon, GearIcon, MonitorIcon, PanelIcon } from "./components/Icons.js";
 
 type Panel = "details" | "computer" | "routines" | "settings" | null;
 
@@ -44,7 +45,15 @@ export function App() {
     captureTokenFromUrl();
     return loadToken();
   });
+  const lang = useLang((s) => s.lang);
   const [creatingGroup, setCreatingGroup] = useState(false);
+  /** A group's info beside its conversation (a flyout; full screen on a phone), and which part of it. */
+  const [groupView, setGroupView] = useState<GroupView | null>(null);
+  const [addingMembers, setAddingMembers] = useState(false);
+  /** A message to show in the timeline (a search result or a link's message). */
+  const [focus, setFocus] = useState<{ itemId: string; at: number } | null>(null);
+  /** How many bots a group holds (the hub's ORBIS_MAX_GROUP_SIZE). */
+  const [maxGroupSize, setMaxGroupSize] = useState(MAX_GROUP_SIZE);
   // One side panel at a time beside a direct conversation.
   const [panel, setPanelState] = useState<Panel>(initialPanel);
   const setPanel = (next: Panel) => {
@@ -76,6 +85,10 @@ export function App() {
     if (!token) return;
     const api = new Api(token);
     store.setApi(api);
+    void api
+      .get<{ maxGroupSize: number }>("/api/v1/conversations/limits")
+      .then((limits) => setMaxGroupSize(limits.maxGroupSize))
+      .catch(() => undefined);
     void api
       .get<{ transcription: TranscriptionStatus }>("/api/v1/voice")
       .then((voice) => useVoice.getState().setTranscription(voice.transcription))
@@ -121,8 +134,12 @@ export function App() {
     if ((computerOpen || panel === "details") && selected) void useStore.getState().loadComputer(selected.id).catch(() => undefined);
   }, [computerOpen, panel, selected?.id]);
   const group = store.selectedGroupId ? store.conversations[store.selectedGroupId] : undefined;
-  /** The bots that are not in the open group, to add to it. */
-  const outsiders = group ? bots.filter((b) => !b.hidden && !group.members.includes(b.id)) : [];
+  // Another conversation starts with its info closed.
+  useEffect(() => {
+    setGroupView(null);
+    setAddingMembers(false);
+    setFocus(null);
+  }, [store.selectedGroupId]);
   const conversationId = group ? group.id : selected ? store.directByBot[selected.id] : undefined;
   // `/` autocomplete: the skills offered to the bot, or to any member of the group.
   const skillBots = group ? group.members : selected ? [selected.id] : [];
@@ -187,7 +204,34 @@ export function App() {
     URL.revokeObjectURL(link.href);
   };
   const chatOpen = view !== "chat" || Boolean(selected || group);
-  const sidePanel = selected && panel && !group && view === "chat";
+  const sidePanel = view === "chat" && ((selected && panel && !group) || (group && groupView));
+  const download = (name: string, text: string) => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+  // Everything the group's header, menu and info do.
+  const groupActions: GroupActions | null = group
+    ? {
+        info: (next = "info") => setGroupView(next),
+        add: () => setAddingMembers(true),
+        mute: (muted) => act(() => store.updateGroup(group.id, { muted })),
+        exportChat: () =>
+          act(async () => {
+            const all = await store.allItems(group.id);
+            const name = group.title.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "group";
+            download(`${name}.txt`, conversationText(group, all, store.bots, lang, t("group.you")));
+          }),
+        clear: async () => {
+          if (window.confirm(t("conv.confirmClear", { name: group.title }))) await act(() => store.clearConversation(group.id));
+        },
+        remove: async () => {
+          if (window.confirm(t("group.confirmDelete", { title: group.title }))) await act(() => store.deleteGroup(group.id));
+        },
+      }
+    : null;
 
   const iconButton = (target: Exclude<Panel, null>, label: string, icon: React.ReactNode, extra?: React.ReactNode) => (
     <button className="icon-btn" aria-label={label} title={label} aria-pressed={panel === target} onClick={() => setPanel(panel === target ? null : target)}>
@@ -250,84 +294,9 @@ export function App() {
             }}
           />
         )}
-        {view !== "chat" ? null : group ? (
+        {view !== "chat" ? null : group && groupActions ? (
           <>
-            <header className="conv-head">
-              <button className="icon-btn back" aria-label={t("nav.back")} onClick={() => void store.selectGroup(null)}>
-                <BackIcon />
-              </button>
-              <GroupFace group={group} bots={store.bots} size={32} />
-              <div className="conv-title">
-                <h1>{group.title}</h1>
-                <div className="conv-meta">
-                  <span>{t("groups.members", { count: group.members.length })}</span>
-                  {group.members.map((id) => {
-                    const member = store.bots[id];
-                    if (!member) return null;
-                    return (
-                      <span key={id} className="member-chip">
-                        @{member.handle}
-                        {id === group.leadBotId && <span className="badge">{t("groups.lead")}</span>} <StateLabel state={member.state} />
-                        {group.members.length > 1 && (
-                          <button
-                            type="button"
-                            className="member-remove"
-                            aria-label={t("group.remove", { name: member.name })}
-                            title={t("group.remove", { name: member.name })}
-                            onClick={() => {
-                              if (window.confirm(t("group.confirmRemove", { name: member.name }))) void act(() => store.removeMember(group.id, id));
-                            }}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
-                    );
-                  })}
-                  {outsiders.length > 0 && (
-                    <select
-                      className="member-add"
-                      aria-label={t("group.add")}
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value) void act(() => store.addMember(group.id, e.target.value));
-                      }}
-                    >
-                      <option value="">{t("group.addPlaceholder")}</option>
-                      {outsiders.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} (@{b.handle})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-              <div className="conv-actions">
-                <button
-                  type="button"
-                  className="icon-btn"
-                  aria-label={t("conv.clear")}
-                  title={t("conv.clear")}
-                  onClick={() => {
-                    if (window.confirm(t("conv.confirmClear", { name: group.title }))) void act(() => store.clearConversation(group.id));
-                  }}
-                >
-                  <EraseIcon />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn danger"
-                  aria-label={t("group.delete")}
-                  title={t("group.delete")}
-                  onClick={() => {
-                    if (window.confirm(t("group.confirmDelete", { title: group.title }))) void act(() => store.deleteGroup(group.id));
-                  }}
-                >
-                  <TrashIcon />
-                </button>
-              </div>
-            </header>
+            <GroupHeader group={group} bots={store.bots} onBack={() => void store.selectGroup(null)} actions={groupActions} />
             {actionError && (
               <p className="error banner-error" role="alert">
                 {actionError}
@@ -336,7 +305,16 @@ export function App() {
             {items.length === 0 && activeRuns.length === 0 ? (
               <p className="muted empty">{t("conv.startGroup", { lead: `@${store.bots[group.leadBotId ?? ""]?.handle ?? "?"}` })}</p>
             ) : (
-              <Timeline items={items} bots={store.bots} runs={store.runs} activeRuns={activeRuns} ownBotId={null} hasEarlier={store.hasEarlier[group.id]} onLoadEarlier={() => store.loadEarlier(group.id)} />
+              <Timeline
+                items={items}
+                bots={store.bots}
+                runs={store.runs}
+                activeRuns={activeRuns}
+                ownBotId={null}
+                hasEarlier={store.hasEarlier[group.id]}
+                onLoadEarlier={() => store.loadEarlier(group.id)}
+                focus={focus}
+              />
             )}
             <Composer name={group.title} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(group.id, text)} />
           </>
@@ -473,9 +451,47 @@ export function App() {
           }}
         />
       )}
+      {group && groupView && groupActions && view === "chat" && store.api && (
+        <GroupInfoPanel
+          key={group.id}
+          api={store.api}
+          group={group}
+          bots={store.bots}
+          view={groupView}
+          onView={setGroupView}
+          onClose={() => setGroupView(null)}
+          actions={groupActions}
+          onUpdate={(patch) => store.updateGroup(group.id, patch)}
+          onRemoveMember={(botId) => store.removeMember(group.id, botId)}
+          onOpenBot={openBot}
+          onShowItem={async (itemId) => {
+            if (!(await store.revealItem(group.id, itemId))) throw new Error(t("group.notFound"));
+            setFocus({ itemId, at: Date.now() });
+            // The flyout covers the conversation on a narrower screen: close it to show the message.
+            if (!wide()) setGroupView(null);
+          }}
+        />
+      )}
+      {group && addingMembers && (
+        <AddMembersDialog
+          group={group}
+          bots={bots}
+          maxGroupSize={maxGroupSize}
+          onCancel={() => setAddingMembers(false)}
+          onNewBot={() => {
+            setAddingMembers(false);
+            setView("new-bot");
+          }}
+          onAdd={async (botIds) => {
+            for (const botId of botIds) await store.addMember(group.id, botId);
+            setAddingMembers(false);
+          }}
+        />
+      )}
       {creatingGroup && (
         <NewGroupDialog
           bots={bots}
+          maxGroupSize={maxGroupSize}
           onCancel={() => setCreatingGroup(false)}
           onCreate={async (input) => {
             const created = await store.createGroup(input);

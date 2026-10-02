@@ -5,7 +5,7 @@ import type { Conversation } from "@orbis/shared";
 import type { Api } from "../src/api.js";
 import { useStore } from "../src/store.js";
 
-const conv = (id: string, kind: "direct" | "group", members: string[]): Conversation => ({ id, kind, title: id, members, leadBotId: members[0] ?? null, createdAt: "2026-09-27T10:00:00.000Z", lastItemAt: null });
+const conv = (id: string, kind: "direct" | "group", members: string[]): Conversation => ({ id, kind, title: id, members, leadBotId: members[0] ?? null, description: "", photo: null, muted: false, createdAt: "2026-09-27T10:00:00.000Z", lastItemAt: null });
 
 describe("desktop notification clicks", () => {
   it("open a group, or the direct conversation's bot", async () => {

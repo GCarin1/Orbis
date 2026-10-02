@@ -1,7 +1,7 @@
-// Groups like a chat app, in a real browser (change 0040-group-membership-and-clearing-a-conversation):
-// "<bot> joined/left the group" with its face, adding and removing members from the group's header,
-// a deleted bot leaving its groups, clearing a conversation and deleting a group (specs/conversations,
-// specs/web-app).
+// Groups like a chat app, in a real browser (changes 0040-group-membership-and-clearing-a-conversation and
+// 0042-group-info-like-a-chat-app): "<bot> joined/left the group" with its face, the ⋮ menu, adding members
+// in a dialog, the group's info on the right (description, photo, mute, members, search), a deleted bot
+// leaving its groups, clearing a conversation and deleting a group (specs/conversations, specs/web-app).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -11,6 +11,8 @@ import { chromium, type Browser } from "playwright-core";
 import { createHub, type Hub } from "@orbis/hub";
 
 const TOKEN = "e2e-groups";
+/** A 4 × 4 red PNG, the photo picked. */
+const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGP4z8AARwzEcQCukw/x0F8jngAAAABJRU5ErkJggg==";
 const webRoot = path.resolve(import.meta.dirname, "../../packages/web");
 
 let hub: Hub;
@@ -52,26 +54,70 @@ describe("groups in a browser", () => {
     // Each one with the bot's face.
     expect(await events.first().locator(".avatar").count()).toBe(1);
 
-    // Add Cid from the header.
-    await page.getByRole("combobox", { name: "Add a bot to the group" }).selectOption({ label: "Cid (@cid)" });
+    // Add Cid from the ⋮ menu, in the dialog that lists the bots outside the group.
+    await page.getByRole("button", { name: "More options" }).click();
+    await page.getByRole("menuitem", { name: "Add members" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByText("2 of 6 bots in the group").waitFor();
+    await dialog.getByRole("checkbox", { name: /Cid/ }).check();
+    await dialog.getByRole("button", { name: "Add", exact: true }).click();
     await expect.poll(() => events.allTextContents()).toContain("Cid joined the group");
-    await page.getByText("3 bots", { exact: true }).waitFor();
+    await page.locator(".group-subtitle").getByText("Ana, Bia, Cid").waitFor();
 
-    // Remove Bia from her chip.
-    await page.getByRole("button", { name: "Remove Bia from the group" }).click();
+    // The name opens the group's info, a flyout on the right.
+    await page.getByRole("heading", { level: 1, name: "Time" }).click();
+    const info = page.getByTestId("group-info");
+    await info.getByRole("heading", { name: "3 members" }).waitFor();
+    const box = (await info.boundingBox())!;
+    expect(box.x + box.width).toBeGreaterThan(1270); // on the right edge
+
+    // A description, said in the group and read by its bots.
+    await info.getByRole("button", { name: "Add group description" }).click();
+    await info.getByLabel("Group description").fill("Revisar os lançamentos");
+    await info.getByRole("button", { name: "Save" }).click();
+    await expect.poll(() => events.allTextContents()).toContain("You changed the group description");
+    expect(hub.repos.conversations.get(group.id)!.description).toBe("Revisar os lançamentos");
+
+    // A photo: shrunk in the browser to a JPEG, shown in the header and the list.
+    await info.locator('input[type="file"]').setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: Buffer.from(PNG, "base64") });
+    await expect.poll(() => hub.repos.conversations.get(group.id)!.photo?.slice(0, 23)).toBe("data:image/jpeg;base64,");
+    await page.getByTestId("group-face").locator("img.group-photo").waitFor();
+    await page.getByTestId(`conv-${group.id}`).locator("img.group-photo").waitFor();
+
+    // Mute: the list shows it.
+    await info.getByRole("button", { name: "Mute", exact: true }).click();
+    await page.getByTestId(`conv-${group.id}`).getByLabel("Muted").waitFor();
+    expect(hub.repos.conversations.get(group.id)!.muted).toBe(true);
+
+    // Remove Bia from her row in the members.
+    await info.getByTestId("member-bia").locator(".member-main").click();
+    await info.getByRole("button", { name: "Remove Bia from the group" }).click();
     await expect.poll(() => events.allTextContents()).toContain("Bia left the group");
-    await page.getByText("2 bots", { exact: true }).waitFor();
+    await info.getByRole("heading", { name: "2 members" }).waitFor();
 
-    // Delete Cid: it leaves the group, and the header follows.
+    // Search the messages, ignoring accents, and show the one found.
+    hub.timeline.post({ conversationId: group.id, kind: "message", author: { type: "user", id: null }, text: "A AÇÃO subiu hoje" });
+    await page.locator(".group-head").getByRole("button", { name: "Search" }).click();
+    await info.getByLabel("Search…").fill("acao");
+    await info.locator("mark", { hasText: "AÇÃO" }).click();
+    await page.locator(".message.flash").getByText("A AÇÃO subiu hoje").waitFor();
+
+    // Delete Cid: it leaves the group, and the info follows.
+    await info.getByRole("button", { name: "Back" }).click();
     await hub.botService.delete(cid.id);
     await expect.poll(() => events.allTextContents()).toContain("Cid left the group (the bot was deleted)");
-    await page.getByText("1 bots", { exact: true }).waitFor();
-    expect(await page.getByRole("button", { name: /Remove .* from the group/ }).count()).toBe(0); // the last bot stays
+    await info.getByRole("heading", { name: "1 members" }).waitFor();
+    await info.getByTestId("member-ana").locator(".member-main").click();
+    expect(await info.getByRole("button", { name: /Remove .* from the group/ }).count()).toBe(0); // the last bot stays
 
-    // Clear the conversation, then delete the group.
-    await page.getByRole("button", { name: "Clear conversation" }).click();
+    // Clear the conversation, then delete the group, from ⋮ → More.
+    await page.getByRole("button", { name: "More options" }).click();
+    await page.getByRole("menuitem", { name: "More" }).click();
+    await page.getByRole("menuitem", { name: "Clear conversation" }).click();
     await expect.poll(() => events.count()).toBe(0);
-    await page.getByRole("button", { name: "Delete group" }).click();
+    await page.getByRole("button", { name: "More options" }).click();
+    await page.getByRole("menuitem", { name: "More" }).click();
+    await page.getByRole("menuitem", { name: "Delete group" }).click();
     await page.getByRole("heading", { level: 1, name: "Time" }).waitFor({ state: "detached" });
     expect(hub.repos.conversations.get(group.id)).toBeUndefined();
   }, 60_000);

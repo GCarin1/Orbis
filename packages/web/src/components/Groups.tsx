@@ -4,6 +4,7 @@ import type { Bot, Conversation } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
 
+/** The hub's default ORBIS_MAX_GROUP_SIZE, until it says its own. */
 export const MAX_GROUP_SIZE = 6;
 
 export interface NewGroupInput {
@@ -16,8 +17,11 @@ export function NewGroupDialog({
   bots,
   onCreate,
   onCancel,
+  maxGroupSize = MAX_GROUP_SIZE,
 }: {
   bots: Bot[];
+  /** How many bots a group holds (the hub's ORBIS_MAX_GROUP_SIZE). */
+  maxGroupSize?: number;
   onCreate(input: NewGroupInput): Promise<void>;
   onCancel(): void;
 }) {
@@ -29,9 +33,9 @@ export function NewGroupDialog({
   const [busy, setBusy] = useState(false);
   const candidates = bots.filter((b) => !b.hidden).sort((a, b) => a.name.localeCompare(b.name));
   const toggle = (id: string) =>
-    setMembers((current) => (current.includes(id) ? current.filter((m) => m !== id) : current.length >= MAX_GROUP_SIZE ? current : [...current, id]));
+    setMembers((current) => (current.includes(id) ? current.filter((m) => m !== id) : current.length >= maxGroupSize ? current : [...current, id]));
   const leadId = members.includes(lead) ? lead : (members[0] ?? "");
-  const valid = title.trim().length > 0 && members.length >= 2 && members.length <= MAX_GROUP_SIZE;
+  const valid = title.trim().length > 0 && members.length >= 2 && members.length <= maxGroupSize;
 
   return (
     <div className="dialog-backdrop" role="presentation">
@@ -61,7 +65,7 @@ export function NewGroupDialog({
         </label>
         <fieldset className="member-picker">
           <legend>
-            {t("newgroup.members")} <span className="muted">— {t("newgroup.count", { count: members.length })}</span>
+            {t("newgroup.members", { max: maxGroupSize })} <span className="muted">— {t("newgroup.count", { count: members.length, max: maxGroupSize })}</span>
           </legend>
           {candidates.map((bot) => {
             const checked = members.includes(bot.id);
@@ -70,7 +74,7 @@ export function NewGroupDialog({
                 <input
                   type="checkbox"
                   checked={checked}
-                  disabled={!checked && members.length >= MAX_GROUP_SIZE}
+                  disabled={!checked && members.length >= maxGroupSize}
                   onChange={() => toggle(bot.id)}
                   name={`member-${bot.handle}`}
                 />
