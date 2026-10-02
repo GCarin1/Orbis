@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.13.0
+**Version:** 0.14.0
 
 ## Purpose
 
@@ -41,6 +41,8 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall report Claude Code's account (`claude auth status`), start its sign-in (`claude auth login`) from the settings screen and type the code the sign-in page shows to the waiting command, one sign-in at a time, and shall keep no credential itself.
 - The system shall take a `chat-http` token from whatever way it was pasted (bare, after "Bearer", a whole Authorization line, quoted or wrapped over lines), send only the token, and report whether a bot's token is saved and when it expires, never its value.
 - The system shall send a `chat-http` bot's `Origin` and kept browser headers (`Referer`, `User-Agent`, `Accept-Language`) with every request to the chat API — the message, the history and the title — and no header shall replace the token.
+- The system shall make every request of a `chat-http` brain — the message, the history and the title — through the system's `curl` program when it is installed, and through Node's `fetch` otherwise or when the bot's `chat.transport` is `fetch`, keeping the Authorization header in a private temporary file that is removed afterwards and never on curl's command line.
+- The system shall keep from a pasted cURL, for every request to the chat API, the browser headers `User-Agent`, `Accept-Language`, `Referer`, `Cache-Control`, `Pragma`, `Priority`, `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform`, `sec-fetch-dest`, `sec-fetch-mode` and `sec-fetch-site`, and shall keep no cookie, no key and no Authorization header.
 
 ### Event-driven
 
@@ -73,6 +75,8 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `chat-http` run opens a new chat and the chats' history can be read, the system shall ask the chat API for that chat's title once, in the background, with a `POST` to `<history>/<chat id>/generate-title` carrying the message "Orbis · <bot name> — <task>", unless the bot's brain sets `chat.titles` to false.
 - When a run or a brain test of `claude-code` fails because Claude Code reports its login gone or expired, the system shall add to the error how to sign in again, in Orbis or with `claude auth login`.
 - When a `chat-http` server answers 401 or 403, the system shall fail the run telling the token (401, or an expired token) from a valid token the server still refuses, with what the server answered, what Orbis sent and what the browser sends that Orbis did not.
+- When a `chat-http` stream ends with a complete message (`message_complete`), the system shall take the reply, the chat id and the token usage from it, leave out the follow-up-questions block, and not read the chat's history.
+- When a firewall in front of a `chat-http` server refuses the request (HTTP 403 with a Cloudflare page), the system shall fail the run naming the firewall, the program the request went through and what was sent.
 
 ### State-driven
 
@@ -122,6 +126,8 @@ brain are owned by `contracts/cli-harnesses`.
 21. [verified] A bot that opens a chat asks for its title once (Bearer token, JSON body `{"data":{"userMessage":"Orbis · Ana — …"}}`) and not again when it continues the chat; with `titles: false` no title is asked; a title request answered with 500 leaves the run done — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 22. [verified] A token pasted as a whole Authorization line, in quotes or wrapped is sent bare and read back by the history; the hub says a token is saved with its expiry and never the token; a 403 with a valid token says what the server answered and what was not sent, an expired token and a 401 say it is the token, the browser headers kept reach the message, the history and the title, and a template leaves out every address — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 23. [verified] A fake Claude Code reports its account, signs in through the page it prints and the code typed to it, fails with its own words on a wrong code, can be cancelled, is reported missing when absent, and an expired-login failure carries how to sign in again — verified by `packages/hub/test/runtimes/claude-account.test.ts`.
+24. [verified] The company chat's stream (a start, chunks with the follow-up block, a message_complete) gives the reply without the follow-up questions, the chat to continue and the 6096/153 tokens with no history read; a firewall that wants the browser's headers refuses a bot without them, naming Cloudflare and curl, and lets a bot with them through — client hints arrive as the browser wrote them — and Node's fetch does the same when asked; only the browser headers on the list are kept from a cURL — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+25. [verified] A fake curl is run with the token in a private header file that is gone afterwards and not in its arguments, the body on stdin, a JSON body or none; curl's own words come back when it cannot reach the server; a missing curl and a cancelled run end cleanly; the real curl and Node's fetch make the same request and read the same answer; curl is chosen when installed — verified by `packages/hub/test/runtimes/http-transport.test.ts`.
 
 ## Maturity
 
