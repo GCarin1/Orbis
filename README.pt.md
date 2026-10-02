@@ -138,7 +138,7 @@ Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
-[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md) e [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 

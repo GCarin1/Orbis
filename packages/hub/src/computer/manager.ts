@@ -109,18 +109,31 @@ export class ComputerManager {
   }
 
   /** What the bot is told about its computer, in every run's system text. */
-  contextSection(bot: Bot): string | null {
+  contextSection(bot: Bot, platform: NodeJS.Platform = process.platform): string | null {
     if (!bot.computer.enabled) return null;
+    const os = platform === "win32" ? "Windows" : platform === "darwin" ? "macOS" : "Linux";
+    // The shell the commands of computer.shell run in, so the bot writes commands that work there.
+    const shell =
+      platform === "win32"
+        ? 'computer.shell runs Windows cmd.exe commands (dir, type, copy, mkdir, where; use PowerShell with `powershell -NoProfile -Command "…"`), not Linux commands like ls, find, grep or cat.'
+        : "computer.shell runs /bin/sh commands.";
+    const files = "To read or write files prefer computer.read_file, computer.write_file and computer.list_files, which work the same everywhere.";
     switch (this.providerKind(bot)) {
       case "host":
         return [
-          `Your computer is the user's own machine (${process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux"}). You work in ${hostDir(bot)}: commands run there with the user's programs, and file tools reach only that folder.`,
+          `Your computer is the user's own machine (${os}). You work in ${hostDir(bot)}: commands run there with the user's programs, and file tools reach only that folder.`,
+          shell,
+          files,
           "These are the user's real files: never delete or overwrite anything you did not create unless the user asked, and say what you changed. Your browser opens as a window on the user's screen.",
         ].join(" ");
       case "docker":
-        return "Your computer is a Linux container of your own with a desktop, Chromium and a terminal; the user can watch it live and take over. Your workspace folder is shared with the user.";
+        return "Your computer is a Linux container of your own with a desktop, Chromium and a terminal; the user can watch it live and take over. Your workspace folder is shared with the user. computer.shell runs Linux /bin/sh commands inside the container.";
       default:
-        return "Your computer is a private folder of your own on the Orbis machine: commands and file tools work inside it, and your browser runs without a window.";
+        return [
+          `Your computer is a private folder of your own on the Orbis machine (${os}): commands and file tools work inside it, and your browser runs without a window.`,
+          shell,
+          files,
+        ].join(" ");
     }
   }
 

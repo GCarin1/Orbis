@@ -58,6 +58,34 @@ export function formatSnapshot(s: PageSnapshot): string {
 
 export class TakeoverNeeded extends Error {}
 
+/**
+ * Open the browser: the configured executable, else Playwright's own Chromium;
+ * when that was never downloaded (a fresh install), the Chrome or Edge on this
+ * machine (Edge ships with Windows).
+ */
+export async function launchWithFallback<T>(
+  launch: (extra: { executablePath?: string; channel?: string }) => Promise<T>,
+  executablePath: string | null,
+): Promise<T> {
+  if (executablePath) return launch({ executablePath });
+  try {
+    return await launch({});
+  } catch (err) {
+    const missing = /Executable doesn't exist|browserType\.launch.*not found|please run the following command to download/i.test(String(err instanceof Error ? err.message : err));
+    if (!missing) throw err;
+    for (const channel of ["chrome", "msedge"]) {
+      try {
+        return await launch({ channel });
+      } catch {
+        /* next */
+      }
+    }
+    throw new Error(
+      "no browser is installed for the bots: install Google Chrome or Microsoft Edge, or run `npx playwright install chromium` on the computer that runs Orbis",
+    );
+  }
+}
+
 export class BrowserService {
   private readonly sessions = new Map<string, Session>();
   private readonly opening = new Map<string, Promise<Session>>();
@@ -108,12 +136,10 @@ export class BrowserService {
       }
       if (!context) throw lastError instanceof Error ? lastError : new Error("no browser could be opened on this computer");
     } else {
-      context = await chromium.launchPersistentContext(profile, {
-        ...options,
-        headless: true,
-        viewport: VIEWPORT,
-        ...(this.executablePath ? { executablePath: this.executablePath } : {}),
-      });
+      context = await launchWithFallback((extra) =>
+        chromium.launchPersistentContext(profile, { ...options, headless: true, viewport: VIEWPORT, ...extra }),
+        this.executablePath,
+      );
     }
     const page = context.pages()[0] ?? (await context.newPage());
     return { context, page, browser: null };

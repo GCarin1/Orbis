@@ -79,7 +79,7 @@ describe("anthropic brain", () => {
     expect(run.reply).toBe("The team has one bot: @ana.");
     expect(run.steps.map((s) => s.type)).toEqual(["thinking", "tool_call", "tool_result", "text"]);
     expect(run.steps[2]).toMatchObject({ tool: "team_list_bots", isError: false });
-    expect(run.steps[2]!.output).toContain('"handle": "@ana"');
+    expect(run.steps[2]!.output).toContain('"handle": "ana"');
     // Two turns of 100 input + 10 cache write, 20 output, 40 cache read each.
     expect(run.usage).toMatchObject({ inputTokens: 220, outputTokens: 40, cachedTokens: 80, subscription: false });
     expect(run.usage.costUsd).toBeCloseTo(2 * costOf("claude-opus-5", { input: 100, output: 20, cacheRead: 40, cacheWrite: 10 }), 8);

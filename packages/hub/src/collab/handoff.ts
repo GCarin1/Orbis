@@ -10,6 +10,12 @@ import type { ToolDefinition } from "../tools/registry.js";
 
 const TERMINAL = new Set(["done", "failed"]);
 const COLLEAGUES_SHOWN = 30;
+/**
+ * A reply naming more bots than this is a list of the team (a roster, a
+ * status), not a call: it wakes nobody. Calling one or two colleagues by
+ * @handle still brings them in.
+ */
+export const MAX_MENTION_WAKES = 2;
 
 const label = (bot: Bot) => `@${bot.handle} (${bot.name}${bot.role ? `, ${bot.role}` : ""})`;
 
@@ -18,6 +24,21 @@ export class Collaboration {
 
   private get maxDepth(): number {
     return this.hub.config.maxHandoffDepth;
+  }
+
+  /** Runs left in a chain before it stops (ORBIS_MAX_CHAIN_RUNS). */
+  private chainRunsLeft(chainId: string): number {
+    return this.hub.config.maxChainRuns - this.hub.repos.runs.inChain(chainId).length;
+  }
+
+  private chainExhausted(conversationId: string, from: Bot, to: Bot | null): void {
+    const limit = this.hub.config.maxChainRuns;
+    this.hub.timeline.event(
+      conversationId,
+      "chain.limit",
+      `Stopped: one message already set off ${limit} bot runs${to ? `; @${to.handle} was not started` : ""} (ORBIS_MAX_CHAIN_RUNS).`,
+      { from: from.id, to: to?.id ?? null, limit },
+    );
   }
 
   private team(): Bot[] {
@@ -83,6 +104,10 @@ export class Collaboration {
           this.depthExceeded(conversationId, ctx.bot, receiver, depth);
           return { output: `the chain of bot-to-bot steps reached its limit (${this.maxDepth}); finish the work yourself or ask the user`, isError: true };
         }
+        if (this.chainRunsLeft(ctx.run.chainId) <= 0) {
+          this.chainExhausted(conversationId, ctx.bot, receiver);
+          return { output: "this request already set off as many bot runs as allowed; finish the work yourself or ask the user", isError: true };
+        }
         const data: HandoffCardData = {
           from: ctx.bot.id,
           to: receiver.id,
@@ -112,6 +137,7 @@ export class Collaboration {
           trigger: { type: "handoff", ref: card.id },
           input: task,
           depth,
+          chainId: ctx.run.chainId,
           replyParentId: card.id,
           includeHistory: false,
         });
@@ -143,7 +169,7 @@ export class Collaboration {
         ? "- You lead your reports: split the user's request, delegate each part to the report whose role fits with team.handoff (several in one turn when they are independent), and do the rest yourself."
         : "- Delegate a part to a colleague with team.handoff when their role fits it better than yours.",
       "- Everything you delegate in one turn comes back to you together as a new task once all of it has ended; then tell the user the outcome. Do not wait for it or ask again.",
-      "- Mention a colleague as @handle or @role in your reply to bring them into this conversation; they answer here.",
+      "- Writing @handle or @role in your reply wakes that colleague and it answers here. Do it only to ask one or two colleagues for something; to talk about bots without waking them (a list of the team, who is busy), write their names without @. A bot woken by a mention answers but does not wake others.",
     );
     if (manager) lines.push(`- When @${manager.handle} hands you work, do it and answer with the result: it reaches @${manager.handle}.`);
     return lines.join("\n");
@@ -210,12 +236,14 @@ export class Collaboration {
     ]
       .join("\n")
       .trim();
+    // A report is never refused for the chain budget: it ends the chain by telling the user.
     const report = this.hub.engine.enqueue({
       botId: sender.id,
       conversationId: cardItem.conversationId,
       trigger: { type: "report", ref: senderRunId },
       input,
       depth,
+      chainId: lastRun.chainId,
     });
     for (const item of batch) this.setCard(item.id, item.card!.state, { reportRunId: report.id, ...(batch.length === 1 ? { returnRunId: report.id } : {}) });
   }
@@ -229,29 +257,42 @@ export class Collaboration {
   }
 
   /**
-   * A bot reply that mentions other bots of the team (by handle or role)
-   * starts their runs in the same conversation — except the bots this run
-   * already handed work to, the bot that handed this run its task (its
-   * answer reaches that bot in the report), and in a report to the user.
+   * A bot reply that calls colleagues (by handle or role) starts their runs in
+   * the same conversation, within the limits that keep bots from waking each
+   * other forever: a reply woken by a mention or a report wakes nobody; a
+   * reply naming more than MAX_MENTION_WAKES bots is a list, not a call; a bot
+   * already in this chain (it ran, or will) is not woken again, nor the bot
+   * that handed this run its task or the bots this run handed work to; and the
+   * chain stops at ORBIS_MAX_CHAIN_RUNS.
    */
   private mentionsInReply(run: Run): void {
     if (!run.conversationId || !run.reply) return;
+    if (run.trigger.type === "mention" || run.trigger.type === "report") return;
     const conv = this.hub.repos.conversations.get(run.conversationId);
     if (!conv) return;
     const author = this.hub.repos.bots.get(run.botId);
     if (!author) return;
-    const handedTo = new Set(
-      this.hub.repos.items
-        .cardsOf(run.id)
-        .filter((i) => i.card?.type === "handoff")
-        .map((i) => (i.card!.data as HandoffCardData).to),
-    );
+    const mentions = extractMentions(run.reply).filter((h) => h !== "everyone" && h !== author.handle && h !== roleSlug(author.role));
+    const named = resolveMentions(mentions, this.team()).filter((b) => b.id !== author.id);
+    if (named.length === 0) return;
+    if (new Set(named.map((b) => b.id)).size > MAX_MENTION_WAKES) {
+      this.hub.timeline.event(
+        conv.id,
+        "mention.list",
+        `@${author.handle} named ${named.length} bots; that reads as a list, so none was woken. To ask colleagues for something, mention one or two of them, or hand the work off.`,
+        { botId: author.id, named: named.map((b) => b.id) },
+      );
+      return;
+    }
+    const skip = new Set(this.hub.repos.runs.inChain(run.chainId).map((r) => r.botId));
+    for (const item of this.hub.repos.items.cardsOf(run.id)) {
+      if (item.card?.type === "handoff") skip.add((item.card.data as HandoffCardData).to);
+    }
     if (run.trigger.type === "handoff") {
       const from = this.card(run.trigger.ref)?.data.from;
-      if (from) handedTo.add(from);
+      if (from) skip.add(from);
     }
-    const mentions = extractMentions(run.reply).filter((h) => h !== "everyone" && h !== author.handle && h !== roleSlug(author.role));
-    const targets = resolveMentions(mentions, this.team()).filter((b) => b.id !== author.id && !handedTo.has(b.id));
+    const targets = named.filter((b) => !skip.has(b.id));
     if (targets.length === 0) return;
     const reply = this.hub.repos.items.replyOf(run.id);
     const depth = run.depth + 1;
@@ -260,12 +301,17 @@ export class Collaboration {
       return;
     }
     for (const target of targets) {
+      if (this.chainRunsLeft(run.chainId) <= 0) {
+        this.chainExhausted(conv.id, author, target);
+        return;
+      }
       this.hub.engine.enqueue({
         botId: target.id,
         conversationId: conv.id,
         trigger: { type: "mention", ref: reply?.id ?? null },
         input: `[@${author.handle}] ${run.reply}`,
         depth,
+        chainId: run.chainId,
         triggerItemId: reply?.id ?? null,
       });
     }

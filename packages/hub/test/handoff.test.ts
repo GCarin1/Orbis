@@ -94,20 +94,17 @@ describe("handoff", () => {
     expect(events[0]!.event!.data).toMatchObject({ depth: 5, limit: 4 });
   });
 
-  it("stops bot-to-bot mentions in a group at the same depth limit", async () => {
+  it("does not let two bots mentioned in one message wake each other back and forth", async () => {
     t = await testHub({ config: { maxHandoffDepth: 4 } });
     const ana = await createBot(t, { name: "Ana" });
     const bob = await createBot(t, { name: "Bob" });
     const group = (await t.api("POST", "/api/v1/conversations", { title: "Ping", members: [ana.id, bob.id] })).body;
-    // The user message mentions both bots, and every echoed reply mentions the other one:
-    // two chains ping-pong, and each stops at depth 4.
+    // Both answer the user; each echoed reply mentions the other, who already answered this message.
     await t.api("POST", `/api/v1/conversations/${group.id}/messages`, { text: "@ana say hi to @bob" });
     await t.hub.engine.idle();
     const all = [...runsOf(t, ana.id), ...runsOf(t, bob.id)];
-    expect(all.map((r) => r.depth).sort()).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
-    expect(all.filter((r) => r.depth > 0).every((r) => r.trigger.type === "mention")).toBe(true);
-    const timeline = await items(t, group.id);
-    expect(timeline.some((i) => i.event?.type === "handoff.depth_exceeded")).toBe(true);
+    expect(all.map((r) => r.trigger.type)).toEqual(["message", "message"]);
+    expect(new Set(all.map((r) => r.chainId)).size).toBe(1);
   });
 
   it("refuses a handoff to the sending bot itself (criterion 4)", async () => {

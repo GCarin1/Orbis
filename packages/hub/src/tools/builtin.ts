@@ -47,12 +47,18 @@ export function builtinTools(hub: HubContext, drafts: DraftService): ToolDefinit
   return [
     {
       name: "team.list_bots",
-      description: "List the bots of this Orbis team with their handle, name, role and current state.",
+      description:
+        "List the bots of this Orbis team with their handle, name, role and whether they are busy. To tell the user who is on the team, write their names: writing @handle wakes that bot.",
       input: Type.Object({}),
       risk: "read",
       async handler() {
+        const busy = new Set(["thinking", "working", "waiting"]);
         const bots = hub.repos.bots.list();
-        return JSON.stringify(bots.map((b) => ({ handle: `@${b.handle}`, name: b.name, role: b.role, state: b.state })), null, 2);
+        return JSON.stringify(
+          bots.map((b) => ({ handle: b.handle, name: b.name, role: b.role, busy: busy.has(b.state), state: b.state })),
+          null,
+          2,
+        );
       },
     },
     {

@@ -86,9 +86,13 @@ export function resolveExecutable(command: string, envPath = process.env.PATH ??
 }
 
 /**
- * The Node script behind a Windows `.cmd` shim (npm's cmd-shim and installers
- * like it), so the brain runs without cmd.exe: a shell would cut a multi-line
- * prompt at its first line break. Null when the file names no such script.
+ * The program behind a Windows `.cmd` shim, so it runs without cmd.exe (a
+ * shell would cut a multi-line prompt at its first line break): the Node
+ * script of npm's cmd-shim (`"%dp0%\node_modules\pkg\cli.js"`), the native
+ * program it may point to instead (`…\bin\claude.exe`, Claude Code 2), or
+ * the `*-cli.js` that npm's own `npm.cmd` and `npx.cmd` set in a variable
+ * (`SET "NPX_CLI_JS=%~dp0\node_modules\npm\bin\npx-cli.js"`). Null when
+ * the file names none of these.
  */
 export function unwrapCmdShim(
   shimPath: string,
@@ -98,13 +102,16 @@ export function unwrapCmdShim(
 ): { command: string; args: string[] } | null {
   const win = path.win32;
   const dir = win.dirname(shimPath);
-  const script = [...text.matchAll(/"([^"\r\n]+)"/g)].map((m) => m[1]!).find((q) => /%~?dp0%?/i.test(q) && /\.[cm]?js$/i.test(q));
-  if (!script) return null;
+  const resolve = (p: string) => win.normalize(p.replace(/%~dp0\\?|%dp0%\\?/gi, `${dir}\\`));
+  // Quoted paths relative to the shim, with a leading `NAME=` of a SET dropped.
+  const paths = [...text.matchAll(/"([^"\r\n]+)"/g)].map((m) => m[1]!.replace(/^[A-Za-z_][A-Za-z0-9_]*=/, "")).filter((q) => /%~?dp0%?/i.test(q));
+  const scripts = paths.filter((q) => /\.[cm]?js$/i.test(q));
+  const script = scripts.find((q) => /-cli\.[cm]?js$/i.test(q)) ?? scripts.find((q) => !/prefix/i.test(q));
   const localNode = win.join(dir, "node.exe");
-  return {
-    command: fileExists(localNode) ? localNode : nodePath,
-    args: [win.normalize(script.replace(/%~dp0|%dp0%/gi, `${dir}\\`))],
-  };
+  if (script) return { command: fileExists(localNode) ? localNode : nodePath, args: [resolve(script)] };
+  const program = paths.find((q) => /\.exe$/i.test(q) && !/[\\/]node\.exe$/i.test(q));
+  if (program) return { command: resolve(program), args: [] };
+  return null;
 }
 
 /** How to start a command here: on Windows a `.cmd`/`.bat` shim runs its Node script directly. */

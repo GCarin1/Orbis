@@ -58,6 +58,25 @@ function settle(pending: Map<number, Pending>, msg: RpcMessage): void {
   else waiter.resolve(msg.result);
 }
 
+/**
+ * What a crashed server said: its error line (Node prints the stack and then
+ * "Node.js vXX" last, which tells nothing), else its last lines.
+ */
+export function stderrSummary(stderr: string): string {
+  const lines = stderr
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const error = lines.find((l) => /\b(error|cannot|not found|ENOENT|EACCES|failed)\b/i.test(l) && !/^at\s/.test(l));
+  const text =
+    error ??
+    lines
+      .filter((l) => !/^Node\.js v\d/.test(l) && !/^[{}]$/.test(l))
+      .slice(-3)
+      .join(" ");
+  return text.slice(0, 400);
+}
+
 /** A server the hub starts: messages are newline-delimited JSON on its stdin and stdout. */
 export class StdioTransport implements McpTransport {
   private readonly child: ChildProcess;
@@ -91,7 +110,8 @@ export class StdioTransport implements McpTransport {
       this.exited = why;
       for (const [id, waiter] of this.pending) {
         clearTimeout(waiter.timer);
-        waiter.reject(new McpError(`${why}${this.stderr.trim() ? `: ${this.stderr.trim().split("\n").slice(-3).join(" ")}` : ""}`));
+        const detail = stderrSummary(this.stderr);
+        waiter.reject(new McpError(`${why}${detail ? `: ${detail}` : ""}`));
         this.pending.delete(id);
       }
     };

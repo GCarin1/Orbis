@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -26,6 +26,7 @@ timeline changes.
 - The system shall record for each message its author (user, bot or system), text, attachment references, mentioned handles, optional parent message id for a thread reply, reactions and the run that produced it.
 - The system shall broadcast every created or changed timeline item over the WebSocket stream as a `timeline.item` event.
 - The system shall persist conversations and timelines in the hub database.
+- The system shall give every run a chain id: a user message starts one chain that every bot it runs shares, and the handoffs, reports back and mentions that follow from them carry it on.
 
 ### Event-driven
 
@@ -33,7 +34,7 @@ timeline changes.
 - When the user posts a message in a group that mentions bots of the team by `@handle` or by role (`@qa` names every bot whose role is QA), the system shall start one run for each mentioned bot, member of the group or not.
 - When the user posts a message in a group that contains `@everyone`, the system shall start one run for every member bot.
 - When the user posts a message in a group with no mention, the system shall start a run for the group's lead bot only.
-- When a bot's reply in a direct or group conversation mentions other bots of the team by `@handle` or by role, the system shall start a run for each of them in that conversation, subject to the chain depth limit and the exceptions of `specs/handoff`.
+- When a bot's reply in a direct or group conversation mentions one or two other bots of the team by `@handle` or by role, the system shall start one run, triggered as `mention`, for each of them in that conversation, in the chain of the run that replied, subject to the chain limits and the exceptions of `specs/handoff`.
 - When a client asks for the direct conversation of a bot that has none, the system shall create it, so that each bot has at most one direct conversation.
 - When a client adds or removes a reaction on a timeline item, the system shall update the item's reactions and broadcast the change.
 
@@ -46,6 +47,8 @@ timeline changes.
 - The system shall not add a bot to a group that already holds ORBIS_MAX_GROUP_SIZE members.
 - The system shall not treat `@everyone` in a group as a mention of bots outside the group.
 - The system shall not accept a message with empty text and no attachment.
+- The system shall not wake any bot for a reply that names more than two bots of the team, which reads as a list of the team; it shall post a `mention.list` event instead.
+- The system shall not start a run for a bot that a `mention` run's reply names, nor wake by mention a bot that already ran in the same chain.
 
 ## Acceptance criteria
 
@@ -55,6 +58,8 @@ timeline changes.
 4. [verified] A thread reply stores its parent id, and a reaction change is broadcast as a `timeline.item` event — verified by `packages/hub/test/conversations.test.ts`.
 5. [verified] Two messages sent while a run is in progress start two further runs in arrival order — verified by `packages/hub/test/runs.test.ts`.
 6. [verified] A bot's reply in a direct conversation that mentions a colleague by role starts that colleague's run in the same conversation, and a user message in a group that mentions a role runs the bot holding it even outside the group — verified by `packages/hub/test/team.test.ts`.
+7. [verified] A lead's reply listing three colleagues wakes none and posts `mention.list`; a reply calling one colleague wakes it once as `mention`, and its answer naming the lead back wakes no one; `@everyone` runs each member once — verified by `packages/hub/test/bot-behaviour.test.ts`.
+8. [verified] Two bots one user message mentions, whose replies mention each other, run once each, in one chain — verified by `packages/hub/test/handoff.test.ts`.
 
 ## Maturity
 

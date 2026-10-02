@@ -80,6 +80,8 @@ export class ConversationService {
       botId: bot.id,
       conversationId: conversation.id,
       trigger: { type: "message", ref: item.id },
+      // Every bot answering this message is one chain: they do not wake each other again.
+      chainId: item.id,
       input: resolved.kind === "skill" ? resolved.input : item.text,
       skill: resolved.kind === "skill" ? resolved.skill : null,
       triggerItemId: item.id,

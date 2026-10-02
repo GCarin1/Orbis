@@ -215,4 +215,11 @@ CREATE TABLE settings (
   updated_at TEXT NOT NULL
 );`,
   },
+  {
+    // specs/conversations: the chain a run belongs to, so bot-to-bot work started by
+    // one message is bounded (change 0021-bot-behaviour-audit).
+    version: 6,
+    sql: `ALTER TABLE runs ADD COLUMN chain_id TEXT;
+CREATE INDEX idx_runs_chain ON runs(chain_id);`,
+  },
 ];

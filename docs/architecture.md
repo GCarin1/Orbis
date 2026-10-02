@@ -47,7 +47,8 @@ HTTP (Fastify)  ── auth hook (bearer / stream query token)
 - **Collaboration.** `collab/handoff.ts` registers `team.handoff` and run
   hooks: handoff cards follow the receiver's run, returned results wake the
   sender, bot replies in a group that mention members start their runs, and
-  every bot-started run carries `depth + 1` up to `ORBIS_MAX_HANDOFF_DEPTH`.
+  every bot-started run carries `depth + 1` up to `ORBIS_MAX_HANDOFF_DEPTH`,
+  and the `chainId` of the message that started the work, up to `ORBIS_MAX_CHAIN_RUNS` runs per chain (ADR 0011).
   `collab/memory.ts` registers `memory.save` / `memory.search`, writes a
   `summary` after each successful run and serves the memory routes. Engine
   `onEnded` hooks run before the terminal `run.updated` event, so a client

@@ -22,6 +22,8 @@ export interface HubConfig {
   maxBots: number;
   maxGroupSize: number;
   maxHandoffDepth: number;
+  /** Runs one message may set off in all, through handoffs, reports and mentions. */
+  maxChainRuns: number;
   absencePauseDays: number;
   computerProvider: ComputerProviderKind;
   logLevel: LogLevel;
@@ -123,6 +125,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     maxBots: overrides.maxBots ?? readPositiveInt(env, "ORBIS_MAX_BOTS", 50),
     maxGroupSize: overrides.maxGroupSize ?? readPositiveInt(env, "ORBIS_MAX_GROUP_SIZE", 6),
     maxHandoffDepth: overrides.maxHandoffDepth ?? readPositiveInt(env, "ORBIS_MAX_HANDOFF_DEPTH", 6),
+    maxChainRuns: overrides.maxChainRuns ?? readPositiveInt(env, "ORBIS_MAX_CHAIN_RUNS", 12),
     absencePauseDays: overrides.absencePauseDays ?? readPositiveInt(env, "ORBIS_ABSENCE_PAUSE_DAYS", 14),
     computerProvider:
       overrides.computerProvider ?? readEnum(env, "ORBIS_COMPUTER_PROVIDER", ["local", "host", "docker"] as const, "local"),

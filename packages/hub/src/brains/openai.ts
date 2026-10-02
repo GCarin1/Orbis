@@ -124,19 +124,39 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
   yield { type: "run.started" };
 
   for (let step = 0; step < maxSteps; step++) {
+    // The last step answers with what the bot has, instead of failing at the limit with nothing.
+    const last = step === maxSteps - 1 && tools.length > 0;
+    if (last) {
+      messages.push({
+        role: "user",
+        content: `You have used ${maxSteps - 1} steps, the most this task allows. Do not call tools any more: answer now with what you found, and say what is left undone.`,
+      });
+    }
     const body = {
       model: input.bot.brain.model,
       messages,
       stream: true,
       ...(includeUsage ? { stream_options: { include_usage: true } } : {}),
-      ...(tools.length ? { tools } : {}),
+      ...(tools.length && !last ? { tools } : {}),
     };
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
-      body: JSON.stringify(body),
-      signal: ctx.signal,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
+        body: JSON.stringify(body),
+        signal: ctx.signal,
+      });
+    } catch (err) {
+      if (ctx.signal.aborted) throw err;
+      const cause = (err as { cause?: { code?: string; message?: string } }).cause;
+      const why = cause?.code ?? cause?.message ?? (err instanceof Error ? err.message : String(err));
+      yield {
+        type: "run.failed",
+        error: `could not reach ${baseUrl} (${why}): is the ${input.bot.brain.kind === "lmstudio" ? "LM Studio server" : input.bot.brain.kind === "ollama" ? "Ollama server" : "server"} running and the address right?`,
+      };
+      return;
+    }
     if (!res.ok || !res.body) {
       const text = await res.text().catch(() => "");
       // Some compatible servers reject stream_options: retry once without it.

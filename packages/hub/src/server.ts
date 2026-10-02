@@ -215,6 +215,10 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   for (const run of repos.runs.list({ status: "running", limit: 500 })) {
     repos.runs.setStatus(run.id, "failed", { finishedAt: new Date().toISOString(), error: "the hub stopped during this run" });
   }
+  // No run survives a restart, so no bot is still thinking or working.
+  for (const bot of repos.bots.list({ includeHidden: true })) {
+    if (bot.state !== "idle" && bot.state !== "done") repos.bots.setState(bot.id, "idle");
+  }
   for (const run of repos.runs.list({ status: "queued", limit: 500 })) {
     repos.runs.setStatus(run.id, "cancelled", { finishedAt: new Date().toISOString(), error: "the hub stopped before this run started" });
   }

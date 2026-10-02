@@ -33,7 +33,7 @@ describe("orbis mcp", () => {
     expect(lines.map((l) => l.id)).toEqual([1, 2, 3]); // the notification gets no answer
     expect(lines[0].result.serverInfo.name).toBe("orbis");
     expect(lines[1].result.tools.map((t: { name: string }) => t.name)).toEqual(["team_list_bots"]);
-    expect(JSON.parse(lines[2].result.content[0].text)).toEqual([expect.objectContaining({ handle: "@ana" })]);
+    expect(JSON.parse(lines[2].result.content[0].text)).toEqual([expect.objectContaining({ handle: "ana" })]);
 
     session.close();
     const revoked = await runCli(["mcp"], { HOME: hub.env.HOME, ORBIS_URL: hub.url, ORBIS_RUN_TOKEN: runToken }, JSON.stringify({ jsonrpc: "2.0", id: 9, method: "tools/list" }) + "\n");

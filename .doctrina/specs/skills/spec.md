@@ -6,7 +6,7 @@
 **Realizes:** SC6
 **Depends on:** tool-gateway, bots
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -30,10 +30,12 @@ single bot's scope.
 - When a user creates or edits a skill, the system shall reject a name outside `[a-z0-9-]{1,64}` or a document without a description.
 - When a message starts with `/<word>` (after any mentions) and no skill of that name exists at any scope, the system shall treat the message as plain text, so the slash commands of agent CLIs pass through.
 - When a Claude Code run starts, the system shall remove from `.claude/skills/` the skills it wrote earlier that the bot is no longer offered, and leave every other folder there untouched.
+- When a bot calls `skills.create` with a name, a description, instructions and optionally `when`, a colleague's handle and `replace`, the system shall save the skill as a bot-scope skill of that bot (the caller when no handle is given), after the user's approval by default.
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not run a `/<skill-name>` invocation for a skill the bot is not offered; it shall post an event naming the skill instead.
+- The system shall not overwrite an existing skill of the bot through `skills.create` without `replace`.
 
 ## Acceptance criteria
 
@@ -41,6 +43,7 @@ single bot's scope.
 2. [verified] A `/<skill-name> input` message starts a run whose brain input holds the skill body and the input — verified by `packages/hub/test/skills.test.ts`.
 3. [verified] A skill outside the bot's allowlist is not offered and its invocation posts an event — verified by `packages/hub/test/skills.test.ts`.
 4. [verified] A `claude-code` run finds the offered skills under `.claude/skills/` in its workspace — verified by `packages/hub/test/runtimes/claude-code.test.ts`.
+5. [verified] A bot creates a skill for @pesquisa with `skills.create`, the skill is offered to Pesquisa, and a second call with the same name is refused asking for `replace` — verified by `packages/hub/test/bot-behaviour.test.ts`.
 
 ## Maturity
 

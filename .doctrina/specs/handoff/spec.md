@@ -6,7 +6,7 @@
 **Realizes:** SC4
 **Depends on:** conversations, agent-runtimes, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -26,6 +26,8 @@ themselves forever.
 - The system shall show every handoff in the conversation where it was made as a handoff card naming the sender, the receiver, the task and the handoff state (`queued`, `running`, `done` or `failed`).
 - The system shall let a group name one lead bot, and treat the group's first member as lead when none is named.
 - The system shall limit each chain of bot-triggered runs (handoffs, reports back and bot-to-bot mentions) to a depth of 6, set by ORBIS_MAX_HANDOFF_DEPTH.
+- The system shall limit the runs of one chain to 12, set by ORBIS_MAX_CHAIN_RUNS, and always start the report back to a delegating bot.
+- The system shall tell each bot that writing `@handle` or `@role` in a reply wakes that colleague, to do it only to ask one or two colleagues for something, and to write a colleague's name without `@` otherwise.
 
 ### Event-driven
 
@@ -42,6 +44,7 @@ themselves forever.
 - The system shall not give the receiver of a handoff the history of the conversation the handoff was made in; its input is the sender, the task and the context the sender wrote.
 - The system shall not start runs for the bots that a `report` run's reply mentions, for the bots the replying run handed work to, or for the bot that handed the replying run its task.
 - The system shall not accept a handoff to a role that two or more bots hold; it shall answer with their handles.
+- The system shall not accept a handoff, nor wake a mentioned bot, once its chain has used ORBIS_MAX_CHAIN_RUNS runs; it shall return an error result to the caller and post a `chain.limit` event instead.
 
 ## Acceptance criteria
 
@@ -51,6 +54,7 @@ themselves forever.
 4. [verified] A handoff to the sending bot itself returns an error result — verified by `packages/hub/test/handoff.test.ts`.
 5. [verified] A run that hands off to two bots wakes its bot once, as a `report` run, after both ended, with the answer of one and the failure of the other; the report is a new message, a `bot.report` event names it, and the report's mentions start no one — verified by `packages/hub/test/team.test.ts`.
 6. [verified] A handoff to a role reaches the one bot holding it, and a role two bots hold is refused naming both — verified by `packages/hub/test/team.test.ts`.
+7. [verified] With ORBIS_MAX_CHAIN_RUNS at 3, a bot handing off to four reports gets two acknowledgments and two refusals, three runs exist and a `chain.limit` event is posted — verified by `packages/hub/test/bot-behaviour.test.ts`.
 
 ## Maturity
 

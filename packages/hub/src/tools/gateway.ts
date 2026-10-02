@@ -42,8 +42,30 @@ export interface SecretBroker {
   hasPlaceholder(value: unknown): boolean;
 }
 
+/** Identical calls (same tool, same input) a run may make; the next one is refused. */
+export const MAX_IDENTICAL_CALLS = 2;
+/** Tools whose same input legitimately gives a new result each time (the page changed, the next page). */
+const REPEATABLE = new Set(["browser.snapshot", "browser.screenshot", "browser.press", "browser.close", "team.list_bots", "skills.list", "routine.list"]);
+
+/** A key for "the same call": the tool and its input with keys in a stable order. */
+function callKey(name: string, input: unknown): string {
+  const stable = (v: unknown): unknown =>
+    v && typeof v === "object" && !Array.isArray(v)
+      ? Object.fromEntries(
+          Object.keys(v as object)
+            .sort()
+            .map((k) => [k, stable((v as Record<string, unknown>)[k])]),
+        )
+      : Array.isArray(v)
+        ? v.map(stable)
+        : v;
+  return `${name} ${JSON.stringify(stable(input))}`;
+}
+
 export class ToolGateway implements RunToolHost {
   private readonly sessions = new Map<string, RunSession>();
+  /** Per run: how many times each identical call was made. */
+  private readonly calls = new Map<string, Map<string, number>>();
   private readonly beforeCall: BeforeToolCall[] = [];
   private secrets: SecretBroker | null = null;
 
@@ -72,6 +94,7 @@ export class ToolGateway implements RunToolHost {
       mcp,
       close: () => {
         this.sessions.delete(token);
+        this.calls.delete(run.id);
         this.approvals.expireForRun(run.id);
       },
     };
@@ -108,6 +131,21 @@ export class ToolGateway implements RunToolHost {
     const args = input ?? {};
     const invalid = this.registry.validate(tool.name, args);
     if (invalid) return { output: `invalid input for ${tool.name}: ${invalid}`, isError: true };
+
+    // A model calling the same tool with the same input again and again is stuck: stop it here.
+    if (!REPEATABLE.has(tool.name)) {
+      const key = callKey(tool.name, args);
+      const seen = this.calls.get(run.id) ?? new Map<string, number>();
+      this.calls.set(run.id, seen);
+      const count = seen.get(key) ?? 0;
+      if (count >= MAX_IDENTICAL_CALLS) {
+        return {
+          output: `you already called ${tool.name} with exactly this input ${count} times in this task; it was not run again. Use the results you have, change the input, or answer the user.`,
+          isError: true,
+        };
+      }
+      seen.set(key, count + 1);
+    }
 
     if (!tool.ungated) {
       const gate = await this.approvals.gate({

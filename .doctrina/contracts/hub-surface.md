@@ -38,6 +38,7 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | ORBIS_MAX_BOTS           | no       | —                               | 50                       |
 | ORBIS_MAX_GROUP_SIZE     | no       | —                               | 6                        |
 | ORBIS_MAX_HANDOFF_DEPTH  | no       | —                               | 6                        |
+| ORBIS_MAX_CHAIN_RUNS     | no       | —                               | 12                       |
 | ORBIS_ABSENCE_PAUSE_DAYS | no       | —                               | 14                       |
 | ORBIS_COMPUTER_PROVIDER  | no       | `local\|host\|docker`           | local                    |
 | ORBIS_LOG_LEVEL          | no       | `debug\|info\|warn\|error`      | info                     |
@@ -77,6 +78,7 @@ machine that runs Orbis; none is injected by CI.
 | ORBIS_MAX_BOTS           | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_MAX_GROUP_SIZE     | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_MAX_HANDOFF_DEPTH  | local  | —        | —        | packages/hub/src/config.ts        |
+| ORBIS_MAX_CHAIN_RUNS     | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_ABSENCE_PAUSE_DAYS | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_COMPUTER_PROVIDER  | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_LOG_LEVEL          | local  | —        | —        | packages/hub/src/config.ts        |
@@ -138,7 +140,7 @@ machine that runs Orbis; none is injected by CI.
 - `Conversation`: `{ id, kind: "direct"|"group", title, members: string[] (bot ids), leadBotId: string|null, createdAt, lastItemAt }`.
 - `TimelineItem`: `{ id, conversationId, kind: "message"|"event"|"card", author: { type: "user"|"bot"|"system", id: string|null }, text, parentId: string|null, mentions: string[], attachments: string[], reactions: { [emoji]: number }, runId: string|null, card?: Card, event?: { type, data }, createdAt, updatedAt }`.
 - `Card`: `{ type: "approval"|"draft"|"handoff"|"secret-request"|"routine", state: string, data: object }`.
-- `Run`: `{ id, botId, conversationId, trigger: { type: "message"|"handoff"|"mention"|"report"|"routine"|"webhook"|"api", ref } (`report`: the sender's single follow-up once every handoff of its run ended, `ref` = that run's id), depth, status: "queued"|"running"|"waiting"|"done"|"failed"|"cancelled", steps: Step[], usage: { inputTokens, outputTokens, cachedTokens, costUsd, subscription }, error: string|null, createdAt, startedAt, finishedAt }`.
+- `Run`: `{ id, botId, conversationId, trigger: { type: "message"|"handoff"|"mention"|"report"|"routine"|"webhook"|"api", ref } (`report`: the sender's single follow-up once every handoff of its run ended, `ref` = that run's id), depth, chainId (the user message, or the first run, that started the work; handoffs, reports and mentions carry it on), status: "queued"|"running"|"waiting"|"done"|"failed"|"cancelled", steps: Step[], usage: { inputTokens, outputTokens, cachedTokens, costUsd, subscription }, error: string|null, createdAt, startedAt, finishedAt }`.
 - `Step`: `{ type: "thinking"|"text"|"tool_call"|"tool_result", at, text?, tool?, callId?, input?, output?, isError? }`.
 - `Approval`: `{ id, runId, botId, conversationId, itemId, tool, input (secrets masked), reason, status: "pending"|"approved"|"denied"|"expired", decision: "allow_once"|"allow_always"|"deny"|null, note, createdAt, decidedAt }`.
 - Approval card data: `{ approvalId, botId, tool, input, reason, locked?, decision?, note? }`; states `pending`, `approved`, `denied`, `expired`.
@@ -146,6 +148,9 @@ machine that runs Orbis; none is injected by CI.
 - Handoff card data: `{ from, to (bot ids), task, context: string|null, returnResult: boolean (default true), receiverRunId: string|null, returnRunId?, reportRunId?, error? }`; states `queued`, `running`, `done`, `failed`. The receiver's reply has `parentId` = the card's item id. Every card of one sender run carries the same `reportRunId` once its `report` run is queued.
 - `MemoryEntry`: `{ id, botId: string|null (null = team), kind: "preference"|"role"|"fact"|"summary", text, source ("user" or "run:<id>"), createdAt, updatedAt }`.
 - Timeline event `handoff.depth_exceeded`: `event.data` = `{ from, to, depth, limit }`, posted when a handoff or a bot-to-bot mention would start a run deeper than the handoff-depth budget.
+- Timeline event `chain.limit`: `event.data` = `{ from, to: string|null, limit }`, posted when a handoff or a mention would start a run beyond ORBIS_MAX_CHAIN_RUNS runs of one chain; the handoff tool call fails.
+- Timeline event `mention.list`: `event.data` = `{ botId, named: string[] (bot ids) }`, posted when a bot's reply names more than two bots and so wakes none.
+- Orbis tools added by change 0021: `skills.create` `{ name, description, when?, instructions, forBot?, replace? }` (write, asks by default) saves a bot-scope skill; `team.list_bots` returns `[{ handle (no @), name, role, busy, state }]`. A third call of the same tool with the same input in one run returns an error result without running.
 
 ### REST routes (prefix `/api/v1`)
 

@@ -7,7 +7,30 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Bot behaviour audit (change 0021-bot-behaviour-audit, ADR 0011; see
+  `docs/bot-behaviour-audit.md`):
+  - **Bots looping in a group**: a reply listing the team woke every bot it
+    named, whose replies listed the team again. Runs now share a chain per
+    message; a reply naming more than two bots wakes no one, a bot woken by a
+    mention wakes no one, a bot does not answer the same message twice, and
+    one message sets off at most `ORBIS_MAX_CHAIN_RUNS` (12) runs.
+  - **Windows**: Claude Code 2 (`claude.CMD` pointing at `claude.exe`) and
+    MCP servers started with `npx` (Node 24's `npx.cmd`) start again; an MCP
+    server that stops says why instead of `} Node.js v24`; the browser uses
+    the installed Chrome or Edge when Playwright's Chromium is missing; bots
+    know they are on Windows and that commands run in cmd.exe.
+  - **Limits**: the time limit counts work, not the time waiting for your
+    approval; an API brain's last step answers instead of calling tools; a
+    third identical tool call is refused; an unreachable LM Studio / Ollama
+    server or a brain with no API key says what to fix; bots start idle
+    after a restart.
+
 ### Added
+
+- `skills.create`: a bot writes a skill for itself or a colleague (asks
+  first).
 
 - ChatGPT through Codex (change 0019-chatgpt-through-codex): **Settings →
   Brains → ChatGPT with your subscription** installs the Codex CLI

@@ -55,13 +55,18 @@ The desktop app raises a notification when a manager reports back
 | you, in a group, mentioning bots (`@ana`, `@qa`) | each mentioned bot, member of the group or not |
 | you, in a group, `@everyone` | every member |
 | you, in a group, no mention | the lead |
-| a bot's reply mentioning colleagues | each of them, in the same conversation |
+| a bot's reply mentioning one or two colleagues | each of them, once, in the same conversation |
+| a bot's reply naming three or more bots | no one (it reads as a list; a `mention.list` event says so) |
 
 So bots talk to each other without you relaying: a bot that writes "I asked
 @designer for the banner" brings the designer into that conversation. A bot's
 reply does not start again the bots it just handed work to, nor the bot that
 handed it its task (that one gets the answer in its report), and a manager's
-report to you starts no one.
+report to you starts no one. A bot woken by a mention answers but wakes no
+one, and a bot that already answered the same message is not woken again — so
+a bot that lists the team ("available now: @ana, @bob and @cara") does not set
+them answering each other. Bots are told this, and `team.list_bots` gives
+handles without `@` so a bot can name colleagues without waking them.
 
 ## Groups
 
@@ -112,6 +117,15 @@ reports, with the reports back) is refused: the tool call fails with
 `the chain of bot-to-bot steps reached its limit (6)` and the conversation
 shows a `handoff.depth_exceeded` event. Bots can therefore never ping-pong
 forever.
+
+### The chain limit
+
+Everything one message of yours sets off — every bot it runs, their
+handoffs, mentions and reports — is one **chain**. A chain holds at most
+`ORBIS_MAX_CHAIN_RUNS` runs (default 12): a handoff or a mention beyond that
+is refused and the conversation shows a `chain.limit` event. A report back is
+always allowed, so a manager always tells you how its delegation ended. See
+[the bot behaviour audit](bot-behaviour-audit.md) for why.
 
 ## Memory
 

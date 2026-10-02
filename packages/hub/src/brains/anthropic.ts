@@ -78,8 +78,16 @@ export const anthropicBrain: BrainAdapter = {
     let lastText = "";
     for (let step = 0; step < maxSteps; step++) {
       let message: BetaMessage;
+      // The last step answers with what the bot has, instead of failing at the limit with nothing.
+      const last = step === maxSteps - 1 && step > 0 && Array.isArray(request.tools) && request.tools.length > 0;
+      if (last) {
+        const tail = messages[messages.length - 1];
+        const note = { type: "text" as const, text: `You have used ${step} steps, the most this task allows. Do not call tools any more: answer now with what you found, and say what is left undone.` };
+        if (tail?.role === "user" && Array.isArray(tail.content)) tail.content = [...tail.content, note];
+        else messages.push({ role: "user", content: [note] });
+      }
       try {
-        const stream = client.beta.messages.stream({ ...request, messages }, { signal: ctx.signal });
+        const stream = client.beta.messages.stream({ ...request, messages, ...(last ? { tool_choice: { type: "none" as const } } : {}) }, { signal: ctx.signal });
         message = await stream.finalMessage();
       } catch (err) {
         if (ctx.signal.aborted) throw err;

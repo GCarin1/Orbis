@@ -8,6 +8,7 @@ function toRun(r: Row): Run {
     conversationId: (r.conversation_id as string | null) ?? null,
     trigger: { type: r.trigger_type as RunTrigger["type"], ref: (r.trigger_ref as string | null) ?? null },
     depth: Number(r.depth),
+    chainId: (r.chain_id as string | null) ?? (r.id as string),
     status: r.status as RunStatus,
     input: r.input as string,
     skill: (r.skill as string | null) ?? null,
@@ -33,19 +34,25 @@ export class RunsRepo {
   insert(r: Run): void {
     run(
       this.db,
-      `INSERT INTO runs (id, bot_id, conversation_id, trigger_type, trigger_ref, depth, input, skill, status, steps,
-         created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?)`,
+      `INSERT INTO runs (id, bot_id, conversation_id, trigger_type, trigger_ref, depth, chain_id, input, skill, status, steps,
+         created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?)`,
       r.id,
       r.botId,
       r.conversationId,
       r.trigger.type,
       r.trigger.ref,
       r.depth,
+      r.chainId,
       r.input,
       r.skill,
       r.status,
       r.createdAt,
     );
+  }
+
+  /** Every run of a chain, oldest first. */
+  inChain(chainId: string): Run[] {
+    return all(this.db, "SELECT * FROM runs WHERE chain_id = ? ORDER BY created_at", chainId).map(toRun);
   }
 
   get(id: string): Run | undefined {

@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -39,7 +39,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `claude-code` run finishes, the system shall store the Claude Code session id for that bot and conversation and pass it with `--resume` on the bot's next run in the same conversation.
 - When a `codex` run finishes, the system shall store the Codex thread id for that bot and conversation and resume it on the bot's next run in the same conversation.
 - When Claude Code asks for permission to use one of its built-in tools, the system shall decide through `specs/approvals` by serving the MCP tool named in `--permission-prompt-tool`.
-- When a brain process exits with a non-zero status, or a run exceeds its timeout (default 15 minutes), the system shall stop the process, mark the run failed with the error text and set the bot state to `blocked`.
+- When a brain process exits with a non-zero status, or a run works longer than its timeout (default 15 minutes), not counting the time it waits for the user's approval or answer, the system shall stop the process, mark the run failed with the error text and set the bot state to `blocked`.
 - When a user requests the brain health check, the system shall report for each CLI brain (`claude-code`, `codex`, `gemini-cli`, `cursor`) whether its executable is found on PATH and the version it prints, and for each local model server (`ollama`, `lmstudio`) whether it answers and the models it serves.
 - When an `anthropic` brain runs `claude-opus-5`, `claude-opus-5-5` or `claude-fable-5-1` against the first-party API, the system shall request the server-side refusal fallback (`fallbacks: "default"`).
 - When a `cursor` run finishes, the system shall store the Cursor chat id for that bot and conversation and pass it with `--resume` on the bot's next run in the same conversation.
@@ -47,6 +47,14 @@ brain are owned by `contracts/cli-harnesses`.
 - When a local model server answers that the model does not support tools, the system shall retry the turn once without tools and record that as a thinking step.
 - When a user requests a brain test for a bot or a brain configuration, the system shall ask that brain "What is 17 × 23? Answer with the number only." with no tools, no history and a scratch working directory, and report whether it ran, its reply, its duration and whether the reply holds 391.
 - When the user asks from the settings screen, the system shall install the Codex CLI with `npm install -g @openai/codex@latest`, start its sign-in with the user's ChatGPT account — `codex login` in the browser of the hub's machine, or `codex login --device-auth` with a link and a one-time code for any device — report the link and the code as Codex prints them, report the account from `codex login status`, cancel a sign-in, and sign out with `codex logout`.
+- When an API brain (openai, anthropic, ollama, lmstudio) reaches its last allowed step, the system shall send that request without tools and ask the model to answer with what it found.
+- When an API brain cannot reach its server, the system shall fail the run naming the address, the network error code and the server to start.
+- When a bot's brain is not ready (no API key, no CLI), the system shall fail its run with the reason and a pointer to that bot's settings.
+- When the hub starts, the system shall set every bot whose state is neither `idle` nor `done` to `idle`.
+
+### State-driven
+
+- While the hub runs on Windows, the system shall run an npm `.cmd` shim without cmd.exe: its Node.js script with node — for npm's own npx.cmd and npm.cmd the `*-cli.js` script, not `npm-prefix.js` — or the native program the shim points at, directly.
 
 ### Unwanted-behavior (must-not)
 
@@ -76,6 +84,8 @@ brain are owned by `contracts/cli-harnesses`.
 11. [verified] The brain test answers `answered: true` for a brain that replies 391 and `false` for the mock's echo, names a missing model and leaves no scratch workspace; the local-servers route lists a server's models or says it is not reachable; the health check finds the Cursor CLI under either name — verified by `packages/hub/test/runtimes/brains-settings.test.ts`.
 12. [verified] On Windows, an npm `.cmd` shim runs its Node.js script with the prompt as one argument, and a batch file with no script fails naming the fix — verified by `packages/hub/test/runtimes/brains-settings.test.ts`.
 13. [verified] With fake `npm` and `codex` executables, the hub reports Codex missing, installs it, starts a device sign-in whose link and code it reports, then the ChatGPT account, signs out, gives the browser sign-in link and reports a cancelled sign-in; the parsers read the output the real Codex CLI prints — verified by `packages/hub/test/runtimes/codex-account.test.ts`.
+14. [verified] A run that waits 1.5 s for an approval past its 1 s timeout ends done; an LM Studio bot at its step limit answers in a third request with no tools, and a closed server fails naming the address and ECONNREFUSED; an openai bot with no key fails pointing to its settings; bots start idle after a restart — verified by `packages/hub/test/bot-behaviour.test.ts`.
+15. [verified] With the real shim texts, codex.cmd runs its script with node, Claude Code 2's claude.CMD runs claude.exe, npx.cmd runs npx-cli.js, a batch file naming no program is refused, and an MCP server's crash is reported by its error line — verified by `packages/hub/test/runtimes/windows-shims.test.ts`.
 
 ## Maturity
 

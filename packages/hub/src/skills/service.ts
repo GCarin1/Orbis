@@ -125,6 +125,41 @@ export class SkillService {
           return `# ${skill.name}\n${skill.description}\n\n${skill.body}`;
         },
       },
+      {
+        name: "skills.create",
+        description:
+          "Write a skill: a reusable procedure (step-by-step instructions) saved as SKILL.md for yourself or for a colleague (forBot: @handle). " +
+          "The bot uses it from then on (skills.read, or the user's /name). Set replace to true to rewrite an existing skill of that bot.",
+        input: Type.Object({
+          name: Type.String({ pattern: "^[a-z0-9][a-z0-9-]{0,63}$", description: "lowercase words joined by -, e.g. academic-research" }),
+          description: Type.String({ minLength: 1, maxLength: 1024, description: "one sentence: what it does" }),
+          when: Type.Optional(Type.String({ maxLength: 500, description: "when to use it" })),
+          instructions: Type.String({ minLength: 1, maxLength: 100_000, description: "the procedure, in Markdown" }),
+          forBot: Type.Optional(Type.String({ maxLength: 40, description: "the colleague who gets it (@handle); default you" })),
+          replace: Type.Optional(Type.Boolean()),
+        }),
+        risk: "write",
+        defaultDecision: "ask",
+        handler: async (input: { name: string; description: string; when?: string; instructions: string; forBot?: string; replace?: boolean }, ctx) => {
+          const owner = input.forBot ? this.hub.repos.bots.get(input.forBot.replace(/^@/, "")) : ctx.bot;
+          if (!owner) return { output: `no bot with the handle ${input.forBot}`, isError: true };
+          const yaml = (v: string) => JSON.stringify(v.replace(/\s+/g, " ").trim());
+          const content = [
+            "---",
+            `name: ${input.name}`,
+            `description: ${yaml(input.description)}`,
+            ...(input.when ? [`when: ${yaml(input.when)}`] : []),
+            "---",
+            "",
+            input.instructions.trim(),
+            "",
+          ].join("\n");
+          const exists = this.store.get(owner.id, input.name) !== null;
+          if (exists && !input.replace) return { output: `@${owner.handle} already has a skill "${input.name}"; set replace to true to rewrite it`, isError: true };
+          const skill = this.store.save(owner.id, content, { create: !exists });
+          return `${exists ? "rewrote" : "created"} the skill ${skill.name} for @${owner.handle}; it is offered to that bot from now on (/${skill.name})`;
+        },
+      },
     ];
   }
 

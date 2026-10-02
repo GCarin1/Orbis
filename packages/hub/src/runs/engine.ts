@@ -20,6 +20,8 @@ export interface EnqueueRequest {
   trigger: RunTrigger;
   input: string;
   depth?: number;
+  /** The chain this run continues (handoffs, reports, mentions); a new chain when absent. */
+  chainId?: string;
   skill?: { name: string; body: string } | null;
   /** The item carrying the task; left out of the context history. */
   triggerItemId?: string | null;
@@ -70,9 +72,47 @@ interface Pending {
   req: EnqueueRequest;
 }
 
+/**
+ * A run's time limit that stops while the run waits for the user (an
+ * approval, a secret, a takeover): a person taking a while to answer never
+ * makes the bot time out.
+ */
+class RunClock {
+  private remaining: number;
+  private since: number | null = null;
+  private timer: NodeJS.Timeout | null = null;
+
+  constructor(
+    limitMs: number,
+    private readonly onTimeout: () => void,
+  ) {
+    this.remaining = limitMs;
+  }
+
+  start(): void {
+    if (this.timer) return;
+    this.since = Date.now();
+    this.timer = setTimeout(this.onTimeout, Math.max(0, this.remaining));
+  }
+
+  pause(): void {
+    if (!this.timer) return;
+    clearTimeout(this.timer);
+    this.timer = null;
+    this.remaining -= Date.now() - (this.since ?? Date.now());
+    this.since = null;
+  }
+
+  stop(): void {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+  }
+}
+
 export class RunEngine {
   private readonly chains = new Map<string, Promise<void>>();
   private readonly controllers = new Map<string, AbortController>();
+  private readonly clocks = new Map<string, RunClock>();
   private readonly waiters = new Map<string, Array<(run: Run) => void>>();
   private readonly pending = new Map<string, Pending>();
   private readonly inflight = new Set<Promise<void>>();
@@ -104,12 +144,14 @@ export class RunEngine {
 
   /** Create a queued run and chain it behind the runs of the same bot and conversation. */
   enqueue(req: EnqueueRequest): Run {
+    const id = newId("run");
     const run: Run = {
-      id: newId("run"),
+      id,
       botId: req.botId,
       conversationId: req.conversationId,
       trigger: req.trigger,
       depth: req.depth ?? 0,
+      chainId: req.chainId ?? id,
       status: "queued",
       input: req.input,
       skill: req.skill?.name ?? null,
@@ -199,6 +241,9 @@ export class RunEngine {
     const run = this.d.runs.get(runId);
     if (!run || !["running", "waiting"].includes(run.status)) return;
     this.d.runs.setStatus(runId, waiting ? "waiting" : "running");
+    const clock = this.clocks.get(runId);
+    if (waiting) clock?.pause();
+    else clock?.start();
     this.publishRun(runId);
     this.setBotState(run.botId, waiting ? "waiting" : "working");
   }
@@ -259,7 +304,7 @@ export class RunEngine {
       ? adapter.check(bot, this.d.config, secret)
       : `brain "${bot.brain.kind}" is not available in this hub`;
     if (misconfigured) {
-      this.failRun(queued, bot, misconfigured);
+      this.failRun(queued, bot, `${misconfigured} — open ${bot.name}'s settings (⚙) to fix its brain`);
       return;
     }
 
@@ -272,10 +317,12 @@ export class RunEngine {
 
     const timeoutMs = (bot.brain.timeoutSec ?? 900) * 1000;
     let timedOut = false;
-    const timer = setTimeout(() => {
+    const clock = new RunClock(timeoutMs, () => {
       timedOut = true;
       controller.abort(new Error("timeout"));
-    }, timeoutMs);
+    });
+    this.clocks.set(runId, clock);
+    clock.start();
 
     const steps: Step[] = [];
     const usage: Usage = emptyUsage();
@@ -383,7 +430,8 @@ export class RunEngine {
     } catch (err) {
       if (!controller.signal.aborted) failure = err instanceof Error ? err.message : String(err);
     } finally {
-      clearTimeout(timer);
+      clock.stop();
+      this.clocks.delete(runId);
       host.close();
       this.controllers.delete(runId);
     }
@@ -392,7 +440,7 @@ export class RunEngine {
     run = this.d.runs.get(runId)!;
 
     if (!failure && controller.signal.aborted) {
-      if (timedOut) failure = `timed out after ${Math.round(timeoutMs / 1000)}s`;
+      if (timedOut) failure = `timed out after ${Math.round(timeoutMs / 1000)}s of work on this task (time waiting for you does not count); split the task or raise the bot's time limit`;
       else {
         this.finish(runId, "cancelled", { error: "cancelled" });
         this.setBotState(bot.id, "idle");

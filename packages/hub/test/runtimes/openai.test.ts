@@ -59,7 +59,7 @@ describe("openai-compatible brain", () => {
     expect(run.reply).toBe("One bot: @llama.");
     expect(run.steps.map((s) => s.type)).toEqual(["text", "tool_call", "tool_result", "text"]);
     expect(run.steps[1]).toMatchObject({ tool: "team_list_bots", callId: "call_1", input: {} });
-    expect(run.steps[2]!.output).toContain("@llama");
+    expect(run.steps[2]!.output).toContain(`"handle": "llama"`);
     expect(run.usage).toMatchObject({ inputTokens: 130, outputTokens: 14, cachedTokens: 5, costUsd: 0 });
 
     const [first, second] = api.requests;

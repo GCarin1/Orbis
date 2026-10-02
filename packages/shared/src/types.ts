@@ -204,6 +204,12 @@ export interface Run {
   conversationId: string | null;
   trigger: RunTrigger;
   depth: number;
+  /**
+   * The id of the run that started this piece of work — the run of the user's
+   * message or the routine; handoffs, reports and mentions carry it on, so
+   * the chain they form can be bounded (specs/conversations).
+   */
+  chainId: string;
   status: RunStatus;
   input: string;
   skill: string | null;
