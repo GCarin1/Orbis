@@ -2,7 +2,8 @@
 // address and Bearer token, typed or read from a pasted cURL; the token is
 // saved as the bot's secret, never in the bot. Address and token are made up.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type { ChatConnectionCheck } from "@orbis/shared";
 import { BotSettings } from "../src/components/BotSettings.js";
 import { NewBotScreen } from "../src/components/NewBotScreen.js";
 import { useLang } from "../src/i18n.js";
@@ -299,5 +300,102 @@ describe("how the requests are made (change 0035)", () => {
     fireEvent.change(select, { target: { value: "fetch" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect((onSave.mock.calls[1] as unknown as [{ brain: { chat: unknown } }])[0].brain.chat).toEqual({ transport: "fetch" });
+  });
+});
+
+describe("the connection test (change 0037)", () => {
+  it("shows each way to the API and what the firewall said, and uses the one that got through", async () => {
+    const check: ChatConnectionCheck = {
+      url: "https://chat.example.com/v1/history/chats",
+      proxies: { windows: "http://proxy.company.example:8080", env: null },
+      results: [
+        {
+          transport: "curl",
+          curl: "C:\\Windows\\System32\\curl.exe",
+          proxy: "http://proxy.company.example:8080",
+          verdict: "ok",
+          status: 200,
+          detail: "",
+          ms: 300,
+        },
+        {
+          transport: "curl",
+          curl: "C:\\Windows\\System32\\curl.exe",
+          proxy: "direct",
+          verdict: "blocked",
+          status: 403,
+          detail: "Attention Required! | Cloudflare",
+          ms: 120,
+        },
+        { transport: "fetch", curl: null, proxy: null, verdict: "blocked", status: 403, detail: "Attention Required! | Cloudflare", ms: 90 },
+      ],
+    };
+    const post = vi.fn(async () => check);
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
+    const onSave = vi.fn(async () => undefined);
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put: vi.fn(), get, post } as unknown as Api}
+        bot={ana}
+        onSave={onSave}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+    const box = screen.getByTestId("chat-check");
+    expect(box.textContent).toContain("sends no message and costs no model call");
+    await act(async () => fireEvent.click(within(box).getByRole("button", { name: "Test connection" })));
+    expect(post).toHaveBeenCalledWith(`/api/v1/bots/${ana.id}/chat-check`, {});
+    const results = within(box).getByRole("status");
+    expect(results.textContent).toContain("Windows proxy: http://proxy.company.example:8080 · environment proxy: none");
+    const rows = within(results)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
+    expect(rows[0]).toMatch(/^✓ curl — C:\\Windows\\System32\\curl\.exe · proxy http:\/\/proxy\.company\.example:8080 — got through \(HTTP 200\)/);
+    expect(rows[1]).toMatch(/^✗ curl — .* · no proxy — blocked by the firewall \(HTTP 403\)/);
+    expect(rows[2]).toMatch(/^✗ Node \(fetch\) · no proxy — blocked by the firewall/);
+    // Only the way that got through can be chosen; choosing it fills the settings, and saving keeps them.
+    expect(within(results).getAllByRole("button", { name: "Use this way" })).toHaveLength(1);
+    fireEvent.click(within(results).getByRole("button", { name: "Use this way" }));
+    expect(results.textContent).toContain("Way chosen — save to apply.");
+    expect((screen.getByLabelText("Proxy (optional)") as HTMLInputElement).value).toBe("http://proxy.company.example:8080");
+    expect((screen.getByLabelText("curl program (optional)") as HTMLInputElement).value).toBe("C:\\Windows\\System32\\curl.exe");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect((onSave.mock.calls[0] as unknown as [{ brain: { chat: unknown } }])[0].brain.chat).toEqual({
+      transport: "curl",
+      curl: "C:\\Windows\\System32\\curl.exe",
+      proxy: "http://proxy.company.example:8080",
+    });
+  });
+
+  it("says when no way got through", async () => {
+    const post = vi.fn(
+      async (): Promise<ChatConnectionCheck> => ({
+        url: "https://chat.example.com/v1/history/chats",
+        proxies: { windows: null, env: null },
+        results: [{ transport: "fetch", curl: null, proxy: null, verdict: "error", status: null, detail: "ENOTFOUND", ms: 5 }],
+      }),
+    );
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put: vi.fn(), get, post } as unknown as Api}
+        bot={ana}
+        onSave={async () => undefined}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Test connection" })));
+    expect(screen.getByTestId("chat-check").textContent).toContain("no answer: ENOTFOUND");
+    expect(screen.getByTestId("chat-check").textContent).toContain("No way got past the firewall");
   });
 });

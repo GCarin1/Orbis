@@ -48,7 +48,7 @@ It talks to the hub only through the public API.
 - The CLI shall not take a secret value as a command-line argument; `orbis secrets set` reads it from a hidden prompt or from stdin.
 - The `orbis chat` and `orbis group chat` commands shall not follow runs of another message's chain in the same conversation.
 - The launcher shall not stop a process that does not answer as an Orbis hub, nor the desktop app, nor a running Orbis when the build failed; it shall name what holds the port and exit with status 1.
-- The launcher shall not stop or fail because the shortcuts could not be made; it shall say so and point to `Orbis-Atalhos.bat`.
+- The launcher shall not stop or fail because making the shortcuts failed; it shall say so and point to `Orbis-Atalhos.bat`.
 
 ## Acceptance criteria
 

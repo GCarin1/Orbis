@@ -11,9 +11,10 @@ import {
   parseCurl,
   tokenExpiry,
   type Brain,
+  type ChatConnectionCheck,
   type ChatTokenStatus,
 } from "@orbis/shared";
-import { useLang, useT } from "../i18n.js";
+import { useLang, useT, type TextKey } from "../i18n.js";
 
 export interface ChatHttpValue {
   url: string;
@@ -31,6 +32,10 @@ export interface ChatHttpValue {
   headers: Record<string, string>;
   /** How the requests are made: "" is automatic (curl when it is installed). */
   transport: "" | "curl" | "fetch";
+  /** The curl program; empty is the one on PATH. */
+  curl: string;
+  /** A proxy URL or "direct"; empty is the environment's, else Windows' own. */
+  proxy: string;
 }
 
 export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
@@ -45,6 +50,8 @@ export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
   titles: brain?.chat?.titles !== false,
   headers: { ...(brain?.chat?.headers ?? {}) },
   transport: brain?.chat?.transport ?? "",
+  curl: brain?.chat?.curl ?? "",
+  proxy: brain?.chat?.proxy ?? "",
 });
 
 /** The token as the user may paste it: bare, with "Bearer ", a whole Authorization line, quoted or wrapped. */
@@ -62,6 +69,8 @@ export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
     ...(v.titles ? {} : { titles: false }),
     ...(Object.keys(v.headers).length ? { headers: v.headers } : {}),
     ...(v.transport ? { transport: v.transport } : {}),
+    ...(v.curl.trim() ? { curl: v.curl.trim() } : {}),
+    ...(v.proxy.trim() ? { proxy: v.proxy.trim() } : {}),
   };
   return {
     ...(v.url.trim() ? { baseUrl: v.url.trim() } : {}),
@@ -76,6 +85,7 @@ export function ChatHttpFields({
   onChange,
   hasToken = false,
   tokenStatus = null,
+  onCheck,
   name = "chat",
 }: {
   value: ChatHttpValue;
@@ -84,6 +94,8 @@ export function ChatHttpFields({
   hasToken?: boolean;
   /** What the hub says of the saved token: whether it is there and when it expires (never its value). */
   tokenStatus?: ChatTokenStatus | null;
+  /** Test each way to reach the API (a saved bot only). */
+  onCheck?: () => Promise<ChatConnectionCheck>;
   name?: string;
 }) {
   const t = useT();
@@ -173,6 +185,7 @@ export function ChatHttpFields({
         {t("newbot.model")}
         <input value={value.model} onChange={set("model")} placeholder={CHAT_HTTP_DEFAULT_MODEL} name={`${name}-model`} />
       </label>
+      {onCheck && <ConnectionCheck onCheck={onCheck} value={value} onChange={onChange} />}
       <details className="wide">
         <summary>{t("chat.advanced")}</summary>
         <label>
@@ -217,6 +230,14 @@ export function ChatHttpFields({
             <option value="fetch">{t("chat.transport.fetch")}</option>
           </select>
         </label>
+        <label>
+          {t("chat.curlPath")}
+          <input value={value.curl} onChange={set("curl")} placeholder={t("chat.curlPathHint")} name={`${name}-curl-path`} spellCheck={false} />
+        </label>
+        <label>
+          {t("chat.proxy")}
+          <input value={value.proxy} onChange={set("proxy")} placeholder={t("chat.proxyHint")} name={`${name}-proxy`} spellCheck={false} />
+        </label>
         <label className="checkbox">
           <input type="checkbox" checked={value.titles} onChange={(e) => onChange({ ...value, titles: e.target.checked })} name={`${name}-titles`} />
           {t("chat.titles")}
@@ -233,4 +254,78 @@ function SavedToken({ status, when }: { status: ChatTokenStatus; when(d: Date): 
   const expires = status.expiresAt ? new Date(status.expiresAt) : null;
   if (status.expired && expires) return <small className="error">{t("chat.tokenStatusExpired", { when: when(expires) })}</small>;
   return <small className="muted">{expires ? t("chat.tokenStatusOk", { when: when(expires) }) : t("chat.tokenStatusNoExp")}</small>;
+}
+
+/** "Test connection": each way to the API and what the firewall said, with a button to use one that got through. */
+function ConnectionCheck({
+  onCheck,
+  value,
+  onChange,
+}: {
+  onCheck(): Promise<ChatConnectionCheck>;
+  value: ChatHttpValue;
+  onChange(value: ChatHttpValue): void;
+}) {
+  const t = useT();
+  const [busy, setBusy] = useState(false);
+  const [found, setFound] = useState<ChatConnectionCheck | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<number | null>(null);
+  const run = async () => {
+    setBusy(true);
+    setError(null);
+    setChosen(null);
+    try {
+      setFound(await onCheck());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  type Result = ChatConnectionCheck["results"][number];
+  const way = (r: Result) => {
+    const proxy =
+      r.proxy === "direct" || r.transport === "fetch" ? t("chat.check.direct") : r.proxy ? t("chat.check.via", { proxy: r.proxy }) : t("chat.check.envProxy");
+    return `${r.transport === "fetch" ? "Node (fetch)" : `curl — ${r.curl}`} · ${proxy}`;
+  };
+  const passed = (r: Result) => r.verdict === "ok" || r.verdict === "token" || r.verdict === "reached";
+  const use = (r: Result, i: number) => {
+    onChange({ ...value, transport: r.transport, curl: r.curl ?? "", proxy: r.proxy ?? "" });
+    setChosen(i);
+  };
+  return (
+    <div className="wide chat-check" data-testid="chat-check">
+      <p className="muted small">{t("chat.checkHelp")}</p>
+      <button type="button" className="btn" disabled={busy} onClick={() => void run()}>
+        {busy ? t("chat.checking") : t("chat.check")}
+      </button>
+      {error && <p className="error small">{error}</p>}
+      {found && (
+        <div role="status">
+          <p className="muted small">
+            {t("chat.check.url", { url: found.url })}
+            <br />
+            {t("chat.check.proxies", { windows: found.proxies.windows ?? t("chat.check.none"), env: found.proxies.env ?? t("chat.check.none") })}
+          </p>
+          <ul className="chat-check-results">
+            {found.results.map((r, i) => (
+              <li key={i} className={passed(r) ? "ok" : "failed"}>
+                {passed(r) ? "✓" : "✗"} <code>{way(r)}</code> — {t(`chat.check.${r.verdict}` as TextKey, { status: r.status ?? "—", detail: r.detail })}{" "}
+                {passed(r) &&
+                  (chosen === i ? (
+                    <span className="muted small">{t("chat.check.used")}</span>
+                  ) : (
+                    <button type="button" className="link" onClick={() => use(r, i)}>
+                      {t("chat.check.use")}
+                    </button>
+                  ))}
+              </li>
+            ))}
+          </ul>
+          {!found.results.some(passed) && <p className="error small">{t("chat.check.noneOk")}</p>}
+        </div>
+      )}
+    </div>
+  );
 }

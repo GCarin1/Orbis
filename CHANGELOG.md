@@ -9,6 +9,13 @@ change that delivered it.
 
 ### Fixed
 
+- `chat-http` still blocked by Cloudflare through curl (change 0037-chat-http-proxy-and-connection-test):
+  the firewall lets through what comes from the company's proxy, which the
+  browser and Postman use and curl ignored. curl now goes through the proxy
+  Windows uses for the chat's address (a PAC script included), signing in as the
+  logged-in user; the bot can name its curl program and proxy; **Test
+  connection** tries every way out (each curl, each proxy and none, Node) with no
+  message and says which ones get through, with **Use this way**.
 - The Windows launcher's icon (change 0036-launcher-creates-its-shortcuts): a `.bat`
   cannot carry an icon, so `Orbis.bat` now makes the Orbis shortcut (with the Orbis
   icon) on the Desktop and in the Start menu the first time it runs.

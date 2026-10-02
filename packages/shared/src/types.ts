@@ -59,6 +59,33 @@ export interface ChatHttpOptions {
    * is installed (Windows 10 and later have it), else fetch.
    */
   transport?: "curl" | "fetch";
+  /** The curl program to use (a path), when not the one on PATH — say, the Git Bash curl that works in a terminal. */
+  curl?: string;
+  /**
+   * The proxy curl goes through: a URL, or `direct` for none. Default: the environment's
+   * (HTTPS_PROXY), else Windows' own (its Internet settings, a PAC script included).
+   */
+  proxy?: string;
+}
+
+/** What `POST /api/v1/bots/:id/chat-check` found: each way to reach a `chat-http` API, and whether its firewall let it through. */
+export interface ChatConnectionCheck {
+  /** The address tried (a cheap GET: the chats' history, or the chat address). */
+  url: string;
+  /** The proxies found: Windows' own for that address, and the environment's. */
+  proxies: { windows: string | null; env: string | null };
+  results: Array<{
+    transport: "curl" | "fetch";
+    /** The curl program, for curl. */
+    curl: string | null;
+    /** A proxy URL, `direct`, or null for curl's default (the environment's). */
+    proxy: string | null;
+    /** ok: answered; token: passed the firewall, the token was refused; reached: passed, another answer; blocked: the firewall refused; error: no answer. */
+    verdict: "ok" | "token" | "reached" | "blocked" | "error";
+    status: number | null;
+    detail: string;
+    ms: number;
+  }>;
 }
 
 /** The headers of a pasted cURL that Orbis keeps and sends in `ChatHttpOptions.headers` (never a cookie, a key or `Authorization`). */

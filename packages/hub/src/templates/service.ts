@@ -118,6 +118,13 @@ export function portableComputer(computer: Bot["computer"]): Bot["computer"] {
   return rest;
 }
 
+/** A template's brain without what belongs to one computer: a chat-http brain's curl program and proxy (a template never chooses a program to run). */
+function withoutMachineSettings(brain: Brain | undefined): Brain | undefined {
+  if (!brain?.chat) return brain;
+  const { curl: _c, proxy: _p, ...chat } = brain.chat;
+  return { ...brain, chat };
+}
+
 export class TemplateService {
   constructor(
     private readonly hub: HubContext,
@@ -133,7 +140,7 @@ export class TemplateService {
     // A chat-http brain's addresses are the user's private endpoint: a shared template carries none of them
     // (not the request address, nor the Origin, history address and browser headers beside it).
     const { baseUrl: _private, chat, ...withoutUrl } = kept;
-    const { origin: _o, historyUrl: _h, headers: _hd, ...sharedChat } = chat ?? {};
+    const { origin: _o, historyUrl: _h, headers: _hd, curl: _c, proxy: _p, ...sharedChat } = chat ?? {};
     const brain = bot.brain.kind === "chat-http" ? { ...withoutUrl, ...(Object.keys(sharedChat).length ? { chat: sharedChat } : {}) } : kept;
     const doc: TemplateDoc = {
       apiVersion: API_VERSION,
@@ -188,7 +195,7 @@ export class TemplateService {
       description: t.metadata.description,
       avatarColor: t.metadata.avatarColor,
       avatarShape: t.metadata.avatarShape,
-      brain: t.spec.brain,
+      brain: withoutMachineSettings(t.spec.brain),
       policy: t.spec.policy,
       computer: t.spec.computer ? portableComputer(t.spec.computer) : undefined,
       tools: t.spec.tools,

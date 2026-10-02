@@ -7,8 +7,25 @@
 // The orchestrator calls no tools of its own, so Orbis's tools travel as text:
 // the bot is told how to ask for one in a ```tool block, Orbis runs it through
 // the gateway and sends the result back as the next message.
-import { CHAT_HTTP_DEFAULT_MODEL, CHAT_HTTP_TOKEN_SECRET, cleanBearer, tokenExpiry, type Bot, type ChatHttpOptions } from "@orbis/shared";
-import { transportFor, readText, type HttpResponse, type Transport } from "./http-transport.js";
+import {
+  CHAT_HTTP_DEFAULT_MODEL,
+  CHAT_HTTP_TOKEN_SECRET,
+  cleanBearer,
+  tokenExpiry,
+  type Bot,
+  type ChatConnectionCheck,
+  type ChatHttpOptions,
+} from "@orbis/shared";
+import {
+  curlCandidates,
+  envProxy,
+  cachedWindowsProxy,
+  readText,
+  resolveTransport,
+  transportFor,
+  type ChosenTransport,
+  type HttpResponse,
+} from "./http-transport.js";
 import { renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, ToolDescriptor } from "./types.js";
 
@@ -39,15 +56,18 @@ export interface Connection {
   token: string;
   origin?: string;
   headers?: Record<string, string>;
-  transport: { name: "curl" | "fetch"; send: Transport };
+  transport: ChosenTransport;
 }
 
-const connectionOf = (token: string, options: ChatHttpOptions): Connection => ({
+const connectionWith = (token: string, options: ChatHttpOptions, transport: ChosenTransport): Connection => ({
   token,
   ...(options.origin ? { origin: options.origin } : {}),
   ...(options.headers ? { headers: options.headers } : {}),
-  transport: transportFor(options.transport),
+  transport,
 });
+
+const connectionOf = async (token: string, options: ChatHttpOptions, url: string): Promise<Connection> =>
+  connectionWith(token, options, await resolveTransport(options, url));
 
 /** The request headers: what the user's browser sent besides the token, then the token (which is never overridden). */
 export function requestHeaders(conn: Connection, accept: string, extra: Record<string, string> = {}): Record<string, string> {
@@ -87,14 +107,14 @@ export function refusal(status: number, body: string, conn: Connection): string 
     return `the server refused the request (HTTP ${status}) and the Bearer token expired at ${expires.toLocaleString()}: paste a new token (or the request's cURL) in the bot's settings.${said}`;
   }
   const names = Object.keys(conn.headers ?? {});
-  const sent = `the token${conn.origin ? ", Origin" : ""}${names.length ? `, ${names.length} browser header${names.length > 1 ? "s" : ""}` : ""}, through ${conn.transport.name}`;
+  const sent = `the token${conn.origin ? ", Origin" : ""}${names.length ? `, ${names.length} browser header${names.length > 1 ? "s" : ""}` : ""}, through ${conn.transport.label}`;
   const when = expires ? `its token is valid until ${expires.toLocaleString()}` : "its token's expiry is unknown";
   if (/cloudflare|attention required|you have been blocked|cf-ray/i.test(body)) {
     return (
       `the server's firewall (Cloudflare) blocked the request (HTTP ${status}); ${when}. Orbis sent ${sent}. ` +
       (conn.transport.name === "fetch"
         ? "Node's own HTTP client is recognised and refused: install curl (Windows 10 and later have it) and leave the bot's HTTP call on automatic. "
-        : "Paste the request's cURL again in the bot's settings so Orbis copies every browser header, and compare with the terminal where that cURL works (its proxy or VPN). ") +
+        : `${names.length ? "The browser's headers already go with it, so what it judges is the way out of this computer" : "Paste the request's cURL in the bot's settings so Orbis copies the browser's headers; then, if it is still blocked"}: press Test connection in the bot's settings (Chat API over cURL) — Orbis tries each curl here, with and without the Windows proxy, and Node, and says which one the firewall lets through. `) +
       said.trim()
     );
   }
@@ -514,6 +534,77 @@ export async function fromHistory(
   return null;
 }
 
+// --- the connection test --------------------------------------------------------------------------
+
+/**
+ * Try each way this computer has to reach the chat API — each curl, through each proxy it knows and with
+ * none, and Node's fetch — with one cheap GET (the chats' list, or the chat address; no message, no model
+ * call), and say which ones the firewall lets through.
+ */
+export async function checkConnection(
+  bot: Bot,
+  token: string,
+  deps: {
+    env?: NodeJS.ProcessEnv;
+    platform?: NodeJS.Platform;
+    systemProxy?: (url: string) => Promise<string | null>;
+    curls?: string[];
+    timeoutMs?: number;
+  } = {},
+): Promise<ChatConnectionCheck> {
+  const options = bot.brain.chat ?? {};
+  const chatUrl = bot.brain.baseUrl?.trim() ?? "";
+  const history = historyBase(chatUrl, options.historyUrl);
+  const probe = history ? `${history}?page=1&pageSize=1&sortBy=updatedAt&sortOrder=desc` : chatUrl;
+  const env = deps.env ?? process.env;
+  const platform = deps.platform ?? process.platform;
+  const windows = platform === "win32" ? await (deps.systemProxy ?? cachedWindowsProxy)(chatUrl) : null;
+  const fromEnv = envProxy(chatUrl, env);
+  const curls = [...new Set([...(options.curl?.trim() ? [options.curl.trim()] : []), ...(deps.curls ?? curlCandidates(env, platform))])].slice(0, 4);
+  const proxies = [...new Set([options.proxy?.trim(), windows, fromEnv].filter((p): p is string => !!p && p !== "direct")), "direct"];
+  const variants = [
+    ...curls.flatMap((curl) => proxies.map((proxy) => ({ transport: "curl" as const, curl, proxy }))),
+    { transport: "fetch" as const, curl: null, proxy: null },
+  ];
+  const results = await Promise.all(
+    variants.map(async (v) => {
+      const started = Date.now();
+      const conn = connectionWith(token, options, transportFor(v.transport, v.curl, v.proxy));
+      const done = (verdict: ChatConnectionCheck["results"][number]["verdict"], status: number | null, detail: string) => ({
+        ...v,
+        verdict,
+        status,
+        detail,
+        ms: Date.now() - started,
+      });
+      try {
+        const res = await conn.transport.send({
+          method: "GET",
+          url: probe,
+          headers: requestHeaders(conn, "application/json, text/plain, */*"),
+          signal: AbortSignal.timeout(deps.timeoutMs ?? 25_000),
+        });
+        const body = await readText(res, 4_000);
+        const words = bodyHint(body, token).slice(0, 160);
+        if (/cloudflare|attention required|you have been blocked|cf-ray/i.test(body) && res.status >= 400) return done("blocked", res.status, words);
+        if (res.status === 401) return done("token", res.status, words);
+        if (res.status >= 200 && res.status < 300) return done("ok", res.status, "");
+        return done("reached", res.status, words);
+      } catch (err) {
+        return done("error", null, err instanceof Error ? err.message : String(err));
+      }
+    }),
+  );
+  let shown = probe;
+  try {
+    const u = new URL(probe);
+    shown = `${u.origin}${u.pathname}`;
+  } catch {
+    /* as given */
+  }
+  return { url: shown, proxies: { windows, env: fromEnv }, results };
+}
+
 /** How long to wait before reading a history again when the answer was not saved yet. */
 export const HISTORY_RETRY_MS = 1_500;
 
@@ -547,7 +638,7 @@ export const chatHttpBrain: BrainAdapter = {
     const bot = input.bot;
     const url = bot.brain.baseUrl!.trim();
     const options = bot.brain.chat ?? {};
-    const conn = connectionOf(bareToken(ctx.secret(secretName(bot)) ?? ""), options);
+    const conn = await connectionOf(bareToken(ctx.secret(secretName(bot)) ?? ""), options, url);
     const model = bot.brain.model?.trim() || CHAT_HTTP_DEFAULT_MODEL;
     const tools = ctx.tools.list();
     const system = [renderSystem(input), tools.length ? toolProtocol(tools) : ""].filter(Boolean).join("\n\n");

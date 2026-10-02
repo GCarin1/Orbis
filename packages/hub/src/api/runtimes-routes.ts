@@ -2,11 +2,20 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
-import { CHAT_HTTP_TOKEN_SECRET, cleanBearer, tokenExpiry, type Bot, type BrainTestResult, type ChatTokenStatus } from "@orbis/shared";
+import {
+  CHAT_HTTP_TOKEN_SECRET,
+  cleanBearer,
+  tokenExpiry,
+  type Bot,
+  type BrainTestResult,
+  type ChatConnectionCheck,
+  type ChatTokenStatus,
+} from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { badRequest, conflict } from "../errors.js";
 import { localModelServers, runtimeHealth } from "../brains/health.js";
 import { brainTestBot, testBrain } from "../brains/probe.js";
+import { checkConnection } from "../brains/chat-http.js";
 import type { ClaudeAccount } from "../brains/claude-account.js";
 import type { CodexAccount } from "../brains/codex-account.js";
 import { BrainSchema, IdParams } from "./schemas.js";
@@ -60,6 +69,23 @@ export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubConte
     const token = cleanBearer(secretResolvers.resolve(bot.id, bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET) ?? "");
     const expires = token ? tokenExpiry(token) : null;
     return { saved: token !== "", expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now() };
+  });
+
+  // A chat-http bot: which ways out of this computer reach its chat API past the firewall (no message is sent).
+  app.post("/api/v1/bots/:id/chat-check", { schema: { tags: ["runtimes"], params: IdParams } }, async (req): Promise<ChatConnectionCheck> => {
+    const bot = botService.get(req.params.id);
+    if (bot.brain.kind !== "chat-http" || !bot.brain.baseUrl?.trim())
+      throw badRequest("this bot does not use a chat API over cURL", { brain: "chat-http with an address" });
+    const token = cleanBearer(secretResolvers.resolve(bot.id, bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET) ?? "");
+    if (!token) throw badRequest("no Bearer token is saved for this bot", { token: "required" });
+    const key = `check:${bot.id}`;
+    if (running.has(key)) throw conflict("test_running", "a connection test of this bot is already running");
+    running.add(key);
+    try {
+      return await checkConnection(bot, token);
+    } finally {
+      running.delete(key);
+    }
   });
 
   app.get("/api/v1/runtimes/health", { schema: { tags: ["runtimes"] } }, async () => runtimeHealth());

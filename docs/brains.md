@@ -287,11 +287,25 @@ the token, the agent, the model and the `Origin` are read from it.
     API key or `Authorization`) and sends them with every request to the chat
     API: the message, the history and the title.
 
+  - **The way out of the computer.** A company firewall may let through only
+    what comes from the company's proxy — the one the browser and Postman use,
+    set in Windows (often by a PAC script). curl ignores it, so Orbis asks
+    Windows which proxy it would use for the chat's address and gives it to
+    curl, signing in to it as the logged-in user (`--proxy-user :`, NTLM or
+    Kerberos). `HTTPS_PROXY`, when set, comes first. In **Advanced** you can
+    name the **curl program** (say, Git Bash's) and the **proxy** (`direct` for
+    none).
+
+  **Test connection** (in the bot's settings) tries every way at once — each
+  curl on the computer (the one on PATH, Windows' own, Git's), through each
+  proxy it knows and with none, and Node — with a GET of the chats' list (no
+  message, no model call), and shows which ones the firewall let through; **Use
+  this way** fills the settings with one of them (`POST /api/v1/bots/<id>/chat-check`).
+
   The run's error says what the server answered, whether it was the firewall,
-  what Orbis sent and through which program. A `401`, or a `403` after the
-  token's expiry, is the token: paste a new one. If the same cURL works in your
-  terminal and Orbis is still blocked, compare the proxy or VPN of that
-  terminal with the one Orbis runs under.
+  what Orbis sent and which way it went. A `401`, or a `403` after the token's
+  expiry, is the token: paste a new one. A template never carries the curl
+  program or the proxy, and an imported one cannot set them.
 - A bot's template export leaves out every address of this brain (the request
   address, `Origin`, the history address and the browser headers).
 - A chat the bot opens gets a title, as the browser gives one:

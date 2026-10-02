@@ -9,6 +9,7 @@ import {
   type AvatarShape,
   type Bot,
   type BrainKind,
+  type ChatConnectionCheck,
   type ChatTokenStatus,
   type ComputerProviderKind,
   type PolicyDecision,
@@ -250,7 +251,10 @@ export function BotSettings({
               <input value={command} onChange={(e) => setCommand(e.target.value)} name="settings-command" />
             </label>
           )}
-          {kind === "chat-http" && <ChatHttpFields value={chat} onChange={setChat} hasToken={hasToken} tokenStatus={tokenStatus} name="settings-chat" />}
+          {kind === "chat-http" && <ChatHttpFields value={chat} onChange={setChat} hasToken={hasToken}
+              tokenStatus={tokenStatus}
+              onCheck={api ? () => api.post<ChatConnectionCheck>(`/api/v1/bots/${bot.id}/chat-check`, {}) : undefined}
+              name="settings-chat" />}
           {takesBaseUrl(kind) && (
             <>
               <label>

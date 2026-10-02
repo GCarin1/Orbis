@@ -6,7 +6,17 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { curlTransport, fetchTransport, findCurl, parseHead, readText, transportFor, TransportError } from "../../src/brains/http-transport.js";
+import {
+  curlCandidates,
+  curlTransport,
+  envProxy,
+  fetchTransport,
+  findCurl,
+  parseHead,
+  readText,
+  transportFor,
+  TransportError,
+} from "../../src/brains/http-transport.js";
 
 let server: Server | null = null;
 const dirs: string[] = [];
@@ -85,6 +95,29 @@ process.stdin.on("end", () => {
     expect(leftovers().length).toBe(before); // the header file (with the token) did not stay behind
   });
 
+  it("goes through the proxy it is given, signing in as the Windows user, or through none", async () => {
+    const fake = fakeCurl("HTTP/1.1 200 OK\r\ncontent-type: text/plain\r\n\r\nok");
+    const get = (proxy: string | null) =>
+      curlTransport(fake.file, { proxy })({ method: "GET", url: "https://a.example/", headers: {}, signal: new AbortController().signal }).then(readText);
+    await get("http://proxy.company.example:8080");
+    const args = fake.record().args;
+    expect(args.slice(args.indexOf("--proxy"), args.indexOf("--proxy") + 7)).toEqual([
+      "--proxy",
+      "http://proxy.company.example:8080",
+      "--proxy-anyauth",
+      "--proxy-user",
+      ":",
+      "--noproxy",
+      "",
+    ]);
+    await get("direct");
+    expect(fake.record().args).toEqual(expect.arrayContaining(["--noproxy", "*"]));
+    expect(fake.record().args).not.toContain("--proxy");
+    await get(null); // the environment's, which curl reads itself
+    expect(fake.record().args).not.toContain("--proxy");
+    expect(fake.record().args).not.toContain("--noproxy");
+  });
+
   it("sends a JSON body as it is, and a GET with none", async () => {
     const fake = fakeCurl("HTTP/1.1 200 OK\r\ncontent-type: application/json\r\n\r\n{}");
     await readText(
@@ -161,6 +194,20 @@ describe("the real curl and Node's fetch against a server", () => {
       expect(missing.status).toBe(404);
       await readText(missing);
     }
+  });
+
+  it("finds Windows' curl and Git's beside the one on PATH, once each", () => {
+    const env = { PATH: "", SystemRoot: "C:\\Windows", ProgramFiles: "C:\\Program Files", LOCALAPPDATA: "C:\\Users\\x\\AppData\\Local" };
+    const there = new Set(["C:\\Windows\\System32\\curl.exe", "C:\\Program Files\\Git\\mingw64\\bin\\curl.exe"]);
+    expect(curlCandidates(env, "win32", (f) => there.has(f))).toEqual(["C:\\Windows\\System32\\curl.exe", "C:\\Program Files\\Git\\mingw64\\bin\\curl.exe"]);
+    expect(curlCandidates({ PATH: "" }, "linux", () => true)).toEqual([]);
+  });
+
+  it("reads the environment's proxy for the address's scheme", () => {
+    expect(envProxy("https://a.example/", { HTTPS_PROXY: "http://p:1" })).toBe("http://p:1");
+    expect(envProxy("https://a.example/", { http_proxy: "http://p:2" })).toBeNull();
+    expect(envProxy("http://a.example/", { http_proxy: "http://p:2" })).toBe("http://p:2");
+    expect(envProxy("https://a.example/", { ALL_PROXY: "socks5h://p:3" })).toBe("socks5h://p:3");
   });
 
   it("chooses curl when it is installed, Node's fetch when it is not or when asked", () => {

@@ -32,6 +32,9 @@ export const BrainSchema = Type.Object(
             }),
           ),
           transport: Type.Optional(Type.Union([Type.Literal("curl"), Type.Literal("fetch")])),
+          // A curl program (its name must be curl or curl.exe) and a proxy URL or "direct".
+          curl: Type.Optional(Type.String({ maxLength: 1000, pattern: "(^|[\\\\/])curl(\\.exe)?$" })),
+          proxy: Type.Optional(Type.String({ maxLength: 500, pattern: "^(direct|(https?|socks5h?)://[^\\s]+)$" })),
         },
         { additionalProperties: false },
       ),

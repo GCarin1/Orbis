@@ -5,8 +5,8 @@
 // Node's own `fetch` with HTTP 403 ("Sorry, you have been blocked"): the firewall looks at how the
 // client speaks (HTTP/2, the TLS handshake, the header set) and Node does not look like a browser.
 // `curl` is what the owner's "Copy as cURL" runs, so the brain calls it by default.
-import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execFile, spawn } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { resolveExecutable } from "./process.js";
@@ -97,7 +97,7 @@ export function parseHead(buffer: Buffer): { status: number; contentType: string
  * not on the command line, where any program on the machine could read them; the body goes on stdin.
  * HTTP/2, the TLS stack and the system's certificate store and proxy settings are curl's own.
  */
-export function curlTransport(curl: string): Transport {
+export function curlTransport(curl: string, opts: { proxy?: string | null } = {}): Transport {
   return async (req) => {
     const dir = mkdtempSync(path.join(tmpdir(), "orbis-curl-"));
     const cleanup = () => rmSync(dir, { recursive: true, force: true });
@@ -110,6 +110,10 @@ export function curlTransport(curl: string): Transport {
       { mode: 0o600 },
     );
     const args = ["-q", "--silent", "--show-error", "--no-buffer", "--include", "--proto", "=http,https", "-H", `@${headerFile}`, "-H", "Expect:"];
+    // A proxy named here wins over the environment's, NO_PROXY included; `direct` uses none. With a proxy,
+    // `--proxy-user :` lets a Windows curl sign in to it as the logged-in user (NTLM or Kerberos), as browsers do.
+    if (opts.proxy === "direct") args.push("--noproxy", "*");
+    else if (opts.proxy) args.push("--proxy", opts.proxy, "--proxy-anyauth", "--proxy-user", ":", "--noproxy", "");
     if (req.form) args.push("-F", `${req.form.name}=<-`);
     else if (req.json !== undefined) args.push("--data-binary", "@-");
     args.push("--url", req.url);
@@ -178,8 +182,111 @@ export function curlTransport(curl: string): Transport {
   };
 }
 
-/** The transport a brain's settings ask for: curl when it is installed (unless `fetch` is asked for), else Node's fetch. */
-export function transportFor(choice: "curl" | "fetch" | undefined, curl: string | null = findCurl()): { name: "curl" | "fetch"; send: Transport } {
-  if (choice !== "fetch" && curl) return { name: "curl", send: curlTransport(curl) };
-  return { name: "fetch", send: fetchTransport };
+// --- proxies --------------------------------------------------------------------------------------
+
+/** The proxy the environment gives curl for `url` (HTTPS_PROXY, ALL_PROXY…), or null. */
+export function envProxy(url: string, env: NodeJS.ProcessEnv = process.env): string | null {
+  const https = url.toLowerCase().startsWith("https:");
+  const names = https ? ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"] : ["http_proxy", "HTTP_PROXY", "ALL_PROXY", "all_proxy"];
+  for (const name of names) if (env[name]?.trim()) return env[name]!.trim();
+  return null;
+}
+
+const runPowerShell = (script: string) =>
+  new Promise<string>((resolve) =>
+    execFile(
+      "powershell",
+      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+      { timeout: 20_000, windowsHide: true },
+      (_err, stdout) => resolve(String(stdout ?? "")),
+    ),
+  );
+
+/**
+ * The proxy Windows uses for `url` — its Internet settings, a PAC script included, as the browser and
+ * Postman see them — or null for a direct connection. Programs such as curl and Node ignore it, and a
+ * company firewall may let through only what comes from its proxy.
+ */
+export async function windowsProxy(url: string, run: (script: string) => Promise<string> = runPowerShell): Promise<string | null> {
+  let target: string;
+  try {
+    const u = new URL(url);
+    target = `${u.origin}${u.pathname}`;
+  } catch {
+    return null;
+  }
+  const quoted = target.replace(/'/g, "''");
+  const out = await run(
+    `$u = [Uri]'${quoted}'; $r = [System.Net.WebRequest]::GetSystemWebProxy().GetProxy($u); if ($r -and $r.AbsoluteUri -ne $u.AbsoluteUri) { $r.AbsoluteUri } else { 'DIRECT' }`,
+  ).catch(() => "");
+  const line = out.trim().split(/\r?\n/).at(-1)?.trim() ?? "";
+  return /^(https?|socks5h?):\/\//i.test(line) ? line.replace(/\/$/, "") : null;
+}
+
+const windowsProxies = new Map<string, Promise<string | null>>();
+/** `windowsProxy`, asked once per address while the hub runs (PowerShell takes a moment to start). */
+export function cachedWindowsProxy(url: string): Promise<string | null> {
+  let key = url;
+  try {
+    key = new URL(url).origin;
+  } catch {
+    /* the address as given */
+  }
+  if (!windowsProxies.has(key)) windowsProxies.set(key, windowsProxy(url));
+  return windowsProxies.get(key)!;
+}
+
+/** The curl programs on this computer: the one on PATH, Windows' own, and Git for Windows'. */
+export function curlCandidates(env: NodeJS.ProcessEnv = process.env, platform = process.platform, exists = existsSync): string[] {
+  const found = [findCurl(env.PATH ?? "")];
+  if (platform === "win32") {
+    const win = path.win32;
+    if (env.SystemRoot) found.push(win.join(env.SystemRoot, "System32", "curl.exe"));
+    for (const base of [env.ProgramFiles, env["ProgramFiles(x86)"], env.LOCALAPPDATA && win.join(env.LOCALAPPDATA, "Programs")]) {
+      if (base) found.push(win.join(base, "Git", "mingw64", "bin", "curl.exe"));
+    }
+  }
+  const seen = new Set<string>();
+  return found.filter((file): file is string => {
+    if (!file || !exists(file)) return false;
+    const key = platform === "win32" ? file.toLowerCase() : file;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// --- choosing ---------------------------------------------------------------------------------------
+
+export interface ChosenTransport {
+  name: "curl" | "fetch";
+  /** How it goes, for messages: "curl", "curl via the proxy http://…", "curl with no proxy", "fetch". */
+  label: string;
+  send: Transport;
+}
+
+/** A transport: curl (a given program and proxy) when there is a curl and `fetch` is not asked for, else Node's fetch. */
+export function transportFor(choice: "curl" | "fetch" | undefined, curl: string | null = findCurl(), proxy?: string | null): ChosenTransport {
+  if (choice !== "fetch" && curl) {
+    const label = proxy === "direct" ? "curl with no proxy" : proxy ? `curl via the proxy ${proxy}` : "curl";
+    return { name: "curl", label, send: curlTransport(curl, { proxy: proxy ?? null }) };
+  }
+  return { name: "fetch", label: "fetch", send: fetchTransport };
+}
+
+/**
+ * The transport for a chat API at `url` from the bot's settings: its curl (or the one on PATH), and its
+ * proxy — the one named, else the environment's (curl reads it itself), else Windows' own.
+ */
+export async function resolveTransport(
+  options: { transport?: "curl" | "fetch"; curl?: string; proxy?: string },
+  url: string,
+  deps: { env?: NodeJS.ProcessEnv; platform?: NodeJS.Platform; systemProxy?: (url: string) => Promise<string | null>; curl?: string | null } = {},
+): Promise<ChosenTransport> {
+  const env = deps.env ?? process.env;
+  const curl = options.curl?.trim() || (deps.curl !== undefined ? deps.curl : findCurl(env.PATH ?? ""));
+  if (options.transport === "fetch" || !curl) return transportFor("fetch", null);
+  let proxy: string | null = options.proxy?.trim() || null;
+  if (!proxy && !envProxy(url, env) && (deps.platform ?? process.platform) === "win32") proxy = await (deps.systemProxy ?? cachedWindowsProxy)(url);
+  return transportFor("curl", curl, proxy);
 }

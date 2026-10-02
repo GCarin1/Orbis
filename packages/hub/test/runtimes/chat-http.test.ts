@@ -2,10 +2,10 @@
 // chat orchestrator over HTTPS with a Bearer token, replayed by a fake server.
 // The address and token here are made up; Orbis's code holds neither.
 import { afterEach, describe, expect, it } from "vitest";
-import { createServer, type IncomingHttpHeaders, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { createServer, request as httpRequest, type IncomingHttpHeaders, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { browserHeaders, cleanBearer, parseCurl, shellWords, tokenExpiry } from "@orbis/shared";
-import { transportFor } from "../../src/brains/http-transport.js";
+import { resolveTransport, transportFor, windowsProxy } from "../../src/brains/http-transport.js";
 import {
   AnswerReader,
   answerAfter,
@@ -14,6 +14,7 @@ import {
   eventText,
   historyBase,
   historyMessages,
+  checkConnection,
   refusal,
   stripFollowUps,
   requestHeaders,
@@ -57,7 +58,7 @@ async function dataField(req: IncomingMessage): Promise<Seen["data"]> {
 let titleStatus = 200;
 
 /** A fake orchestrator: `answer` writes each response; `history` answers GETs (else 404); every POST is recorded. */
-async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number) => void, history?: (path: string) => unknown) {
+async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number) => void, history?: (path: string, headers: IncomingHttpHeaders) => unknown) {
   const seen: Seen[] = [];
   const reads: string[] = [];
   const readHeaders: IncomingHttpHeaders[] = [];
@@ -73,7 +74,13 @@ async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number)
     if (req.method === "GET") {
       reads.push(req.url ?? "");
       readHeaders.push(req.headers);
-      const doc = history?.(req.url ?? "");
+      const doc = history?.(req.url ?? "", req.headers);
+      // A test can answer like a firewall: { status, html }.
+      if (doc && typeof doc === "object" && "html" in doc) {
+        const page = doc as { status: number; html: string };
+        res.writeHead(page.status, { "content-type": "text/html" });
+        return res.end(page.html);
+      }
       res.writeHead(doc === undefined ? 404 : 200, { "content-type": "application/json" });
       return res.end(doc === undefined ? "{}" : JSON.stringify(doc));
     }
@@ -627,7 +634,9 @@ describe("a refused request (HTTP 403 or 401)", () => {
     const viaCurl = refusal(403, page, { ...conn, origin: "https://chat.example.com", headers: { "user-agent": "Mozilla/5.0" } });
     expect(viaCurl).toContain("firewall (Cloudflare) blocked the request (HTTP 403)");
     expect(viaCurl).toContain("through curl");
-    expect(viaCurl).toContain("Paste the request's cURL again");
+    expect(viaCurl).toContain("The browser's headers already go with it");
+    expect(viaCurl).toContain("press Test connection");
+    expect(refusal(403, page, conn)).toContain("Paste the request's cURL in the bot's settings so Orbis copies the browser's headers");
     expect(viaCurl).toContain("Sorry, you have been blocked");
     const viaNode = refusal(403, page, { ...conn, transport: transportFor("fetch", null) });
     expect(viaNode).toContain("through fetch");
@@ -824,5 +833,145 @@ describe("a firewall that wants the browser's headers (change 0035)", () => {
       ].join("\n"),
     );
     expect(browserHeaders(parsed.headers)).toEqual({ "user-agent": "Mozilla/5.0", "sec-ch-ua": '"Chromium";v="154"', "sec-fetch-mode": "cors" });
+  });
+});
+
+describe("a firewall that lets through only what comes from the company's proxy (change 0037)", () => {
+  /** A forward proxy, like a company's: it passes each request on and marks it. */
+  let proxy: Server | null = null;
+  afterEach(async () => {
+    await new Promise<void>((r) => (proxy ? proxy.close(() => r()) : r()));
+    proxy = null;
+  });
+  const startProxy = async () => {
+    proxy = createServer((req, res) => {
+      const target = new URL(req.url!);
+      const out = httpRequest(
+        {
+          host: target.hostname,
+          port: target.port,
+          path: `${target.pathname}${target.search}`,
+          method: req.method,
+          headers: { ...req.headers, "x-via-company-proxy": "yes" },
+        },
+        (answer) => {
+          res.writeHead(answer.statusCode ?? 502, answer.headers);
+          answer.pipe(res);
+        },
+      );
+      req.pipe(out);
+    });
+    await new Promise<void>((r) => proxy!.listen(0, "127.0.0.1", () => r()));
+    return `http://127.0.0.1:${(proxy!.address() as AddressInfo).port}`;
+  };
+  /** The firewall: only requests that came through the proxy pass. */
+  const firewall = (s: Seen, res: ServerResponse) => {
+    if (s.headers["x-via-company-proxy"] !== "yes") {
+      res.writeHead(403, { "content-type": "text/html" });
+      return res.end("<html><title>Attention Required! | Cloudflare</title><body>Sorry, you have been blocked.</body></html>");
+    }
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    res.end('data: {"delta":"pelo proxy"}\n\ndata: {"chatId":"c-px"}\n\n');
+  };
+  const history = (path: string, headers: IncomingHttpHeaders) =>
+    headers["x-via-company-proxy"] !== "yes"
+      ? { status: 403, html: "<html><title>Attention Required! | Cloudflare</title><body>Sorry, you have been blocked.</body></html>" }
+      : path.includes("pageSize=1")
+        ? { data: { chats: [] } }
+        : undefined;
+
+  it("is passed through the proxy the bot names, and refused without it", async () => {
+    const fake = await orchestrator(firewall);
+    const via = await startProxy();
+    t = await testHub();
+    const direct = await chatBot(t, fake.url, { chat: { titles: false, proxy: "direct" } });
+    const refused = (await chat(t, direct.id, "oi")).runs[0];
+    expect(refused.error).toContain("firewall (Cloudflare) blocked the request");
+    expect(refused.error).toContain("through curl with no proxy");
+    expect(refused.error).toContain("press Test connection");
+    const proxied = await chatBot(t, fake.url, { chat: { titles: false, proxy: via } });
+    expect((await chat(t, proxied.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "pelo proxy" });
+  });
+
+  it("uses the Windows proxy when the bot names none, and leaves the environment's to curl", async () => {
+    const asked: string[] = [];
+    const systemProxy = async (url: string) => (asked.push(url), "http://proxy.company.example:8080");
+    const win = await resolveTransport({}, "https://chat.example.com/v1/chat", { env: {}, platform: "win32", systemProxy, curl: "/usr/bin/curl" });
+    expect(win.label).toBe("curl via the proxy http://proxy.company.example:8080");
+    expect(asked).toEqual(["https://chat.example.com/v1/chat"]);
+    const fromEnv = await resolveTransport({}, "https://chat.example.com/v1/chat", {
+      env: { HTTPS_PROXY: "http://env-proxy:3128" },
+      platform: "win32",
+      systemProxy,
+      curl: "/usr/bin/curl",
+    });
+    expect(fromEnv.label).toBe("curl"); // curl reads HTTPS_PROXY itself
+    expect(
+      (await resolveTransport({ proxy: "direct" }, "https://chat.example.com/v1/chat", { env: {}, platform: "win32", systemProxy, curl: "/usr/bin/curl" }))
+        .label,
+    ).toBe("curl with no proxy");
+    expect((await resolveTransport({}, "https://chat.example.com/v1/chat", { env: {}, platform: "linux", systemProxy, curl: "/usr/bin/curl" })).label).toBe(
+      "curl",
+    );
+    expect(
+      (await resolveTransport({ transport: "fetch" }, "https://chat.example.com/v1/chat", { env: {}, platform: "win32", systemProxy, curl: "/usr/bin/curl" }))
+        .label,
+    ).toBe("fetch");
+    expect(asked).toHaveLength(1);
+  });
+
+  it("tests every way out and says which one the firewall lets through, sending no message", async () => {
+    const fake = await orchestrator(firewall, history);
+    const via = await startProxy();
+    t = await testHub();
+    const bot = await chatBot(t, fake.url, { chat: { titles: false } });
+    const found = await checkConnection({ ...bot, brain: { ...bot.brain, chat: { proxy: via } } }, FRESH, {
+      env: { PATH: process.env.PATH },
+      platform: "linux",
+    });
+    expect(found.proxies).toEqual({ windows: null, env: null });
+    expect(found.url).toMatch(/\/internal\/v1\/history\/chats$/);
+    const byWay = Object.fromEntries(found.results.map((r) => [`${r.transport}:${r.proxy ?? "default"}`, r.verdict]));
+    expect(byWay).toMatchObject({ [`curl:${via}`]: "ok", "curl:direct": "blocked", "fetch:default": "blocked" });
+    expect(fake.seen).toHaveLength(0); // no message was posted to the chat
+    // From the hub's API, for the bot as saved.
+    await t.api("PATCH", `/api/v1/bots/${bot.id}`, { brain: { ...bot.brain, chat: { titles: false, proxy: via } } });
+    const res = await t.api("POST", `/api/v1/bots/${bot.id}/chat-check`);
+    expect(res.status).toBe(200);
+    expect(res.body.results.find((r: { proxy: string | null; transport: string }) => r.transport === "curl" && r.proxy === via).verdict).toBe("ok");
+    expect(JSON.stringify(res.body)).not.toContain(FRESH);
+  });
+
+  it("finds the Windows proxy for an address from what PowerShell says, and nothing for a direct one", async () => {
+    let script = "";
+    const run = async (s: string) => ((script = s), "http://proxy.company.example:8080/\r\n");
+    expect(await windowsProxy("https://chat.example.com/v1/chat?x=1", run)).toBe("http://proxy.company.example:8080");
+    expect(script).toContain("[Uri]'https://chat.example.com/v1/chat'"); // no query string
+    expect(script).toContain("GetSystemWebProxy()");
+    expect(await windowsProxy("https://chat.example.com/", async () => "DIRECT\r\n")).toBeNull();
+    expect(await windowsProxy("https://chat.example.com/", async () => "")).toBeNull();
+    expect(await windowsProxy("https://chat.example.com/it's", async (s) => ((script = s), "DIRECT"))).toBeNull();
+    expect(script).toContain("it''s"); // a quote in the address cannot end PowerShell's string
+  });
+
+  it("keeps the curl program and the proxy out of a template, both ways", async () => {
+    t = await testHub();
+    const bot = await createBot(t, {
+      name: "Ana",
+      brain: {
+        kind: "chat-http",
+        baseUrl: "https://chat.example.com/v1/chat",
+        chat: { agentId: "agente-x", curl: "/usr/bin/curl", proxy: "http://proxy.company.example:8080" },
+      },
+    });
+    const yaml = (await t.api("GET", `/api/v1/bots/${bot.id}/export`)).body as string;
+    expect(yaml).not.toContain("proxy");
+    expect(yaml).not.toContain("/usr/bin/curl");
+    const planted = yaml.replace("agentId: agente-x", "agentId: agente-x\n      curl: /tmp/evil/curl\n      proxy: http://attacker.example:1");
+    expect(planted).toContain("/tmp/evil/curl");
+    const imported = (await t.api("POST", "/api/v1/bots/import", { yaml: planted })).body;
+    expect(imported.brain.chat).toEqual({ agentId: "agente-x" });
+    // And the API refuses a program that is not curl.
+    expect((await t.api("POST", "/api/v1/bots", { name: "Bia", brain: { kind: "chat-http", chat: { curl: "C:\\\\x\\\\evil.exe" } } })).status).toBe(400);
   });
 });

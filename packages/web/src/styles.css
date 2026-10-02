@@ -2505,3 +2505,26 @@ label.check {
 .chat-http-fields details[open] summary {
   margin-bottom: 6px;
 }
+.chat-check {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-check-results {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.chat-check-results li.ok {
+  color: #15803d;
+}
+.chat-check-results li.failed {
+  color: var(--muted);
+}
+.chat-check-results code {
+  word-break: break-all;
+}
