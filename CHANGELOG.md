@@ -9,6 +9,10 @@ change that delivered it.
 
 ### Fixed
 
+- Audit cycle 1 (change 0023-audit-cycle-1-routines-and-usage): a routine
+  scheduled faster than its work skips a turn instead of piling runs up; a
+  routine run cut by a restart shows how it ended; Codex token counts of
+  its older output are no longer added up cumulatively.
 - Chat and bot deep audit (change 0022-chat-and-bot-deep-audit; see the
   second round of `docs/bot-behaviour-audit.md`):
   - **Claude Code, Codex, Gemini and Cursor no longer stopped mid-approval**:

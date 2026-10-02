@@ -74,6 +74,15 @@ finding is a regression test in `packages/hub/test/chat-audit.test.ts` or
 | 24 | A failed run could only be retyped | After fixing a bot's brain the user had to resend | **Try again** on the failure line |
 | 25 | The chat jumped to the bottom on every new item, showed 200 items only, dropped send errors | Lost place while reading; no older messages; a failed send said nothing | Keeps your place with a "new below" button; **Load earlier messages**; the error shows and the text stays |
 
+## Audit cycles
+
+After the deep audit, five cycles of audit and fix, each one a Doctrina
+change with its own regression tests (`packages/hub/test/audit-cycleN.test.ts`).
+
+| Cycle | Area read | Findings fixed |
+|---|---|---|
+| 1 (0023) | Routines, skills, secret requests, spend caps, handoff edge cases | A cron routine faster than its work piled runs up in the queue (now a turn is skipped, with one `routine.skipped` event); a routine run cut by a restart showed as running forever; Codex's older event shape had its cumulative token totals added whole |
+
 ## Settings
 
 | Variable | Default | Effect |

@@ -6,7 +6,7 @@
 **Realizes:** SC8
 **Depends on:** agent-runtimes, bots
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -33,6 +33,7 @@ covered by the subscription, so the user sees what the subscription saves.
 ### Unwanted-behavior (must-not)
 
 - The system shall not count subscription-covered cost toward the spend cap unless the bot's configuration sets `capIncludesSubscription` to true.
+- The system shall not add up a brain's cumulative token totals as if each were new usage; it shall count what each report adds.
 
 ## Acceptance criteria
 
@@ -40,6 +41,7 @@ covered by the subscription, so the user sees what the subscription saves.
 2. [verified] A bot at its cap has its next run refused with a blocked state and an event, and a run that crosses the cap stops after the current step — verified by `packages/hub/test/usage.test.ts`.
 3. [verified] Subscription-covered cost is flagged and left out of the cap by default — verified by `packages/hub/test/usage.test.ts`.
 4. [verified] API usage is priced from the shipped table, a model with no price costs zero, and `prices.json` adds and overrides prices — verified by `packages/hub/test/usage.test.ts`.
+5. [verified] Two cumulative Codex token reports of 100 then 250 input tokens count 100 and 150 — verified by `packages/hub/test/audit-cycle1.test.ts`.
 
 ## Maturity
 

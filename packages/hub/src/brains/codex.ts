@@ -48,6 +48,8 @@ export interface CodexState {
   lastMessage: string | null;
   finished: boolean;
   failed: string | null;
+  /** The last cumulative token totals of the older `msg` event shape. */
+  usageSeen?: { input: number; output: number; cached: number };
 }
 
 /** Map one Codex JSONL event (current `item.*` shape, or the older `msg` shape) to normalized events. */
@@ -75,8 +77,12 @@ export function mapCodexEvent(obj: Json, state: CodexState): BrainEvent[] {
         break;
       case "token_count":
         if (msg.info?.total_token_usage) {
+          // The totals are cumulative for the session: report what this event adds.
           const u = msg.info.total_token_usage;
-          out.push({ type: "run.usage", inputTokens: Number(u.input_tokens ?? 0), outputTokens: Number(u.output_tokens ?? 0), cachedTokens: Number(u.cached_input_tokens ?? 0), costUsd: 0, subscription: true });
+          const seen = state.usageSeen ?? { input: 0, output: 0, cached: 0 };
+          const now = { input: Number(u.input_tokens ?? 0), output: Number(u.output_tokens ?? 0), cached: Number(u.cached_input_tokens ?? 0) };
+          state.usageSeen = now;
+          out.push({ type: "run.usage", inputTokens: Math.max(0, now.input - seen.input), outputTokens: Math.max(0, now.output - seen.output), cachedTokens: Math.max(0, now.cached - seen.cached), costUsd: 0, subscription: true });
         }
         break;
       case "task_complete":

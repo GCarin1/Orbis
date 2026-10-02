@@ -63,6 +63,8 @@ export class RoutineService {
   /** Routine runs in flight: their mode decides whether external tools act. */
   private readonly active = new Map<string, { routineId: string; name: string; mode: RoutineApproval }>();
   private timer: NodeJS.Timeout | null = null;
+  /** Per routine: the still-running run a turn was last skipped for (one event per run). */
+  private readonly skipped = new Map<string, string>();
   private lastActivityWrite = 0;
 
   constructor(
@@ -73,6 +75,14 @@ export class RoutineService {
     this.repo = new RoutinesRepo(hub.db);
     if (!this.repo.setting(ACTIVITY_KEY)) this.repo.setSetting(ACTIVITY_KEY, this.now().toISOString());
     for (const row of this.repo.listAll()) this.schedule(row);
+    // A routine run whose run ended while no hub watched it (a restart closes those runs): record how it ended.
+    for (const open of this.repo.openRuns()) {
+      if (!open.runId) continue;
+      const run = hub.repos.runs.get(open.runId);
+      if (!run || ["done", "failed", "cancelled"].includes(run.status)) {
+        this.repo.finishRun(open.runId, run?.status ?? "failed", run ? (run.status === "done" ? (run.reply ?? "").slice(0, 200) || null : run.error) : "the run is gone");
+      }
+    }
   }
 
   // --- reading -------------------------------------------------------------------
@@ -248,8 +258,19 @@ export class RoutineService {
         this.next.delete(id);
         continue;
       }
-      this.fire(row);
-      fired.push(id);
+      // One run at a time: a schedule faster than the bot's work does not pile runs up.
+      const last = this.repo.lastRun(id);
+      const busy = last && !last.test && last.runId ? this.hub.repos.runs.get(last.runId) : undefined;
+      if (busy && ["queued", "running", "waiting"].includes(busy.status)) {
+        if (this.skipped.get(id) !== busy.id) {
+          this.skipped.set(id, busy.id);
+          const conversation = this.hub.conversationService.directFor(row.botId);
+          this.hub.timeline.event(conversation.id, "routine.skipped", `Routine "${row.name}" skipped its turn: its previous run is still going.`, { routineId: id, runId: busy.id });
+        }
+      } else {
+        this.fire(row);
+        fired.push(id);
+      }
       const after = nextFire(row.trigger, new Date(Math.max(now.getTime(), at) + 1000));
       if (after) this.next.set(id, after.getTime());
       else this.next.delete(id);

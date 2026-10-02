@@ -6,7 +6,7 @@
 **Realizes:** SC6
 **Depends on:** agent-runtimes, approvals, bots
 **Last updated:** 2026-09-27
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 ## Purpose
 
@@ -32,6 +32,7 @@ enough that nobody would read the results.
 - When a user requests a test run, the system shall run the routine once in `draft_only` mode and record it as a test run.
 - When the user has shown no activity for ORBIS_ABSENCE_PAUSE_DAYS days (default 14), the system shall pause every scheduled routine and post a routine card saying so.
 - When the user enables a routine, the system shall clear its absence pause and compute its next fire time from the current time.
+- When the hub starts, the system shall record the outcome of each routine run whose run ended while the hub was down.
 
 ### Unwanted-behavior (must-not)
 
@@ -39,6 +40,7 @@ enough that nobody would read the results.
 - The system shall not start a run for a webhook request whose signature is missing or does not match.
 - The system shall not create a 51st routine for a bot.
 - The system shall not catch up on fire times that passed while the hub was stopped.
+- The system shall not start a scheduled run of a routine while its previous scheduled run is queued, running or waiting; it shall post one `routine.skipped` event per such run instead.
 
 ## Acceptance criteria
 
@@ -47,6 +49,7 @@ enough that nobody would read the results.
 3. [verified] A webhook with a valid `X-Orbis-Signature` or `X-Hub-Signature-256` starts a run with the payload wrapped as untrusted content, and a bad signature answers 401 and starts nothing — verified by `packages/hub/test/routines.test.ts`.
 4. [verified] Enabling a routine with no successful test run answers 409 unless `force` is set — verified by `packages/hub/test/routines.test.ts`.
 5. [verified] After the absence period, scheduled routines are paused and a routine card is posted — verified by `packages/hub/test/routines.test.ts`.
+6. [verified] A routine scheduled every minute whose run takes longer skips its next turns with a single `routine.skipped` event and fires again once the run ended; a routine run cut by a restart reads failed with the reason — verified by `packages/hub/test/audit-cycle1.test.ts`.
 
 ## Maturity
 

@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.14.0
+**Version:** 0.14.1
 
 ## Purpose
 
@@ -59,7 +59,7 @@ run's steps.
 
 - If neither the browser nor the hub can transcribe, or the microphone is blocked, the web app shall not record, and shall say how to fix it instead.
 - The web app shall not save "My computer" for a bot that did not have it until the user ticks the consent that says what the bot will be able to do.
-- The web app shall not clear a message that could not be sent; it shall say why under the composer, and it shall not send on the Enter that confirms an accent or an input-method candidate.
+- The web app shall not clear a message the hub did not accept; it shall say why under the composer, and it shall not send on the Enter that confirms an accent or an input-method candidate.
 
 ## Acceptance criteria
 

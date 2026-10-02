@@ -135,6 +135,11 @@ export class RoutinesRepo {
     return row ? toRun(row) : undefined;
   }
 
+  /** Routine runs not recorded as ended (their run may have ended while the hub was down). */
+  openRuns(): RoutineRun[] {
+    return all(this.db, "SELECT * FROM routine_runs WHERE status NOT IN ('done', 'failed', 'cancelled')").map(toRun);
+  }
+
   runs(routineId: string): RoutineRun[] {
     return all(this.db, "SELECT * FROM routine_runs WHERE routine_id = ? ORDER BY started_at DESC, rowid DESC", routineId).map(toRun);
   }
