@@ -1,6 +1,7 @@
 # Change 0037-chat-http-proxy-and-connection-test — chat-http proxy and connection test
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: fix)

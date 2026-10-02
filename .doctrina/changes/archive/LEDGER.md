@@ -39,3 +39,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0034-windows-launcher-scripts — windows launcher scripts (specs: cli MODIFIED)
 - 2026-10-02 — 0035-chat-http-curl-transport — chat-http curl transport (specs: agent-runtimes MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0036-launcher-creates-its-shortcuts — launcher creates its shortcuts (specs: cli MODIFIED)
+- 2026-10-02 — 0037-chat-http-proxy-and-connection-test — chat-http proxy and connection test (specs: agent-runtimes MODIFIED, web-app MODIFIED)
