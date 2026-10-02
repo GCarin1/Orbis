@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -32,6 +32,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall keep the keys, tokens and sign-ins of connected servers as hub secrets encrypted with the vault's key, pass them only to the server they belong to (as its environment or its `Authorization` header), and never return them through the API.
 - The system shall return from `team.list_bots` each bot's handle without `@`, its name, role, busy flag and state.
 - The system shall forward each `tools/call` of the stdio MCP bridge as it arrives, without waiting for earlier calls, and wait for the hub's answer without a time limit.
+- The system shall give every tool a wire name of at most 52 characters of `[A-Za-z0-9_-]` — a longer name keeps its start and gets a short hash of the whole name — and resolve a call by that name.
 
 ### Event-driven
 
@@ -44,6 +45,8 @@ call through the approvals policy and marks outside content as untrusted.
 - When a bot calls a tool of a connected server that is not marked read-only and no rule or grant decides, the system shall ask the user first; the result comes back wrapped as untrusted content.
 - When a stdio MCP server stops, the system shall report the error line of its output, not the runtime's closing lines.
 - When `http.fetch` cannot reach a server, the system shall name the network error (for example ECONNREFUSED) in the result.
+- When an HTTP MCP server answers 404 because it ended the session, the system shall connect again and repeat the call once.
+- When a run is stopped while an external MCP tool call is in progress, the system shall stop waiting for the server's answer.
 
 ### Unwanted-behavior (must-not)
 
@@ -64,6 +67,7 @@ call through the approvals policy and marks outside content as untrusted.
 6. [verified] A stdio server starts with its key as an encrypted secret, its tools reach only the bots given the server, a read-only tool runs and returns untrusted content, a writing tool asks unless a rule allows it, `!` excludes, the tools survive a restart, a missing program or an empty required key is reported, disconnecting removes the tools and the server from every allowlist; an HTTP server asking for an account gets Orbis registered, a PKCE sign-in link, the code traded on the callback, a connection over server-sent events, and a state used once — verified by `packages/hub/test/mcp-servers.test.ts`.
 7. [verified] The third identical `memory.search` of a run is refused while a different one runs, and `team.list_bots` returns handles without `@` — verified by `packages/hub/test/bot-behaviour.test.ts`.
 8. [verified] Through the bridge a slow call answers after a quick one sent later; a call denied twice is asked again and runs when allowed; `http.fetch` to a closed port names ECONNREFUSED — verified by `packages/hub/test/chat-audit.test.ts`.
+9. [verified] A tool named after a long server and a long remote name gets a wire name of at most 52 characters that resolves back; it runs, and runs again after the server ended its session, with one new `initialize` — verified by `packages/hub/test/audit-cycle4.test.ts`.
 
 ## Maturity
 

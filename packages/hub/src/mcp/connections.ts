@@ -244,8 +244,14 @@ export class McpConnections {
         defaultDecision: readOnly ? "allow" : "ask",
         secrets: true,
         external: row.id,
-        handler: async (input: unknown) => {
-          const result = await this.call(row.id, remote.name, input);
+        handler: async (input: unknown, ctx) => {
+          // A run that is stopped does not wait for a slow server.
+          const stopped = new Promise<never>((_, reject) => {
+            if (ctx.signal.aborted) reject(new Error("the run was stopped"));
+            ctx.signal.addEventListener("abort", () => reject(new Error("the run was stopped")), { once: true });
+          });
+          stopped.catch(() => undefined);
+          const result = await Promise.race([this.call(row.id, remote.name, input), stopped]);
           return { output: untrusted(`mcp:${row.id}`, result.text || "(empty result)"), isError: result.isError };
         },
       };
@@ -590,9 +596,10 @@ export class McpConnections {
     try {
       return await client.callTool(remoteName, args);
     } catch (err) {
-      // A server that stopped, or a token that expired: connect again once.
-      if (!retried && (err instanceof McpAuthError || (err instanceof McpError && /stopped|could not start|session/i.test(err.message)))) {
+      // A server that stopped, a token that expired, or an HTTP session the server ended (404): connect again once.
+      if (!retried && (err instanceof McpAuthError || (err instanceof McpError && /stopped|could not start|session|answered 404/i.test(err.message)))) {
         this.live.delete(id);
+        void client.close().catch(() => undefined);
         return this.call(id, remoteName, args, true);
       }
       throw err;

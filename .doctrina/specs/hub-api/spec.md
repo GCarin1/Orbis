@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** bots, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -38,6 +38,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 
 - The system shall not answer a request without a valid token with anything other than 401, except `/health`, `/hooks/*` (which carry their own signatures) and the static web app files.
 - The system shall not accept a recording when no transcription service is set up (it answers 503 `transcription_unavailable`), nor pass off a failed transcription as text (it answers 502 `transcription_failed` with the service's status).
+- The system shall not fail with a server error when a `/v1/chat/completions` message starts no run (a `/skill` the bot is not offered); it shall answer 400 `no_run`.
 
 ## Acceptance criteria
 
@@ -46,6 +47,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 3. [verified] `/v1/chat/completions` with `orbis:<handle>` answers the bot's reply in the OpenAI shape, and with `stream: true` as server-sent chunks ending in `[DONE]` — verified by `packages/hub/test/openai-compat.test.ts`.
 4. [verified] A stream client subscribed to one conversation receives that conversation's items and not another's — verified by `packages/hub/test/stream.test.ts`.
 5. [verified] Without a service the transcription answers 503; the service saved in settings receives the recording as a multipart upload with the file named after its format, the model, the language and the key, and the text comes back; the key is never returned nor stored in clear; the environment's service and the OpenAI key are used when nothing is saved, and the test reports a failing service — verified by `packages/hub/test/voice.test.ts`.
+6. [verified] A completion asking for a skill the bot is not offered answers 400 with code `no_run` — verified by `packages/hub/test/audit-cycle4.test.ts`.
 
 ## Maturity
 

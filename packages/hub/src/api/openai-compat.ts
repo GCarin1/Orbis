@@ -54,7 +54,9 @@ export async function registerOpenAiCompat(root: FastifyInstance, ctx: HubContex
 
     const conversation = ctx.conversationService.directFor(bot.id);
     const { runs } = ctx.conversationService.postUserMessage(conversation.id, { text });
-    const runId = runs[0]!.id;
+    // A `/skill` the bot is not offered starts no run.
+    if (!runs[0]) return openaiError(reply, 400, `@${bot.handle} did not start a run for this message (a /skill it is not offered?)`, "no_run");
+    const runId = runs[0].id;
     const id = `chatcmpl-${newId("oai").slice(4)}`;
     const created = Math.floor(Date.now() / 1000);
     const model = req.body.model;

@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.9.0
+**Version:** 0.10.0
 
 ## Purpose
 
@@ -41,6 +41,7 @@ It talks to the hub only through the public API.
 
 - The CLI shall not print the API token in any output other than `orbis login --show-token`.
 - The CLI shall not take a secret value as a command-line argument; `orbis secrets set` reads it from a hidden prompt or from stdin.
+- The `orbis chat` and `orbis group chat` commands shall not follow runs of another message's chain in the same conversation.
 
 ## Acceptance criteria
 
@@ -55,6 +56,7 @@ It talks to the hub only through the public API.
 9. [verified] `orbis runtimes check` lists the subscription CLIs and the local model servers, and `orbis runtimes test` prints a bot's test reply, flags the mock's echo and exits 1 on a failed test — verified by `packages/cli/test/runtimes.test.ts`.
 10. [verified] `orbis bots create --reports-to @chief` and `orbis bots edit --reports-to none` set and clear the manager, `bots list` and `bots show` name it, and a reporting loop exits 1 naming it — verified by `packages/cli/test/bots.test.ts`.
 11. [verified] `orbis chat` after a handoff prints the receiver's answer and then the sender's report back before it exits — verified by `packages/cli/test/collab.test.ts`.
+12. [verified] While `orbis chat` waits for its own run, a colleague's mention run in the same conversation is neither waited for nor printed — verified by `packages/cli/test/audit-cycle4.test.ts`.
 
 ## Maturity
 

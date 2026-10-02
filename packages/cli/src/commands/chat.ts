@@ -87,6 +87,8 @@ export async function sendAndStream(
 ): Promise<boolean> {
   const c = paint(io);
   const pending = new Set<string>();
+  /** The chains this message started: only their runs are followed, not another message's. */
+  const chains = new Set<string>();
   const finished = new Map<string, Run["status"]>();
   const early: StreamEvent[] = [];
   let resolveDone: () => void = () => undefined;
@@ -119,7 +121,8 @@ export async function sendAndStream(
       else out(io, c.yellow(`  ? waiting for approval ${approval.id} (${approval.tool}) — orbis approvals allow ${approval.id}`));
     } else if (event.type === "run.updated") {
       const run = (event.data as { run: Omit<Run, "steps"> }).run;
-      if (!pending.has(run.id) && run.status === "queued" && run.conversationId === conversation.id && FOLLOWED_TRIGGERS.has(run.trigger.type)) {
+      const ours = run.chainId ? chains.has(run.chainId) : run.conversationId === conversation.id;
+      if (!pending.has(run.id) && run.status === "queued" && ours && FOLLOWED_TRIGGERS.has(run.trigger.type)) {
         pending.add(run.id);
       }
       if (!pending.has(run.id)) return;
@@ -142,7 +145,10 @@ export async function sendAndStream(
       `/api/v1/conversations/${conversation.id}/messages`,
       { text },
     );
-    for (const run of posted.runs) pending.add(run.id);
+    for (const run of posted.runs) {
+      pending.add(run.id);
+      if (run.chainId) chains.add(run.chainId);
+    }
     known = true;
     for (const event of early.splice(0)) await handle(event);
     if (pending.size === 0) return true;

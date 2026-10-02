@@ -57,7 +57,7 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
@@ -133,7 +133,7 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -224,7 +224,7 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets)",
         "realizes": [
@@ -992,6 +992,28 @@
         "specs_affected": [
           {
             "capability": "computer",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: bug, audit)"
+      },
+      {
+        "id": "0026-audit-cycle-4-mcp-and-apis",
+        "title": "Audit cycle 4 — MCP and APIs",
+        "path": ".doctrina/changes/archive/2026-10-02-0026-audit-cycle-4-mcp-and-apis",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
             "operation": "MODIFIED"
           }
         ],

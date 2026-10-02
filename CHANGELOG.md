@@ -9,6 +9,12 @@ change that delivered it.
 
 ### Fixed
 
+- Audit cycle 4 (change 0026-audit-cycle-4-mcp-and-apis): a connected MCP
+  server with a long name no longer makes every reply of its bots fail (tool
+  names stay within 52 characters on the wire); an HTTP server that ended its
+  session is reconnected; stopping a bot stops waiting on its MCP call;
+  `/v1/chat/completions` answers 400 instead of crashing when no run starts;
+  `orbis chat` follows only its own message's work.
 - Audit cycle 3 (change 0025-audit-cycle-3-computer-tools): on Windows,
   accents in command output arrive intact (cmd.exe switched to UTF-8) and
   npm, git and python run in a bot's isolated computer (APPDATA, TEMP and a

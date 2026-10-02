@@ -1,6 +1,7 @@
 // The account-level tool registry (specs/tool-gateway, ADR 0004).
 import type { TSchema } from "typebox";
 import { Compile } from "typebox/compile";
+import { createHash } from "node:crypto";
 import { globToRegExp, toolAllowed, type Bot, type PolicyDecision, type Run } from "@orbis/shared";
 import type { ToolCallResult, ToolDescriptor } from "../brains/types.js";
 
@@ -61,8 +62,25 @@ export function untrusted(source: string, content: string): string {
   return `<untrusted-content source="${safeSource}">\n${body}\n</untrusted-content>`;
 }
 
-/** Tool names travel with dots inside Orbis and underscores on the MCP wire. */
-export const toWireName = (name: string) => name.replace(/\./g, "_");
+/**
+ * The longest name a tool may have on the wire. Model APIs take at most 64
+ * characters (`^[a-zA-Z0-9_-]{1,64}$`) and Claude Code prefixes Orbis's tools
+ * with `mcp__orbis__` (12): a longer name made the API refuse the whole
+ * request, so every reply of the bot failed.
+ */
+export const WIRE_NAME_MAX = 52;
+
+/**
+ * Tool names travel with dots inside Orbis and underscores on the wire; a
+ * name too long keeps its start and gets a short hash of the whole name, so
+ * it stays unique and maps back.
+ */
+export function toWireName(name: string): string {
+  const wire = name.replace(/[^A-Za-z0-9_-]/g, "_");
+  if (wire.length <= WIRE_NAME_MAX) return wire;
+  const hash = createHash("sha256").update(name).digest("hex").slice(0, 8);
+  return `${wire.slice(0, WIRE_NAME_MAX - 9)}_${hash}`;
+}
 
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolDefinition>();
