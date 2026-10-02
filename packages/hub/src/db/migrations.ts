@@ -233,4 +233,14 @@ DELETE FROM memory WHERE kind = 'summary' AND rowid NOT IN (
   SELECT MIN(rowid) FROM memory WHERE kind = 'summary' GROUP BY COALESCE(bot_id, ''), text);
 ALTER TABLE runs ADD COLUMN retry_of TEXT;`,
   },
+  {
+    // Lookups every run makes (its reply, its cards, its approvals, its routine record)
+    // and the chat's runs of a conversation scanned whole tables (audit cycle 5).
+    version: 8,
+    sql: `CREATE INDEX items_by_run ON items (run_id);
+CREATE INDEX runs_by_conversation ON runs (conversation_id, created_at);
+CREATE INDEX runs_by_status ON runs (status);
+CREATE INDEX approvals_by_run ON approvals (run_id, status);
+CREATE INDEX routine_runs_by_run ON routine_runs (run_id);`,
+  },
 ];

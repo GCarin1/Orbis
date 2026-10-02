@@ -216,6 +216,7 @@ export function Composer({
         value={text}
         onChange={(e) => {
           setText(e.target.value);
+          setSendError(null);
           setCaret(e.target.selectionStart ?? e.target.value.length);
           setActive(0);
         }}

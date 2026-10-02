@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -28,6 +28,7 @@ timeline changes.
 - The system shall persist conversations and timelines in the hub database.
 - The system shall give every run a chain id: a user message starts one chain that every bot it runs shares, and the handoffs, reports back and mentions that follow from them carry it on.
 - The system shall tell each run where it takes place: the bot's own conversation, a colleague's conversation it was brought into, or a group with its title, its other members and whether the bot leads it.
+- The system shall write a run's steps to the database at most every 250 ms while it runs and once when it ends, and index the lookups every run makes (items, approvals and routine records by run; runs by conversation and by status).
 
 ### Event-driven
 
@@ -39,6 +40,7 @@ timeline changes.
 - When a client asks for the direct conversation of a bot that has none, the system shall create it, so that each bot has at most one direct conversation.
 - When a client adds or removes a reaction on a timeline item, the system shall update the item's reactions and broadcast the change.
 - When the user asks to try a failed or cancelled run again, the system shall start a new run of the same bot in the same conversation with the same task and skill, recording the run it retries, and point a handoff card at the new run.
+- When the user tries a run again, the system shall keep the new run in the old run's chain.
 
 ### State-driven
 
@@ -64,6 +66,7 @@ timeline changes.
 7. [verified] A lead's reply listing three colleagues wakes none and posts `mention.list`; a reply calling one colleague wakes it once as `mention`, and its answer naming the lead back wakes no one; `@everyone` runs each member once — verified by `packages/hub/test/bot-behaviour.test.ts`.
 8. [verified] Two bots one user message mentions, whose replies mention each other, run once each, in one chain — verified by `packages/hub/test/handoff.test.ts`.
 9. [verified] A group run is told the group's title, the other members and that the bot leads it, and a direct run that it is the bot's own conversation; a run that failed for a missing key is tried again after the brain is fixed and replies, and trying a done run again answers 409 — verified by `packages/hub/test/chat-audit.test.ts`.
+10. [verified] A run of 40 tool calls stores all its steps with fewer writes than a quarter of them; the database holds the run, conversation and status indexes; a retried run keeps its chain and its reply does not wake again a bot that already answered — verified by `packages/hub/test/audit-cycle5.test.ts`.
 
 ## Maturity
 

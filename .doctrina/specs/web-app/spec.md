@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.15.0
+**Version:** 0.15.1
 
 ## Purpose
 
@@ -58,6 +58,7 @@ run's steps.
 - When the user scrolls up in a conversation, the web app shall keep its place as messages arrive and offer a button to the newest; when older messages exist, a button loads the previous page.
 - When the event stream has not answered a ping within 10 seconds (sent every 25 seconds, when the network comes back and when the app is shown again), the web app shall close it, connect again and reload what it may have missed.
 - When the hub refuses an answer to an approval or a draft, the web app shall say why on the card and show the approval as the hub has it now.
+- When the user edits a message the hub did not accept, the web app shall clear the send error.
 
 ### Unwanted-behavior (must-not)
 
@@ -97,6 +98,7 @@ run's steps.
 28. [verified] In a real browser with fake `npm` and `codex`, the user installs Codex from Settings, signs in with a code shown on the card, and sees the connected ChatGPT account — verified by `tests/e2e/chatgpt.test.ts`.
 29. [verified] Markdown lists, code, tables, links and mentions render and raw HTML stays text; one bubble per bot with "+1 queued" and a stop that cancels both runs; the waiting note; Try again posts the retry once; earlier messages load on request; a failed send keeps the text and says why; a composing Enter does not send — verified by `packages/web/test/chat-audit.test.tsx`.
 30. [verified] A stream that stops answering its ping is closed and replaced and the app reloads; a refused approval answer shows the hub's reason and the expired state; the inbox shows "npm run build" for a Claude Bash approval and opens its conversation; Markdown marks are dropped from a preview — verified by `packages/web/test/audit-cycle2.test.tsx`.
+31. [verified] The send error shown after a refused message goes away when the user edits it — verified by `packages/web/test/audit-cycle5.test.tsx`.
 
 ## Maturity
 

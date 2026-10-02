@@ -266,8 +266,9 @@ export class ConversationService {
 
   /**
    * Try a failed or cancelled run again, as the user asked (after fixing the
-   * bot's brain, say): the same bot, conversation, task and skill, in a chain
-   * of its own. A handoff's card follows the new run.
+   * bot's brain, say): the same bot, conversation, task and skill, in the same
+   * chain, so its reply does not wake again the bots that chain already ran.
+   * A handoff's card follows the new run.
    */
   retry(runId: string): Run {
     const old = this.d.engine.get(runId);
@@ -283,6 +284,7 @@ export class ConversationService {
       trigger: old.trigger,
       input: old.input,
       depth: old.depth,
+      chainId: old.chainId,
       retryOf: old.id,
       skill: resolved.kind === "skill" ? resolved.skill : null,
       triggerItemId: old.trigger.type === "message" || old.trigger.type === "mention" ? (old.trigger.ref ?? null) : null,

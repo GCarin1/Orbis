@@ -14,6 +14,13 @@ import type { BrainSessionsRepo, RunsRepo } from "../repos/runs.js";
 import type { Timeline } from "../services/timeline.js";
 import { NO_TOOLS, type BrainEvent, type BrainRegistry, type McpWiring, type ToolBridge } from "../brains/types.js";
 
+/**
+ * Steps are written to the database at most this often during a run (and
+ * always at its end): each write stores every step so far, and writing on
+ * every step of a long run rewrote hundreds of megabytes and blocked the hub.
+ */
+export const STEPS_WRITE_MS = 250;
+
 export interface EnqueueRequest {
   botId: string;
   conversationId: string | null;
@@ -361,11 +368,21 @@ export class RunEngine {
     let failure: string | null = null;
     const host = this.toolHost.open(run, bot, controller.signal);
 
+    let stepsWrittenAt = 0;
+    let stepsTimer: NodeJS.Timeout | null = null;
+    const writeSteps = () => {
+      if (stepsTimer) clearTimeout(stepsTimer);
+      stepsTimer = null;
+      stepsWrittenAt = Date.now();
+      this.d.runs.setSteps(runId, steps);
+    };
     const pushStep = (raw: Step) => {
       // Secret values never reach stored or published steps (specs/secrets).
       const step = this.redactor ? this.redactor(bot.id, raw) : raw;
       steps.push(step);
-      this.d.runs.setSteps(runId, steps);
+      const since = Date.now() - stepsWrittenAt;
+      if (since >= STEPS_WRITE_MS) writeSteps();
+      else stepsTimer ??= setTimeout(writeSteps, STEPS_WRITE_MS - since);
       this.d.bus.publish("run.step", { runId, conversationId: run.conversationId, botId: bot.id, step });
     };
 
@@ -460,6 +477,7 @@ export class RunEngine {
     } catch (err) {
       if (!controller.signal.aborted) failure = err instanceof Error ? err.message : String(err);
     } finally {
+      writeSteps();
       clock.stop();
       this.clocks.delete(runId);
       host.close();

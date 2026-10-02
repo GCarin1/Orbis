@@ -2,7 +2,7 @@
 // the left, time separators, "Messages from …" when colleagues speak in a bot's
 // own conversation, mentions in each bot's color, cards, events and each run's
 // steps, collapsible.
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Bot, Step, TimelineItem } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import { useStore, type RunView } from "../store.js";
@@ -130,7 +130,8 @@ export function Timeline({
   const [unseen, setUnseen] = useState(0);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const byId = new Map(items.map((i) => [i.id, i]));
-  const team = Object.values(bots);
+  // Stable while the bots do not change, so memoized messages are not parsed again on every step.
+  const team = useMemo(() => Object.values(bots), [bots]);
   const working = workingBots(activeRuns, bots);
   const conversationId = items[0]?.conversationId ?? activeRuns[0]?.conversationId;
   const lastItem = items.at(-1);

@@ -9,6 +9,11 @@ change that delivered it.
 
 ### Fixed
 
+- Audit cycle 5 (change 0027-audit-cycle-5-performance-and-sweep): long runs no longer block the hub
+  (steps are written every 250 ms instead of on every step), the database
+  indexes what every run looks up (migration 8), a retried run stays in its
+  chain, the chat stays fast during long runs, and the send error clears
+  when you edit the message.
 - Audit cycle 4 (change 0026-audit-cycle-4-mcp-and-apis): a connected MCP
   server with a long name no longer makes every reply of its bots fail (tool
   names stay within 52 characters on the wire); an HTTP server that ended its

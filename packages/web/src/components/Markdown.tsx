@@ -1,7 +1,7 @@
 // Bot replies are Markdown (specs/web-app): headings, lists, quotes, code,
 // tables, links and emphasis, rendered as React elements — never as HTML, so
 // a reply cannot inject markup — with `@mentions` in each bot's color.
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, memo, useState, type ReactNode } from "react";
 import { resolveMentions, type Bot } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
@@ -126,8 +126,12 @@ const cells = (line: string) =>
     .split("|")
     .map((c) => c.trim());
 
-/** Markdown text as blocks: paragraphs keep their line breaks. */
-export function Markdown({ text, bots }: { text: string; bots: Bot[] }) {
+/**
+ * Markdown text as blocks: paragraphs keep their line breaks. Memoized: a bot
+ * at work re-renders the timeline on every step, and parsing every message
+ * again each time made long conversations sluggish.
+ */
+export const Markdown = memo(function Markdown({ text, bots }: { text: string; bots: Bot[] }) {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
@@ -259,4 +263,4 @@ export function Markdown({ text, bots }: { text: string; bots: Bot[] }) {
     );
   }
   return <div className="md">{blocks}</div>;
-}
+});
