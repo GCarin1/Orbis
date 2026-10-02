@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.16.0
+**Version:** 0.16.1
 
 ## Purpose
 
@@ -61,6 +61,7 @@ run's steps.
 - When the hub refuses an answer to an approval or a draft, the web app shall say why on the card and show the approval as the hub has it now.
 - When the user edits a message the hub did not accept, the web app shall clear the send error.
 - When the web app loads a conversation's runs, it shall keep the steps that already streamed in for a run whose loaded copy has fewer.
+- When a pasted cURL only reads (no body), the web app shall keep the request address, take its token and, for a history request, the history's address, and say so.
 
 ### Unwanted-behavior (must-not)
 
@@ -106,6 +107,7 @@ run's steps.
 31. [verified] The send error shown after a refused message goes away when the user edits it — verified by `packages/web/test/audit-cycle5.test.tsx`.
 32. [verified] While the user reads history, a bot starting to work shows no "new below" and a new message shows "1 new below"; a routine's failed run offers no Try again; a refused retry says why; loaded runs keep the steps that streamed in — verified by `packages/web/test/review.test.tsx`.
 33. [verified] A pasted cURL fills the address, token, model, agent and Origin and leaves the screen; saving puts the token in the bot's secret and the rest in the brain; a saved token is kept when the field is empty, with the brain's time and step limits; a new bot hands its token apart from the bot — verified by `packages/web/test/chat-http.test.tsx`.
+34. [verified] Pasting a history GET cURL keeps the request address, saves its token and the history's address — verified by `packages/web/test/chat-http.test.tsx`.
 
 ## Maturity
 
