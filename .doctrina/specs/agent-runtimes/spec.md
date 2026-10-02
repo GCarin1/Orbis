@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.15.0
+**Version:** 0.16.0
 
 ## Purpose
 
@@ -44,6 +44,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall make every request of a `chat-http` brain — the message, the history and the title — through the system's `curl` program when it is installed, and through Node's `fetch` otherwise or when the bot's `chat.transport` is `fetch`, keeping the Authorization header in a private temporary file that is removed afterwards and never on curl's command line.
 - The system shall keep from a pasted cURL, for every request to the chat API, the browser headers `User-Agent`, `Accept-Language`, `Referer`, `Cache-Control`, `Pragma`, `Priority`, `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform`, `sec-fetch-dest`, `sec-fetch-mode` and `sec-fetch-site`, and shall keep no cookie, no key and no Authorization header.
 - The system shall send a `chat-http` brain's curl requests through the proxy the bot names, else the environment's (HTTPS_PROXY), else on Windows the proxy Windows uses for the chat's address (its Internet settings, a PAC script included), signing in to that proxy as the logged-in user; `direct` shall use none.
+- The system shall accept a `chat-http` curl program whose file name is curl or curl.exe in any letter case.
 
 ### Event-driven
 
@@ -79,6 +80,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `chat-http` stream ends with a complete message (`message_complete`), the system shall take the reply, the chat id and the token usage from it, leave out the follow-up-questions block, and not read the chat's history.
 - When a firewall in front of a `chat-http` server refuses the request (HTTP 403 with a Cloudflare page), the system shall fail the run naming the firewall, the program the request went through and what was sent.
 - When a connection test of a `chat-http` bot is asked for, the system shall try one GET of the chats' list (no message, no model call) by each way out of the computer — each curl it finds, through each proxy it knows and with none, and Node's fetch — and report for each whether it got through, was blocked by the firewall, had its token refused, or got no answer.
+- When a firewall blocks a `chat-http` message, the system shall say that a firewall reading the message takes Orbis's tool instructions for an attack, and point to the connection test and to plain chat.
 
 ### State-driven
 
@@ -103,6 +105,7 @@ brain are owned by `contracts/cli-harnesses`.
 
 - Where a bot selects the `openai` brain with a base URL on localhost (Ollama, LM Studio, vLLM), the system may run it with no API key.
 - Where the hub configuration declares an `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable, the system may use it for bots that name no key secret of their own.
+- Where a `chat-http` bot has plain chat on, the system shall send only the conversation — the bot's name, role and description, its memories and the messages — without Orbis's instructions and tool list, and shall offer that bot no tools.
 
 ## Acceptance criteria
 
@@ -133,6 +136,7 @@ brain are owned by `contracts/cli-harnesses`.
 25. [verified] A fake curl is run with the token in a private header file that is gone afterwards and not in its arguments, the body on stdin, a JSON body or none; curl's own words come back when it cannot reach the server; a missing curl and a cancelled run end cleanly; the real curl and Node's fetch make the same request and read the same answer; curl is chosen when installed — verified by `packages/hub/test/runtimes/http-transport.test.ts`.
 26. [verified] A firewall that lets through only what comes from the company's proxy refuses a bot with no proxy (naming the way and pointing to the connection test) and passes one through it; the Windows proxy is used when the bot names none and the environment has none, read from PowerShell without the query and with quotes escaped; the connection test marks the proxied curl ok and the direct curl and Node blocked without posting a message; a template neither keeps nor plants a curl program or proxy, and a program not named curl is refused — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 27. [verified] curl is given the proxy with the logged-in user's sign-in and an empty no-proxy list, or no proxy at all for `direct`, or nothing for the environment's; Windows' curl and Git's are found beside the one on PATH, once each; the environment's proxy is read for the address's scheme — verified by `packages/hub/test/runtimes/http-transport.test.ts`.
+28. [verified] A firewall that reads the message blocks Orbis's instructions with an error that points to plain chat, and lets a plain chat through carrying the bot's name, role and description and none of the instructions, tools, shell, placeholder or tag; a plain chat that is still blocked is told so; `C:\\WINDOWS\\system32\\curl.EXE` is accepted and a program not named curl is not — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 

@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.20.0
+**Version:** 0.21.0
 
 ## Purpose
 
@@ -48,6 +48,7 @@ run's steps.
 - The web app shall show in a `chat-http` bot's settings whether a token is saved in the vault and when it expires, and the browser headers copied from a pasted cURL, which can be removed.
 - The web app shall let a `chat-http` bot's HTTP call be chosen in its advanced settings — automatic, curl or Node — and show how many browser headers a pasted cURL gave.
 - The web app shall offer in a `chat-http` bot's settings a connection test that lists each way to the API with what the firewall said and lets the user use one that got through, and fields for the curl program and the proxy.
+- The web app shall offer plain chat in a `chat-http` bot's settings, off by default and explained, and shall name the fields a refused save got wrong.
 
 ### Event-driven
 
@@ -67,6 +68,7 @@ run's steps.
 - When the user edits a message the hub did not accept, the web app shall clear the send error.
 - When the web app loads a conversation's runs, it shall keep the steps that already streamed in for a run whose loaded copy has fewer.
 - When a pasted cURL only reads (no body), the web app shall keep the request address, take its token and, for a history request, the history's address, and say so.
+- When a connection test of a `chat-http` bot finds a way through, the web app shall say that the test sends no message, and that messages still blocked mean the firewall reads them.
 
 ### Unwanted-behavior (must-not)
 
@@ -118,6 +120,7 @@ run's steps.
 37. [verified] The settings show a token saved with its expiry, expired, or none; a pasted Authorization line is saved bare and shown as saved; Referer, User-Agent and Accept-Language are copied from a cURL without a cookie or another header, and can be removed — verified by `packages/web/test/chat-http.test.tsx`.
 38. [verified] The HTTP call is automatic by default and saves nothing; choosing Node saves `transport: fetch`; a pasted cURL gives its browser headers, counted and shown, and no cookie — verified by `packages/web/test/chat-http.test.tsx`.
 39. [verified] The connection test lists each way (curl with its program and proxy, Node) with its verdict, offers Use this way only for one that got through, which fills the curl program and the proxy that the save keeps; with none through it says so — verified by `packages/web/test/chat-http.test.tsx`.
+40. [verified] Plain chat is off by default, explained, and saved as `plain: true` when turned on; a refused save names its field — verified by `packages/web/test/chat-http.test.tsx`.
 
 ## Maturity
 
