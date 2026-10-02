@@ -1,6 +1,7 @@
 # Change 0036-launcher-creates-its-shortcuts — launcher creates its shortcuts
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: fix)
