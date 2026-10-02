@@ -240,8 +240,10 @@ export function App() {
               const bot = await store.importBot(yaml);
               openBot(bot.id);
             }}
-            onCreate={async ({ token, ...input }) => {
+            onCreate={async ({ token, apiKey, ...input }) => {
               const bot = await store.createBot(input);
+              // An API key goes to the new bot's vault, under the name its brain points at.
+              if (apiKey && input.brain.apiKeySecret) await store.api!.put(`/api/v1/bots/${bot.id}/secrets/${input.brain.apiKeySecret}`, { value: apiKey });
               // The chat-http token is its chat API's, shared by that API's bots, encrypted in the vault, never part of the bot.
               if (token && input.brain?.baseUrl) await store.api!.put("/api/v1/chat-http/tokens", { origin: input.brain.baseUrl, value: token });
               openBot(bot.id);

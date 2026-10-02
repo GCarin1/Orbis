@@ -6,7 +6,7 @@ orbis open
 orbis login [--url U] [--token T] [--show-token] [--status]
 orbis bots list [--all]
 orbis bots create --name N [--handle H] [--role R] [--description D] [--spend-cap USD] [--tools a,b.*] [--reports-to @manager]
-                  [--brain KIND] [--model M] [--command C] [--base-url U] [--api-key-secret NAME]
+                  [--brain KIND] [--model M] [--command C] [--base-url U] [--api-key-secret NAME] [--api-key-header bearer|api-key]
 orbis bots show @bot
 orbis bots edit @bot [same options as create] [--pin|--unpin] [--hide|--unhide]   # --reports-to none clears the manager
 orbis bots duplicate @bot

@@ -19,7 +19,6 @@ describe("bot settings", () => {
     fireEvent.change(within(panel).getByLabelText("Role"), { target: { value: "Release QA" } });
     fireEvent.change(within(panel).getByLabelText("Brain"), { target: { value: "anthropic" } });
     fireEvent.change(within(panel).getByLabelText("Model (optional)"), { target: { value: "claude-opus-5" } });
-    fireEvent.change(within(panel).getByLabelText("Secret holding the API key (vault name)"), { target: { value: "anthropic_key" } });
     fireEvent.click(within(panel).getByRole("button", { name: "+ Add rule" }));
     const rules = within(panel).getAllByTestId("policy-rule");
     expect(rules).toHaveLength(2);
@@ -34,7 +33,7 @@ describe("bot settings", () => {
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         role: "Release QA",
-        brain: { kind: "anthropic", model: "claude-opus-5", apiKeySecret: "ANTHROPIC_KEY" },
+        brain: { kind: "anthropic", model: "claude-opus-5" },
         policy: {
           rules: [
             { tool: "computer.shell", decision: "ask", locked: true },

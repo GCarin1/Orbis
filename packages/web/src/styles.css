@@ -682,6 +682,9 @@ iframe.computer-screen {
   font-size: 0.8em;
   margin: 0;
 }
+.newbot-fields .settings-help {
+  grid-column: 1 / -1;
+}
 .rule-row {
   display: grid;
   grid-template-columns: 1fr auto auto auto;

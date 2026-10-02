@@ -35,11 +35,12 @@ const brainOptions = {
   command: { type: "string" },
   "base-url": { type: "string" },
   "api-key-secret": { type: "string" },
+  "api-key-header": { type: "string" },
 } as const;
 
 function brainFrom(values: Record<string, unknown>, current?: Bot["brain"]): Bot["brain"] | undefined {
   const kind = brainKind(values.brain as string | undefined);
-  const touched = ["brain", "model", "command", "base-url", "api-key-secret"].some((k) => values[k] !== undefined);
+  const touched = ["brain", "model", "command", "base-url", "api-key-secret", "api-key-header"].some((k) => values[k] !== undefined);
   if (!touched) return undefined;
   return {
     ...(current ?? { kind: "claude-code" }),
@@ -48,6 +49,7 @@ function brainFrom(values: Record<string, unknown>, current?: Bot["brain"]): Bot
     ...(values.command !== undefined ? { command: values.command as string } : {}),
     ...(values["base-url"] !== undefined ? { baseUrl: values["base-url"] as string } : {}),
     ...(values["api-key-secret"] !== undefined ? { apiKeySecret: values["api-key-secret"] as string } : {}),
+    ...(values["api-key-header"] !== undefined ? { apiKeyHeader: values["api-key-header"] as "bearer" | "api-key" } : {}),
   };
 }
 

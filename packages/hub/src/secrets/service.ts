@@ -9,6 +9,7 @@ import { badRequest, conflict, notFound } from "../errors.js";
 import type { ToolDefinition } from "../tools/registry.js";
 import { IdParams } from "../api/schemas.js";
 import { SettingsRepo } from "../repos/settings.js";
+import { run } from "../db/index.js";
 import { HubSecrets } from "./hub-secrets.js";
 import { ChatTokens } from "./chat-tokens.js";
 import { hasPlaceholder, loadMasterKey, SECRET_NAME, Vault } from "./vault.js";
@@ -43,8 +44,28 @@ export class SecretService {
     return walk(value) as T;
   }
 
+  /**
+   * A key pasted where the NAME of its secret goes (the bot's `apiKeySecret`) works nowhere and sits in
+   * plain text in the bot: move it into the bot's vault as `API_KEY`, point the bot at it, and mask it in
+   * what was already stored (the errors that quoted it). Runs when the hub starts.
+   */
+  moveMisplacedKeys(): number {
+    let moved = 0;
+    for (const bot of this.hub.repos.bots.list({ includeHidden: true })) {
+      const value = bot.brain.apiKeySecret?.trim();
+      if (!value || SECRET_NAME.test(value)) continue;
+      this.vault.set(bot.id, "API_KEY", value);
+      this.hub.repos.bots.save({ ...bot, brain: { ...bot.brain, apiKeySecret: "API_KEY" } });
+      run(this.hub.db, "UPDATE runs SET error = replace(error, ?, '••••') WHERE instr(error, ?) > 0", value, value);
+      run(this.hub.db, "UPDATE items SET text = replace(text, ?, '••••') WHERE instr(text, ?) > 0", value, value);
+      moved++;
+    }
+    return moved;
+  }
+
   /** Plug the vault into every place a value could leak or be needed. */
   wire(): void {
+    this.moveMisplacedKeys();
     const redact = <T>(botId: string, value: T): T => this.maskShared(this.vault.redactDeep(botId, value));
     this.hub.secretResolvers.register((botId, name) => this.vault.get(botId, name));
     // A chat API's shared token, asked for by the name `chat-http-token:<origin>`.

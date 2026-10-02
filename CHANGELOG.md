@@ -9,6 +9,16 @@ change that delivered it.
 
 ### Fixed
 
+- OpenAI-compatible company gateways (change 0041-openai-compatible-gateways): a
+  key pasted in the bot's settings landed where the **name** of its secret goes,
+  so the brain failed with "secret <the key> is not set" — repeating the key.
+  The settings now have an **API key** field (kept encrypted in the bot's vault,
+  never shown again); a key already pasted in the wrong place is moved into the
+  vault when the hub starts and masked where it was quoted, and the check never
+  echoes it. For Azure-style gateways: **How to send the key → api-key header**,
+  `{model}` in the address for a model in the path, and an answer without a
+  stream (`"stream": false`) is read, or asked for when the gateway refuses the
+  stream. CLI: `--api-key-header bearer|api-key`.
 - A deleted bot stayed in its groups on screen: it now leaves each of them (said
   in each), the web app follows, and a group left with no bot is deleted.
 - `chat-http` messages blocked by a firewall that reads them (change 0038-chat-http-plain-chat): the

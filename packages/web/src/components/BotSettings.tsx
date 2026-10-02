@@ -15,6 +15,7 @@ import {
   type PolicyDecision,
 } from "@orbis/shared";
 import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
+import { ApiKeyFields, keySecretName, type KeyHeader } from "./ApiKeyFields.js";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
@@ -66,7 +67,12 @@ export function BotSettings({
   const [model, setModel] = useState(bot.brain.model ?? "");
   const [command, setCommand] = useState(bot.brain.command ?? "");
   const [baseUrl, setBaseUrl] = useState(bot.brain.baseUrl ?? "");
-  const [apiKeySecret, setApiKeySecret] = useState(bot.brain.apiKeySecret ?? "");
+  /** The API key being typed: it goes to the bot's vault on save and never comes back. */
+  const [apiKey, setApiKey] = useState("");
+  const [keyHeader, setKeyHeader] = useState<KeyHeader>(bot.brain.apiKeyHeader ?? "bearer");
+  const keyName = keySecretName(bot.brain.apiKeySecret);
+  /** Whether the bot's vault holds its key (the names only: values never leave the hub). */
+  const [keySaved, setKeySaved] = useState(false);
   const [chat, setChat] = useState(() => chatHttpValue(bot.brain));
   /** Whether a chat-http token is saved for this bot and until when (its value never comes back). */
   const [tokenStatus, setTokenStatus] = useState<ChatTokenStatus | null>(null);
@@ -104,6 +110,18 @@ export function BotSettings({
     };
   }, [api, bot.id, kind, bot.brain.apiKeySecret, bot.brain.baseUrl]);
 
+  useEffect(() => {
+    if (!api || !takesBaseUrl(kind)) return;
+    let live = true;
+    api
+      .get<Array<{ name: string }>>(`/api/v1/bots/${bot.id}/secrets`)
+      .then((names) => live && setKeySaved(names.some((s) => s.name === keyName)))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [api, bot.id, kind, keyName]);
+
   const run = async (fn: () => Promise<void>, ok?: string) => {
     setBusy(true);
     setMessage(null);
@@ -133,6 +151,15 @@ export function BotSettings({
           setTokenStatus({ saved: true, expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now(), source: "shared" });
           setChat((c) => ({ ...c, token: "" }));
         }
+        // An API key goes to the bot's vault (encrypted); the bot keeps only the secret's name.
+        const typedKey = takesBaseUrl(kind) ? apiKey.trim() : "";
+        if (typedKey) {
+          if (!api) throw new Error("no connection to the hub");
+          await api.put(`/api/v1/bots/${bot.id}/secrets/${keyName}`, { value: typedKey });
+          setKeySaved(true);
+          setApiKey("");
+        }
+        const usesKey = takesBaseUrl(kind) && (typedKey !== "" || keySaved || keyName === bot.brain.apiKeySecret);
         // Settings the form does not show (time limit, step limit) are kept.
         const kept = { ...(bot.brain.timeoutSec ? { timeoutSec: bot.brain.timeoutSec } : {}), ...(bot.brain.maxSteps ? { maxSteps: bot.brain.maxSteps } : {}) };
         await onSave({
@@ -151,7 +178,8 @@ export function BotSettings({
                   ...(model.trim() ? { model: model.trim() } : {}),
                   ...(command.trim() ? { command: command.trim() } : {}),
                   ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
-                  ...(apiKeySecret.trim() && takesBaseUrl(kind) ? { apiKeySecret: apiKeySecret.trim() } : {}),
+                  ...(usesKey ? { apiKeySecret: keyName } : {}),
+                  ...(kind === "openai" && keyHeader === "api-key" ? { apiKeyHeader: keyHeader } : {}),
                 },
           policy: { rules: rules.filter((r) => r.tool.trim()).map((r) => ({ tool: r.tool.trim(), decision: r.decision, ...(r.locked ? { locked: true } : {}) })), grants },
           computer: {
@@ -263,10 +291,7 @@ export function BotSettings({
                 {t("newbot.baseUrl")}
                 <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={defaultUrl} name="settings-base-url" />
               </label>
-              <label>
-                {t("settings.apiKeySecret")}
-                <input value={apiKeySecret} onChange={(e) => setApiKeySecret(e.target.value.toUpperCase())} placeholder="ANTHROPIC_API_KEY" name="settings-api-key-secret" />
-              </label>
+              <ApiKeyFields kind={kind} apiKey={apiKey} onApiKey={setApiKey} header={keyHeader} onHeader={setKeyHeader} saved={keySaved} name="settings" />
             </>
           )}
         </fieldset>

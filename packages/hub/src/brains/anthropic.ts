@@ -58,7 +58,9 @@ export const anthropicBrain: BrainAdapter = {
     const key = bot.brain.apiKeySecret ? secret(bot.brain.apiKeySecret) : config.anthropicApiKey;
     if (!key) {
       return bot.brain.apiKeySecret
-        ? `anthropic brain: secret ${bot.brain.apiKeySecret} is not set for this bot`
+        ? /^[A-Z][A-Z0-9_]{0,63}$/.test(bot.brain.apiKeySecret)
+          ? `anthropic brain: no API key saved for this bot (secret ${bot.brain.apiKeySecret}) — paste it in the bot's settings, in API key`
+          : "anthropic brain: the key's secret name is not a name (it looks like the key itself) — paste the key in the bot's settings, in API key"
         : "anthropic brain: no API key (set ANTHROPIC_API_KEY or the bot's apiKeySecret)";
     }
     return null;

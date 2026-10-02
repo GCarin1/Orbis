@@ -150,6 +150,11 @@ export interface Brain {
   baseUrl?: string;
   /** Name of the bot secret holding the API key, for API brains. */
   apiKeySecret?: string;
+  /**
+   * How an OpenAI-compatible brain sends its key: `bearer` (`Authorization: Bearer <key>`, the default)
+   * or `api-key` (an `api-key: <key>` header, as Azure OpenAI and gateways built like it ask).
+   */
+  apiKeyHeader?: "bearer" | "api-key";
   /** Executable for CLI brains; defaults to the brain's usual command. */
   command?: string;
   /** Arguments placed before the adapter's own arguments (custom-cli: the whole argv). */

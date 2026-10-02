@@ -13,7 +13,8 @@ Every bot has a `brain` configuration:
 | `command` | CLI brains | executable; defaults to `claude`, `codex`, `gemini`, or `cursor-agent`/`agent` |
 | `args` | CLI brains | arguments placed before the adapter's own (for `custom-cli`, the whole argv; `{prompt}` is replaced by the prompt) |
 | `timeoutSec` | all | run timeout, default 900 |
-| `baseUrl`, `apiKeySecret` | API and local brains | endpoint and the name of the bot secret holding the key (local servers need none) |
+| `baseUrl`, `apiKeySecret` | API and local brains | endpoint (for `openai`, `{model}` in it is replaced by the model) and the name of the bot secret holding the key (local servers need none) |
+| `apiKeyHeader` | `openai` | how the key is sent: `bearer` (`Authorization: Bearer`, the default) or `api-key` (Azure-style gateways) |
 
 A new bot uses **Claude Code** unless you pick another brain. To see which
 brains your machine has and prove one answers, open **⚙ Settings** in the web
@@ -192,8 +193,8 @@ prompt caching of the system prompt, and on first-party Claude Opus 5 / Opus
 5.5 / Fable 5.1 the server-side refusal fallback (`fallbacks: "default"`), so
 a declined request is retried by the API on the model it recommends. A turn
 that stops on `refusal`, or on `max_tokens` while holding a tool call, fails
-the run without executing anything. Key: `ANTHROPIC_API_KEY` on the hub (or a
-per-bot secret in a later change).
+the run without executing anything. Key: `ANTHROPIC_API_KEY` on the hub, or
+the bot's own **API key** (below).
 
 ```bash
 orbis bots create --name "Researcher" --brain anthropic --model claude-opus-5
@@ -211,6 +212,49 @@ Studio, prefer their own brains above):
 OPENAI_API_KEY=sk-or-... orbis serve
 orbis bots create --name "Router" --brain openai --model anthropic/claude-sonnet-5 --base-url https://openrouter.ai/api/v1
 ```
+
+#### The bot's own API key
+
+In the bot's settings (⚙ → Brain) or on the new-bot screen, an API brain has an
+**API key** field: paste the key there. It goes encrypted to the bot's vault
+(as `API_KEY`, or the secret name the bot already uses), the bot keeps only the
+name (`apiKeySecret`), and the field never shows the key again — it says
+"•••• saved"; paste a new one to change it. Over the API it is
+`PUT /api/v1/bots/:id/secrets/API_KEY` `{ value }` and `brain.apiKeySecret:
+"API_KEY"`; from the CLI, `orbis secrets` sets it and `--api-key-secret API_KEY`
+points the bot at it.
+
+`apiKeySecret` takes a secret's **name** only (`A-Z`, `0-9`, `_`, starting with
+a letter). A key pasted there by an older version is moved into the bot's vault
+when the hub starts, the bot is pointed at it, and the errors that quoted it are
+masked; the brain check never repeats a value that is not a name.
+
+#### Company gateways (Azure-style)
+
+Some gateways in front of OpenAI models (Azure OpenAI and company gateways
+built like it) differ from OpenAI in three ways; set the bot up like this:
+
+- **The model in the path.** Write `{model}` where the gateway's address puts
+  it — `https://gw.example.com/…/openai/deployments/{model}` — and the model in
+  **Model**: Orbis calls `…/deployments/<model>/chat/completions`. Orbis's code
+  names no gateway: you type the address.
+- **The key in an `api-key` header.** Pick **How to send the key → api-key
+  header**. A gateway that takes `Authorization: Bearer <token>` (a JWT, say)
+  keeps the default.
+- **No stream.** A gateway that answers one JSON document is read as such, and
+  one that refuses `"stream": true` with a 4xx naming the stream is asked again
+  without it.
+
+Prices for the gateway's models go in `~/.orbis/prices.json` in USD per
+**million** tokens (a price list per 1,000 tokens × 1,000):
+
+```json
+{ "gpt-4.1-mini": { "input": 0.44, "output": 1.76 } }
+```
+
+Use **Test** in ⚙ Settings → Brains, or a short task, to prove the model calls
+tools through the gateway: a gateway that serves other vendors' models must
+translate tool calls for Orbis's bots to act.
 
 Costs are computed from the price table in `packages/hub/src/brains/pricing.ts`
 (Anthropic list prices); local models cost nothing.

@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { AVATAR_COLORS, AVATAR_SHAPES, chatApiOrigin, type AvatarShape, type Bot, type Brain, type BrainKind, type ChatTokenGroup } from "@orbis/shared";
 import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
+import { ApiKeyFields, type KeyHeader } from "./ApiKeyFields.js";
 import type { Api } from "../api.js";
 import { useLang, useT, type TextKey } from "../i18n.js";
 import { BotFace } from "./Avatar.js";
@@ -19,6 +20,8 @@ export interface NewBotInput {
   brain: Partial<Brain> & { kind: BrainKind };
   /** chat-http: the Bearer token, saved as its chat API's shared token (never in the bot itself). */
   token?: string;
+  /** An API brain's key, saved in the new bot's vault as its `apiKeySecret` (never in the bot itself). */
+  apiKey?: string;
 }
 
 interface Suggestion {
@@ -63,6 +66,8 @@ export function NewBotScreen({
   const [model, setModel] = useState("");
   const [command, setCommand] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [keyHeader, setKeyHeader] = useState<KeyHeader>("bearer");
   const [chat, setChat] = useState(chatHttpValue());
   // The chat APIs that already have a token: a new bot of one of them needs none typed.
   const [tokenApis, setTokenApis] = useState<ChatTokenGroup[]>([]);
@@ -123,8 +128,11 @@ export function NewBotScreen({
                         ...(model.trim() ? { model: model.trim() } : {}),
                         ...(command.trim() ? { command: command.trim() } : {}),
                         ...(baseUrl.trim() && takesBaseUrl(kind) ? { baseUrl: baseUrl.trim() } : {}),
+                        ...(apiKey.trim() && takesBaseUrl(kind) ? { apiKeySecret: "API_KEY" } : {}),
+                        ...(kind === "openai" && keyHeader === "api-key" ? { apiKeyHeader: keyHeader } : {}),
                       },
                 ...(kind === "chat-http" && chat.token.trim() ? { token: cleanToken(chat.token) } : {}),
+                ...(apiKey.trim() && takesBaseUrl(kind) ? { apiKey: apiKey.trim() } : {}),
               });
             } catch (err) {
               setError(err instanceof Error ? err.message : String(err));
@@ -191,10 +199,13 @@ export function NewBotScreen({
             </label>
             {takesModel(kind) && <ModelField kind={kind} value={model} onChange={setModel} name="model" servers={servers} />}
             {takesBaseUrl(kind) && (
-              <label>
-                {t("newbot.baseUrl")}
-                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={defaultUrl ?? (kind === "openai" ? "https://api.openai.com/v1" : "")} name="baseUrl" />
-              </label>
+              <>
+                <label>
+                  {t("newbot.baseUrl")}
+                  <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={defaultUrl ?? (kind === "openai" ? "https://api.openai.com/v1" : "")} name="baseUrl" />
+                </label>
+                <ApiKeyFields kind={kind} apiKey={apiKey} onApiKey={setApiKey} header={keyHeader} onHeader={setKeyHeader} saved={false} name="newbot" />
+              </>
             )}
             {kind === "custom-cli" && (
               <label>

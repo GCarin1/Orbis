@@ -421,7 +421,16 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0041-openai-compatible-gateways",
+        "title": "openai-compatible gateways",
+        "path": ".doctrina/changes/0041-openai-compatible-gateways",
+        "status": "proposed",
+        "opened": "2026-10-02",
+        "lane": "runtime (confident; signals: secret) — opened anyway (--force)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

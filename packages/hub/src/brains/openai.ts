@@ -103,10 +103,45 @@ interface CompatibleOptions {
   envKey: boolean;
 }
 
+/** A secret's name, as the vault takes it: a value that is not one is a key pasted in the wrong field. */
+const SECRET_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
+
+/** The chat completions address: a `{model}` in the base (`…/deployments/{model}`, as Azure-style gateways take it) is the model. */
+export function completionsUrl(baseUrl: string, model: string): string {
+  return `${baseUrl.replace(/\{model\}/g, encodeURIComponent(model))}/chat/completions`;
+}
+
+/** The key's header: `Authorization: Bearer <key>`, or `api-key: <key>` for Azure-style gateways. */
+export function keyHeaders(key: string | null, style: "bearer" | "api-key" | undefined): Record<string, string> {
+  if (!key) return {};
+  return style === "api-key" ? { "api-key": key } : { authorization: `Bearer ${key}` };
+}
+
+/** A non-streamed answer (`"stream": false` servers), as the one chunk a stream would have ended with. */
+export async function* jsonChunks(res: Response): AsyncGenerator<Record<string, any>> {
+  const doc = (await res.json().catch(() => ({}))) as Record<string, any>;
+  if (doc.error) return yield { error: doc.error };
+  const choice = doc.choices?.[0];
+  const message = choice?.message ?? {};
+  yield {
+    ...(doc.usage ? { usage: doc.usage } : {}),
+    choices: [
+      {
+        delta: {
+          content: typeof message.content === "string" ? message.content : "",
+          ...(typeof message.reasoning_content === "string" ? { reasoning_content: message.reasoning_content } : {}),
+          tool_calls: (message.tool_calls ?? []).map((tc: Record<string, any>, index: number) => ({ index, id: tc.id, function: tc.function })),
+        },
+        finish_reason: choice?.finish_reason ?? "stop",
+      },
+    ],
+  };
+}
+
 function makeCompatibleBrain(o: CompatibleOptions): BrainAdapter {
   const baseUrlOf = (bot: Bot, config: HubConfig) => (bot.brain.baseUrl ?? o.baseUrl(config)).replace(/\/+$/, "");
   const keyOf = (bot: Bot, config: HubConfig, secret: (name: string) => string | null) =>
-    bot.brain.apiKeySecret ? secret(bot.brain.apiKeySecret) : o.envKey ? config.openaiApiKey : null;
+    bot.brain.apiKeySecret ? (SECRET_NAME.test(bot.brain.apiKeySecret) ? secret(bot.brain.apiKeySecret) : null) : o.envKey ? config.openaiApiKey : null;
 
   return {
     kind: o.kind,
@@ -115,7 +150,12 @@ function makeCompatibleBrain(o: CompatibleOptions): BrainAdapter {
       if (!bot.brain.model) return `${o.kind} brain: no model configured (${o.modelHint})`;
       const baseUrl = baseUrlOf(bot, config);
       if (o.envKey && isLocalBaseUrl(baseUrl)) return null;
-      if (bot.brain.apiKeySecret && !secret(bot.brain.apiKeySecret)) return `${o.kind} brain: secret ${bot.brain.apiKeySecret} is not set for this bot`;
+      // Never echo a value that is not a secret's name: it is likely the key itself, pasted in the wrong field.
+      if (bot.brain.apiKeySecret && !SECRET_NAME.test(bot.brain.apiKeySecret)) {
+        return `${o.kind} brain: the key's secret name is not a name (it looks like the key itself) — paste the key in the bot's settings, in API key`;
+      }
+      if (bot.brain.apiKeySecret && !secret(bot.brain.apiKeySecret))
+        return `${o.kind} brain: no API key saved for this bot (secret ${bot.brain.apiKeySecret}) — paste it in the bot's settings, in API key`;
       // Ollama and LM Studio take no key unless the bot names one.
       if (o.envKey && !keyOf(bot, config, secret)) return `openai brain: no API key for ${baseUrl} (set OPENAI_API_KEY or the bot's apiKeySecret)`;
       return null;
@@ -157,6 +197,8 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
   ];
   const maxSteps = input.bot.brain.maxSteps ?? 25;
   let includeUsage = true;
+  // Gateways that only answer `"stream": false` say so in a 4xx: ask again without the stream.
+  let streaming = true;
   let retries = 0;
   let toldLast = false;
   yield { type: "run.started" };
@@ -175,15 +217,15 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
     const body = {
       model: input.bot.brain.model,
       messages,
-      stream: true,
-      ...(includeUsage ? { stream_options: { include_usage: true } } : {}),
+      stream: streaming,
+      ...(includeUsage && streaming ? { stream_options: { include_usage: true } } : {}),
       ...(tools.length && !last ? { tools } : {}),
     };
     let res: Response;
     try {
-      res = await fetch(`${baseUrl}/chat/completions`, {
+      res = await fetch(completionsUrl(baseUrl, input.bot.brain.model ?? ""), {
         method: "POST",
-        headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
+        headers: { "content-type": "application/json", ...keyHeaders(key, input.bot.brain.apiKeyHeader) },
         body: JSON.stringify(body),
         signal: ctx.signal,
       });
@@ -214,6 +256,11 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
         step--;
         continue;
       }
+      if (res.status >= 400 && res.status < 500 && streaming && /stream/i.test(text)) {
+        streaming = false;
+        step--;
+        continue;
+      }
       // Many local models cannot call tools: answer without them rather than fail.
       if (res.status >= 400 && res.status < 500 && tools.length && NO_TOOL_SUPPORT.test(text)) {
         tools = [];
@@ -228,7 +275,9 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
     let content = "";
     let finish: string | null = null;
     const calls = new Map<number, ToolCallAccumulator>();
-    for await (const chunk of sseChunks(res.body)) {
+    // A server that does not stream (`"stream": false` gateways) answers one JSON document.
+    const streamed = !/application\/json/i.test(res.headers.get("content-type") ?? "") || /event-stream/i.test(res.headers.get("content-type") ?? "");
+    for await (const chunk of streamed ? sseChunks(res.body) : jsonChunks(res)) {
       if (chunk.error) {
         yield { type: "run.failed", error: String(chunk.error.message ?? JSON.stringify(chunk.error)) };
         return;

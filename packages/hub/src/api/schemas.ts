@@ -9,7 +9,9 @@ export const BrainSchema = Type.Object(
     kind: Type.Union(BRAIN_KINDS.map((k) => Type.Literal(k))),
     model: Type.Optional(Type.String({ maxLength: 200 })),
     baseUrl: Type.Optional(Type.String({ maxLength: 500 })),
-    apiKeySecret: Type.Optional(Type.String({ maxLength: 64 })),
+    // The NAME of the bot secret holding the key (never the key itself): A-Z, 0-9 and _, starting with a letter.
+    apiKeySecret: Type.Optional(Type.String({ maxLength: 64, pattern: "^[A-Z][A-Z0-9_]{0,63}$" })),
+    apiKeyHeader: Type.Optional(Type.Union([Type.Literal("bearer"), Type.Literal("api-key")])),
     command: Type.Optional(Type.String({ maxLength: 1000 })),
     args: Type.Optional(Type.Array(Type.String({ maxLength: 4000 }), { maxItems: 64 })),
     maxSteps: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),

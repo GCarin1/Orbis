@@ -27,8 +27,10 @@ Bots use credentials they never see (ADR 0008,
   A 🔑 card with a masked field appears in the conversation; what you type
   goes straight to the vault (`POST /api/v1/cards/:id/secret`) and the run
   continues. **Decline** tells the bot the secret is unavailable.
-- **API brains** read their key from the vault too: set
-  `brain.apiKeySecret` to the secret's name.
+- **API brains** read their key from the vault too: paste it in the bot's
+  **API key** field (⚙ → Brain), which stores it as `API_KEY` and sets
+  `brain.apiKeySecret` to that name — the name only; a key pasted where the
+  name goes is moved into the vault when the hub starts.
 
 ```bash
 orbis secrets set @ana GITHUB_TOKEN          # hidden prompt; or: printf %s "$TOKEN" | orbis secrets set @ana GITHUB_TOKEN

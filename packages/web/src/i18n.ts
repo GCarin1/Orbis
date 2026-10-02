@@ -140,7 +140,6 @@ const pt = {
   "settings.title": "Configurações de {name}",
   "settings.identity": "Identidade",
   "settings.brain": "Cérebro",
-  "settings.apiKeySecret": "Segredo com a chave da API (nome no cofre)",
   "settings.policy": "Política de ferramentas",
   "settings.policyHelp": "Regras por ferramenta ou padrão (computer.*): permitir, perguntar ou negar. Travada: sempre vale, mesmo com \"sempre permitir\".",
   "settings.addRule": "Adicionar regra",
@@ -610,6 +609,13 @@ const pt = {
   "group.confirmDelete": "Apagar o grupo \"{title}\" e toda a conversa dele? Os bots continuam existindo.",
   "conv.clear": "Limpar conversa",
   "conv.confirmClear": "Limpar toda a conversa com {name}? As mensagens somem, e os bots começam do zero aqui (o que eles salvaram na memória de propósito continua).",
+  "apiKey.label": "Chave da API",
+  "apiKey.saved": "•••• salva — cole uma nova para trocar",
+  "apiKey.optional": "(opcional)",
+  "apiKey.header": "Como enviar a chave",
+  "apiKey.header.bearer": "Authorization: Bearer (OpenAI e a maioria)",
+  "apiKey.header.apiKey": "Cabeçalho api-key (gateways estilo Azure)",
+  "apiKey.gatewayHelp": "A chave fica criptografada no cofre do bot. Se o seu gateway põe o modelo no caminho, escreva {model} no endereço (ex.: …/openai/deployments/{model}): o Orbis troca pelo modelo acima e acrescenta /chat/completions.",
 };
 
 export type TextKey = keyof typeof pt;
@@ -751,7 +757,6 @@ const en: Record<TextKey, string> = {
   "settings.title": "{name}'s settings",
   "settings.identity": "Identity",
   "settings.brain": "Brain",
-  "settings.apiKeySecret": "Secret holding the API key (vault name)",
   "settings.policy": "Tool policy",
   "settings.policyHelp": "Rules per tool or pattern (computer.*): allow, ask or deny. Locked: always applies, even over \"always allow\".",
   "settings.addRule": "Add rule",
@@ -1221,6 +1226,13 @@ const en: Record<TextKey, string> = {
   "group.confirmDelete": "Delete the group \"{title}\" and its whole conversation? The bots stay.",
   "conv.clear": "Clear conversation",
   "conv.confirmClear": "Clear the whole conversation with {name}? The messages go, and the bots start over here (what they saved to memory on purpose stays).",
+  "apiKey.label": "API key",
+  "apiKey.saved": "•••• saved — paste a new one to change it",
+  "apiKey.optional": "(optional)",
+  "apiKey.header": "How to send the key",
+  "apiKey.header.bearer": "Authorization: Bearer (OpenAI and most)",
+  "apiKey.header.apiKey": "api-key header (Azure-style gateways)",
+  "apiKey.gatewayHelp": "The key is kept encrypted in the bot's vault. If your gateway puts the model in the path, write {model} in the address (e.g. …/openai/deployments/{model}): Orbis puts the model above there and adds /chat/completions.",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };
