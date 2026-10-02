@@ -1,6 +1,7 @@
 # Change 0032-chat-http-titles — chat-http titles
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: feature)

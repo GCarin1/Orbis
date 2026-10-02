@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.16.1
+**Version:** 0.17.0
 
 ## Purpose
 
@@ -43,6 +43,7 @@ run's steps.
 - The approvals inbox shall say what each approval would do (the command, file, address or recipient) and open the conversation the approval waits in, a group included.
 - The web app shall show the conversation list's last message and read replies aloud without Markdown marks.
 - The web app shall offer, for the `chat-http` brain in the new-bot screen and the bot's settings, the address, a password field for the Bearer token with its expiry, the model, advanced request settings, and a box that fills them from a pasted cURL command and then clears it.
+- The web app shall offer, in the `chat-http` brain's advanced settings, a box to give new chats a title, checked by default, that saves `chat.titles: false` when cleared.
 
 ### Event-driven
 
@@ -108,6 +109,7 @@ run's steps.
 32. [verified] While the user reads history, a bot starting to work shows no "new below" and a new message shows "1 new below"; a routine's failed run offers no Try again; a refused retry says why; loaded runs keep the steps that streamed in — verified by `packages/web/test/review.test.tsx`.
 33. [verified] A pasted cURL fills the address, token, model, agent and Origin and leaves the screen; saving puts the token in the bot's secret and the rest in the brain; a saved token is kept when the field is empty, with the brain's time and step limits; a new bot hands its token apart from the bot — verified by `packages/web/test/chat-http.test.tsx`.
 34. [verified] Pasting a history GET cURL keeps the request address, saves its token and the history's address — verified by `packages/web/test/chat-http.test.tsx`.
+35. [verified] The title box is checked for a bot with no setting, and clearing it saves the brain with `chat: { titles: false }` — verified by `packages/web/test/chat-http.test.tsx`.
 
 ## Maturity
 

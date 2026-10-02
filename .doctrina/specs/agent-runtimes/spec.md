@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.11.0
+**Version:** 0.12.0
 
 ## Purpose
 
@@ -67,6 +67,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `chat-http` answer holds no text Orbis can read, the system shall read the reply that follows the message it sent from the chat's history (`<history>/<chat id>`, the history being `history/chats` beside the request address unless the bot names another).
 - When a `chat-http` answer names no chat, the system shall look among the newest chats of the history for the one holding the message it sent, and continue that chat.
 - When a `chat-http` request ends and the chats' history can be read, the system shall take the reply that follows the sent message, and its tokens, from the chat's history, reading once more after 1.5 s when the reply is not saved yet, and use the streamed text only when the history has no reply.
+- When a `chat-http` run opens a new chat and the chats' history can be read, the system shall ask the chat API for that chat's title once, in the background, with a `POST` to `<history>/<chat id>/generate-title` carrying the message "Orbis · <bot name> — <task>", unless the bot's brain sets `chat.titles` to false.
 
 ### State-driven
 
@@ -83,6 +84,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not call a `chat-http` API without an address, without a token, or with a JWT token past its expiry; it shall say which, and say that the token expired or is wrong when the server answers 401 or 403.
 - The system shall not write a `chat-http` address or token in its code, tests or documentation.
 - The system shall not take as a bot's chat one that does not hold the message the bot sent, and shall not ask again in a run a history that failed.
+- The system shall not fail or slow a `chat-http` run because the title request failed or timed out.
 
 ### Optional
 
@@ -111,6 +113,7 @@ brain are owned by `contracts/cli-harnesses`.
 18. [verified] Against a fake orchestrator, a bot posts a multipart `data` field with the Bearer token and Origin, reads a streamed answer and its usage, continues the returned chat with only the new message, uses a tool through a fenced `tool` block, resends the whole run when no chat id comes, starts a new chat when the stored one is refused, reports an expired JWT before calling and a 401 after; answers in SSE, JSON lines, one JSON document and plain text are read; a pasted cURL (bash or cmd) gives the address, token, agent, model and Origin — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 19. [verified] A reply missing from the answer is read from the chat's history; among the newest chats the one holding the sent message is continued and a browser chat beside it is not; a server without the history is asked once and the error shows how the answer began; history shapes of role lists, input/output pairs and user/answer fields are read; a history cURL gives its token and the history's address — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 20. [verified] With a history shaped like the owner's company chat (`data.chat.messages` with `role`, `content` and `usage`), a bot takes the reply and its 5760/194 tokens from the history whatever the stream held, prefers it to a stream read wrong, keeps the chat id given as `chat._id`, and reads neither the user's profile nor the follow-up questions as messages — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+21. [verified] A bot that opens a chat asks for its title once (Bearer token, JSON body `{"data":{"userMessage":"Orbis · Ana — …"}}`) and not again when it continues the chat; with `titles: false` no title is asked; a title request answered with 500 leaves the run done — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 
 ## Maturity
 
