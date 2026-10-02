@@ -110,6 +110,11 @@ orbis open                 # abre o app web já autenticado
 
 Ou o **app desktop**, que inicia o hub para você: `npm run desktop`.
 
+**No Windows**, `scripts\windows\Orbis.bat` inicia o Orbis (ou reinicia, se ele
+já estiver rodando), `Orbis-Token.bat` mostra o token de login e
+`Orbis-Atalhos.bat` coloca os dois na área de trabalho com o ícone do Orbis —
+veja [docs/windows.md](docs/windows.md).
+
 **Qual cérebro está respondendo?** Um bot novo usa o Claude Code com o seu
 login, a menos que você escolha outro cérebro. Abra **⚙ Configurações** no app
 web para ver os cérebros da sua máquina (Claude Code, Codex, Gemini CLI,

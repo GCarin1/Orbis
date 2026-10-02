@@ -25,6 +25,7 @@
     "orbis": "node packages/cli/dist/index.js",
     "doctrina": "doctrina",
     "brand:icons": "node scripts/render-brand.mjs",
+    "brand:ico": "node scripts/make-ico.mjs",
     "desktop": "npm run build && electron packages/desktop"
   },
   "devDependencies": {

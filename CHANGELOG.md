@@ -98,6 +98,12 @@ change that delivered it.
 
 ### Added
 
+- Windows launchers (change 0034-windows-launcher-scripts): `scripts/windows/Orbis.bat`
+  starts Orbis — building first — and, when it is already running, restarts it
+  (it stops only an Orbis hub, never another program on the port); `Orbis-Token.bat`
+  shows or creates the login token, and `--novo` replaces it; `Orbis-Atalhos.bat`
+  puts both on the Desktop and in the Start menu with the Orbis icon
+  (`docs/brand/orbis.ico`, `npm run brand:ico`). See docs/windows.md.
 - `chat-http` gives each chat a bot opens a title (change 0032-chat-http-titles),
   as the browser does: `POST …/history/chats/<chat id>/generate-title` with
   "Orbis · <bot> — <task>", once per new chat and in the background. One model

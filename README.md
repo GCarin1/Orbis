@@ -109,6 +109,11 @@ orbis open                 # opens the web app already signed in
 
 Or the **desktop app**, which starts the hub for you: `npm run desktop`.
 
+**On Windows**, `scripts\windows\Orbis.bat` starts Orbis (or restarts it when it
+is already running), `Orbis-Token.bat` shows the login token and
+`Orbis-Atalhos.bat` puts both on your Desktop with the Orbis icon — see
+[docs/windows.md](docs/windows.md).
+
 **Which brain answers?** A new bot uses Claude Code with your login unless
 you pick another brain. Open **⚙ Settings** in the web app to see the brains
 on your machine (Claude Code, Codex, Gemini CLI, Cursor, Ollama, LM Studio)
