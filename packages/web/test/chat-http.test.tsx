@@ -7,7 +7,7 @@ import type { ChatConnectionCheck } from "@orbis/shared";
 import { BotSettings } from "../src/components/BotSettings.js";
 import { NewBotScreen } from "../src/components/NewBotScreen.js";
 import { useLang } from "../src/i18n.js";
-import type { Api } from "../src/api.js";
+import { ApiError, type Api } from "../src/api.js";
 import { bot } from "./fixtures.js";
 
 const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
@@ -397,5 +397,39 @@ describe("the connection test (change 0037)", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Test connection" })));
     expect(screen.getByTestId("chat-check").textContent).toContain("no answer: ENOTFOUND");
     expect(screen.getByTestId("chat-check").textContent).toContain("No way got past the firewall");
+  });
+});
+
+describe("plain chat and the errors of a save (change 0038)", () => {
+  it("is off by default, explained, and saved when turned on", async () => {
+    const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? SAVED : Promise.reject(new Error("not in this test"))));
+    const onSave = vi.fn(async () => undefined);
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put: vi.fn(), get } as unknown as Api}
+        bot={ana}
+        onSave={onSave}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+    const box = screen.getByLabelText("Plain chat (no tools)") as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    expect(screen.getByText(/the company's firewall blocks the bot's messages/)).toBeTruthy();
+    fireEvent.click(box);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect((onSave.mock.calls[0] as unknown as [{ brain: { chat: unknown } }])[0].brain.chat).toEqual({ plain: true });
+  });
+
+  it("names the field the hub refused", () => {
+    const err = new ApiError(400, {
+      error: { code: "invalid_request", message: "the request does not match its schema", fields: { "brain.chat.curl": "must match pattern" } },
+    });
+    expect(err.message).toBe("the request does not match its schema (brain.chat.curl: must match pattern)");
+    expect(new ApiError(500, null).message).toBe("HTTP 500");
   });
 });

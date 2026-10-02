@@ -797,8 +797,9 @@ describe("a firewall that wants the browser's headers (change 0035)", () => {
     const bare = await chatBot(t, fake.url, { chat: { titles: false, origin: "https://chat.example.com" } });
     const blocked = (await chat(t, bare.id, "oi")).runs[0];
     expect(blocked.status).toBe("failed");
-    expect(blocked.error).toContain("firewall (Cloudflare) blocked the request (HTTP 403)");
+    expect(blocked.error).toContain("firewall (Cloudflare) blocked the message (HTTP 403)");
     expect(blocked.error).toContain("through curl");
+    expect(blocked.error).toContain("Paste the request's cURL in the bot's settings");
     expect(blocked.error).not.toContain(FRESH);
 
     const browser = await chatBot(t, fake.url, { chat: { titles: false, origin: "https://chat.example.com", headers } });
@@ -886,9 +887,9 @@ describe("a firewall that lets through only what comes from the company's proxy 
     t = await testHub();
     const direct = await chatBot(t, fake.url, { chat: { titles: false, proxy: "direct" } });
     const refused = (await chat(t, direct.id, "oi")).runs[0];
-    expect(refused.error).toContain("firewall (Cloudflare) blocked the request");
+    expect(refused.error).toContain("firewall (Cloudflare) blocked the message");
     expect(refused.error).toContain("through curl with no proxy");
-    expect(refused.error).toContain("press Test connection");
+    expect(refused.error).toContain("Press Test connection");
     const proxied = await chatBot(t, fake.url, { chat: { titles: false, proxy: via } });
     expect((await chat(t, proxied.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "pelo proxy" });
   });
@@ -973,5 +974,64 @@ describe("a firewall that lets through only what comes from the company's proxy 
     expect(imported.brain.chat).toEqual({ agentId: "agente-x" });
     // And the API refuses a program that is not curl.
     expect((await t.api("POST", "/api/v1/bots", { name: "Bia", brain: { kind: "chat-http", chat: { curl: "C:\\\\x\\\\evil.exe" } } })).status).toBe(400);
+  });
+});
+
+describe("a firewall that reads what the message says (change 0038)", () => {
+  /** Like a firewall with attack rules: it blocks a message whose words look like a shell, a tag or a template. */
+  const firewall = (s: Seen, res: ServerResponse) => {
+    if (/\/bin\/sh|cmd\.exe|<untrusted-content>|\{\{secret:/.test(s.data.input.content)) {
+      res.writeHead(403, { "content-type": "text/html" });
+      return res.end(
+        "<html><title>Attention Required! | Cloudflare</title><body>Sorry, you have been blocked. There are several actions that could trigger this block including submitting a certain word or phrase.</body></html>",
+      );
+    }
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    res.end('data: {"delta":"oi!"}\n\ndata: {"chatId":"c-plain"}\n\n');
+  };
+
+  it("blocks Orbis's instructions, says to turn on plain chat, and lets a plain chat through with the bot's own words", async () => {
+    const fake = await orchestrator(firewall);
+    t = await testHub();
+    const full = await chatBot(t, fake.url, { chat: { titles: false, headers: { "user-agent": "Mozilla/5.0" } } });
+    const blocked = (await chat(t, full.id, "ola")).runs[0];
+    expect(blocked.status).toBe("failed");
+    expect(blocked.error).toContain("blocked the message (HTTP 403)");
+    expect(blocked.error).toContain("reading what the message says");
+    expect(blocked.error).toMatch(/turn on Plain chat/);
+    expect(blocked.error).not.toContain("Paste the request's cURL"); // its headers came from a cURL already
+
+    const plainBot = await createBot(t, {
+      name: "Ana",
+      role: "Analista",
+      description: "Você revisa planilhas de vendas.",
+      brain: { kind: "chat-http", baseUrl: fake.url, apiKeySecret: "CHAT_BEARER_TOKEN", chat: { titles: false, plain: true } },
+    });
+    await t.api("PUT", `/api/v1/bots/${plainBot.id}/secrets/CHAT_BEARER_TOKEN`, { value: FRESH });
+    expect((await chat(t, plainBot.id, "ola")).runs[0]).toMatchObject({ status: "done", reply: "oi!" });
+    const sent = fake.seen.at(-1)!.data.input.content;
+    expect(sent).toContain("You are Ana, Analista.");
+    expect(sent).toContain("Você revisa planilhas de vendas.");
+    expect(sent).toContain("Task:\nola");
+    for (const instruction of ["Tools:", "computer.shell", "House rules", "{{secret:", "<untrusted-content>", "/bin/sh"])
+      expect(sent).not.toContain(instruction);
+  });
+
+  it("says, for a plain chat that is still blocked, that the words or the way out are what it judges", () => {
+    const page = "<title>Attention Required! | Cloudflare</title> Sorry, you have been blocked.";
+    const conn = { token: FRESH, transport: transportFor("curl", "/usr/bin/curl") };
+    expect(refusal(403, page, conn, { plain: true })).toContain("This was a plain chat");
+    expect(refusal(403, page, conn)).toContain("blocked the request (HTTP 403)");
+  });
+
+  it("accepts a curl program whatever the case of its name, as Windows writes it", async () => {
+    t = await testHub();
+    const res = await t.api("POST", "/api/v1/bots", {
+      name: "Bia",
+      brain: { kind: "chat-http", chat: { curl: "C:\\WINDOWS\\system32\\curl.EXE", proxy: "direct" } },
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.brain.chat.curl).toBe("C:\\WINDOWS\\system32\\curl.EXE");
+    expect((await t.api("POST", "/api/v1/bots", { name: "Cid", brain: { kind: "chat-http", chat: { curl: "C:\\x\\CURLY.EXE" } } })).status).toBe(400);
   });
 });

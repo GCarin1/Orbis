@@ -421,7 +421,16 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0038-chat-http-plain-chat",
+        "title": "chat-http plain chat",
+        "path": ".doctrina/changes/0038-chat-http-plain-chat",
+        "status": "proposed",
+        "opened": "2026-10-02",
+        "lane": "product (confident; signals: fix)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

@@ -8,7 +8,9 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly body: ApiErrorBody | null,
   ) {
-    super(body?.error.message ?? `HTTP ${status}`);
+    // A refused request names what in it was wrong ("brain.chat.curl: must match pattern …").
+    const fields = Object.entries(body?.error.fields ?? {}).map(([field, why]) => `${field}: ${why}`);
+    super(`${body?.error.message ?? `HTTP ${status}`}${fields.length ? ` (${fields.join("; ")})` : ""}`);
   }
 }
 

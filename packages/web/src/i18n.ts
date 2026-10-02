@@ -580,6 +580,9 @@ const pt = {
   "chat.curlPathHint": "vazio = o do PATH",
   "chat.proxy": "Proxy (opcional)",
   "chat.proxyHint": "vazio = o do Windows · direct = nenhum",
+  "chat.plain": "Conversa simples (sem ferramentas)",
+  "chat.plainHelp": "Manda só a conversa, como o navegador: o nome, o papel e a descrição do bot, as memórias e as mensagens — sem as instruções e as ferramentas do Orbis. Use quando o firewall da empresa bloquear as mensagens do bot: ele lê o texto, e as instruções de ferramentas (shell, caminhos, marcadores) parecem um ataque. O bot não usa ferramentas assim.",
+  "chat.check.getOnly": "Este teste é uma consulta sem mensagem. Se ele passa e as mensagens do bot são bloqueadas, o firewall está lendo o texto da mensagem: ligue a Conversa simples.",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1161,6 +1164,9 @@ const en: Record<TextKey, string> = {
   "chat.curlPathHint": "empty = the one on PATH",
   "chat.proxy": "Proxy (optional)",
   "chat.proxyHint": "empty = Windows' own · direct = none",
+  "chat.plain": "Plain chat (no tools)",
+  "chat.plainHelp": "Sends only the conversation, as the browser does: the bot's name, role and description, its memories and the messages — without Orbis's instructions and tools. Use it when the company's firewall blocks the bot's messages: it reads the text, and tool instructions (a shell, paths, placeholders) look like an attack to it. The bot then uses no tools.",
+  "chat.check.getOnly": "This test is a query with no message. If it gets through and the bot's messages are blocked, the firewall is reading the message's text: turn on Plain chat.",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

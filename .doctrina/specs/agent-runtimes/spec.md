@@ -97,7 +97,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not take as a bot's chat one that does not hold the message the bot sent, and shall not ask again in a run a history that failed.
 - The system shall not fail or slow a `chat-http` run because the title request failed or timed out.
 - A template export shall not carry a `chat-http` brain's request address, `Origin`, history address or browser headers.
-- A template shall neither carry nor set a `chat-http` brain's curl program or proxy, and the system shall accept only a curl program whose file is named curl or curl.exe.
+- A template shall not carry or set a `chat-http` brain's curl program or proxy, and the system shall not accept a curl program whose file is not named curl or curl.exe.
 
 ### Optional
 

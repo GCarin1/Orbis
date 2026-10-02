@@ -26,7 +26,7 @@ import {
   type ChosenTransport,
   type HttpResponse,
 } from "./http-transport.js";
-import { renderSystem, renderTask } from "./prompt.js";
+import { renderMemories, renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, ToolDescriptor } from "./types.js";
 
 /** The request's `data` field. */
@@ -96,7 +96,7 @@ function bodyHint(body: string, token: string): string {
  * request was made, or what the browser sends besides the token. The message says what Orbis sent
  * and what is left to try.
  */
-export function refusal(status: number, body: string, conn: Connection): string {
+export function refusal(status: number, body: string, conn: Connection, message?: { plain: boolean }): string {
   const hint = bodyHint(body, conn.token);
   const said = hint ? ` The server said: ${hint}` : "";
   const expires = tokenExpiry(conn.token);
@@ -110,13 +110,23 @@ export function refusal(status: number, body: string, conn: Connection): string 
   const sent = `the token${conn.origin ? ", Origin" : ""}${names.length ? `, ${names.length} browser header${names.length > 1 ? "s" : ""}` : ""}, through ${conn.transport.label}`;
   const when = expires ? `its token is valid until ${expires.toLocaleString()}` : "its token's expiry is unknown";
   if (/cloudflare|attention required|you have been blocked|cf-ray/i.test(body)) {
-    return (
-      `the server's firewall (Cloudflare) blocked the request (HTTP ${status}); ${when}. Orbis sent ${sent}. ` +
-      (conn.transport.name === "fetch"
-        ? "Node's own HTTP client is recognised and refused: install curl (Windows 10 and later have it) and leave the bot's HTTP call on automatic. "
-        : `${names.length ? "The browser's headers already go with it, so what it judges is the way out of this computer" : "Paste the request's cURL in the bot's settings so Orbis copies the browser's headers; then, if it is still blocked"}: press Test connection in the bot's settings (Chat API over cURL) — Orbis tries each curl here, with and without the Windows proxy, and Node, and says which one the firewall lets through. `) +
-      said.trim()
-    );
+    const head = `the server's firewall (Cloudflare) blocked the ${message ? "message" : "request"} (HTTP ${status}); ${when}. Orbis sent ${sent}. `;
+    let next: string;
+    if (conn.transport.name === "fetch") {
+      next = "Node's own HTTP client is recognised and refused: install curl (Windows 10 and later have it) and leave the bot's HTTP call on automatic. ";
+    } else if (message && !message.plain) {
+      next =
+        `${names.length ? "" : "Paste the request's cURL in the bot's settings so Orbis copies the browser's headers. "}` +
+        "Press Test connection in the bot's settings: it tries each way out of this computer (each curl, with and without the Windows proxy, and Node) and says which one the firewall lets through. " +
+        "If one gets through and the messages are still blocked, the firewall is reading what the message says, and Orbis's instructions — its tools, a shell, file paths, placeholders — read to it like an attack: " +
+        "turn on Plain chat in the bot's settings, and the bot sends only the conversation, as the browser does, with no tools. Or ask the team that runs the chat to allow these messages. ";
+    } else if (message) {
+      next =
+        "This was a plain chat, so the firewall is reading the words of the conversation itself, or the way out of this computer: press Test connection in the bot's settings to see which way gets through, and ask the team that runs the chat about the rest. ";
+    } else {
+      next = `${names.length ? "The browser's headers already go with it, so what it judges is the way out of this computer" : "Paste the request's cURL in the bot's settings so Orbis copies the browser's headers; then, if it is still blocked"}: press Test connection in the bot's settings (Chat API over cURL) — Orbis tries each curl here, with and without the Windows proxy, and Node, and says which one the firewall lets through. `;
+    }
+    return head + next + said.trim();
   }
   return (
     `the server refused the request (HTTP ${status}); ${when}, so it is refusing something else. Orbis sent ${sent}` +
@@ -247,6 +257,13 @@ export class AnswerReader {
   }
 }
 
+/** What a plain-chat bot says of itself: its name, role and description (the owner's words) and its memories; no Orbis instructions. */
+export function plainSystem(input: BrainInput): string {
+  const bot = input.bot;
+  const who = `You are ${bot.name}${bot.role.trim() ? `, ${bot.role.trim()}` : ""}. Answer in the language the user writes in.`;
+  return [who, bot.description.trim(), renderMemories(input.context)].filter(Boolean).join("\n\n");
+}
+
 /** Some chats end an answer with `[FOLLOW_UP_QUESTIONS]["…"][/FOLLOW_UP_QUESTIONS]`: suggestions for the person, not part of the reply. */
 export const stripFollowUps = (text: string) => text.replace(/\s*\[FOLLOW_UP_QUESTIONS\][\s\S]*?(?:\[\/FOLLOW_UP_QUESTIONS\]|$)/i, "").trimEnd();
 
@@ -299,7 +316,7 @@ class HttpFailure extends Error {
   }
 }
 
-async function ask(url: string, conn: Connection, payload: Record<string, unknown>, signal: AbortSignal): Promise<AnswerReader> {
+async function ask(url: string, conn: Connection, payload: Record<string, unknown>, signal: AbortSignal, plain = false): Promise<AnswerReader> {
   let res: HttpResponse;
   try {
     res = await conn.transport.send({
@@ -322,7 +339,7 @@ async function ask(url: string, conn: Connection, payload: Record<string, unknow
       null,
     );
   }
-  if (res.status === 401 || res.status === 403) throw new HttpFailure(refusal(res.status, await readText(res, 4_000), conn), res.status);
+  if (res.status === 401 || res.status === 403) throw new HttpFailure(refusal(res.status, await readText(res, 4_000), conn, { plain }), res.status);
   if (res.status < 200 || res.status >= 300) {
     const text = (await readText(res, 400)).slice(0, 400);
     throw new HttpFailure(`the chat API answered HTTP ${res.status}${text ? `: ${text}` : ""}`, res.status);
@@ -640,8 +657,9 @@ export const chatHttpBrain: BrainAdapter = {
     const options = bot.brain.chat ?? {};
     const conn = await connectionOf(bareToken(ctx.secret(secretName(bot)) ?? ""), options, url);
     const model = bot.brain.model?.trim() || CHAT_HTTP_DEFAULT_MODEL;
-    const tools = ctx.tools.list();
-    const system = [renderSystem(input), tools.length ? toolProtocol(tools) : ""].filter(Boolean).join("\n\n");
+    // Plain chat: only the conversation, no Orbis instructions and no tools (see ChatHttpOptions.plain).
+    const tools = options.plain ? [] : ctx.tools.list();
+    const system = options.plain ? plainSystem(input) : [renderSystem(input), tools.length ? toolProtocol(tools) : ""].filter(Boolean).join("\n\n");
     const maxSteps = bot.brain.maxSteps ?? 25;
     yield { type: "run.started" };
 
@@ -669,7 +687,7 @@ export const chatHttpBrain: BrainAdapter = {
       const content = chatId !== null && step > 0 ? turns.at(-1)!.text : chatId !== null ? turns[0]!.text : transcript();
       let answer: AnswerReader;
       try {
-        answer = await ask(url, conn, chatPayload({ content, chatId, model, options }), ctx.signal);
+        answer = await ask(url, conn, chatPayload({ content, chatId, model, options }), ctx.signal, options.plain === true);
       } catch (err) {
         if (ctx.signal.aborted) throw err;
         // A stored chat the server no longer has: start a new one, with the whole conversation.

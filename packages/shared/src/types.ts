@@ -59,6 +59,13 @@ export interface ChatHttpOptions {
    * is installed (Windows 10 and later have it), else fetch.
    */
   transport?: "curl" | "fetch";
+  /**
+   * Plain chat: send only the conversation, as the browser does — the bot's name, role and
+   * description, its memories and the messages — without Orbis's instructions and tools. For a
+   * company firewall that reads each message and blocks the tool instructions (a shell, file paths,
+   * placeholders) as an attack. The bot then uses no tools.
+   */
+  plain?: boolean;
   /** The curl program to use (a path), when not the one on PATH — say, the Git Bash curl that works in a terminal. */
   curl?: string;
   /**

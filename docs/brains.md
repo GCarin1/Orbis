@@ -302,6 +302,17 @@ the token, the agent, the model and the `Origin` are read from it.
   message, no model call), and shows which ones the firewall let through; **Use
   this way** fills the settings with one of them (`POST /api/v1/bots/<id>/chat-check`).
 
+  - **What the message says.** Some firewalls read each message, and Orbis's own
+    instructions — its tools, a shell, file paths, `{{secret:NAME}}`
+    placeholders, a `<untrusted-content>` tag, about 6,000 characters before your
+    text — read to them like an attack. When **Test connection** gets through
+    (it sends no message) and the bot's messages are still blocked, turn on
+    **Plain chat (no tools)** in the bot's settings (`chat.plain`): the bot then
+    sends only the conversation, as the browser does — its name, role and
+    description, its memories and the messages — and uses no tools. Orbis does
+    not disguise its messages to get past a company firewall: if the bot needs
+    its tools through this chat, ask the team that runs it.
+
   The run's error says what the server answered, whether it was the firewall,
   what Orbis sent and which way it went. A `401`, or a `403` after the token's
   expiry, is the token: paste a new one. A template never carries the curl

@@ -36,6 +36,8 @@ export interface ChatHttpValue {
   curl: string;
   /** A proxy URL or "direct"; empty is the environment's, else Windows' own. */
   proxy: string;
+  /** Plain chat: only the conversation, no Orbis instructions and no tools. */
+  plain: boolean;
 }
 
 export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
@@ -52,6 +54,7 @@ export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
   transport: brain?.chat?.transport ?? "",
   curl: brain?.chat?.curl ?? "",
   proxy: brain?.chat?.proxy ?? "",
+  plain: brain?.chat?.plain === true,
 });
 
 /** The token as the user may paste it: bare, with "Bearer ", a whole Authorization line, quoted or wrapped. */
@@ -71,6 +74,7 @@ export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
     ...(v.transport ? { transport: v.transport } : {}),
     ...(v.curl.trim() ? { curl: v.curl.trim() } : {}),
     ...(v.proxy.trim() ? { proxy: v.proxy.trim() } : {}),
+    ...(v.plain ? { plain: true } : {}),
   };
   return {
     ...(v.url.trim() ? { baseUrl: v.url.trim() } : {}),
@@ -185,6 +189,11 @@ export function ChatHttpFields({
         {t("newbot.model")}
         <input value={value.model} onChange={set("model")} placeholder={CHAT_HTTP_DEFAULT_MODEL} name={`${name}-model`} />
       </label>
+      <label className="checkbox wide">
+        <input type="checkbox" checked={value.plain} onChange={(e) => onChange({ ...value, plain: e.target.checked })} name={`${name}-plain`} />
+        {t("chat.plain")}
+      </label>
+      <p className="muted small wide">{t("chat.plainHelp")}</p>
       {onCheck && <ConnectionCheck onCheck={onCheck} value={value} onChange={onChange} />}
       <details className="wide">
         <summary>{t("chat.advanced")}</summary>
@@ -323,7 +332,7 @@ function ConnectionCheck({
               </li>
             ))}
           </ul>
-          {!found.results.some(passed) && <p className="error small">{t("chat.check.noneOk")}</p>}
+          {found.results.some(passed) ? <p className="muted small">{t("chat.check.getOnly")}</p> : <p className="error small">{t("chat.check.noneOk")}</p>}
         </div>
       )}
     </div>

@@ -9,6 +9,13 @@ change that delivered it.
 
 ### Fixed
 
+- `chat-http` messages blocked by a firewall that reads them (change 0038-chat-http-plain-chat): the
+  connection test got through by every way, but each message carried ~6,000
+  characters of Orbis's tool instructions (a shell, paths, placeholders) that the
+  firewall reads as an attack. **Plain chat (no tools)** sends only the
+  conversation, as the browser does; the firewall error says when to use it.
+  Also: a curl program written `curl.EXE` (as Windows lists it) can be saved, and
+  a refused save names the field.
 - `chat-http` still blocked by Cloudflare through curl (change 0037-chat-http-proxy-and-connection-test):
   the firewall lets through what comes from the company's proxy, which the
   browser and Postman use and curl ignored. curl now goes through the proxy
