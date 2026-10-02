@@ -86,6 +86,10 @@ change that delivered it.
 
 ### Added
 
+- `chat-http` reads the chats' history (change 0030-chat-http-history): when
+  an answer holds no readable text the reply comes from the chat's history,
+  and when it names no chat the bot finds its own among the newest (never one
+  you have open); pasting a history cURL renews the token.
 - `chat-http` brain (change 0029-chat-http-brain): bots can use a chat API you
   reach from the browser with a Bearer token (a `multipart/form-data` request
   with a `data` field, as "Copy as cURL" shows). Give the request's address and

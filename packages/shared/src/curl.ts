@@ -5,6 +5,10 @@
 /** What a cURL command says about a chat request. */
 export interface ParsedCurl {
   url: string | null;
+  /** The request sends a body (a message); a GET without one only reads. */
+  hasBody: boolean;
+  /** For a request to a chats' history (`…/history/chats[/<id>]`): that history's address. */
+  historyUrl: string | null;
   /** The Bearer token, without the word "Bearer". */
   token: string | null;
   /** Every header, names in lowercase. */
@@ -102,8 +106,11 @@ export function parseCurl(command: string): ParsedCurl {
   const j = (json ?? {}) as { agent?: { agentId?: unknown; version?: unknown }; config?: { modelId?: unknown; temperature?: unknown; maxTokens?: unknown } };
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
   const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const at = url ? url.search(/\/history\/chats(?=[/?#]|$)/) : -1;
   return {
     url,
+    hasBody: body !== null,
+    historyUrl: url && at >= 0 ? url.slice(0, at + "/history/chats".length) : null,
     token,
     headers,
     json,

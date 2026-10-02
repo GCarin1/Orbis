@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { parseCurl, shellWords, tokenExpiry } from "@orbis/shared";
-import { AnswerReader, chatPayload, eventText, toolRequest } from "../../src/brains/chat-http.js";
+import { AnswerReader, answerAfter, chatIds, chatPayload, eventText, historyBase, historyMessages, toolRequest } from "../../src/brains/chat-http.js";
 import { chat, createBot, testHub, type TestHub } from "../helpers.js";
 
 let t: TestHub | null = null;
@@ -39,10 +39,17 @@ async function dataField(req: IncomingMessage): Promise<Seen["data"]> {
   return JSON.parse(m[1]!);
 }
 
-/** A fake orchestrator: `answer` writes each response; every request is recorded. */
-async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number) => void) {
+/** A fake orchestrator: `answer` writes each response; `history` answers GETs (else 404); every POST is recorded. */
+async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number) => void, history?: (path: string) => unknown) {
   const seen: Seen[] = [];
+  const reads: string[] = [];
   server = createServer(async (req, res) => {
+    if (req.method === "GET") {
+      reads.push(req.url ?? "");
+      const doc = history?.(req.url ?? "");
+      res.writeHead(doc === undefined ? 404 : 200, { "content-type": "application/json" });
+      return res.end(doc === undefined ? "{}" : JSON.stringify(doc));
+    }
     const s: Seen = {
       auth: req.headers.authorization,
       origin: req.headers.origin,
@@ -54,7 +61,7 @@ async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number)
     answer(s, res, seen.length);
   });
   await new Promise<void>((r) => server!.listen(0, "127.0.0.1", () => r()));
-  return { url: `http://127.0.0.1:${(server!.address() as AddressInfo).port}/internal/v1/chat-orchestrator`, seen };
+  return { url: `http://127.0.0.1:${(server!.address() as AddressInfo).port}/internal/v1/chat-orchestrator`, seen, reads };
 }
 
 const sse = (res: ServerResponse, events: unknown[]) => {
@@ -274,5 +281,111 @@ describe("a pasted cURL command", () => {
     const cmd = `curl ^"https://chat.example.com/v1/chat^" ^\n  -H ^"authorization: Bearer ${token}^" ^\n  --data-raw ^"^{^\\^"a^\\^":1^}^"`;
     expect(parseCurl(cmd)).toMatchObject({ url: "https://chat.example.com/v1/chat", token });
     expect(shellWords("a 'b c' \"d e\" $'f\\ng'")).toEqual(["a", "b c", "d e", "f\ng"]);
+  });
+});
+
+describe("the chats' history, when the answer leaves something out", () => {
+  it("reads the reply from the chat's history when the answer holds no text Orbis can read", async () => {
+    let sent = "";
+    const fake = await orchestrator(
+      (s, res) => {
+        sent = s.data.input.content;
+        sse(res, [{ kind: "done", chatId: "0000aaaa-1111-7000-8000-000000000001" }]);
+      },
+      (path) =>
+        path === "/internal/v1/history/chats/0000aaaa-1111-7000-8000-000000000001"
+          ? {
+              data: {
+                messages: [
+                  { role: "user", content: sent },
+                  { role: "assistant", content: [{ type: "text", text: "Resposta lida do histórico." }] },
+                ],
+              },
+            }
+          : undefined,
+    );
+    t = await testHub();
+    const bot = await chatBot(t, fake.url);
+    expect((await chat(t, bot.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "Resposta lida do histórico." });
+  });
+
+  it("finds its chat among the newest when the answer names none, never a chat the user has open", async () => {
+    let sent = "";
+    const fake = await orchestrator(
+      (s, res, n) => {
+        if (n === 1) sent = s.data.input.content;
+        sse(res, [{ content: n === 1 ? "primeira" : "segunda" }]);
+      },
+      (path) => {
+        if (path.startsWith("/internal/v1/history/chats?page=1"))
+          return { data: { items: [{ id: "browser-chat", title: "Minha conversa" }, { id: "orbis-chat" }] } };
+        if (path === "/internal/v1/history/chats/browser-chat")
+          return { data: { messages: [{ role: "user", content: "algo que eu perguntei no navegador" }] } };
+        if (path === "/internal/v1/history/chats/orbis-chat")
+          return {
+            data: {
+              messages: [
+                { role: "user", content: sent },
+                { role: "assistant", content: "primeira" },
+              ],
+            },
+          };
+        return undefined;
+      },
+    );
+    t = await testHub();
+    const bot = await chatBot(t, fake.url);
+    expect((await chat(t, bot.id, "oi")).runs[0].reply).toBe("primeira");
+    expect((await chat(t, bot.id, "e agora?")).runs[0].reply).toBe("segunda");
+    expect(fake.seen[1]!.data.context.chatId).toBe("orbis-chat");
+  });
+
+  it("asks a server without that history once, and says how the answer began", async () => {
+    const fake = await orchestrator((_s, res) => sse(res, [{ kind: "something-new", payload: { x: 1 } }]));
+    t = await testHub();
+    const bot = await chatBot(t, fake.url);
+    expect((await chat(t, bot.id, "oi")).runs[0].error).toMatch(
+      /^the chat API answered, but Orbis found no text in it; it began with: data: \{"kind":"something-new"/,
+    );
+    expect(fake.reads).toHaveLength(1);
+  });
+
+  it("reads the usual shapes of a chat's messages", () => {
+    expect(
+      historyMessages([
+        { type: "human", text: "q" },
+        { type: "ai", text: "a" },
+      ]),
+    ).toEqual([
+      { role: "user", text: "q" },
+      { role: "assistant", text: "a" },
+    ]);
+    expect(historyMessages({ data: [{ input: { content: "q" }, output: { content: "a" } }] })).toEqual([
+      { role: "user", text: "q" },
+      { role: "assistant", text: "a" },
+    ]);
+    expect(historyMessages({ turns: [{ userMessage: "q", answer: "a" }] })).toEqual([
+      { role: "user", text: "q" },
+      { role: "assistant", text: "a" },
+    ]);
+    const messages = [
+      { role: "user" as const, text: "antes" },
+      { role: "assistant" as const, text: "velha" },
+      // The server may store our message wrapped; it still holds what we sent.
+      { role: "user" as const, text: "[chat] sistema\n\nTask:\nnova pergunta" },
+      { role: "assistant" as const, text: "nova" },
+    ];
+    expect(answerAfter(messages, "sistema\n\nTask:\nnova pergunta")).toBe("nova");
+    expect(answerAfter(messages, "outra")).toBeNull();
+    expect(chatIds({ data: { items: [{ chatId: "a" }, { chatId: "b" }] } })).toEqual(["a", "b"]);
+    expect(historyBase("https://chat.example.com/internal-api/v1/chat-orchestrator")).toBe("https://chat.example.com/internal-api/v1/history/chats");
+    expect(historyBase("https://chat.example.com/v1/chat", "https://other.example.com/h/")).toBe("https://other.example.com/h");
+  });
+
+  it("takes from a pasted history cURL (a GET) its token and the history's address, not the chat's", () => {
+    const get = `curl --url 'https://chat.example.com/internal-api/v1/history/chats/0000bbbb-2222?x=1' \\\n  -H 'authorization: Bearer ${FRESH}'`;
+    expect(parseCurl(get)).toMatchObject({ hasBody: false, token: FRESH, historyUrl: "https://chat.example.com/internal-api/v1/history/chats" });
+    expect(parseCurl("curl --url 'https://chat.example.com/v1/history/chats?page=1&pageSize=10'").historyUrl).toBe("https://chat.example.com/v1/history/chats");
+    expect(parseCurl("curl --url 'https://chat.example.com/v1/chat' --data-raw '{}'")).toMatchObject({ hasBody: true, historyUrl: null });
   });
 });

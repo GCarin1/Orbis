@@ -15,6 +15,7 @@ export interface ChatHttpValue {
   agentVersion: string;
   temperature: string;
   origin: string;
+  historyUrl: string;
 }
 
 export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
@@ -25,6 +26,7 @@ export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
   agentVersion: brain?.chat?.agentVersion ?? "",
   temperature: brain?.chat?.temperature === undefined ? "" : String(brain.chat.temperature),
   origin: brain?.chat?.origin ?? "",
+  historyUrl: brain?.chat?.historyUrl ?? "",
 });
 
 /** The token as the user may paste it: with or without "Bearer ". */
@@ -38,6 +40,7 @@ export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
     ...(v.agentVersion.trim() ? { agentVersion: v.agentVersion.trim() } : {}),
     ...(v.temperature.trim() && Number.isFinite(temperature) ? { temperature } : {}),
     ...(v.origin.trim() ? { origin: v.origin.trim() } : {}),
+    ...(v.historyUrl.trim() ? { historyUrl: v.historyUrl.trim() } : {}),
   };
   return {
     ...(v.url.trim() ? { baseUrl: v.url.trim() } : {}),
@@ -73,20 +76,25 @@ export function ChatHttpFields({
       setRead({ ok: false, text: t("chat.curlNothing") });
       return;
     }
+    // A GET (the history, the chat list) carries no message: its token is good, its address is not the chat's.
+    const sends = parsed.hasBody;
     onChange({
       ...value,
-      url: parsed.url ?? value.url,
+      url: sends ? (parsed.url ?? value.url) : value.url,
       token: parsed.token ?? value.token,
       model: parsed.model ?? value.model,
       agentId: parsed.agentId ?? value.agentId,
       agentVersion: parsed.agentVersion ?? value.agentVersion,
       temperature: parsed.temperature === null ? value.temperature : String(parsed.temperature),
       origin: parsed.headers.origin ?? value.origin,
+      historyUrl: parsed.historyUrl ?? value.historyUrl,
     });
     // The command holds the token: it does not stay on screen.
     setCurl("");
     const exp = parsed.token ? tokenExpiry(parsed.token) : null;
-    setRead({ ok: true, text: exp ? t("chat.curlReadExpires", { when: when(exp) }) : t("chat.curlRead") });
+    const expiry = exp ? t("chat.curlExpires", { when: when(exp) }) : "";
+    if (!sends) setRead({ ok: true, text: `${parsed.historyUrl ? t("chat.curlHistory") : t("chat.curlGet")}${expiry}` });
+    else setRead({ ok: true, text: exp ? t("chat.curlReadExpires", { when: when(exp) }) : t("chat.curlRead") });
   };
 
   return (
@@ -155,6 +163,10 @@ export function ChatHttpFields({
         <label>
           {t("chat.origin")}
           <input value={value.origin} onChange={set("origin")} placeholder="https://…" name={`${name}-origin`} />
+        </label>
+        <label>
+          {t("chat.historyUrl")}
+          <input value={value.historyUrl} onChange={set("historyUrl")} placeholder={t("chat.historyUrlHint")} name={`${name}-history`} />
         </label>
       </details>
     </div>

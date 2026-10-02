@@ -38,6 +38,11 @@ export interface ChatHttpOptions {
   maxTokens?: number;
   /** An `Origin` header, for servers that check it. */
   origin?: string;
+  /**
+   * Where the chats' history is read (`GET <it>?page=1…` lists them, `GET <it>/<chat id>`
+   * reads one); default `history/chats` beside the chat address.
+   */
+  historyUrl?: string;
 }
 
 /** The default `chat-http` model (`config.modelId`). */

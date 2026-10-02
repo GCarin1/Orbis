@@ -237,6 +237,150 @@ async function ask(url: string, token: string, payload: Record<string, unknown>,
   return reader;
 }
 
+// --- the chats' history ------------------------------------------------------------------------
+
+/** The history address: the one the user gave, or `history/chats` beside the chat address. */
+export function historyBase(chatUrl: string, explicit?: string): string | null {
+  try {
+    if (explicit?.trim()) return new URL(explicit.trim()).toString().replace(/\/+$/, "");
+    return new URL("history/chats", chatUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+export interface HistoryMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+/** A message's words: a string, parts of text, or an object holding them. */
+function messageText(value: unknown, depth = 0): string | null {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    const parts = value.map((p) => messageText(p, depth + 1)).filter((p): p is string => Boolean(p));
+    return parts.length ? parts.join("") : null;
+  }
+  if (!isObject(value) || depth > 3) return null;
+  for (const key of ["content", "text", "message", "body", "value"]) {
+    const t = messageText(value[key], depth + 1);
+    if (t) return t;
+  }
+  return null;
+}
+
+const USER_ROLE = /^(user|human|me|usuario|usuário)$/i;
+const ASSISTANT_ROLE = /assistant|^ai$|bot|model|agent|assistente/i;
+const USER_KEY = /^(input|question|prompt|user_?message|pergunta)$/i;
+const ASSISTANT_KEY = /^(output|answer|response|reply|assistant_?message|resposta)$/i;
+
+/** The messages of a chat as the history returns it, in order, whatever its shape. */
+export function historyMessages(doc: unknown): HistoryMessage[] {
+  const out: HistoryMessage[] = [];
+  const walk = (value: unknown, key: string, depth: number) => {
+    if (depth > 8) return;
+    if (Array.isArray(value)) {
+      for (const v of value) walk(v, key, depth + 1);
+      return;
+    }
+    if (typeof value === "string") {
+      if (USER_KEY.test(key)) out.push({ role: "user", text: value });
+      else if (ASSISTANT_KEY.test(key)) out.push({ role: "assistant", text: value });
+      return;
+    }
+    if (!isObject(value)) return;
+    const roleValue = [value.role, value.type, value.sender, value.author, value.from].find((v) => typeof v === "string") as string | undefined;
+    const role =
+      roleValue && USER_ROLE.test(roleValue)
+        ? "user"
+        : roleValue && ASSISTANT_ROLE.test(roleValue)
+          ? "assistant"
+          : USER_KEY.test(key)
+            ? "user"
+            : ASSISTANT_KEY.test(key)
+              ? "assistant"
+              : null;
+    const text = role ? messageText(value) : null;
+    if (role && text) {
+      out.push({ role, text });
+      return;
+    }
+    for (const [k, v] of Object.entries(value)) walk(v, k, depth + 1);
+  };
+  walk(doc, "", 0);
+  return out;
+}
+
+/** The end of what was sent, to find it again in a history (it may be stored trimmed or wrapped). */
+const sentMark = (sent: string) => sent.trim().slice(-200).trim();
+
+/** The answer that follows our message in a chat's history, or null when our message is not there. */
+export function answerAfter(messages: HistoryMessage[], sent: string): string | null {
+  const mark = sentMark(sent);
+  let at = -1;
+  messages.forEach((m, i) => {
+    if (m.role === "user" && m.text.includes(mark)) at = i;
+  });
+  if (at < 0) return null;
+  const answers: string[] = [];
+  for (let i = at + 1; i < messages.length && messages[i]!.role === "assistant"; i++) answers.push(messages[i]!.text);
+  return answers.length ? answers.join("\n\n") : null;
+}
+
+/** The chat ids a list of chats holds, in its order. */
+export function chatIds(doc: unknown): string[] {
+  const ids: string[] = [];
+  const walk = (value: unknown, depth: number) => {
+    if (depth > 6 || ids.length) return;
+    if (Array.isArray(value)) {
+      const found = value
+        .map((v) => (isObject(v) ? (v.chatId ?? v.id ?? v._id ?? v.uuid) : undefined))
+        .filter((v): v is string => typeof v === "string" && v.length > 0);
+      if (found.length) ids.push(...found);
+      else for (const v of value) walk(v, depth + 1);
+      return;
+    }
+    if (isObject(value)) for (const v of Object.values(value)) walk(v, depth + 1);
+  };
+  walk(doc, 0);
+  return ids;
+}
+
+async function getJson(url: string, token: string, origin: string | undefined, signal: AbortSignal): Promise<unknown> {
+  const res = await fetch(url, {
+    headers: { accept: "application/json, text/plain, */*", authorization: `Bearer ${token}`, ...(origin ? { origin } : {}) },
+    signal,
+  });
+  if (!res.ok) throw new HttpFailure(`the history answered HTTP ${res.status}`, res.status);
+  return res.json();
+}
+
+/**
+ * Our chat and its answer, from the history: the chat given, or — when the
+ * answer named none — the newest chats, taking one only if it holds the
+ * message we sent (a chat the user has open in the browser is never taken).
+ */
+export async function fromHistory(
+  base: string,
+  token: string,
+  origin: string | undefined,
+  sent: string,
+  chatId: string | null,
+  signal: AbortSignal,
+): Promise<{ chatId: string; reply: string | null } | null> {
+  const read = async (id: string) => {
+    const messages = historyMessages(await getJson(`${base}/${encodeURIComponent(id)}`, token, origin, signal));
+    return messages.some((m) => m.role === "user" && m.text.includes(sentMark(sent))) ? { chatId: id, reply: answerAfter(messages, sent) } : null;
+  };
+  if (chatId) return read(chatId);
+  const list = await getJson(`${base}?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`, token, origin, signal);
+  for (const id of chatIds(list).slice(0, 3)) {
+    const found = await read(id).catch(() => null);
+    if (found) return found;
+  }
+  return null;
+}
+
 export const chatHttpBrain: BrainAdapter = {
   kind: "chat-http",
 
@@ -278,6 +422,7 @@ export const chatHttpBrain: BrainAdapter = {
       turns.map((t, i) => (i === 0 ? t.text : t.role === "assistant" ? `--- Your previous answer:\n${t.text}` : `--- Next message:\n${t.text}`)).join("\n\n");
     let triedFresh = chatId === null;
     let toldLast = false;
+    let historyFailed = false;
 
     for (let step = 0; step < maxSteps; step++) {
       if (step === maxSteps - 1 && tools.length && !toldLast) {
@@ -321,11 +466,26 @@ export const chatHttpBrain: BrainAdapter = {
         yield { type: "run.failed", error: `the chat API reported: ${answer.error}` };
         return;
       }
+      let reply = answer.text.trim();
+      // The history fills in what the answer left out: the chat id (so the chat is continued
+      // instead of a new one each time) and, when no text was found in the answer, the reply.
+      const history = historyBase(url, options.historyUrl);
+      const knownId = answer.chatId ?? chatId;
+      if (history && !historyFailed && (!reply || !knownId)) {
+        const found = await fromHistory(history, token, options.origin, content, knownId, ctx.signal).catch(() => {
+          // A server without this history: do not ask it again in this run.
+          historyFailed = true;
+          return null;
+        });
+        if (found) {
+          answer.chatId ??= found.chatId;
+          if (!reply && found.reply) reply = found.reply.trim();
+        }
+      }
       if (answer.chatId && answer.chatId !== chatId) {
         chatId = answer.chatId;
         ctx.sessions.set(chatId);
       }
-      const reply = answer.text.trim();
       if (!reply) {
         const start = answer.raw.trim().slice(0, 300);
         yield {

@@ -104,3 +104,35 @@ describe("a new bot with the chat-http brain", () => {
     );
   });
 });
+
+describe("a pasted cURL that only reads (the history)", () => {
+  it("keeps the request address, takes the new token and the history's address", async () => {
+    const put = vi.fn(async () => ({ name: "CHAT_BEARER_TOKEN" }));
+    const get = vi.fn(async (path: string) =>
+      path.endsWith("/secrets") ? [{ name: "CHAT_BEARER_TOKEN", createdAt: "" }] : Promise.reject(new Error("not in this test")),
+    );
+    const onSave = vi.fn(async () => undefined);
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat-orchestrator", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put, get } as unknown as Api}
+        bot={ana}
+        onSave={onSave}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    const history = `curl --url 'https://chat.example.com/v1/history/chats/0000cccc-3333-7000' \\\n  -H 'authorization: Bearer ${token}'`;
+    fireEvent.change(screen.getByLabelText("Paste the cURL command (optional)"), { target: { value: history } });
+    fireEvent.click(screen.getByRole("button", { name: "Fill in from the cURL" }));
+    expect(screen.getByRole("status").textContent).toMatch(/^That cURL reads the history \(GET\): its token and the history's address were taken\./);
+    expect((screen.getByLabelText("Request address (URL)") as HTMLInputElement).value).toBe("https://chat.example.com/v1/chat-orchestrator");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect(put).toHaveBeenCalledWith(`/api/v1/bots/${ana.id}/secrets/CHAT_BEARER_TOKEN`, { value: token });
+    const patch = (onSave.mock.calls[0] as unknown as [{ brain: { baseUrl: string; chat: { historyUrl: string } } }])[0];
+    expect(patch.brain.baseUrl).toBe("https://chat.example.com/v1/chat-orchestrator");
+    expect(patch.brain.chat.historyUrl).toBe("https://chat.example.com/v1/history/chats");
+  });
+});

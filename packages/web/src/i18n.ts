@@ -524,12 +524,17 @@ const pt = {
   "chat.tokenSaved": "•••• salvo — cole um novo para trocar",
   "chat.tokenExpires": "Expira em {when}",
   "chat.tokenExpired": "Este token expirou em {when}: copie um novo",
-  "chat.advanced": "Avançado: agente, temperatura, Origin",
+  "chat.advanced": "Avançado: agente, temperatura, Origin, histórico",
   "chat.agentId": "ID do agente",
   "chat.agentVersion": "Versão do agente",
   "chat.temperature": "Temperatura",
   "chat.origin": "Cabeçalho Origin (se a API exigir)",
   "chat.tokenSavedOk": "Token salvo",
+  "chat.curlHistory": "Esse cURL é uma consulta (GET) do histórico: peguei o token e o endereço do histórico. Para a URL da chamada, cole o cURL que envia a mensagem (POST com --data-raw).",
+  "chat.curlGet": "Esse cURL é uma consulta (GET) sem mensagem: peguei só o token. Para a URL da chamada, cole o cURL que envia a mensagem (POST com --data-raw).",
+  "chat.curlExpires": " O token expira em {when} — salve para aplicar.",
+  "chat.historyUrl": "Endereço do histórico (opcional)",
+  "chat.historyUrlHint": "…/history/chats, ao lado da URL da chamada",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1055,12 +1060,17 @@ const en: Record<TextKey, string> = {
   "chat.tokenSaved": "•••• saved — paste a new one to replace it",
   "chat.tokenExpires": "Expires at {when}",
   "chat.tokenExpired": "This token expired at {when}: copy a new one",
-  "chat.advanced": "Advanced: agent, temperature, Origin",
+  "chat.advanced": "Advanced: agent, temperature, Origin, history",
   "chat.agentId": "Agent id",
   "chat.agentVersion": "Agent version",
   "chat.temperature": "Temperature",
   "chat.origin": "Origin header (if the API requires it)",
   "chat.tokenSavedOk": "Token saved",
+  "chat.curlHistory": "That cURL reads the history (GET): its token and the history's address were taken. For the request address, paste the cURL that sends a message (POST with --data-raw).",
+  "chat.curlGet": "That cURL only reads (GET): its token was taken. For the request address, paste the cURL that sends a message (POST with --data-raw).",
+  "chat.curlExpires": " The token expires at {when} — save to apply.",
+  "chat.historyUrl": "History address (optional)",
+  "chat.historyUrlHint": "…/history/chats, beside the request address",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

@@ -22,6 +22,7 @@ export const BrainSchema = Type.Object(
           temperature: Type.Optional(Type.Number({ minimum: 0, maximum: 2 })),
           maxTokens: Type.Optional(Type.Integer({ minimum: 1, maximum: 1_000_000 })),
           origin: Type.Optional(Type.String({ maxLength: 500 })),
+          historyUrl: Type.Optional(Type.String({ maxLength: 1000 })),
         },
         { additionalProperties: false },
       ),
