@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   AVATAR_COLORS,
   AVATAR_SHAPES,
-  CHAT_HTTP_TOKEN_SECRET,
+  chatApiOrigin,
   tokenExpiry,
   type AvatarShape,
   type Bot,
@@ -102,7 +102,7 @@ export function BotSettings({
     return () => {
       live = false;
     };
-  }, [api, bot.id, kind, bot.brain.apiKeySecret]);
+  }, [api, bot.id, kind, bot.brain.apiKeySecret, bot.brain.baseUrl]);
 
   const run = async (fn: () => Promise<void>, ok?: string) => {
     setBusy(true);
@@ -125,10 +125,12 @@ export function BotSettings({
         if (kind === "chat-http" && chat.token.trim()) {
           if (!api) throw new Error("no connection to the hub");
           const token = cleanToken(chat.token);
-          await api.put(`/api/v1/bots/${bot.id}/secrets/${CHAT_HTTP_TOKEN_SECRET}`, { value: token });
-          // The hub says what it now holds (the same token, read back as saved, with its expiry).
+          // The token belongs to the chat API: every bot of that API uses it from now on.
+          const origin = chatApiOrigin(chat.url);
+          if (!origin) throw new Error(t("chat.tokenNeedsUrl"));
+          await api.put("/api/v1/chat-http/tokens", { origin, value: token });
           const expires = tokenExpiry(token);
-          setTokenStatus({ saved: true, expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now() });
+          setTokenStatus({ saved: true, expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now(), source: "shared" });
           setChat((c) => ({ ...c, token: "" }));
         }
         // Settings the form does not show (time limit, step limit) are kept.

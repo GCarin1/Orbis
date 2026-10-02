@@ -421,7 +421,16 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0039-shared-chat-token-and-resizable-panel",
+        "title": "shared chat token and resizable panel",
+        "path": ".doctrina/changes/0039-shared-chat-token-and-resizable-panel",
+        "status": "proposed",
+        "opened": "2026-10-02",
+        "lane": "product (confident; signals: feature)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

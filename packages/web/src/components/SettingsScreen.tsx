@@ -9,6 +9,7 @@ import { Avatar } from "./Avatar.js";
 import { brainLabel, brainShort, claudeLoginExpired, TestResultView, useLocalServers, type TestState } from "./brains.js";
 import { ClaudeSignIn } from "./ClaudeSignIn.js";
 import { ChatGptCard } from "./ChatGptCard.js";
+import { ChatTokensCard } from "./ChatTokensCard.js";
 import { ComputersSettings } from "./ComputerModes.js";
 import { VoiceSettings } from "./VoiceSettings.js";
 
@@ -106,6 +107,7 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
         </div>
       </div>
       <ChatGptCard api={api} />
+      <ChatTokensCard api={api} />
       <h2>{t("brains.machine")}</h2>
       <p className="muted settings-help">{t("brains.testHelp")}</p>
 

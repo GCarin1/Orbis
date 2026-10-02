@@ -206,7 +206,7 @@ describe("chat-http brain", () => {
     t = await testHub();
     const expired = await chatBot(t, fake.url, {}, jwt(Math.floor(Date.now() / 1000) - 60));
     expect((await chat(t, expired.id, "oi")).runs[0].error).toMatch(
-      /^chat-http brain: the Bearer token expired at .+ — paste a new one \(or the request's cURL\) — open Ana's settings/,
+      /^chat-http brain: the Bearer token expired at .+ — paste a new one \(or the request's cURL\) in Settings → Brains → Chat API tokens — it applies to every bot of this API — or in the bot's settings — open Ana's settings/,
     );
     expect(fake.seen).toHaveLength(0);
     await t.api("PUT", `/api/v1/bots/${expired.id}/secrets/CHAT_BEARER_TOKEN`, { value: "not-a-jwt" });
@@ -590,7 +590,7 @@ describe("the Bearer token, saved and sent (audit of change 0033)", () => {
   it("says whether a token is saved and when it expires, never the token", async () => {
     t = await testHub();
     const bot = await createBot(t, { name: "Ana", brain: { kind: "chat-http", baseUrl: "http://127.0.0.1:9/x", apiKeySecret: "CHAT_BEARER_TOKEN" } });
-    expect((await t.api("GET", `/api/v1/bots/${bot.id}/chat-token`)).body).toEqual({ saved: false, expiresAt: null, expired: false });
+    expect((await t.api("GET", `/api/v1/bots/${bot.id}/chat-token`)).body).toEqual({ saved: false, expiresAt: null, expired: false, source: null });
     await t.api("PUT", `/api/v1/bots/${bot.id}/secrets/CHAT_BEARER_TOKEN`, { value: FRESH });
     const saved = (await t.api("GET", `/api/v1/bots/${bot.id}/chat-token`)).body;
     expect(saved).toMatchObject({ saved: true, expired: false });
@@ -1033,5 +1033,72 @@ describe("a firewall that reads what the message says (change 0038)", () => {
     expect(res.status).toBe(201);
     expect(res.body.brain.chat.curl).toBe("C:\\WINDOWS\\system32\\curl.EXE");
     expect((await t.api("POST", "/api/v1/bots", { name: "Cid", brain: { kind: "chat-http", chat: { curl: "C:\\x\\CURLY.EXE" } } })).status).toBe(400);
+  });
+});
+
+describe("one token per chat API, changed in one place (change 0039)", () => {
+  it("is used by every bot of that API, not by a bot of another, and changing it once changes it for all", async () => {
+    const one = await orchestrator((_s, res) => sse(res, [{ content: "ok" }]));
+    const oneUrl = one.url;
+    const oneServer = server;
+    server = null;
+    const other = await orchestrator((_s, res) => sse(res, [{ content: "outra" }]));
+    t = await testHub();
+    const make = async (name: string, url: string) =>
+      createBot(t!, { name, brain: { kind: "chat-http", baseUrl: url, apiKeySecret: "CHAT_BEARER_TOKEN", chat: { titles: false } } });
+    const ana = await make("Ana", oneUrl);
+    const bia = await make("Bia", oneUrl.replace("/chat-orchestrator", "/outro-caminho"));
+    const cid = await make("Cid", other.url);
+    const origin = new URL(oneUrl).origin;
+
+    // No token yet: the bots say where to paste one.
+    expect((await chat(t, ana.id, "oi")).runs[0].error).toContain("Settings → Brains → Chat API tokens");
+    const first = await t.api("PUT", "/api/v1/chat-http/tokens", { origin: oneUrl, value: `Authorization: Bearer ${FRESH}` });
+    expect(first.status).toBe(200);
+    const groups = first.body as Array<{ origin: string; token: { saved: boolean; source: string }; bots: Array<{ name: string }> }>;
+    expect(groups.find((g) => g.origin === origin)).toMatchObject({ token: { saved: true, source: "shared" }, bots: [{ name: "Ana" }, { name: "Bia" }] });
+    expect(groups.find((g) => g.origin === new URL(other.url).origin)).toMatchObject({ token: { saved: false }, bots: [{ name: "Cid" }] });
+    expect(JSON.stringify(groups)).not.toContain(FRESH);
+
+    expect((await chat(t, ana.id, "oi")).runs[0].status).toBe("done");
+    expect((await chat(t, bia.id, "oi")).runs[0].status).toBe("done");
+    expect(one.seen.map((s) => s.auth)).toEqual([`Bearer ${FRESH}`, `Bearer ${FRESH}`]);
+    expect((await chat(t, cid.id, "oi")).runs[0].error).toContain("no Bearer token");
+
+    // The token expires: one change, both bots.
+    const next = jwt(Math.floor(Date.now() / 1000) + 7200);
+    await t.api("PUT", "/api/v1/chat-http/tokens", { origin, value: next });
+    await chat(t, ana.id, "de novo");
+    await chat(t, bia.id, "de novo");
+    expect(one.seen.slice(-2).map((s) => s.auth)).toEqual([`Bearer ${next}`, `Bearer ${next}`]);
+    expect((await t.api("GET", `/api/v1/bots/${bia.id}/chat-token`)).body).toMatchObject({ saved: true, source: "shared", expired: false });
+    await new Promise<void>((r) => oneServer!.close(() => r()));
+  });
+
+  it("lets a bot set up before keep its own token until its API has a shared one, which then wins", async () => {
+    const fake = await orchestrator((_s, res) => sse(res, [{ content: "ok" }]));
+    t = await testHub();
+    const old = await chatBot(t, fake.url, { chat: { titles: false } }); // its own token, from before
+    expect((await t.api("GET", `/api/v1/bots/${old.id}/chat-token`)).body).toMatchObject({ saved: true, source: "bot" });
+    await chat(t, old.id, "oi");
+    expect(fake.seen[0]!.auth).toBe(`Bearer ${FRESH}`);
+    const shared = jwt(Math.floor(Date.now() / 1000) + 5000);
+    await t.api("PUT", "/api/v1/chat-http/tokens", { origin: fake.url, value: shared });
+    await chat(t, old.id, "oi");
+    expect(fake.seen[1]!.auth).toBe(`Bearer ${shared}`);
+    expect((await t.api("GET", `/api/v1/bots/${old.id}/chat-token`)).body).toMatchObject({ source: "shared" });
+  });
+
+  it("masks the shared token in what a run stores, and refuses a value with no token or an address that is not http", async () => {
+    const shared = jwt(Math.floor(Date.now() / 1000) + 5000);
+    const fake = await orchestrator((_s, res) => sse(res, [{ content: `eco: ${shared}` }]));
+    t = await testHub();
+    const bot = await createBot(t, { name: "Ana", brain: { kind: "chat-http", baseUrl: fake.url, chat: { titles: false } } });
+    await t.api("PUT", "/api/v1/chat-http/tokens", { origin: fake.url, value: shared });
+    const run = (await chat(t, bot.id, "oi")).runs[0];
+    expect(run.reply).toBe("eco: ••••");
+    expect(JSON.stringify(run)).not.toContain(shared);
+    expect((await t.api("PUT", "/api/v1/chat-http/tokens", { origin: "ftp://x.example", value: shared })).status).toBe(400);
+    expect((await t.api("PUT", "/api/v1/chat-http/tokens", { origin: fake.url, value: "Bearer " })).status).toBe(400);
   });
 });

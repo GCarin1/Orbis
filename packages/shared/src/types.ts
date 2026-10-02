@@ -117,6 +117,18 @@ export interface ChatTokenStatus {
   /** When the saved token's `exp` says it stops working, or null when it names none. */
   expiresAt: string | null;
   expired: boolean;
+  /** Where the token the bot uses comes from: the one its chat API's bots share, or its own (from before tokens were shared). */
+  source?: "shared" | "bot" | null;
+}
+
+/** The hub-secret name prefix of the token shared by every `chat-http` bot of one chat API (`<prefix><origin>`). */
+export const CHAT_HTTP_SHARED_TOKEN = "chat-http-token:";
+
+/** One chat API (`GET /api/v1/chat-http/tokens`): its address's origin, its shared token, and the bots that use it. */
+export interface ChatTokenGroup {
+  origin: string;
+  token: ChatTokenStatus;
+  bots: Array<{ id: string; name: string; handle: string }>;
 }
 
 /** The default `chat-http` model (`config.modelId`). */

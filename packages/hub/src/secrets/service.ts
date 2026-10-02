@@ -3,13 +3,14 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
-import type { TimelineItem } from "@orbis/shared";
+import { CHAT_HTTP_SHARED_TOKEN, chatApiOrigin, cleanBearer, type ChatTokenGroup, type TimelineItem } from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import type { ToolDefinition } from "../tools/registry.js";
 import { IdParams } from "../api/schemas.js";
 import { SettingsRepo } from "../repos/settings.js";
 import { HubSecrets } from "./hub-secrets.js";
+import { ChatTokens } from "./chat-tokens.js";
 import { hasPlaceholder, loadMasterKey, SECRET_NAME, Vault } from "./vault.js";
 
 type Answer = "fulfilled" | "declined" | "expired";
@@ -18,21 +19,39 @@ export class SecretService {
   readonly vault: Vault;
   /** Secrets of the hub itself (a transcription key, MCP server tokens). */
   readonly hubSecrets: HubSecrets;
+  /** The Bearer token each chat API's chat-http bots share. */
+  readonly chatTokens: ChatTokens;
   /** Runs waiting on a secret-request card, by card item id. */
   private readonly waiting = new Map<string, (answer: Answer) => void>();
 
   constructor(private readonly hub: HubContext) {
     this.vault = new Vault(hub.db, loadMasterKey(hub.config.dataDir, hub.config.masterKey));
     this.hubSecrets = new HubSecrets(new SettingsRepo(hub.db), this.vault);
+    this.chatTokens = new ChatTokens(this.hubSecrets);
+  }
+
+  /** Mask the shared chat tokens too: they belong to no bot, so the vault's own masking does not know them. */
+  private maskShared<T>(value: T): T {
+    const known = this.chatTokens.known();
+    if (!known.length) return value;
+    const walk = (v: unknown): unknown => {
+      if (typeof v === "string") return known.reduce((text, token) => text.split(token).join("••••"), v);
+      if (Array.isArray(v)) return v.map(walk);
+      if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
+      return v;
+    };
+    return walk(value) as T;
   }
 
   /** Plug the vault into every place a value could leak or be needed. */
   wire(): void {
-    const redact = <T>(botId: string, value: T): T => this.vault.redactDeep(botId, value);
+    const redact = <T>(botId: string, value: T): T => this.maskShared(this.vault.redactDeep(botId, value));
     this.hub.secretResolvers.register((botId, name) => this.vault.get(botId, name));
+    // A chat API's shared token, asked for by the name `chat-http-token:<origin>`.
+    this.hub.secretResolvers.register((_botId, name) => (name.startsWith(CHAT_HTTP_SHARED_TOKEN) ? this.chatTokens.get(name.slice(CHAT_HTTP_SHARED_TOKEN.length)) : null));
     this.hub.gateway.setSecrets({
       resolve: (botId, input) => this.vault.resolve(botId, input),
-      redact: (botId, text) => this.vault.redact(botId, text),
+      redact: (botId, text) => this.maskShared(this.vault.redact(botId, text)),
       hasPlaceholder,
     });
     this.hub.engine.setRedactor(redact);
@@ -131,6 +150,21 @@ export class SecretService {
       if (!this.vault.delete(this.hub.botService.get(req.params.id).id, req.params.name)) throw notFound(`secret ${req.params.name}`);
       reply.code(204);
       return null;
+    });
+    // The chat APIs' shared tokens: every chat-http bot of one API uses its API's token, changed here once.
+    const TokenBody = Type.Object(
+      { origin: Type.String({ minLength: 1, maxLength: 1000 }), value: Type.String({ minLength: 1, maxLength: 20_000 }) },
+      { additionalProperties: false },
+    );
+    const groups = (): ChatTokenGroup[] => this.chatTokens.groups(this.hub.botService.list(true));
+    app.get("/api/v1/chat-http/tokens", { schema: { tags: ["secrets"] } }, async () => groups());
+    app.put("/api/v1/chat-http/tokens", { schema: { tags: ["secrets"], body: TokenBody } }, async (req) => {
+      const origin = chatApiOrigin(req.body.origin);
+      if (!origin) throw badRequest("invalid chat API address", { origin: "an http(s) address" });
+      const token = cleanBearer(req.body.value);
+      if (!token) throw badRequest("no token in the value", { value: "the Bearer token" });
+      this.chatTokens.set(origin, token);
+      return groups();
     });
     // Same parameter name as the draft card routes (one router node for /cards/:id/…).
     app.post("/api/v1/cards/:id/secret", { schema: { tags: ["secrets"], params: IdParams, body: Answer } }, async (req) => this.answer(req.params.id, req.body));

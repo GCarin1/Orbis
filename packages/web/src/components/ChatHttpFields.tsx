@@ -262,6 +262,9 @@ function SavedToken({ status, when }: { status: ChatTokenStatus; when(d: Date): 
   if (!status.saved) return <small className="muted">{t("chat.tokenStatusNone")}</small>;
   const expires = status.expiresAt ? new Date(status.expiresAt) : null;
   if (status.expired && expires) return <small className="error">{t("chat.tokenStatusExpired", { when: when(expires) })}</small>;
+  if (status.source === "shared")
+    return <small className="muted">{expires ? t("chat.tokenStatusShared", { when: when(expires) }) : t("chat.tokenStatusSharedNoExp")}</small>;
+  if (status.source === "bot") return <small className="muted">{t("chat.tokenStatusOwn", { when: expires ? when(expires) : "—" })}</small>;
   return <small className="muted">{expires ? t("chat.tokenStatusOk", { when: when(expires) }) : t("chat.tokenStatusNoExp")}</small>;
 }
 

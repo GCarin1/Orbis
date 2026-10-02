@@ -3,6 +3,16 @@
 // so the user pastes one command instead of copying each value by hand.
 import { CHAT_HTTP_HEADER_NAMES } from "./types.js";
 
+/** The chat API a `chat-http` address belongs to: its origin (`https://host[:port]`), which its bots share one token for; null when it is not an http(s) URL. */
+export function chatApiOrigin(url: string | undefined): string | null {
+  try {
+    const u = new URL((url ?? "").trim());
+    return /^https?:$/.test(u.protocol) ? u.origin : null;
+  } catch {
+    return null;
+  }
+}
+
 /** What a cURL command says about a chat request. */
 export interface ParsedCurl {
   url: string | null;
@@ -136,7 +146,9 @@ export function cleanBearer(raw: string): string {
     .replace(/^Bearer\s+/i, "")
     .replace(/^["'`]+/, "");
   // A token is one word: spaces and line breaks of a wrapped paste, and a closing quote or line continuation, are not part of it.
-  return text.replace(/\s+/g, "").replace(/["'`\\^]+$/g, "");
+  const token = text.replace(/\s+/g, "").replace(/["'`\\^]+$/g, "");
+  // "Bearer" alone (a header with no token) is no token.
+  return /^bearer$/i.test(token) ? "" : token;
 }
 
 /** The headers of a cURL that a server may check besides the token: Referer, User-Agent, Accept-Language. */

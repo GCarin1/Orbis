@@ -124,6 +124,13 @@ change that delivered it.
 
 ### Added
 
+- One Bearer token per chat API, changed in one place (change 0039-shared-chat-token-and-resizable-panel):
+  every `chat-http` bot of the same API uses that API's token; ⚙ Settings →
+  Brains → **Chat API tokens** lists each API, its token's expiry and its bots,
+  and takes a new token or cURL for all of them at once (a bot's own settings do
+  the same). A bot from before keeps its own token until its API has a shared one.
+- The side panel's width can be dragged (or moved with the arrow keys) from its
+  left edge and is remembered; a wide bot settings panel shows two columns.
 - Windows launchers (change 0034-windows-launcher-scripts): `scripts/windows/Orbis.bat`
   starts Orbis — building first — and, when it is already running, restarts it
   (it stops only an Orbis hub, never another program on the port); `Orbis-Token.bat`

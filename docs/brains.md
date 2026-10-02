@@ -234,13 +234,21 @@ DevTools → Network, send a message, right-click the request → **Copy as cURL
 paste it in the bot's settings and press **Fill in from the cURL**: the address,
 the token, the agent, the model and the `Origin` are read from it.
 
-- The token is saved as the bot's secret `CHAT_BEARER_TOKEN`, encrypted in the
-  vault; it never comes back to the browser, never reaches the model, and is
-  never written in the bot or its exported template. The address stays in the
-  bot and is left out of exported templates too: Orbis's code names none.
-- A browser session's token expires (often in an hour or two). Orbis reads its
-  expiry and says so before calling ("the Bearer token expired at …"), and a
-  `401` says the same: paste a new token or cURL and save.
+- **One token per chat API.** Every bot whose address is on the same chat API
+  (the same `https://host`) uses that API's token, kept encrypted in the hub's
+  vault: it never comes back to the browser, never reaches the model, and is
+  never written in a bot or its exported template. The address stays in the bot
+  and is left out of exported templates too: Orbis's code names none.
+- **When the token expires** (a browser session's lasts an hour or two), change
+  it once for all those bots: ⚙ Settings → Brains → **Chat API tokens** lists
+  each chat API, its token's expiry and the bots that use it; paste the new
+  token — or the cURL of a request copied from the browser — and press **Save
+  for this API's bots**. Typing a token in any of those bots' settings does the
+  same. Orbis reads the expiry and says so before calling ("the Bearer token
+  expired at …"), and a `401` says the same, pointing to that place.
+  (`GET /api/v1/chat-http/tokens`, `PUT /api/v1/chat-http/tokens`
+  `{ origin, value }`.) A bot set up before tokens were shared keeps its own
+  token (`CHAT_BEARER_TOKEN`) until its API has a shared one, which then wins.
 - The company chat's own stream — `stream_started` (with the `chatId`),
   `message_chunk` (`{"delta": …}`) and `message_complete` (`data.context.content`
   with the whole answer, `data.metadata.chatId` and `tokenUsage`) — is read
@@ -331,8 +339,9 @@ the token, the agent, the model and the `Origin` are read from it.
   to ask for one in a ` ```tool ` block (`{"name": "…", "input": {…}}`), Orbis
   runs it (approvals included) and sends the result as the next message.
 - From the CLI: `orbis bots create --name Analista --brain chat-http`, then set
-  `baseUrl` with `PATCH /api/v1/bots/<id>` and the token with
-  `orbis secrets set @analista CHAT_BEARER_TOKEN`.
+  `baseUrl` with `PATCH /api/v1/bots/<id>` and the API's token with
+  `PUT /api/v1/chat-http/tokens` (or a token for that bot alone with
+  `orbis secrets set @analista CHAT_BEARER_TOKEN`).
 
 Check with your company that using its chat this way is allowed.
 

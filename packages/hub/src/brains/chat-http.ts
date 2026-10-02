@@ -9,7 +9,9 @@
 // the gateway and sends the result back as the next message.
 import {
   CHAT_HTTP_DEFAULT_MODEL,
+  CHAT_HTTP_SHARED_TOKEN,
   CHAT_HTTP_TOKEN_SECRET,
+  chatApiOrigin,
   cleanBearer,
   tokenExpiry,
   type Bot,
@@ -101,10 +103,10 @@ export function refusal(status: number, body: string, conn: Connection, message?
   const said = hint ? ` The server said: ${hint}` : "";
   const expires = tokenExpiry(conn.token);
   if (status === 401) {
-    return `the server refused the Bearer token (HTTP 401): it expired or is wrong — paste a new token (or the request's cURL) in the bot's settings.${said}`;
+    return `the server refused the Bearer token (HTTP 401): it expired or is wrong — ${RENEW}.${said}`;
   }
   if (expires && expires.getTime() <= Date.now()) {
-    return `the server refused the request (HTTP ${status}) and the Bearer token expired at ${expires.toLocaleString()}: paste a new token (or the request's cURL) in the bot's settings.${said}`;
+    return `the server refused the request (HTTP ${status}) and the Bearer token expired at ${expires.toLocaleString()}: ${RENEW}.${said}`;
   }
   const names = Object.keys(conn.headers ?? {});
   const sent = `the token${conn.origin ? ", Origin" : ""}${names.length ? `, ${names.length} browser header${names.length > 1 ? "s" : ""}` : ""}, through ${conn.transport.label}`;
@@ -138,6 +140,21 @@ export function refusal(status: number, body: string, conn: Connection, message?
 }
 
 const secretName = (bot: Bot) => bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET;
+
+/**
+ * The token a bot sends: the one every bot of its chat API shares (changed once, in Settings → Brains),
+ * else its own — a bot set up before tokens were shared.
+ */
+export function botToken(bot: Bot, secret: (name: string) => string | null): { token: string; source: "shared" | "bot" } | null {
+  const origin = chatApiOrigin(bot.brain.baseUrl);
+  const shared = cleanBearer((origin && secret(`${CHAT_HTTP_SHARED_TOKEN}${origin}`)) || "");
+  if (shared) return { token: shared, source: "shared" };
+  const own = cleanBearer(secret(secretName(bot)) ?? "");
+  return own ? { token: own, source: "bot" } : null;
+}
+
+/** Where a new token goes, for the messages: the place that changes it for every bot of the API. */
+const RENEW = "paste a new one (or the request's cURL) in Settings → Brains → Chat API tokens — it applies to every bot of this API — or in the bot's settings";
 
 // --- reading the answer ------------------------------------------------------------------
 
@@ -642,11 +659,11 @@ export const chatHttpBrain: BrainAdapter = {
     } catch {
       return "chat-http brain: the address is not an http(s) URL";
     }
-    const token = bareToken(secret(secretName(bot)) ?? "");
-    if (!token) return "chat-http brain: no Bearer token — paste it (or the request's cURL) in the bot's settings";
+    const token = botToken(bot, secret)?.token;
+    if (!token) return `chat-http brain: no Bearer token — ${RENEW.replace("a new one", "it")}`;
     const expires = tokenExpiry(token);
     if (expires && expires.getTime() <= Date.now()) {
-      return `chat-http brain: the Bearer token expired at ${expires.toLocaleString()} — paste a new one (or the request's cURL)`;
+      return `chat-http brain: the Bearer token expired at ${expires.toLocaleString()} — ${RENEW}`;
     }
     return null;
   },
@@ -655,7 +672,7 @@ export const chatHttpBrain: BrainAdapter = {
     const bot = input.bot;
     const url = bot.brain.baseUrl!.trim();
     const options = bot.brain.chat ?? {};
-    const conn = await connectionOf(bareToken(ctx.secret(secretName(bot)) ?? ""), options, url);
+    const conn = await connectionOf(botToken(bot, ctx.secret)?.token ?? "", options, url);
     const model = bot.brain.model?.trim() || CHAT_HTTP_DEFAULT_MODEL;
     // Plain chat: only the conversation, no Orbis instructions and no tools (see ChatHttpOptions.plain).
     const tools = options.plain ? [] : ctx.tools.list();

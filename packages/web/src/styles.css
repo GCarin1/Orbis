@@ -895,7 +895,40 @@ button:focus-visible {
   background: var(--bg);
 }
 .app.with-panel {
-  grid-template-columns: 300px minmax(0, 1fr) 360px;
+  grid-template-columns: 300px minmax(0, 1fr) var(--panel-width, 360px);
+}
+/* The handle on the side panel's left edge (PanelResizer): drag it, or use the arrow keys. */
+.panel-resizer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 8;
+  touch-action: none;
+}
+.panel-resizer:hover,
+.panel-resizer:focus-visible {
+  background: color-mix(in srgb, var(--brand-blue) 45%, transparent);
+  outline: none;
+}
+body.resizing-panel {
+  cursor: col-resize;
+  user-select: none;
+}
+/* A wide settings panel lays its sections out in two columns. */
+.settings-panel {
+  container-type: inline-size;
+}
+@container (min-width: 640px) {
+  .settings-panel .settings-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .settings-panel .settings-form > :not(fieldset) {
+    grid-column: 1 / -1;
+  }
 }
 .main {
   display: flex;
@@ -1953,6 +1986,9 @@ button:focus-visible {
   .app.with-panel {
     grid-template-columns: 270px minmax(0, 1fr);
   }
+  .panel-resizer {
+    display: none;
+  }
   .side-panel,
   .computer-panel:not(.fullscreen) {
     position: fixed;
@@ -1970,6 +2006,9 @@ button:focus-visible {
   .app,
   .app.with-panel {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .panel-resizer {
+    display: none;
   }
   .sidebar {
     min-width: 0;
@@ -2527,4 +2566,16 @@ label.check {
 }
 .chat-check-results code {
   word-break: break-all;
+}
+.chat-tokens-card .chat-token-row {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-tokens-card textarea {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
 }

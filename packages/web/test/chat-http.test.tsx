@@ -3,7 +3,9 @@
 // saved as the bot's secret, never in the bot. Address and token are made up.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { ChatConnectionCheck } from "@orbis/shared";
+import type { ChatConnectionCheck, ChatTokenGroup } from "@orbis/shared";
+import { ChatTokensCard } from "../src/components/ChatTokensCard.js";
+import { clampPanel, PanelResizer, usePanelWidth } from "../src/components/PanelResizer.js";
 import { BotSettings } from "../src/components/BotSettings.js";
 import { NewBotScreen } from "../src/components/NewBotScreen.js";
 import { useLang } from "../src/i18n.js";
@@ -28,7 +30,7 @@ beforeEach(() => {
 });
 
 describe("the chat-http brain in a bot's settings", () => {
-  it("reads a pasted cURL, saves the token as the bot's secret and the rest in the brain", async () => {
+  it("reads a pasted cURL, saves the token as its chat API's shared token and the rest in the brain", async () => {
     const put = vi.fn(async () => ({ name: "CHAT_BEARER_TOKEN" }));
     const get = vi.fn(async (path: string) => (path.endsWith("/chat-token") ? NO_TOKEN : Promise.reject(new Error("not in this test"))));
     const api = { put, get } as unknown as Api;
@@ -54,7 +56,7 @@ describe("the chat-http brain in a bot's settings", () => {
     expect((screen.getByLabelText("Request address (URL)") as HTMLInputElement).value).toBe("https://chat.example.com/v1/chat-orchestrator");
     expect((screen.getByLabelText(/^Bearer token/) as HTMLInputElement).type).toBe("password");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
-    expect(put).toHaveBeenCalledWith(`/api/v1/bots/${ana.id}/secrets/CHAT_BEARER_TOKEN`, { value: token });
+    expect(put).toHaveBeenCalledWith("/api/v1/chat-http/tokens", { origin: "https://chat.example.com", value: token });
     const patch = (onSave.mock.calls[0] as unknown as [{ brain: Record<string, unknown> }])[0];
     expect(patch.brain).toEqual({
       kind: "chat-http",
@@ -131,7 +133,7 @@ describe("a pasted cURL that only reads (the history)", () => {
     expect(screen.getByRole("status").textContent).toMatch(/^That cURL reads the history \(GET\): its token and the history's address were taken\./);
     expect((screen.getByLabelText("Request address (URL)") as HTMLInputElement).value).toBe("https://chat.example.com/v1/chat-orchestrator");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
-    expect(put).toHaveBeenCalledWith(`/api/v1/bots/${ana.id}/secrets/CHAT_BEARER_TOKEN`, { value: token });
+    expect(put).toHaveBeenCalledWith("/api/v1/chat-http/tokens", { origin: "https://chat.example.com", value: token });
     const patch = (onSave.mock.calls[0] as unknown as [{ brain: { baseUrl: string; chat: { historyUrl: string } } }])[0];
     expect(patch.brain.baseUrl).toBe("https://chat.example.com/v1/chat-orchestrator");
     expect(patch.brain.chat.historyUrl).toBe("https://chat.example.com/v1/history/chats");
@@ -216,10 +218,10 @@ describe("the saved token and the browser's headers (audit of change 0033)", () 
     await act(async () => undefined);
     fireEvent.change(screen.getByLabelText(/^Bearer token/), { target: { value: `Authorization: Bearer ${token}\n` } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
-    expect(put).toHaveBeenCalledWith(`/api/v1/bots/${ana.id}/secrets/CHAT_BEARER_TOKEN`, { value: token });
+    expect(put).toHaveBeenCalledWith("/api/v1/chat-http/tokens", { origin: "https://chat.example.com", value: token });
     expect(onSave).toHaveBeenCalled();
     expect((screen.getByLabelText(/^Bearer token/) as HTMLInputElement).value).toBe("");
-    expect(screen.getByText(/^✓ Token saved in the vault · expires at /)).toBeTruthy();
+    expect(screen.getByText(/^✓ This API's shared token · expires at /)).toBeTruthy();
   });
 
   it("copies the browser's headers from a pasted cURL, never a cookie or another token", async () => {
@@ -431,5 +433,167 @@ describe("plain chat and the errors of a save (change 0038)", () => {
     });
     expect(err.message).toBe("the request does not match its schema (brain.chat.curl: must match pattern)");
     expect(new ApiError(500, null).message).toBe("HTTP 500");
+  });
+});
+
+describe("one token per chat API (change 0039)", () => {
+  const groups = (saved: boolean, expiresAt: string | null = null): ChatTokenGroup[] => [
+    {
+      origin: "https://chat.example.com",
+      token: { saved, expiresAt, expired: false, source: saved ? "shared" : null },
+      bots: [
+        { id: "bot_a", name: "Ana", handle: "ana" },
+        { id: "bot_b", name: "Bia", handle: "bia" },
+      ],
+    },
+  ];
+
+  it("changes the token of every bot of an API in one place, from a token or a cURL", async () => {
+    const exp = new Date(Date.now() + 3600_000).toISOString();
+    const put = vi.fn(async () => groups(true, exp));
+    const api = { get: vi.fn(async () => groups(false)), put } as unknown as Api;
+    render(<ChatTokensCard api={api} />);
+    const card = await screen.findByTestId("chat-tokens");
+    expect(card.textContent).toContain("No token saved for this API");
+    expect(card.textContent).toContain("Used by: Ana, Bia");
+    const box = within(card).getByLabelText("New token or cURL for https://chat.example.com");
+    fireEvent.change(box, { target: { value: curl } });
+    await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Save for this API's bots (2)" })));
+    expect(put).toHaveBeenCalledWith("/api/v1/chat-http/tokens", { origin: "https://chat.example.com", value: token });
+    expect(within(card).getByRole("status").textContent).toMatch(/^Token saved: it applies to this API's 2 bots \(expires at .+\)\.$/);
+    expect(card.textContent).toMatch(/This API's shared token · expires at/);
+    expect((box as HTMLTextAreaElement).value).toBe("");
+  });
+
+  it("refuses a cURL of another API, and text with no token", async () => {
+    const put = vi.fn();
+    render(<ChatTokensCard api={{ get: vi.fn(async () => groups(true)), put } as unknown as Api} />);
+    const card = await screen.findByTestId("chat-tokens");
+    const box = within(card).getByLabelText("New token or cURL for https://chat.example.com");
+    fireEvent.change(box, { target: { value: curl.replace("chat.example.com/v1", "other.example.com/v1") } });
+    fireEvent.click(within(card).getByRole("button", { name: /Save for this API's bots/ }));
+    expect(within(card).getByRole("status").textContent).toBe("That cURL is for another API (https://other.example.com).");
+    fireEvent.change(box, { target: { value: "Bearer " } });
+    fireEvent.click(within(card).getByRole("button", { name: /Save for this API's bots/ }));
+    expect(within(card).getByRole("status").textContent).toBe("No token found in that.");
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("is not shown when no bot uses a chat API", async () => {
+    render(<ChatTokensCard api={{ get: vi.fn(async () => []) } as unknown as Api} />);
+    await act(async () => undefined);
+    expect(screen.queryByTestId("chat-tokens")).toBeNull();
+  });
+
+  it("lets a new bot of an API that has a token skip the token", async () => {
+    const onCreate = vi.fn(async () => undefined);
+    render(
+      <NewBotScreen
+        api={{ get: vi.fn(async (path: string) => (path === "/api/v1/chat-http/tokens" ? groups(true) : [])) } as unknown as Api}
+        bots={[]}
+        onCreate={onCreate}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Cid" } });
+    fireEvent.change(screen.getByLabelText("Brain"), { target: { value: "chat-http" } });
+    await act(async () => undefined);
+    fireEvent.change(screen.getByLabelText("Request address (URL)"), { target: { value: "https://chat.example.com/v1/chat" } });
+    expect((screen.getByLabelText(/^Bearer token/) as HTMLInputElement).required).toBe(false);
+    expect(screen.getByText("✓ This API's shared token")).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create bot" })));
+    expect(onCreate).toHaveBeenCalledWith(expect.not.objectContaining({ token: expect.anything() }));
+  });
+
+  it("asks for the address before a token, since the token belongs to the address's API", async () => {
+    const put = vi.fn();
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put, get: vi.fn(async (path: string) => (path.endsWith("/chat-token") ? NO_TOKEN : Promise.reject(new Error("x")))) } as unknown as Api}
+        bot={ana}
+        onSave={async () => undefined}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+    fireEvent.change(screen.getByLabelText(/^Bearer token/), { target: { value: token } });
+    const form = screen.getByRole("button", { name: "Save" }).closest("form")!;
+    await act(async () => fireEvent.submit(form));
+    expect(screen.getByText(/Type the request address before saving the token/)).toBeTruthy();
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("says a bot uses its own token from before, until its API has a shared one", async () => {
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={
+          {
+            put: vi.fn(),
+            get: vi.fn(async (path: string) =>
+              path.endsWith("/chat-token")
+                ? { saved: true, expiresAt: new Date(Date.now() + 3600_000).toISOString(), expired: false, source: "bot" }
+                : Promise.reject(new Error("x")),
+            ),
+          } as unknown as Api
+        }
+        bot={ana}
+        onSave={async () => undefined}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+    expect(screen.getByText(/^✓ This bot's own token \(from before\) · expires at .+ — save a new one to apply it to every bot of this API$/)).toBeTruthy();
+  });
+});
+
+describe("the side panel's width (change 0039)", () => {
+  it("is dragged or moved with the keys within limits, remembered, and reset by a double-click", () => {
+    window.localStorage.removeItem("orbis.panelWidth");
+    Object.defineProperty(window, "innerWidth", { value: 1600, configurable: true });
+    function Harness() {
+      const [width, setWidth] = usePanelWidth();
+      return <PanelResizer width={width} onWidth={setWidth} />;
+    }
+    render(<Harness />);
+    const handle = screen.getByRole("separator", { name: /Panel width/ });
+    expect(handle.getAttribute("aria-valuenow")).toBe("360");
+    expect(handle.getAttribute("aria-valuemax")).toBe("940"); // 1600 − 300 sidebar − 360 for the chat
+    fireEvent.keyDown(handle, { key: "ArrowLeft" });
+    expect(handle.getAttribute("aria-valuenow")).toBe("380");
+    fireEvent.keyDown(handle, { key: "ArrowLeft", shiftKey: true });
+    expect(handle.getAttribute("aria-valuenow")).toBe("460");
+    expect(window.localStorage.getItem("orbis.panelWidth")).toBe("460");
+    fireEvent.pointerDown(handle, { clientX: 1000, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientX: 900, pointerId: 1 });
+    fireEvent.pointerUp(handle, { clientX: 900, pointerId: 1 });
+    expect(handle.getAttribute("aria-valuenow")).toBe("700"); // 1600 − 900
+    fireEvent.keyDown(handle, { key: "End" });
+    expect(handle.getAttribute("aria-valuenow")).toBe("940");
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    fireEvent.keyDown(handle, { key: "Home" });
+    expect(handle.getAttribute("aria-valuenow")).toBe("300");
+    fireEvent.doubleClick(handle);
+    expect(handle.getAttribute("aria-valuenow")).toBe("360");
+  });
+
+  it("keeps a remembered width within the window", () => {
+    window.localStorage.setItem("orbis.panelWidth", "5000");
+    Object.defineProperty(window, "innerWidth", { value: 1200, configurable: true });
+    expect(clampPanel(5000, 1200)).toBe(540);
+    expect(clampPanel(100, 1200)).toBe(300);
+    function Harness() {
+      const [width] = usePanelWidth();
+      return <span data-testid="w">{width}</span>;
+    }
+    render(<Harness />);
+    expect(screen.getByTestId("w").textContent).toBe("540");
+    window.localStorage.removeItem("orbis.panelWidth");
   });
 });

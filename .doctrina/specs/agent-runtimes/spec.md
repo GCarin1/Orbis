@@ -105,7 +105,7 @@ brain are owned by `contracts/cli-harnesses`.
 
 - Where a bot selects the `openai` brain with a base URL on localhost (Ollama, LM Studio, vLLM), the system may run it with no API key.
 - Where the hub configuration declares an `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable, the system may use it for bots that name no key secret of their own.
-- Where a `chat-http` bot has plain chat on, the system shall send only the conversation — the bot's name, role and description, its memories and the messages — without Orbis's instructions and tool list, and shall offer that bot no tools.
+- Where a `chat-http` bot has plain chat on, the system may send only the conversation — the bot's name, role and description, its memories and the messages — without Orbis's instructions and tool list, and give that bot no tools.
 
 ## Acceptance criteria
 

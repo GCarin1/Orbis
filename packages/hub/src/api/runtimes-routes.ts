@@ -15,7 +15,7 @@ import type { HubContext } from "../context.js";
 import { badRequest, conflict } from "../errors.js";
 import { localModelServers, runtimeHealth } from "../brains/health.js";
 import { brainTestBot, testBrain } from "../brains/probe.js";
-import { checkConnection } from "../brains/chat-http.js";
+import { botToken, checkConnection } from "../brains/chat-http.js";
 import type { ClaudeAccount } from "../brains/claude-account.js";
 import type { CodexAccount } from "../brains/codex-account.js";
 import { BrainSchema, IdParams } from "./schemas.js";
@@ -63,12 +63,17 @@ export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubConte
   // One test at a time per bot or brain kind: each one may start a CLI process.
   const running = new Set<string>();
 
-  // Whether a chat-http bot's token is saved and when it expires: the vault never returns the token itself.
+  // Whether a chat-http bot has a token (its API's shared one, or its own) and when it expires: never the token itself.
   app.get("/api/v1/bots/:id/chat-token", { schema: { tags: ["runtimes"], params: IdParams } }, async (req): Promise<ChatTokenStatus> => {
     const bot = botService.get(req.params.id);
-    const token = cleanBearer(secretResolvers.resolve(bot.id, bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET) ?? "");
-    const expires = token ? tokenExpiry(token) : null;
-    return { saved: token !== "", expiresAt: expires?.toISOString() ?? null, expired: expires !== null && expires.getTime() <= Date.now() };
+    const found = botToken(bot, (name) => secretResolvers.resolve(bot.id, name));
+    const expires = found ? tokenExpiry(found.token) : null;
+    return {
+      saved: found !== null,
+      expiresAt: expires?.toISOString() ?? null,
+      expired: expires !== null && expires.getTime() <= Date.now(),
+      source: found?.source ?? null,
+    };
   });
 
   // A chat-http bot: which ways out of this computer reach its chat API past the firewall (no message is sent).
@@ -76,8 +81,8 @@ export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubConte
     const bot = botService.get(req.params.id);
     if (bot.brain.kind !== "chat-http" || !bot.brain.baseUrl?.trim())
       throw badRequest("this bot does not use a chat API over cURL", { brain: "chat-http with an address" });
-    const token = cleanBearer(secretResolvers.resolve(bot.id, bot.brain.apiKeySecret || CHAT_HTTP_TOKEN_SECRET) ?? "");
-    if (!token) throw badRequest("no Bearer token is saved for this bot", { token: "required" });
+    const token = botToken(bot, (name) => secretResolvers.resolve(bot.id, name))?.token;
+    if (!token) throw badRequest("no Bearer token is saved for this bot's chat API", { token: "required" });
     const key = `check:${bot.id}`;
     if (running.has(key)) throw conflict("test_running", "a connection test of this bot is already running");
     running.add(key);

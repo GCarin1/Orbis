@@ -1,8 +1,8 @@
 // The new-bot screen (specs/web-app): the face first — a color and a shape with
 // a live preview — then the name, role, manager and brain, and suggestions that
 // fill everything in; templates import from here too.
-import { useState } from "react";
-import { AVATAR_COLORS, AVATAR_SHAPES, type AvatarShape, type Bot, type Brain, type BrainKind } from "@orbis/shared";
+import { useEffect, useState } from "react";
+import { AVATAR_COLORS, AVATAR_SHAPES, chatApiOrigin, type AvatarShape, type Bot, type Brain, type BrainKind, type ChatTokenGroup } from "@orbis/shared";
 import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
 import type { Api } from "../api.js";
 import { useLang, useT, type TextKey } from "../i18n.js";
@@ -17,7 +17,7 @@ export interface NewBotInput {
   avatarShape: AvatarShape;
   reportsTo?: string;
   brain: Partial<Brain> & { kind: BrainKind };
-  /** chat-http: the Bearer token, saved as the new bot's secret (never in the bot itself). */
+  /** chat-http: the Bearer token, saved as its chat API's shared token (never in the bot itself). */
   token?: string;
 }
 
@@ -64,6 +64,20 @@ export function NewBotScreen({
   const [command, setCommand] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [chat, setChat] = useState(chatHttpValue());
+  // The chat APIs that already have a token: a new bot of one of them needs none typed.
+  const [tokenApis, setTokenApis] = useState<ChatTokenGroup[]>([]);
+  useEffect(() => {
+    if (!api || kind !== "chat-http") return;
+    let live = true;
+    api
+      .get<ChatTokenGroup[]>("/api/v1/chat-http/tokens")
+      .then((groups) => live && setTokenApis(groups))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [api, kind]);
+  const sharedToken = tokenApis.find((g) => g.origin === chatApiOrigin(chat.url))?.token ?? null;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { servers } = useLocalServers(api, isLocalKind(kind));
@@ -190,7 +204,7 @@ export function NewBotScreen({
             )}
             {kind === "chat-http" && (
               <div className="wide">
-                <ChatHttpFields value={chat} onChange={setChat} name="newbot-chat" />
+                <ChatHttpFields value={chat} onChange={setChat} hasToken={sharedToken?.saved === true} tokenStatus={sharedToken} name="newbot-chat" />
               </div>
             )}
             <label className="wide">

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { CHAT_HTTP_TOKEN_SECRET, roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
 import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
 import { useT } from "./i18n.js";
 import { useStore } from "./store.js";
@@ -18,6 +18,7 @@ import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
 import { SettingsScreen } from "./components/SettingsScreen.js";
 import { Marketplace } from "./components/Marketplace.js";
+import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
 import { brainLabel, brainShort } from "./components/brains.js";
 import { BackIcon, ClockIcon, GearIcon, MonitorIcon, PanelIcon } from "./components/Icons.js";
@@ -58,6 +59,7 @@ export function App() {
   const computerOpen = panel === "computer";
   const [view, setView] = useState<View>("chat");
   const [computerFull, setComputerFull] = useState(false);
+  const [panelWidth, setPanelWidth] = usePanelWidth();
   const store = useStore();
 
   useEffect(() => {
@@ -183,7 +185,8 @@ export function App() {
   );
 
   return (
-    <div className={`app${sidePanel ? " with-panel" : ""}${chatOpen ? " chat-open" : ""}`}>
+    <div className={`app${sidePanel ? " with-panel" : ""}${chatOpen ? " chat-open" : ""}`} style={{ "--panel-width": `${panelWidth}px` } as CSSProperties}>
+      {sidePanel && !(computerOpen && computerFull) && <PanelResizer width={panelWidth} onWidth={setPanelWidth} />}
       <Sidebar
         bots={store.bots}
         conversations={Object.values(store.conversations)}
@@ -227,8 +230,8 @@ export function App() {
             }}
             onCreate={async ({ token, ...input }) => {
               const bot = await store.createBot(input);
-              // The chat-http token is the bot's secret, encrypted in the vault, never part of the bot.
-              if (token) await store.api!.put(`/api/v1/bots/${bot.id}/secrets/${CHAT_HTTP_TOKEN_SECRET}`, { value: token });
+              // The chat-http token is its chat API's, shared by that API's bots, encrypted in the vault, never part of the bot.
+              if (token && input.brain?.baseUrl) await store.api!.put("/api/v1/chat-http/tokens", { origin: input.brain.baseUrl, value: token });
               openBot(bot.id);
             }}
           />
