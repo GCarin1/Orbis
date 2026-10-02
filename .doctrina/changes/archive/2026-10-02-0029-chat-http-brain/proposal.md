@@ -6,6 +6,7 @@
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: feature)
 - **Affects specs:** agent-runtimes, web-app, templates
+- **Documented surface:** n/a — the brain is documented in docs/brains.md, README.md and README.pt.md, committed with this change (4800b01) before its close ran
 
 ## Why
 

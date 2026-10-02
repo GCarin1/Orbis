@@ -421,16 +421,7 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [
-      {
-        "id": "0029-chat-http-brain",
-        "title": "chat-http brain",
-        "path": ".doctrina/changes/0029-chat-http-brain",
-        "status": "applied",
-        "opened": "2026-10-02",
-        "lane": "product (confident; signals: feature)"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1075,6 +1066,28 @@
           }
         ],
         "lane": "product (confident; signals: bug, review)"
+      },
+      {
+        "id": "0029-chat-http-brain",
+        "title": "chat-http brain",
+        "path": ".doctrina/changes/archive/2026-10-02-0029-chat-http-brain",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "templates",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: feature)"
       }
     ],
     "skills": [
