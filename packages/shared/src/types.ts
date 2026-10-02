@@ -43,6 +43,11 @@ export interface ChatHttpOptions {
    * reads one); default `history/chats` beside the chat address.
    */
   historyUrl?: string;
+  /**
+   * Give each new chat a title, as the browser does (`POST <history>/<chat id>/generate-title`
+   * with the bot's name and the task); default true. It costs one model call per new chat.
+   */
+  titles?: boolean;
 }
 
 /** The default `chat-http` model (`config.modelId`). */

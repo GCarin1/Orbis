@@ -524,7 +524,7 @@ const pt = {
   "chat.tokenSaved": "•••• salvo — cole um novo para trocar",
   "chat.tokenExpires": "Expira em {when}",
   "chat.tokenExpired": "Este token expirou em {when}: copie um novo",
-  "chat.advanced": "Avançado: agente, temperatura, Origin, histórico",
+  "chat.advanced": "Avançado: agente, temperatura, Origin, histórico, títulos",
   "chat.agentId": "ID do agente",
   "chat.agentVersion": "Versão do agente",
   "chat.temperature": "Temperatura",
@@ -535,6 +535,7 @@ const pt = {
   "chat.curlExpires": " O token expira em {when} — salve para aplicar.",
   "chat.historyUrl": "Endereço do histórico (opcional)",
   "chat.historyUrlHint": "…/history/chats, ao lado da URL da chamada",
+  "chat.titles": "Dar título aos chats novos (\"Orbis · nome do bot — tarefa\"; uma chamada de modelo a mais por chat)",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1060,7 +1061,7 @@ const en: Record<TextKey, string> = {
   "chat.tokenSaved": "•••• saved — paste a new one to replace it",
   "chat.tokenExpires": "Expires at {when}",
   "chat.tokenExpired": "This token expired at {when}: copy a new one",
-  "chat.advanced": "Advanced: agent, temperature, Origin, history",
+  "chat.advanced": "Advanced: agent, temperature, Origin, history, titles",
   "chat.agentId": "Agent id",
   "chat.agentVersion": "Agent version",
   "chat.temperature": "Temperature",
@@ -1071,6 +1072,7 @@ const en: Record<TextKey, string> = {
   "chat.curlExpires": " The token expires at {when} — save to apply.",
   "chat.historyUrl": "History address (optional)",
   "chat.historyUrlHint": "…/history/chats, beside the request address",
+  "chat.titles": "Give new chats a title (\"Orbis · bot name — task\"; one more model call per chat)",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

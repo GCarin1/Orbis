@@ -39,11 +39,22 @@ async function dataField(req: IncomingMessage): Promise<Seen["data"]> {
   return JSON.parse(m[1]!);
 }
 
+/** What the fake's generate-title answers (500 to see a failing one change nothing). */
+let titleStatus = 200;
+
 /** A fake orchestrator: `answer` writes each response; `history` answers GETs (else 404); every POST is recorded. */
 async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number) => void, history?: (path: string) => unknown) {
   const seen: Seen[] = [];
   const reads: string[] = [];
+  const titles: Array<{ path: string; type: string | undefined; auth: string | undefined; body: unknown }> = [];
   server = createServer(async (req, res) => {
+    if (req.method === "POST" && req.url?.endsWith("/generate-title")) {
+      let raw = "";
+      for await (const c of req) raw += c;
+      titles.push({ path: req.url, type: req.headers["content-type"], auth: req.headers.authorization, body: JSON.parse(raw) });
+      res.writeHead(titleStatus, { "content-type": "application/json" });
+      return res.end('{"data":{"title":"Orbis · Ana"}}');
+    }
     if (req.method === "GET") {
       reads.push(req.url ?? "");
       const doc = history?.(req.url ?? "");
@@ -61,7 +72,7 @@ async function orchestrator(answer: (seen: Seen, res: ServerResponse, n: number)
     answer(s, res, seen.length);
   });
   await new Promise<void>((r) => server!.listen(0, "127.0.0.1", () => r()));
-  return { url: `http://127.0.0.1:${(server!.address() as AddressInfo).port}/internal/v1/chat-orchestrator`, seen, reads };
+  return { url: `http://127.0.0.1:${(server!.address() as AddressInfo).port}/internal/v1/chat-orchestrator`, seen, reads, titles };
 }
 
 const sse = (res: ServerResponse, events: unknown[]) => {
@@ -476,5 +487,48 @@ describe("a chat history shaped like the owner's company chat (made-up data)", (
       { role: "user", text: "pergunta" },
       { role: "assistant", text: "resposta", usage: { input: 5760, output: 194 } },
     ]);
+  });
+});
+
+describe("titles of the chats a bot opens", () => {
+  const until = async (check: () => boolean) => {
+    for (let i = 0; i < 100 && !check(); i++) await new Promise((r) => setTimeout(r, 20));
+  };
+
+  it("titles a new chat once, as the browser does, with the bot's name and the task", async () => {
+    titleStatus = 200;
+    const fake = await orchestrator((_s, res) => sse(res, [{ content: "ok" }, { chatId: "chat-t1" }]));
+    t = await testHub();
+    const bot = await chatBot(t, fake.url);
+    await chat(t, bot.id, "resuma o relatório de vendas");
+    await until(() => fake.titles.length > 0);
+    expect(fake.titles).toEqual([
+      {
+        path: "/internal/v1/history/chats/chat-t1/generate-title",
+        type: "application/json",
+        auth: `Bearer ${FRESH}`,
+        body: { data: { userMessage: "Orbis · Ana — resuma o relatório de vendas" } },
+      },
+    ]);
+    // The next message continues that chat: no new title.
+    await chat(t, bot.id, "e o de compras?");
+    await new Promise((r) => setTimeout(r, 100));
+    expect(fake.titles).toHaveLength(1);
+  });
+
+  it("gives no title when the bot is set not to, and a failing title changes nothing", async () => {
+    titleStatus = 500;
+    const fake = await orchestrator((_s, res) => sse(res, [{ content: "ok" }, { chatId: `chat-${Math.random()}` }]));
+    t = await testHub();
+    const off = await chatBot(t, fake.url, { chat: { titles: false } });
+    expect((await chat(t, off.id, "oi")).runs[0].status).toBe("done");
+    await new Promise((r) => setTimeout(r, 100));
+    expect(fake.titles).toHaveLength(0);
+    const on = await createBot(t, { name: "Bia", brain: { kind: "chat-http", baseUrl: fake.url, apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    await t.api("PUT", `/api/v1/bots/${on.id}/secrets/CHAT_BEARER_TOKEN`, { value: FRESH });
+    expect((await chat(t, on.id, "oi")).runs[0]).toMatchObject({ status: "done", reply: "ok" });
+    await until(() => fake.titles.length > 0);
+    expect(fake.titles).toHaveLength(1);
+    titleStatus = 200;
   });
 });

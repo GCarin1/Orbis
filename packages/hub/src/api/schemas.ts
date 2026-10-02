@@ -23,6 +23,7 @@ export const BrainSchema = Type.Object(
           maxTokens: Type.Optional(Type.Integer({ minimum: 1, maximum: 1_000_000 })),
           origin: Type.Optional(Type.String({ maxLength: 500 })),
           historyUrl: Type.Optional(Type.String({ maxLength: 1000 })),
+          titles: Type.Optional(Type.Boolean()),
         },
         { additionalProperties: false },
       ),

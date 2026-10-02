@@ -369,6 +369,36 @@ export function chatIds(doc: unknown): string[] {
   return ids;
 }
 
+/** The message a new chat's title is generated from: the bot's name and the task, so the user tells Orbis's chats apart. */
+export function titleMessage(botName: string, task: string): string {
+  const text = `Orbis · ${botName} — ${task.replace(/\s+/g, " ").trim()}`;
+  return text.length > 500 ? `${text.slice(0, 499)}…` : text;
+}
+
+/**
+ * Ask the server to title a new chat, as the browser does after the first
+ * message. Best effort: it never holds up nor fails the run.
+ */
+export async function generateTitle(base: string, chatId: string, token: string, origin: string | undefined, userMessage: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${base}/${encodeURIComponent(chatId)}/generate-title`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+        ...(origin ? { origin } : {}),
+      },
+      body: JSON.stringify({ data: { userMessage } }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    await res.body?.cancel().catch(() => undefined);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function getJson(url: string, token: string, origin: string | undefined, signal: AbortSignal): Promise<unknown> {
   const res = await fetch(url, {
     headers: { accept: "application/json, text/plain, */*", authorization: `Bearer ${token}`, ...(origin ? { origin } : {}) },
@@ -522,8 +552,11 @@ export const chatHttpBrain: BrainAdapter = {
       if (usage) yield { type: "run.usage", inputTokens: usage.input, outputTokens: usage.output, cachedTokens: 0, costUsd: 0, subscription: true };
       const reply = (found?.reply ?? answer.text).trim();
       if (answer.chatId && answer.chatId !== chatId) {
+        const opened = chatId === null;
         chatId = answer.chatId;
         ctx.sessions.set(chatId);
+        // A chat this run opened gets a title, as the browser gives one (in the background).
+        if (opened && history && options.titles !== false) void generateTitle(history, chatId, token, options.origin, titleMessage(bot.name, input.task));
       }
       if (!reply) {
         const start = answer.raw.trim().slice(0, 300);

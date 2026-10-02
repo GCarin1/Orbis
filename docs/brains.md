@@ -250,6 +250,11 @@ the token, the agent, the model and the `Origin` are read from it.
   (`GET …/history/chats?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`) are
   searched for the one holding the message just sent — a chat you have open in
   the browser is never taken. A server without that history is asked once.
+- A chat the bot opens gets a title, as the browser gives one:
+  `POST …/history/chats/<chat id>/generate-title` with
+  `{"data":{"userMessage":"Orbis · <bot> — <task>"}}`, once per new chat and in
+  the background — a failed title never fails the run. It costs one model call
+  per new chat; turn it off in Advanced (**Give new chats a title**).
 - Pasting a cURL that only reads (a `GET`, like the history's) keeps the
   request address and takes its token — a quick way to renew an expired token —
   and, for a history request, the history's address.

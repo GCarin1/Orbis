@@ -86,6 +86,10 @@ change that delivered it.
 
 ### Added
 
+- `chat-http` gives each chat a bot opens a title (change 0032-chat-http-titles),
+  as the browser does: `POST …/history/chats/<chat id>/generate-title` with
+  "Orbis · <bot> — <task>", once per new chat and in the background. One model
+  call more per new chat; off in ⚙ → Brain → Advanced.
 - `chat-http` takes each reply and its tokens from the chat's history (change
   0031-chat-http-history-first), the format the company chat returns
   (`data.chat.messages` with `role`, `content`, `usage`); the streamed text is

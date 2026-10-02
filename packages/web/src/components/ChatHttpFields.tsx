@@ -16,6 +16,8 @@ export interface ChatHttpValue {
   temperature: string;
   origin: string;
   historyUrl: string;
+  /** Give each new chat a title (one model call more per chat). */
+  titles: boolean;
 }
 
 export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
@@ -27,6 +29,7 @@ export const chatHttpValue = (brain?: Brain): ChatHttpValue => ({
   temperature: brain?.chat?.temperature === undefined ? "" : String(brain.chat.temperature),
   origin: brain?.chat?.origin ?? "",
   historyUrl: brain?.chat?.historyUrl ?? "",
+  titles: brain?.chat?.titles !== false,
 });
 
 /** The token as the user may paste it: with or without "Bearer ". */
@@ -41,6 +44,7 @@ export function chatHttpBrainFields(v: ChatHttpValue): Partial<Brain> {
     ...(v.temperature.trim() && Number.isFinite(temperature) ? { temperature } : {}),
     ...(v.origin.trim() ? { origin: v.origin.trim() } : {}),
     ...(v.historyUrl.trim() ? { historyUrl: v.historyUrl.trim() } : {}),
+    ...(v.titles ? {} : { titles: false }),
   };
   return {
     ...(v.url.trim() ? { baseUrl: v.url.trim() } : {}),
@@ -167,6 +171,10 @@ export function ChatHttpFields({
         <label>
           {t("chat.historyUrl")}
           <input value={value.historyUrl} onChange={set("historyUrl")} placeholder={t("chat.historyUrlHint")} name={`${name}-history`} />
+        </label>
+        <label className="checkbox">
+          <input type="checkbox" checked={value.titles} onChange={(e) => onChange({ ...value, titles: e.target.checked })} name={`${name}-titles`} />
+          {t("chat.titles")}
         </label>
       </details>
     </div>

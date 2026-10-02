@@ -136,3 +136,31 @@ describe("a pasted cURL that only reads (the history)", () => {
     expect(patch.brain.chat.historyUrl).toBe("https://chat.example.com/v1/history/chats");
   });
 });
+
+describe("titles of new chats", () => {
+  it("are on by default, and the bot can be set not to give them", async () => {
+    const get = vi.fn(async (path: string) =>
+      path.endsWith("/secrets") ? [{ name: "CHAT_BEARER_TOKEN", createdAt: "" }] : Promise.reject(new Error("not in this test")),
+    );
+    const onSave = vi.fn(async () => undefined);
+    const ana = bot({ name: "Ana", brain: { kind: "chat-http", baseUrl: "https://chat.example.com/v1/chat", apiKeySecret: "CHAT_BEARER_TOKEN" } });
+    render(
+      <BotSettings
+        api={{ put: vi.fn(), get } as unknown as Api}
+        bot={ana}
+        onSave={onSave}
+        onExport={async () => undefined}
+        onDuplicate={async () => undefined}
+        onDelete={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    // The saved token is known once the secrets load.
+    await act(async () => undefined);
+    const box = screen.getByLabelText(/^Give new chats a title/) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ brain: expect.objectContaining({ chat: { titles: false } }) }));
+  });
+});
