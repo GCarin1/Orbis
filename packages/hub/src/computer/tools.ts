@@ -23,6 +23,18 @@ function missing(requested: string, what: "file" | "folder"): { output: string; 
 export function looksBinary(head: Buffer): boolean {
   return head.subarray(0, 8192).includes(0);
 }
+
+/**
+ * A text file's characters, by its byte-order mark: UTF-16 (what Windows
+ * PowerShell 5 writes with `>` and Out-File) or UTF-8; null for a binary file.
+ * UTF-16 is full of NUL bytes, so it was taken for binary before.
+ */
+export function decodeText(raw: Buffer): string | null {
+  if (raw[0] === 0xff && raw[1] === 0xfe) return new TextDecoder("utf-16le").decode(raw.subarray(2));
+  if (raw[0] === 0xfe && raw[1] === 0xff) return new TextDecoder("utf-16be").decode(raw.subarray(2));
+  if (raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) return raw.subarray(3).toString("utf8");
+  return looksBinary(raw) ? null : raw.toString("utf8");
+}
 const LIST_ENTRIES = 500;
 
 function listDir(root: string, dir: string, recursive: boolean, out: string[]): void {
@@ -117,10 +129,9 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
             isError: true,
           };
         }
-        const raw = readFileSync(file);
-        if (looksBinary(raw))
+        const text = decodeText(readFileSync(file));
+        if (text === null)
           return { output: `${input.path} is a binary file (${info.size} bytes), not text; computer.shell can inspect or convert it`, isError: true };
-        const text = raw.toString("utf8");
         const start = input.offset ?? 0;
         const page = text.slice(start, start + READ_CHARS);
         const more = text.length > start + READ_CHARS ? `\n[… ${text.length - start - READ_CHARS} more characters; next offset ${start + READ_CHARS}]` : "";

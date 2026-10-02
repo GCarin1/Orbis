@@ -158,12 +158,15 @@ async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: str
   const maxSteps = input.bot.brain.maxSteps ?? 25;
   let includeUsage = true;
   let retries = 0;
+  let toldLast = false;
   yield { type: "run.started" };
 
   for (let step = 0; step < maxSteps; step++) {
     // The last step answers with what the bot has, instead of failing at the limit with nothing.
     const last = step === maxSteps - 1 && tools.length > 0;
-    if (last) {
+    // Once: a retried request (a rate limit, a server without stream_options) must not repeat the note.
+    if (last && !toldLast) {
+      toldLast = true;
       messages.push({
         role: "user",
         content: `You have used ${maxSteps - 1} steps, the most this task allows. Do not call tools any more: answer now with what you found, and say what is left undone.`,

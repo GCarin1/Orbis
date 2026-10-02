@@ -48,9 +48,10 @@ describe("the shell on Windows", () => {
   it("switches cmd.exe to UTF-8 before the command, so accents arrive intact", () => {
     expect(shellCommand("echo não", { ComSpec: windows.ComSpec }, "win32")).toEqual({
       file: windows.ComSpec,
-      args: ["/d", "/s", "/c", "chcp 65001 >nul & echo não"],
+      args: ["/d", "/s", "/c", '"chcp 65001 >nul & echo não"'],
+      verbatim: true,
     });
-    expect(shellCommand("echo não", {}, "linux")).toEqual({ file: "/bin/sh", args: ["-c", "echo não"] });
+    expect(shellCommand("echo não", {}, "linux")).toEqual({ file: "/bin/sh", args: ["-c", "echo não"], verbatim: false });
   });
 });
 

@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.8.0
+**Version:** 0.8.1
 
 ## Purpose
 
@@ -58,6 +58,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When the Codex CLI or the Gemini CLI starts the Orbis MCP server, the system shall set its tool timeout to 24 hours, so a call waiting for the user's approval is not abandoned.
 - When an OpenAI-compatible server answers 429, 500, 502, 503 or 504, the system shall wait for its Retry-After (at most 30 s) or 2 s then 6 s, and send the same step again up to twice.
 - When an OpenAI-compatible server returns tool calls, the system shall run them whatever finish reason it gives, and when a reply holds `<think>` blocks, the system shall show them as thinking and leave them out of the reply.
+- When a CLI brain resumes its session in a conversation, the system shall send it what was written there since its last run there started, except its own replies of that run.
 
 ### State-driven
 
@@ -70,6 +71,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not execute tool calls from an API brain turn that stopped on `refusal`, or on `max_tokens` while holding a tool call; the run fails naming the reason.
 - The system shall not pass `--force` to the Cursor CLI, so that Cursor's own shell and write tools keep Cursor's permission rules.
 - The system shall not read, store or relay the ChatGPT password or tokens (Codex keeps them), nor drive the chatgpt.com website.
+- The system shall not ask an API brain for its final answer more than once in a run, a retried request included.
 
 ### Optional
 
@@ -94,6 +96,7 @@ brain are owned by `contracts/cli-harnesses`.
 14. [verified] A run that waits 1.5 s for an approval past its 1 s timeout ends done; an LM Studio bot at its step limit answers in a third request with no tools, and a closed server fails naming the address and ECONNREFUSED; an openai bot with no key fails pointing to its settings; bots start idle after a restart — verified by `packages/hub/test/bot-behaviour.test.ts`.
 15. [verified] With the real shim texts, codex.cmd runs its script with node, Claude Code 2's claude.CMD runs claude.exe, npx.cmd runs npx-cli.js, a batch file naming no program is refused, and an MCP server's crash is reported by its error line — verified by `packages/hub/test/runtimes/windows-shims.test.ts`.
 16. [verified] A Claude Code run whose approval is answered after its 1 s limit ends done; a gone Claude Code session and a gone Codex thread restart with the earlier conversation in the prompt, and Codex gets the 24-hour tool timeout; a 12,000-character paste goes on stdin; an LM Studio bot retries a 429, runs a tool call ended with `stop` and keeps `<think>` out of its reply — verified by `packages/hub/test/chat-audit.test.ts`.
+17. [verified] A resumed Claude Code session gets a colleague's message posted during its last run and not its own reply again; an LM Studio bot whose last request is retried after a 429 is asked once for its final answer — verified by `packages/hub/test/review.test.ts`.
 
 ## Maturity
 

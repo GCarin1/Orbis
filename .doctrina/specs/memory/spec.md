@@ -6,7 +6,7 @@
 **Realizes:** SC1
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.4.1
 
 ## Purpose
 
@@ -24,6 +24,7 @@ conversation items first.
 - The system shall index memory text for full-text search with SQLite FTS5.
 - The system shall assemble each run's context from: every `preference` and `role` entry of the bot, up to 8 other entries of the bot and of the team ranked by relevance to the task of the moment with at most 3 `summary` entries among them, and the most recent conversation items that fit within 30 items and 12,000 characters, dropping the oldest items first and cutting an item longer than 4,000 characters to its beginning and end.
 - The system shall provide the tools `memory.save` and `memory.search`, which reach only the calling bot's own entries and team entries.
+- The system shall fill the relevant entries of a context in rank order from a search three times wider than the 8 entries it keeps, so summaries over the limit of 3 leave their places to the next facts.
 
 ### Event-driven
 
@@ -43,6 +44,7 @@ conversation items first.
 3. [verified] Context assembly keeps at most 30 items and 12,000 characters of conversation, drops the oldest first, and includes every preference entry — verified by `packages/hub/test/context.test.ts`.
 4. [verified] A successful run stores a `summary` entry with the task and the start of the reply — verified by `packages/hub/test/memory.test.ts`.
 5. [verified] A 13,000-character item is cut and the items before it stay; another bot's failure is left out of the history; answers to a mention or a report leave no summary and the same summary is kept once; "de" and "the" are not searched; at most 3 summaries reach the context next to a fact — verified by `packages/hub/test/chat-audit.test.ts`.
+6. [verified] With ten summaries ranked above a fact, the context holds 3 summaries and the fact; accented Portuguese words such as "não", "está" and "você" are not searched — verified by `packages/hub/test/review.test.ts`.
 
 ## Maturity
 

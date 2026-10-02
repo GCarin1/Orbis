@@ -30,3 +30,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0025-audit-cycle-3-computer-tools — Audit cycle 3 — computer tools (specs: computer MODIFIED)
 - 2026-10-02 — 0026-audit-cycle-4-mcp-and-apis — Audit cycle 4 — MCP and APIs (specs: cli MODIFIED, hub-api MODIFIED, tool-gateway MODIFIED)
 - 2026-10-02 — 0027-audit-cycle-5-performance-and-sweep — Audit cycle 5 — performance and sweep (specs: conversations MODIFIED, web-app MODIFIED)
+- 2026-10-02 — 0028-review-of-the-audits — Review of the audits (specs: agent-runtimes MODIFIED, computer MODIFIED, conversations MODIFIED, memory MODIFIED, web-app MODIFIED)

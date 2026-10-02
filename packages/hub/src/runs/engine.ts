@@ -392,8 +392,10 @@ export class RunEngine {
       const sessionKey = conversationId ?? `run:${runId}`;
       const resumable = bot.brain.kind === "claude-code" || bot.brain.kind === "codex" || bot.brain.kind === "cursor";
       const storedSession = resumable ? this.d.sessions.get(bot.id, sessionKey, bot.brain.kind) : null;
-      // A CLI brain resuming its own session already holds the earlier turns.
-      const since = storedSession && conversationId ? (this.d.runs.lastFinished(bot.id, conversationId, runId)?.finishedAt ?? null) : null;
+      // A CLI brain resuming its own session already holds the earlier turns: up to the start of its
+      // last run here, and its own replies of that run (what others wrote meanwhile is new to it).
+      const last = storedSession && conversationId ? this.d.runs.lastFinished(bot.id, conversationId, runId) : undefined;
+      const since = last?.finishedAt ? { from: last.startedAt ?? last.finishedAt, ownUntil: last.finishedAt } : null;
 
       const context = assembleContext(
         {

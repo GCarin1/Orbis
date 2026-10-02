@@ -23,6 +23,7 @@ const STOP_WORDS = new Set(
   (
     "de da do das dos em no na nos nas um uma uns umas os as ao aos que se por para pra com sem mais mas como ou ja eu tu ele ela nos vos eles elas " +
     "me te lhe meu minha seu sua isso isto esse essa este esta aquele aquela pelo pela tem ter foi ser sao era muito bem voce voces oi ola obrigado " +
+    "não nao são já você vocês olá está estão há às também só pelos pelas num numa qual quais quem onde quando porque " +
     "the a an of to in on at for and or but is are was were be been it its this that these those with as by from you your we our they their " +
     "i me my he she him her do does did not no yes so if then than can will would should could have has had please hi hello thanks"
   ).split(" "),

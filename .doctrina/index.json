@@ -15,7 +15,7 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.8.0",
+        "version": "0.8.1",
         "last_updated": "2026-09-27",
         "implementation": "verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims",
         "realizes": [
@@ -71,7 +71,7 @@
         "id": "computer",
         "path": ".doctrina/specs/computer/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.5.1",
         "last_updated": "2026-09-27",
         "implementation": "verified — local, host and docker providers (`packages/hub/src/computer/`), browser tools on Playwright (a visible window for host), hibernation, takeover, the live view, the computers setup with the one-click desktop image build, and the `orbis/desktop` image (`docker/desktop/`)",
         "realizes": [
@@ -87,7 +87,7 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.7.1",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -148,7 +148,7 @@
         "id": "memory",
         "path": ".doctrina/specs/memory/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.4.1",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -255,7 +255,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.15.1",
+        "version": "0.15.2",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -1036,6 +1036,36 @@
           }
         ],
         "lane": "product (confident; signals: bug, audit, performance)"
+      },
+      {
+        "id": "0028-review-of-the-audits",
+        "title": "Review of the audits",
+        "path": ".doctrina/changes/archive/2026-10-02-0028-review-of-the-audits",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "computer",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "memory",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: bug, review)"
       }
     ],
     "skills": [

@@ -6,7 +6,7 @@
 **Realizes:** SC3
 **Depends on:** bots, tool-gateway, secrets
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.5.1
 
 ## Purpose
 
@@ -47,10 +47,12 @@ are destroyed with their bot.
 - When a bot on a `host` computer writes a file and no rule or grant decides, the system shall ask the user first.
 - When the browser of a bot's computer cannot start because Playwright's Chromium is not downloaded, the system shall start the Google Chrome or Microsoft Edge installed on the machine, and when neither is installed, fail naming what to install.
 - When a file tool is given a path that does not exist, the system shall say so with the path the bot gave and point to `computer.list_files`.
+- When `computer.read_file` reads a file that starts with a UTF-16 or UTF-8 byte-order mark, the system shall decode it as that text.
 
 ### State-driven
 
 - While the hub runs on Windows, the system shall switch cmd.exe to UTF-8 before each `computer.shell` command, give commands of the bot's own computer the system variables Windows programs need and a profile of the bot's own (USERPROFILE, APPDATA, LOCALAPPDATA, TEMP, TMP), and ask Python for UTF-8 output.
+- While the hub runs on Windows, the system shall pass a `computer.shell` command to cmd.exe verbatim inside one pair of quotes that `/s` strips, as Node's own shell option does, so the command's own quotes arrive as written.
 
 ### Unwanted-behavior (must-not)
 
@@ -73,6 +75,7 @@ are destroyed with their bot.
 10. [verified] A host bot's commands run in its folder with the user's variables and without the hub's, file tools read and write there and refuse `..`, writes ask by default, a missing or relative folder is refused, a template carries no host access, the bot is told where it works, deleting it leaves the folder; `GET /computers` reports Docker installed, running or missing and the image, and one call builds it — verified by `packages/hub/test/computer/host.test.ts`.
 11. [verified] The context names Windows and cmd.exe on win32 and Linux and /bin/sh on linux; the browser launch falls back from the bundled Chromium to Chrome and Edge, and fails asking to install one — verified by `packages/hub/test/bot-behaviour.test.ts`.
 12. [verified] On win32 a command gets SystemRoot, ProgramFiles, a profile under the bot's home and PYTHONIOENCODING, and cmd.exe runs `chcp 65001` first; a missing file, a binary file, a file over 10 MiB, a missing folder and a file given as a folder each get a plain answer; a 12,003-character page reads in two parts — verified by `packages/hub/test/audit-cycle3.test.ts`.
+13. [verified] `mkdir "Nova Pasta" && git commit -m "primeiro"` reaches cmd.exe as written; a UTF-16 file Windows PowerShell writes and a UTF-8 file with a BOM read as text, and a binary file is still refused — verified by `packages/hub/test/review.test.ts`.
 
 ## Maturity
 

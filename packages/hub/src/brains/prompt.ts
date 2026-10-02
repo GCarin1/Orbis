@@ -8,9 +8,14 @@ export function renderMemories(ctx: AssembledContext): string {
   return ["What you remember:", ...lines].join("\n");
 }
 
-/** The history to send: all of it, or for a resumed session only what came after its last run. */
+/**
+ * The history to send: all of it, or for a resumed session what it has not
+ * seen — everything since its last run started, but its own replies of that run.
+ */
 export function historyFor(ctx: AssembledContext, resumed: boolean): AssembledContext["history"] {
-  return resumed && ctx.since ? ctx.history.filter((h) => h.at > ctx.since!) : ctx.history;
+  const mark = ctx.since;
+  if (!resumed || !mark) return ctx.history;
+  return ctx.history.filter((h) => h.at > mark.from && !(h.author === "you" && h.at <= mark.ownUntil));
 }
 
 export function renderHistory(ctx: AssembledContext, resumed = false): string {

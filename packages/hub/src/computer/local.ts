@@ -55,11 +55,18 @@ export function shellEnv(paths: ComputerPaths, source: NodeJS.ProcessEnv = proce
 /**
  * The shell and its arguments for a command. On Windows, cmd.exe writes in the
  * console's OEM code page (850 in Brazil), so "não" arrived as "n�o": the
- * command first switches the console to UTF-8.
+ * command first switches the console to UTF-8. The command line is passed
+ * verbatim inside one pair of quotes that `/s` strips, as Node's own
+ * `shell: true` does: quoted by the C runtime's rules instead, every `"` of
+ * the command reached cmd.exe as `\"`, and `mkdir "Nova Pasta"` failed.
  */
-export function shellCommand(command: string, env: Record<string, string>, platform: NodeJS.Platform = process.platform): { file: string; args: string[] } {
-  if (platform === "win32") return { file: env.ComSpec ?? "cmd.exe", args: ["/d", "/s", "/c", `chcp 65001 >nul & ${command}`] };
-  return { file: "/bin/sh", args: ["-c", command] };
+export function shellCommand(
+  command: string,
+  env: Record<string, string>,
+  platform: NodeJS.Platform = process.platform,
+): { file: string; args: string[]; verbatim: boolean } {
+  if (platform === "win32") return { file: env.ComSpec ?? "cmd.exe", args: ["/d", "/s", "/c", `"chcp 65001 >nul & ${command}"`], verbatim: true };
+  return { file: "/bin/sh", args: ["-c", command], verbatim: false };
 }
 
 /** Run `command` through the platform shell, killing its whole process group on timeout or abort. */
@@ -70,6 +77,7 @@ export function runShell(command: string, cwd: string, env: Record<string, strin
     const child = spawn(shell.file, shell.args, {
       cwd,
       env,
+      windowsVerbatimArguments: shell.verbatim,
       detached: !win,
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,

@@ -274,6 +274,10 @@ export class ConversationService {
     const old = this.d.engine.get(runId);
     if (!old) throw notFound(`run ${runId}`);
     if (old.status !== "failed" && old.status !== "cancelled") throw conflict("run_not_ended", `run ${runId} is ${old.status}; only a failed or cancelled run can be tried again`);
+    // A routine's run carries its routine's rules (a test run is draft-only): run the routine again instead.
+    if (old.trigger.type === "routine" || old.trigger.type === "webhook") {
+      throw conflict("routine_run", "a routine's run is tried again from the routine (Test, in the bot's routines), which keeps its rules");
+    }
     const bot = this.d.botService.get(old.botId);
     const trigger = old.trigger.ref ? this.d.items.get(old.trigger.ref) : undefined;
     const resolved = old.skill && this.skillResolver ? this.skillResolver(bot, `/${old.skill} ${old.input}`) : { kind: "none" as const };

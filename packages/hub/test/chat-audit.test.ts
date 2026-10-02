@@ -346,7 +346,7 @@ describe("memory", () => {
   });
 
   it("searches memory by meaningful words, not by 'de' or 'the'", () => {
-    expect(ftsQuery("qual é o preço de lápis para a equipe?")).toBe('"qual" "preço" "lápis" "equipe"'.split(" ").join(" OR "));
+    expect(ftsQuery("qual é o preço de lápis para a equipe?")).toBe('"preço" OR "lápis" OR "equipe"');
     expect(ftsQuery("de the a")).toBeNull();
   });
 

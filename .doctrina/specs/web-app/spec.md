@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.15.1
+**Version:** 0.15.2
 
 ## Purpose
 
@@ -59,12 +59,15 @@ run's steps.
 - When the event stream has not answered a ping within 10 seconds (sent every 25 seconds, when the network comes back and when the app is shown again), the web app shall close it, connect again and reload what it may have missed.
 - When the hub refuses an answer to an approval or a draft, the web app shall say why on the card and show the approval as the hub has it now.
 - When the user edits a message the hub did not accept, the web app shall clear the send error.
+- When the web app loads a conversation's runs, it shall keep the steps that already streamed in for a run whose loaded copy has fewer.
 
 ### Unwanted-behavior (must-not)
 
 - If neither the browser nor the hub can transcribe, or the microphone is blocked, the web app shall not record, and shall say how to fix it instead.
 - The web app shall not save "My computer" for a bot that did not have it until the user ticks the consent that says what the bot will be able to do.
 - The web app shall not clear a message the hub did not accept; it shall say why under the composer, and it shall not send on the Enter that confirms an accent or an input-method candidate.
+- The web app shall not count a bot starting to work as a new message below.
+- The web app shall not offer Try again on a routine's run, and shall say why when trying again is refused.
 
 ## Acceptance criteria
 
@@ -99,6 +102,7 @@ run's steps.
 29. [verified] Markdown lists, code, tables, links and mentions render and raw HTML stays text; one bubble per bot with "+1 queued" and a stop that cancels both runs; the waiting note; Try again posts the retry once; earlier messages load on request; a failed send keeps the text and says why; a composing Enter does not send — verified by `packages/web/test/chat-audit.test.tsx`.
 30. [verified] A stream that stops answering its ping is closed and replaced and the app reloads; a refused approval answer shows the hub's reason and the expired state; the inbox shows "npm run build" for a Claude Bash approval and opens its conversation; Markdown marks are dropped from a preview — verified by `packages/web/test/audit-cycle2.test.tsx`.
 31. [verified] The send error shown after a refused message goes away when the user edits it — verified by `packages/web/test/audit-cycle5.test.tsx`.
+32. [verified] While the user reads history, a bot starting to work shows no "new below" and a new message shows "1 new below"; a routine's failed run offers no Try again; a refused retry says why; loaded runs keep the steps that streamed in — verified by `packages/web/test/review.test.tsx`.
 
 ## Maturity
 

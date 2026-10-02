@@ -30,11 +30,20 @@ export interface AssembledContext {
   /** Recent conversation, oldest first, excluding the item that triggered the run. */
   history: ContextItem[];
   /**
-   * When the brain resumes its own session: the end of its last run here. A
-   * resumed session already holds the history up to then; a new session (the
-   * stored one was gone) needs all of it.
+   * When the brain resumes its own session: what that session already holds
+   * (see SessionMark). A new session (the stored one was gone) needs it all.
    */
-  since: string | null;
+  since: SessionMark | null;
+}
+
+/**
+ * What a CLI brain's stored session saw of a conversation: the history up to
+ * the start of its last run there (`from`) and its own replies up to the end of
+ * that run (`ownUntil`). What others wrote while that run worked is new to it.
+ */
+export interface SessionMark {
+  from: string;
+  ownUntil: string;
 }
 
 export interface AssembleOptions {
@@ -43,8 +52,8 @@ export interface AssembleOptions {
   task: string;
   /** The item that carries the task, left out of history because it is the task. */
   excludeItemId?: string | null;
-  /** The end of the bot's last run here, when its CLI brain resumes a session (see AssembledContext.since). */
-  since?: string | null;
+  /** What the bot's resumed CLI session already holds (see AssembledContext.since). */
+  since?: SessionMark | null;
 }
 
 export interface AssembleDeps {
@@ -121,9 +130,13 @@ function relevantTo(item: TimelineItem, bot: Bot): boolean {
 export function assembleContext(opts: AssembleOptions, deps: AssembleDeps): AssembledContext {
   const { bot } = opts;
   const pinned = deps.memory.byKinds(bot.id, ["preference", "role"]);
-  // Facts first; at most MAX_SUMMARIES_IN_CONTEXT summaries of past runs, so old answers do not crowd the context.
+  // The best matches in rank order, with at most MAX_SUMMARIES_IN_CONTEXT summaries of past runs, so old
+  // answers do not crowd out facts: a wider search fills the places the extra summaries leave.
   let summaries = 0;
-  const relevant = deps.memory.search(bot.id, opts.task, CONTEXT_BUDGET.memories, ["preference", "role"]).filter((m) => m.kind !== "summary" || ++summaries <= MAX_SUMMARIES_IN_CONTEXT);
+  const relevant = deps.memory
+    .search(bot.id, opts.task, CONTEXT_BUDGET.memories * 3, ["preference", "role"])
+    .filter((m) => m.kind !== "summary" || ++summaries <= MAX_SUMMARIES_IN_CONTEXT)
+    .slice(0, CONTEXT_BUDGET.memories);
 
   let history: ContextItem[] = [];
   if (opts.conversationId) {

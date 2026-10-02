@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Version:** 0.7.1
 
 ## Purpose
 
@@ -54,6 +54,7 @@ timeline changes.
 - The system shall not wake any bot for a reply that names more than two bots of the team, which reads as a list of the team; it shall post a `mention.list` event instead.
 - The system shall not start a run for a bot that a `mention` run's reply names, nor wake by mention a bot that already ran in the same chain.
 - The system shall not try again a run that is queued, running, waiting or done; it shall answer 409.
+- The system shall not try again a routine's or a webhook's run outside its routine, which keeps the routine's rules (a test run is draft-only); it shall answer 409 `routine_run`.
 
 ## Acceptance criteria
 
@@ -67,6 +68,7 @@ timeline changes.
 8. [verified] Two bots one user message mentions, whose replies mention each other, run once each, in one chain — verified by `packages/hub/test/handoff.test.ts`.
 9. [verified] A group run is told the group's title, the other members and that the bot leads it, and a direct run that it is the bot's own conversation; a run that failed for a missing key is tried again after the brain is fixed and replies, and trying a done run again answers 409 — verified by `packages/hub/test/chat-audit.test.ts`.
 10. [verified] A run of 40 tool calls stores all its steps with fewer writes than a quarter of them; the database holds the run, conversation and status indexes; a retried run keeps its chain and its reply does not wake again a bot that already answered — verified by `packages/hub/test/audit-cycle5.test.ts`.
+11. [verified] Trying again a failed routine test run answers 409 `routine_run` — verified by `packages/hub/test/review.test.ts`.
 
 ## Maturity
 

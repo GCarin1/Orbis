@@ -9,6 +9,14 @@ change that delivered it.
 
 ### Fixed
 
+- Review of the audits (change 0028-review-of-the-audits): on Windows,
+  commands with quotes (`mkdir "Nova Pasta"`) work in `computer.shell` and the
+  UTF-16 files PowerShell writes can be read; a resumed Claude Code / Codex
+  session sees what colleagues wrote during its last run; facts are no
+  longer pushed out of the context by summaries; "não", "está" and "você" no
+  longer match every memory; a routine's draft-only test cannot be re-run
+  outside its routine; the chat's "new below" counts messages only and keeps
+  the steps already shown when a conversation reloads.
 - Audit cycle 5 (change 0027-audit-cycle-5-performance-and-sweep): long runs no longer block the hub
   (steps are written every 250 ms instead of on every step), the database
   indexes what every run looks up (migration 8), a retried run stays in its

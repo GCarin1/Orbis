@@ -128,6 +128,10 @@ export function Timeline({
   const end = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const [unseen, setUnseen] = useState(0);
+  /** The newest item already counted, so only new items count as "new below" (not a bot starting to type). */
+  const counted = useRef<string | undefined>(undefined);
+  /** Why trying a failed run again did not work, by run. */
+  const [retryErrors, setRetryErrors] = useState<Record<string, string>>({});
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const byId = new Map(items.map((i) => [i.id, i]));
   // Stable while the bots do not change, so memoized messages are not parsed again on every step.
@@ -153,14 +157,19 @@ export function Timeline({
   useLayoutEffect(() => {
     stick.current = true;
     setUnseen(0);
+    counted.current = undefined;
     end.current?.scrollIntoView?.({ block: "end" });
   }, [conversationId]);
   useEffect(() => {
-    const mine = lastItem?.author.type === "user";
-    if (stick.current || mine) {
-      stick.current = true;
+    const previous = counted.current;
+    counted.current = lastItem?.id;
+    // The user's own message brings them back to the latest.
+    if (lastItem?.author.type === "user") stick.current = true;
+    if (stick.current) {
       end.current?.scrollIntoView?.({ block: "end" });
-    } else if (lastItem) setUnseen((n) => n + 1);
+      return;
+    }
+    if (previous !== undefined && lastItem && lastItem.id !== previous) setUnseen((n) => n + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastItem?.id, working.length]);
   useEffect(() => {
@@ -233,17 +242,28 @@ export function Timeline({
         if (item.kind === "event") {
           const failed = item.event?.type === "run.failed" ? (item.event.data as { runId?: string }).runId : undefined;
           const retried = failed ? Object.values(runs).some((r) => r.retryOf === failed) : false;
+          // A routine's run is tried again from the routine, which keeps its rules (draft-only tests).
+          const trigger = failed ? runs[failed]?.trigger.type : undefined;
+          const retryable = failed && !retried && trigger !== "routine" && trigger !== "webhook";
+          const retry = async (runId: string) => {
+            try {
+              await useStore.getState().retryRun(runId);
+            } catch (err) {
+              setRetryErrors((e) => ({ ...e, [runId]: err instanceof Error ? err.message : String(err) }));
+            }
+          };
           parts.push(
             <div key="item" className={`event event-${item.event?.type ?? "info"}`} data-testid="event">
               {item.text}
-              {failed && !retried && (
+              {retryable && (
                 <>
                   {" "}
-                  <button type="button" className="link event-action" onClick={() => void useStore.getState().retryRun(failed)}>
+                  <button type="button" className="link event-action" onClick={() => void retry(failed)}>
                     {t("run.retry")}
                   </button>
                 </>
               )}
+              {failed && retryErrors[failed] && <span className="error"> {retryErrors[failed]}</span>}
             </div>,
           );
         } else if (item.kind === "card") {

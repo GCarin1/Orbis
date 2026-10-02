@@ -87,6 +87,25 @@ change with its own regression tests (`packages/hub/test/audit-cycleN.test.ts`).
 | 4 (0026) | External MCP servers, the OpenAI-compatible API, the `orbis` command | A server with a long name gave tools wire names over 64 characters: the model API refused the request and every reply of the bots given it failed (now at most 52); an HTTP server that ended its session failed every call until a manual reconnect; a stopped run waited on a slow MCP call; the OpenAI API crashed on a message that started no run; `orbis chat` followed another message's runs |
 | 5 (0027) | A sweep of cycles 0022–0026, performance | Each step of a run rewrote all its steps to the database: a long run wrote hundreds of MB and blocked the hub (now every 250 ms); lookups every run makes scanned whole tables (migration 8 adds indexes); a retried run woke again a bot that had answered; the chat re-parsed every message on each step; the send error stayed after editing |
 
+## Review of the audits (0028)
+
+A re-read of everything changes 0021 to 0027 touched, chat and bots first,
+found defects those changes introduced or left in code they touched; each is
+a regression test that fails on the old code (`packages/hub/test/review.test.ts`,
+`packages/web/test/review.test.tsx`).
+
+| Finding | Effect | Fix |
+|---|---|---|
+| `computer.shell` quoted the command by the C runtime's rules | On Windows every `"` reached cmd.exe as `\"`: `mkdir "Nova Pasta"` or `git commit -m "…"` failed | The command goes verbatim inside the quotes `/s` strips, as Node's own shell option does |
+| Files Windows PowerShell writes are UTF-16 | `computer.read_file` refused them as binary | Byte-order marks (UTF-16, UTF-8) are read |
+| A resumed CLI session got what came after its last run *ended* | A colleague's message posted while that run worked was never seen | It gets everything since that run *started*, but its own reply |
+| The summary cap dropped summaries from the 8 best matches without refilling | A fact ranked ninth stayed out of the context | A three times wider search fills the places |
+| Stop words lacked accents | "não", "está", "você" still matched every summary | Added |
+| A retried last-step request repeated the "answer now" note | The model was told twice | Told once |
+| Try again re-ran a routine's draft-only test outside its routine | External tools would have acted for real | Refused (409 `routine_run`); the chat says why a retry fails |
+| "New below" counted a bot starting to work | A false "1 new below" | Only new messages count |
+| A conversation reloaded during a run took the hub's copy of its steps | Steps already shown disappeared (writes are every 250 ms since cycle 5) | The longer list stays |
+
 ## Settings
 
 | Variable | Default | Effect |

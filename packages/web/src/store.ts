@@ -86,6 +86,11 @@ interface State {
   apply(event: StreamEvent): void;
 }
 
+/** A run as loaded, keeping the steps that streamed in when the loaded copy has fewer. */
+export function keepSteps(loaded: RunView, known: RunView | undefined): RunView {
+  return known && known.steps.length > loaded.steps.length ? { ...loaded, steps: known.steps } : loaded;
+}
+
 /** Items loaded per page of a timeline. */
 export const TIMELINE_PAGE = 200;
 
@@ -217,7 +222,8 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({
       items: { ...s.items, [conversationId]: items },
       hasEarlier: { ...s.hasEarlier, [conversationId]: items.length >= TIMELINE_PAGE },
-      runs: { ...s.runs, ...Object.fromEntries(runs.map((r) => [r.id, r])) },
+      // The hub writes a running run's steps every 250 ms: steps that already streamed in stay.
+      runs: { ...s.runs, ...Object.fromEntries(runs.map((r) => [r.id, keepSteps(r, s.runs[r.id])])) },
     }));
   },
 
