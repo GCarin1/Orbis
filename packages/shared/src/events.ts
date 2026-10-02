@@ -9,6 +9,8 @@ export interface StreamEventMap {
   "bot.report": { botId: string; conversationId: string; itemId: string; text: string };
   "conversation.updated": { conversation: Conversation };
   "conversation.deleted": { conversationId: string };
+  /** Every item of a conversation was deleted (the user cleared it). */
+  "conversation.cleared": { conversationId: string };
   "timeline.item": { conversationId: string; item: TimelineItem };
   "run.updated": { run: Omit<Run, "steps"> };
   "run.step": { runId: string; conversationId: string | null; botId: string; step: Step };

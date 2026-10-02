@@ -36,6 +36,8 @@ export async function registerGroupRoutes(root: FastifyInstance, ctx: HubContext
     reply.code(204);
     return null;
   });
+  // Clear a conversation (direct or group): its items, the bots' sessions of it and its run summaries.
+  app.delete("/api/v1/conversations/:id/items", { schema: { tags: ["conversations"], params: IdParams } }, async (req) => svc.clear(req.params.id));
   app.post("/api/v1/conversations/:id/members", { schema: { tags: ["conversations"], params: IdParams, body: MemberBody } }, async (req) =>
     svc.addMember(req.params.id, req.body.botId),
   );

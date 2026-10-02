@@ -421,7 +421,16 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0040-group-membership-and-clearing-a-conversation",
+        "title": "group membership and clearing a conversation",
+        "path": ".doctrina/changes/0040-group-membership-and-clearing-a-conversation",
+        "status": "proposed",
+        "opened": "2026-10-02",
+        "lane": "product (confident; signals: feature, fix)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

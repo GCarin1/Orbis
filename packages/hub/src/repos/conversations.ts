@@ -123,6 +123,20 @@ export class ConversationsRepo {
     }
   }
 
+  /** The groups a bot is a member of. */
+  groupsOf(botId: string): string[] {
+    return all<{ id: string }>(
+      this.db,
+      "SELECT c.id FROM conversations c JOIN conversation_members m ON m.conversation_id = c.id WHERE c.kind = 'group' AND m.bot_id = ?",
+      botId,
+    ).map((r) => r.id);
+  }
+
+  /** A cleared conversation has no last item. */
+  resetLastItem(id: string): void {
+    run(this.db, "UPDATE conversations SET last_item_at = NULL WHERE id = ?", id);
+  }
+
   clearLead(botId: string): void {
     run(this.db, "UPDATE conversations SET lead_bot_id = NULL WHERE lead_bot_id = ?", botId);
   }
@@ -184,6 +198,25 @@ export class ItemsRepo {
   }
 
   /** Items in timeline order, the page ending just before `before` when given. */
+  /** Delete every item of a conversation (clearing it). */
+  deleteConversation(conversationId: string): void {
+    run(this.db, "DELETE FROM items WHERE conversation_id = ?", conversationId);
+  }
+
+  /** The newest join or leave of a bot in a conversation, or null when there is none. */
+  lastMembership(conversationId: string, botId: string): "member.joined" | "member.left" | null {
+    const row = get<{ type: string }>(
+      this.db,
+      `SELECT json_extract(event, '$.type') AS type FROM items
+       WHERE conversation_id = ? AND kind = 'event' AND json_extract(event, '$.data.botId') = ?
+         AND json_extract(event, '$.type') IN ('member.joined', 'member.left')
+       ORDER BY seq DESC LIMIT 1`,
+      conversationId,
+      botId,
+    );
+    return (row?.type as "member.joined" | "member.left" | undefined) ?? null;
+  }
+
   list(conversationId: string, opts: { before?: string; limit?: number } = {}): TimelineItem[] {
     const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
     let beforeSeq: number | null = null;

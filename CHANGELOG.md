@@ -9,6 +9,8 @@ change that delivered it.
 
 ### Fixed
 
+- A deleted bot stayed in its groups on screen: it now leaves each of them (said
+  in each), the web app follows, and a group left with no bot is deleted.
 - `chat-http` messages blocked by a firewall that reads them (change 0038-chat-http-plain-chat): the
   connection test got through by every way, but each message carried ~6,000
   characters of Orbis's tool instructions (a shell, paths, placeholders) that the
@@ -124,6 +126,13 @@ change that delivered it.
 
 ### Added
 
+- Groups like a chat app (change 0040-group-membership-and-clearing-a-conversation): "Ana joined the
+  group" and "Ana left the group" in the conversation, with the bot's face; the
+  group's header adds a bot (**+ Add…**), removes one (× on its chip), clears the
+  conversation and deletes the group; a direct conversation can be cleared too
+  (its messages, the bots' sessions of it and the run summaries it left; what a
+  bot saved on purpose stays). A bot that joins reads the group's history; one
+  that left is not brought back by a mention. A group can shrink to one bot.
 - One Bearer token per chat API, changed in one place (change 0039-shared-chat-token-and-resizable-panel):
   every `chat-http` bot of the same API uses that API's token; ⚙ Settings →
   Brains → **Chat API tokens** lists each API, its token's expiry and its bots,

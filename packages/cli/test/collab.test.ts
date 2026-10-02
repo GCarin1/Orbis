@@ -46,16 +46,18 @@ describe("orbis group", () => {
     expect(res.stdout.indexOf("@bob: the logs are clean")).toBeLessThan(res.stdout.indexOf("@ana: [Ana] The task you handed off"));
   });
 
-  it("adds and removes members and refuses a group of one", async () => {
+  it("adds and removes members, down to one bot, and refuses to create a group of one", async () => {
     hub = await startTestHub();
     await twoBots(hub.env);
     await runCli(["bots", "create", "--name", "Cara", "--brain", "mock"], hub.env);
     await runCli(["group", "create", "Ops", "@ana", "@bob"], hub.env);
     expect((await runCli(["group", "add", "Ops", "@cara"], hub.env)).stdout).toContain("@cara");
     expect((await runCli(["group", "remove", "Ops", "@ana"], hub.env)).stdout).not.toContain("@ana");
-    const tooSmall = await runCli(["group", "remove", "Ops", "@bob"], hub.env);
-    expect(tooSmall.code).toBe(1);
-    expect(tooSmall.stderr).toMatch(/at least 2 bots/);
+    // A group shrinks to one bot (change 0040), not to none.
+    expect((await runCli(["group", "remove", "Ops", "@bob"], hub.env)).code).toBe(0);
+    const last = await runCli(["group", "remove", "Ops", "@cara"], hub.env);
+    expect(last.code).toBe(1);
+    expect(last.stderr).toMatch(/the last bot of a group cannot be removed/);
     expect((await runCli(["group", "create", "Solo", "@ana"], hub.env)).code).toBe(2);
     expect((await runCli(["group", "delete", "Ops"], hub.env)).code).toBe(0);
     expect((await runCli(["group", "chat", "Ops", "hi"], hub.env)).code).toBe(2);

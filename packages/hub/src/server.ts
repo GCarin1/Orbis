@@ -203,7 +203,12 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     items: repos.items,
     timeline,
     engine,
+    runs: repos.runs,
+    sessions: repos.sessions,
+    memory: repos.memory,
   });
+  // A deleted bot leaves its groups (said in each) before its rows go.
+  botService.onDelete((bot) => conversationService.botDeleted(bot));
 
   const approvals = new ApprovalService({ repo: repos.approvals, bus, timeline, engine, botService });
   const drafts = new DraftService(repos.items, timeline, config.dataDir);

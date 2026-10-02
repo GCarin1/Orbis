@@ -70,18 +70,39 @@ handles without `@` so a bot can name colleagues without waking them.
 
 ## Groups
 
-A group holds 2 to 6 bots (`ORBIS_MAX_GROUP_SIZE`) and has a **lead**.
+A group starts with 2 to 6 bots (`ORBIS_MAX_GROUP_SIZE`) and has a **lead**.
 
 ```bash
 orbis group create "Release" @ana @bob --lead @bob
 orbis group chat Release "@ana are the smoke tests green?"
 orbis group chat Release            # interactive
 orbis group add Release @cara       # at most 6 members
-orbis group remove Release @ana     # never below 2; the lead passes on
+orbis group remove Release @ana     # down to one bot; the lead passes on
 ```
 
 In the web app, **+ New group** picks the members and the lead; typing `@` in
 the message box lists the bots (and `@everyone` in a group).
+
+Like a chat app, the conversation says who comes and goes — **"Ana joined the
+group"**, **"Ana left the group"** — with the bot's face. In the group's
+header, **+ Add…** adds a bot, the **×** on a member's chip removes it, and the
+two buttons on the right **clear the conversation** and **delete the group**
+(the bots stay).
+
+- **A bot that joins reads the group's history**: what was said before it came
+  is in its context the first time it answers there.
+- **A bot that left reads none of the new messages.** It is no longer run by
+  `@everyone` or as the lead, and a mention of it posts "@ana left this group:
+  add it back to call it in." instead of running it. Added back, it reads the
+  history again. (A bot that was never in the group can still be called in by
+  a mention, as before.)
+- **Deleting a bot** takes it out of every group, said in each ("left the group
+  (the bot was deleted)"); a group left with no bot is deleted.
+- **Clearing a conversation** (a group or a bot's own, from its header) deletes
+  every message, event and card, makes the bots start it over (their sessions of
+  it are forgotten) and drops the run summaries it left in their memory; what a
+  bot saved on purpose (`memory.save`) stays. It is refused while a bot is
+  working there. API: `DELETE /api/v1/conversations/<id>/items`.
 
 ## Handoff
 

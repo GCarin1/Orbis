@@ -598,6 +598,18 @@ const pt = {
   "chat.tokenStatusOwn": "✓ Token só deste bot (de antes) · expira em {when} — salve um novo para valer para todos os bots desta API",
   "chat.tokenNeedsUrl": "Digite o endereço da chamada antes de salvar o token: o token vale para a API desse endereço.",
   "panel.resize": "Largura do painel: arraste (ou use as setas); duplo clique volta ao normal",
+  "group.joined": "{name} entrou no grupo",
+  "group.left": "{name} saiu do grupo",
+  "group.leftDeleted": "{name} saiu do grupo (o bot foi apagado)",
+  "group.absent": "{name} saiu deste grupo: adicione de volta para chamá-lo aqui.",
+  "group.add": "Adicionar bot ao grupo",
+  "group.addPlaceholder": "+ Adicionar…",
+  "group.remove": "Remover {name} do grupo",
+  "group.confirmRemove": "Remover {name} do grupo? Ele deixa de ver as mensagens novas deste grupo.",
+  "group.delete": "Apagar grupo",
+  "group.confirmDelete": "Apagar o grupo \"{title}\" e toda a conversa dele? Os bots continuam existindo.",
+  "conv.clear": "Limpar conversa",
+  "conv.confirmClear": "Limpar toda a conversa com {name}? As mensagens somem, e os bots começam do zero aqui (o que eles salvaram na memória de propósito continua).",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1197,6 +1209,18 @@ const en: Record<TextKey, string> = {
   "chat.tokenStatusOwn": "✓ This bot's own token (from before) · expires at {when} — save a new one to apply it to every bot of this API",
   "chat.tokenNeedsUrl": "Type the request address before saving the token: the token applies to that address's API.",
   "panel.resize": "Panel width: drag (or use the arrow keys); double-click to reset",
+  "group.joined": "{name} joined the group",
+  "group.left": "{name} left the group",
+  "group.leftDeleted": "{name} left the group (the bot was deleted)",
+  "group.absent": "{name} left this group: add it back to call it in here.",
+  "group.add": "Add a bot to the group",
+  "group.addPlaceholder": "+ Add…",
+  "group.remove": "Remove {name} from the group",
+  "group.confirmRemove": "Remove {name} from the group? It stops seeing this group's new messages.",
+  "group.delete": "Delete group",
+  "group.confirmDelete": "Delete the group \"{title}\" and its whole conversation? The bots stay.",
+  "conv.clear": "Clear conversation",
+  "conv.confirmClear": "Clear the whole conversation with {name}? The messages go, and the bots start over here (what they saved to memory on purpose stays).",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

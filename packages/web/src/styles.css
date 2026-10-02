@@ -2579,3 +2579,35 @@ label.check {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
   font-size: 12px;
 }
+.member-remove {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 14px;
+  line-height: 1;
+}
+.member-remove:hover {
+  color: var(--danger, #dc2626);
+}
+.member-add {
+  font-size: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: transparent;
+  color: inherit;
+}
+.icon-btn.danger:hover {
+  color: var(--danger, #dc2626);
+}
+.event-member {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+.banner-error {
+  margin: 4px 16px;
+}

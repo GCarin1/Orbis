@@ -105,11 +105,13 @@ describe("conversations", () => {
     expect(seventh.body.error.code).toBe("group_full");
     expect((await t.api("POST", "/api/v1/conversations", { title: "Solo", members: [bots[0].id] })).status).toBe(400);
 
-    // Removing the lead passes the lead to the next member; a group never drops below two.
+    // Removing the lead passes the lead to the next member; a group keeps at least one bot (change 0040).
     const pair = (await t.api("POST", "/api/v1/conversations", { title: "Pair", members: [bots[0].id, bots[1].id, bots[2].id] })).body;
     const afterRemove = await t.api("DELETE", `/api/v1/conversations/${pair.id}/members/${bots[0].id}`);
     expect(afterRemove.body).toMatchObject({ members: [bots[1].id, bots[2].id], leadBotId: bots[1].id });
-    expect((await t.api("DELETE", `/api/v1/conversations/${pair.id}/members/${bots[1].id}`)).status).toBe(409);
+    expect((await t.api("DELETE", `/api/v1/conversations/${pair.id}/members/${bots[1].id}`)).status).toBe(200);
+    expect((await t.api("DELETE", `/api/v1/conversations/${pair.id}/members/${bots[2].id}`)).status).toBe(409);
+    await t.api("POST", `/api/v1/conversations/${pair.id}/members`, { botId: bots[1].id });
     const renamed = await t.api("PATCH", `/api/v1/conversations/${pair.id}`, { title: "Duo", leadBotId: bots[2].id });
     expect(renamed.body).toMatchObject({ title: "Duo", leadBotId: bots[2].id });
     expect((await t.api("DELETE", `/api/v1/conversations/${pair.id}`)).status).toBe(204);

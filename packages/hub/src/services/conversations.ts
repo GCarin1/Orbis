@@ -6,6 +6,8 @@ import { badRequest, conflict, notFound } from "../errors.js";
 import { newId, nowIso } from "../ids.js";
 import type { BotsRepo } from "../repos/bots.js";
 import type { ConversationsRepo, ItemsRepo } from "../repos/conversations.js";
+import type { MemoryRepo } from "../repos/memory.js";
+import type { BrainSessionsRepo, RunsRepo } from "../repos/runs.js";
 import type { RunEngine } from "../runs/engine.js";
 import type { BotService } from "./bots.js";
 import type { Timeline } from "./timeline.js";
@@ -38,6 +40,9 @@ export interface ConversationServiceDeps {
   items: ItemsRepo;
   timeline: Timeline;
   engine: RunEngine;
+  runs: RunsRepo;
+  sessions: BrainSessionsRepo;
+  memory: MemoryRepo;
 }
 
 export interface GroupInput {
@@ -133,6 +138,21 @@ export class ConversationService {
     return saved;
   }
 
+  /** "<bot> joined the group": shown with the bot's face, and from then on the group's history is open to it. */
+  private joined(conversationId: string, bot: Bot): void {
+    this.d.timeline.event(conversationId, "member.joined", `${bot.name} joined the group`, this.face(bot));
+  }
+
+  /** "<bot> left the group": from then on it reads none of the group's new messages. */
+  private left(conversationId: string, bot: Bot, reason: "removed" | "deleted"): void {
+    this.d.timeline.event(conversationId, "member.left", `${bot.name} left the group`, { ...this.face(bot), reason });
+  }
+
+  /** What the timeline needs to show a bot's face, even after the bot is deleted. */
+  private face(bot: Bot): Record<string, unknown> {
+    return { botId: bot.id, name: bot.name, handle: bot.handle, color: bot.avatar.color, shape: bot.avatar.shape ?? "orb" };
+  }
+
   createGroup(input: GroupInput): Conversation {
     const title = input.title.trim();
     if (!title) throw badRequest("invalid group", { title: "must not be empty" });
@@ -153,6 +173,7 @@ export class ConversationService {
       lastItemAt: null,
     };
     this.d.conversations.insert(conv, null);
+    for (const id of members) this.joined(conv.id, this.d.botService.get(id));
     return this.publish(conv.id);
   }
 
@@ -186,6 +207,7 @@ export class ConversationService {
       throw conflict("group_full", `a group holds at most ${this.d.config.maxGroupSize} bots (ORBIS_MAX_GROUP_SIZE)`);
     }
     this.d.conversations.addMember(id, bot.id);
+    this.joined(id, bot);
     return this.publish(id);
   }
 
@@ -193,9 +215,43 @@ export class ConversationService {
     const conv = this.group(id);
     const bot = this.d.botService.get(botRef);
     if (!conv.members.includes(bot.id)) throw notFound(`@${bot.handle} in this group`);
-    if (conv.members.length <= 2) throw conflict("group_too_small", "a group needs at least 2 bots; delete the group instead");
-    this.d.conversations.removeMember(id, bot.id);
-    if (conv.leadBotId === bot.id) this.d.conversations.update(id, { leadBotId: conv.members.find((m) => m !== bot.id)! });
+    if (conv.members.length <= 1) throw conflict("group_too_small", "the last bot of a group cannot be removed; delete the group instead");
+    this.leave(conv, bot, "removed");
+    return this.publish(id);
+  }
+
+  private leave(conv: Conversation, bot: Bot, reason: "removed" | "deleted"): void {
+    this.d.conversations.removeMember(conv.id, bot.id);
+    if (conv.leadBotId === bot.id) this.d.conversations.update(conv.id, { leadBotId: conv.members.find((m) => m !== bot.id) ?? null });
+    this.left(conv.id, bot, reason);
+  }
+
+  /** A bot is being deleted: it leaves each of its groups (said in each), and a group left with no bot goes too. */
+  botDeleted(bot: Bot): void {
+    for (const id of this.d.conversations.groupsOf(bot.id)) {
+      const conv = this.get(id);
+      if (conv.members.length <= 1) {
+        this.deleteGroup(id);
+        continue;
+      }
+      this.leave(conv, bot, "deleted");
+      this.publish(id);
+    }
+  }
+
+  /**
+   * Clear a conversation: every message, event and card goes, and the bots start it over — their
+   * sessions of it are forgotten, and so are the run summaries it left in their memory (what they saved
+   * on purpose stays). Refused while a bot is working in it.
+   */
+  clear(id: string): Conversation {
+    this.get(id);
+    if (this.d.runs.activeIn(id).length) throw conflict("conversation_busy", "bots are working in this conversation: stop them, or wait for them, before clearing it");
+    this.d.memory.deleteSummariesOf(this.d.runs.idsIn(id));
+    this.d.sessions.clearConversation(id);
+    this.d.items.deleteConversation(id);
+    this.d.conversations.resetLastItem(id);
+    this.d.bus.publish("conversation.cleared", { conversationId: id });
     return this.publish(id);
   }
 
@@ -257,7 +313,13 @@ export class ConversationService {
       .map((id) => this.d.bots.get(id))
       .filter((b): b is NonNullable<typeof b> => b !== undefined);
     let targets = item.mentions.includes("everyone") ? members : this.mentioned(item);
-    if (targets.length === 0) {
+    // A bot that left the group reads none of its new messages: a mention does not bring it back.
+    const gone = targets.filter((b) => !conversation.members.includes(b.id) && this.d.items.lastMembership(conversation.id, b.id) === "member.left");
+    for (const bot of gone) {
+      this.d.timeline.event(conversation.id, "member.absent", `@${bot.handle} left this group: add it back to call it in.`, { botId: bot.id, name: bot.name });
+    }
+    targets = targets.filter((b) => !gone.includes(b));
+    if (targets.length === 0 && gone.length === 0) {
       const lead = members.find((b) => b.id === conversation.leadBotId) ?? members[0];
       targets = lead ? [lead] : [];
     }

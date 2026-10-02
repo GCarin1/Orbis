@@ -170,3 +170,20 @@ export const PuzzleIcon = (p: P) => (
     <path d="M9 4.5a2 2 0 1 1 4 0V6h3.5A1.5 1.5 0 0 1 18 7.5V11h1.5a2 2 0 1 1 0 4H18v3.5a1.5 1.5 0 0 1-1.5 1.5H13v-1.5a2 2 0 1 0-4 0V20H5.5A1.5 1.5 0 0 1 4 18.5V15h1.5a2 2 0 1 0 0-4H4V7.5A1.5 1.5 0 0 1 5.5 6H9z" />
   </Icon>
 );
+
+export const EraseIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="m7 21-4-4 10-10 6 6-8 8z" />
+    <path d="M11 21h10" />
+    <path d="m9 11 6 6" />
+  </Icon>
+);
+
+export const TrashIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 7h16" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M6 7l1 13h10l1-13" />
+    <path d="M9 7V4h6v3" />
+  </Icon>
+);

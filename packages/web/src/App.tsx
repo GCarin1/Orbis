@@ -21,7 +21,7 @@ import { Marketplace } from "./components/Marketplace.js";
 import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
 import { brainLabel, brainShort } from "./components/brains.js";
-import { BackIcon, ClockIcon, GearIcon, MonitorIcon, PanelIcon } from "./components/Icons.js";
+import { BackIcon, ClockIcon, EraseIcon, GearIcon, MonitorIcon, PanelIcon, TrashIcon } from "./components/Icons.js";
 
 type Panel = "details" | "computer" | "routines" | "settings" | null;
 
@@ -60,6 +60,16 @@ export function App() {
   const [view, setView] = useState<View>("chat");
   const [computerFull, setComputerFull] = useState(false);
   const [panelWidth, setPanelWidth] = usePanelWidth();
+  /** What a header action (clear, remove, delete) answered when it failed. */
+  const [actionError, setActionError] = useState<string | null>(null);
+  const act = async (fn: () => Promise<void>) => {
+    setActionError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  };
   const store = useStore();
 
   useEffect(() => {
@@ -111,6 +121,8 @@ export function App() {
     if ((computerOpen || panel === "details") && selected) void useStore.getState().loadComputer(selected.id).catch(() => undefined);
   }, [computerOpen, panel, selected?.id]);
   const group = store.selectedGroupId ? store.conversations[store.selectedGroupId] : undefined;
+  /** The bots that are not in the open group, to add to it. */
+  const outsiders = group ? bots.filter((b) => !b.hidden && !group.members.includes(b.id)) : [];
   const conversationId = group ? group.id : selected ? store.directByBot[selected.id] : undefined;
   // `/` autocomplete: the skills offered to the bot, or to any member of the group.
   const skillBots = group ? group.members : selected ? [selected.id] : [];
@@ -254,12 +266,71 @@ export function App() {
                       <span key={id} className="member-chip">
                         @{member.handle}
                         {id === group.leadBotId && <span className="badge">{t("groups.lead")}</span>} <StateLabel state={member.state} />
+                        {group.members.length > 1 && (
+                          <button
+                            type="button"
+                            className="member-remove"
+                            aria-label={t("group.remove", { name: member.name })}
+                            title={t("group.remove", { name: member.name })}
+                            onClick={() => {
+                              if (window.confirm(t("group.confirmRemove", { name: member.name }))) void act(() => store.removeMember(group.id, id));
+                            }}
+                          >
+                            ×
+                          </button>
+                        )}
                       </span>
                     );
                   })}
+                  {outsiders.length > 0 && (
+                    <select
+                      className="member-add"
+                      aria-label={t("group.add")}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) void act(() => store.addMember(group.id, e.target.value));
+                      }}
+                    >
+                      <option value="">{t("group.addPlaceholder")}</option>
+                      {outsiders.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name} (@{b.handle})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
+              <div className="conv-actions">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label={t("conv.clear")}
+                  title={t("conv.clear")}
+                  onClick={() => {
+                    if (window.confirm(t("conv.confirmClear", { name: group.title }))) void act(() => store.clearConversation(group.id));
+                  }}
+                >
+                  <EraseIcon />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn danger"
+                  aria-label={t("group.delete")}
+                  title={t("group.delete")}
+                  onClick={() => {
+                    if (window.confirm(t("group.confirmDelete", { title: group.title }))) void act(() => store.deleteGroup(group.id));
+                  }}
+                >
+                  <TrashIcon />
+                </button>
+              </div>
             </header>
+            {actionError && (
+              <p className="error banner-error" role="alert">
+                {actionError}
+              </p>
+            )}
             {items.length === 0 && activeRuns.length === 0 ? (
               <p className="muted empty">{t("conv.startGroup", { lead: `@${store.bots[group.leadBotId ?? ""]?.handle ?? "?"}` })}</p>
             ) : (
@@ -288,6 +359,17 @@ export function App() {
                 </div>
               </div>
               <div className="conv-actions">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label={t("conv.clear")}
+                  title={t("conv.clear")}
+                  onClick={() => {
+                    if (window.confirm(t("conv.confirmClear", { name: selected.name }))) void act(() => store.clearConversation(conversationId));
+                  }}
+                >
+                  <EraseIcon />
+                </button>
                 {iconButton("routines", t("routines.open"), <ClockIcon />)}
                 {iconButton("settings", t("settings.open"), <GearIcon />)}
                 {iconButton(

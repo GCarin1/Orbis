@@ -105,6 +105,11 @@ export class MemoryRepo {
     if (patch.kind !== undefined) run(this.db, "UPDATE memory SET kind = ?, updated_at = ? WHERE id = ?", patch.kind, at, id);
   }
 
+  /** Delete the run summaries left by these runs (`run:<id>` sources). */
+  deleteSummariesOf(runIds: string[]): void {
+    for (const id of runIds) run(this.db, "DELETE FROM memory WHERE kind = 'summary' AND source = ?", `run:${id}`);
+  }
+
   delete(id: string): void {
     run(this.db, "DELETE FROM memory WHERE id = ?", id);
   }

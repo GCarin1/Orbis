@@ -120,6 +120,16 @@ export class RunsRepo {
   }
 
   /** Runs of a bot that are queued, running or waiting. */
+  /** The runs not yet ended in a conversation. */
+  activeIn(conversationId: string): Run[] {
+    return all(this.db, "SELECT * FROM runs WHERE conversation_id = ? AND status IN ('queued', 'running', 'waiting')", conversationId).map(toRun);
+  }
+
+  /** The ids of every run that took place in a conversation. */
+  idsIn(conversationId: string): string[] {
+    return all<{ id: string }>(this.db, "SELECT id FROM runs WHERE conversation_id = ?", conversationId).map((r) => r.id);
+  }
+
   active(botId: string): Run[] {
     return all(
       this.db,
@@ -168,6 +178,11 @@ export class BrainSessionsRepo {
       sessionId,
       new Date().toISOString(),
     );
+  }
+
+  /** Forget every brain session of a conversation (it was cleared): the next run starts a new one. */
+  clearConversation(conversationId: string): void {
+    run(this.db, "DELETE FROM brain_sessions WHERE conversation_id = ?", conversationId);
   }
 
   clear(botId: string, conversationId: string, kind: string): void {

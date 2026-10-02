@@ -3,7 +3,7 @@
 // own conversation, mentions in each bot's color, cards, events and each run's
 // steps, collapsible.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Bot, Step, TimelineItem } from "@orbis/shared";
+import type { AvatarShape, Bot, Step, TimelineItem } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import { useStore, type RunView } from "../store.js";
 import { canSpeak, speak } from "../voice.js";
@@ -102,6 +102,9 @@ export function workingBots(activeRuns: RunView[], bots: Record<string, Bot>): W
     return { bot: bots[botId], run: current, queued: runs.length - 1, runIds: runs.map((r) => r.id) };
   });
 }
+
+/** The joins and leaves of a group, shown with the bot's face. */
+const MEMBER_EVENTS = new Set(["member.joined", "member.left", "member.absent"]);
 
 export function Timeline({
   items,
@@ -239,7 +242,30 @@ export function Timeline({
           }
         }
 
-        if (item.kind === "event") {
+        if (item.kind === "event" && item.event && MEMBER_EVENTS.has(item.event.type)) {
+          // "<bot> joined/left the group", with its face, as a chat app shows it.
+          const data = item.event.data as { botId?: string; name?: string; color?: string; shape?: AvatarShape; reason?: string };
+          const face = bots[data.botId ?? ""] ?? {
+            name: data.name ?? "?",
+            state: "idle" as const,
+            avatar: { initials: "", color: data.color ?? "#888", shape: data.shape ?? "orb" },
+          };
+          const name = bots[data.botId ?? ""]?.name ?? data.name ?? "?";
+          const text =
+            item.event.type === "member.joined"
+              ? t("group.joined", { name })
+              : item.event.type === "member.absent"
+                ? t("group.absent", { name })
+                : data.reason === "deleted"
+                  ? t("group.leftDeleted", { name })
+                  : t("group.left", { name });
+          parts.push(
+            <div key="item" className={`event event-member event-${item.event.type}`} data-testid="event">
+              <Avatar bot={face} size={20} />
+              <span>{text}</span>
+            </div>,
+          );
+        } else if (item.kind === "event") {
           const failed = item.event?.type === "run.failed" ? (item.event.data as { runId?: string }).runId : undefined;
           const retried = failed ? Object.values(runs).some((r) => r.retryOf === failed) : false;
           // A routine's run is tried again from the routine, which keeps its rules (draft-only tests).

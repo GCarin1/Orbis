@@ -58,6 +58,11 @@ interface State {
   openConversation(conversationId: string): Promise<void>;
   selectGroup(conversationId: string | null): Promise<void>;
   createGroup(input: { title: string; members: string[]; leadBotId?: string }): Promise<Conversation>;
+  addMember(conversationId: string, botId: string): Promise<void>;
+  removeMember(conversationId: string, botId: string): Promise<void>;
+  deleteGroup(conversationId: string): Promise<void>;
+  /** Delete every item of a conversation; the bots start it over. */
+  clearConversation(conversationId: string): Promise<void>;
   loadTimeline(conversationId: string): Promise<void>;
   /** Load the page of items before the oldest one shown. */
   loadEarlier(conversationId: string): Promise<void>;
@@ -210,6 +215,30 @@ export const useStore = create<State>((set, get) => ({
     const group = await api.post<Conversation>("/api/v1/conversations", input);
     set((s) => ({ conversations: { ...s.conversations, [group.id]: group } }));
     return group;
+  },
+
+  async addMember(conversationId, botId) {
+    const group = await get().api!.post<Conversation>(`/api/v1/conversations/${conversationId}/members`, { botId });
+    set((s) => ({ conversations: { ...s.conversations, [group.id]: group } }));
+  },
+
+  async removeMember(conversationId, botId) {
+    const group = await get().api!.delete<Conversation>(`/api/v1/conversations/${conversationId}/members/${botId}`);
+    if (group) set((s) => ({ conversations: { ...s.conversations, [group.id]: group } }));
+  },
+
+  async deleteGroup(conversationId) {
+    await get().api!.delete(`/api/v1/conversations/${conversationId}`);
+    set((s) => {
+      const conversations = { ...s.conversations };
+      delete conversations[conversationId];
+      return { conversations, selectedGroupId: s.selectedGroupId === conversationId ? null : s.selectedGroupId };
+    });
+  },
+
+  async clearConversation(conversationId) {
+    await get().api!.delete(`/api/v1/conversations/${conversationId}/items`);
+    set((s) => ({ items: { ...s.items, [conversationId]: [] }, hasEarlier: { ...s.hasEarlier, [conversationId]: false } }));
   },
 
   async loadTimeline(conversationId) {
@@ -438,6 +467,11 @@ export const useStore = create<State>((set, get) => ({
       case "conversation.updated": {
         const { conversation } = event.data as { conversation: Conversation };
         set((s) => ({ conversations: { ...s.conversations, [conversation.id]: conversation } }));
+        break;
+      }
+      case "conversation.cleared": {
+        const { conversationId } = event.data as { conversationId: string };
+        set((s) => ({ items: { ...s.items, [conversationId]: [] }, hasEarlier: { ...s.hasEarlier, [conversationId]: false } }));
         break;
       }
       case "conversation.deleted": {
