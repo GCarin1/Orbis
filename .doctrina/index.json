@@ -57,7 +57,7 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.10.0",
+        "version": "0.11.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
@@ -421,16 +421,7 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [
-      {
-        "id": "0034-windows-launcher-scripts",
-        "title": "windows launcher scripts",
-        "path": ".doctrina/changes/0034-windows-launcher-scripts",
-        "status": "proposed",
-        "opened": "2026-10-02",
-        "lane": "product (confident; signals: feature)"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1165,6 +1156,20 @@
           }
         ],
         "lane": "runtime (uncertain; signals: diagnosis)"
+      },
+      {
+        "id": "0034-windows-launcher-scripts",
+        "title": "windows launcher scripts",
+        "path": ".doctrina/changes/archive/2026-10-02-0034-windows-launcher-scripts",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: feature)"
       }
     ],
     "skills": [
