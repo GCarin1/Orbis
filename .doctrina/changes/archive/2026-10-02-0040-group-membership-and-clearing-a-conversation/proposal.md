@@ -1,6 +1,7 @@
 # Change 0040-group-membership-and-clearing-a-conversation — group membership and clearing a conversation
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** product (confident; signals: feature, fix)

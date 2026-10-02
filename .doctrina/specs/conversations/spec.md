@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.7.1
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -22,7 +22,7 @@ timeline changes.
 ### Ubiquitous
 
 - The system shall keep one timeline per conversation holding messages, events and cards in creation order.
-- The system shall support direct conversations with exactly one bot and group conversations with 2 to 6 bots, the upper bound set by ORBIS_MAX_GROUP_SIZE.
+- The system shall support direct conversations with exactly one bot and group conversations created with 2 to 6 bots, the upper bound set by ORBIS_MAX_GROUP_SIZE, which keep at least one bot as members are removed.
 - The system shall record for each message its author (user, bot or system), text, attachment references, mentioned handles, optional parent message id for a thread reply, reactions and the run that produced it.
 - The system shall broadcast every created or changed timeline item over the WebSocket stream as a `timeline.item` event.
 - The system shall persist conversations and timelines in the hub database.
@@ -41,6 +41,10 @@ timeline changes.
 - When a client adds or removes a reaction on a timeline item, the system shall update the item's reactions and broadcast the change.
 - When the user asks to try a failed or cancelled run again, the system shall start a new run of the same bot in the same conversation with the same task and skill, recording the run it retries, and point a handoff card at the new run.
 - When the user tries a run again, the system shall keep the new run in the old run's chain.
+- When a bot joins a group (at its creation or added later), the system shall post a `member.joined` event naming it, with what shows its face, and the group's history shall be in the bot's context when it runs there.
+- When a bot leaves a group (removed, or deleted), the system shall post a `member.left` event naming it, with what shows its face and the reason.
+- When a bot is deleted, the system shall take it out of every group it is in, pass on the lead, publish each changed group, and delete a group left with no bot.
+- When the user clears a conversation, the system shall delete its items, forget its bots' brain sessions of it and the run summaries its runs left, keep the memories a bot saved on purpose, and publish `conversation.cleared`.
 
 ### State-driven
 
@@ -55,6 +59,7 @@ timeline changes.
 - The system shall not start a run for a bot that a `mention` run's reply names, nor wake by mention a bot that already ran in the same chain.
 - The system shall not try again a run that is queued, running, waiting or done; it shall answer 409.
 - The system shall not try again a routine's or a webhook's run outside its routine, which keeps the routine's rules (a test run is draft-only); it shall answer 409 `routine_run`.
+- The system shall not run a bot that left a group and was not added back when a message there mentions it; it shall post a `member.absent` event instead, and shall not clear a conversation while one of its runs is not over.
 
 ## Acceptance criteria
 
@@ -69,6 +74,7 @@ timeline changes.
 9. [verified] A group run is told the group's title, the other members and that the bot leads it, and a direct run that it is the bot's own conversation; a run that failed for a missing key is tried again after the brain is fixed and replies, and trying a done run again answers 409 — verified by `packages/hub/test/chat-audit.test.ts`.
 10. [verified] A run of 40 tool calls stores all its steps with fewer writes than a quarter of them; the database holds the run, conversation and status indexes; a retried run keeps its chain and its reply does not wake again a bot that already answered — verified by `packages/hub/test/audit-cycle5.test.ts`.
 11. [verified] Trying again a failed routine test run answers 409 `routine_run` — verified by `packages/hub/test/review.test.ts`.
+12. [verified] Creating a group and adding a bot post joined events with the bot's face; a bot added later reads the earlier messages; a removed bot is said to have left and a mention of it does not run it but says so, until it is added back; a group shrinks to one bot and not to none; a deleted bot leaves its groups, said in each, the change is published and a group left with no bot is deleted; clearing deletes the items, the sessions and the run summaries, keeps a saved preference, and is refused while a run works — verified by `packages/hub/test/group-membership.test.ts`.
 
 ## Maturity
 

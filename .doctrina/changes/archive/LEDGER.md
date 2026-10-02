@@ -42,3 +42,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0037-chat-http-proxy-and-connection-test — chat-http proxy and connection test (specs: agent-runtimes MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0038-chat-http-plain-chat — chat-http plain chat (specs: agent-runtimes MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0039-shared-chat-token-and-resizable-panel — shared chat token and resizable panel (specs: agent-runtimes MODIFIED, secrets MODIFIED, web-app MODIFIED)
+- 2026-10-02 — 0040-group-membership-and-clearing-a-conversation — group membership and clearing a conversation (specs: conversations MODIFIED, web-app MODIFIED)

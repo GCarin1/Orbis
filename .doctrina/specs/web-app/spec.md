@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.22.0
+**Version:** 0.23.0
 
 ## Purpose
 
@@ -51,6 +51,7 @@ run's steps.
 - The web app shall offer plain chat in a `chat-http` bot's settings, off by default and explained, and shall name the fields a refused save got wrong.
 - The web app shall show in Settings → Brains, for each chat API that `chat-http` bots use, its token's status and its bots, and take a new token or cURL that applies to all of them; a bot's settings and the new-bot screen shall save the token as its API's.
 - The web app shall let the user change the side panel's width by dragging its left edge or with the arrow keys, keep it within the window, remember it in the browser, and show a wide bot settings panel in two columns.
+- The web app shall show a group's joins and leaves with the bot's face, let the user add a bot from the group's header, remove a member from its chip, clear a group or a direct conversation and delete a group, each after a confirmation, and follow a deleted bot out of its groups.
 
 ### Event-driven
 
@@ -124,6 +125,7 @@ run's steps.
 39. [verified] The connection test lists each way (curl with its program and proxy, Node) with its verdict, offers Use this way only for one that got through, which fills the curl program and the proxy that the save keeps; with none through it says so — verified by `packages/web/test/chat-http.test.tsx`.
 40. [verified] Plain chat is off by default, explained, and saved as `plain: true` when turned on; a refused save names its field — verified by `packages/web/test/chat-http.test.tsx`.
 41. [verified] The tokens card changes the token of an API's two bots from a pasted cURL, refuses a cURL of another API and text with no token, and hides with no chat API; a new bot of an API with a token needs none typed; a bot's settings ask for the address first and say when a bot uses its own token from before; the panel's width follows the keys and a drag within its limits, is remembered and is reset by a double-click — verified by `packages/web/test/chat-http.test.tsx`.
+42. [verified] In a browser, a group shows its two joins with faces; a bot added from the header and one removed from its chip are said to join and leave and the member count follows; a deleted bot is said to leave and the last bot cannot be removed; clearing empties the conversation and deleting the group closes it — verified by `tests/e2e/groups.test.ts`.
 
 ## Maturity
 
