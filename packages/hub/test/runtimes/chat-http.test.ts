@@ -389,3 +389,92 @@ describe("the chats' history, when the answer leaves something out", () => {
     expect(parseCurl("curl --url 'https://chat.example.com/v1/chat' --data-raw '{}'")).toMatchObject({ hasBody: true, historyUrl: null });
   });
 });
+
+describe("a chat history shaped like the owner's company chat (made-up data)", () => {
+  /** `GET <history>/<id>` as that chat returns it: data.chat with its messages, each with role, content and usage. */
+  const companyChat = (id: string, sent: string, answer: string) => ({
+    data: {
+      chat: {
+        _id: id,
+        user: { userName: "Test User", preferredUsername: "test.user@example.com", jobTitle: "Analyst", department: "Testing" },
+        currentAgentId: "chat-corporativo",
+        kbId: null,
+        totalUsage: { completionTokens: 194, promptTokens: 5760, totalTokens: 5954 },
+        messageCount: 2,
+        title: null,
+        fixed: false,
+        messages: [
+          {
+            id: "msg-1",
+            order: 0,
+            role: "user",
+            content: sent,
+            model: null,
+            usage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
+            referenceLinks: null,
+            followUpQuestions: null,
+          },
+          {
+            id: "chatcmpl-1",
+            order: 1,
+            role: "assistant",
+            content: answer,
+            model: "claude-4-6-opus",
+            usage: { completionTokens: 194, promptTokens: 5760, totalTokens: 5954 },
+            referenceLinks: [],
+            followUpQuestions: ["Quer que eu detalhe?", "Posso ajudar com outra coisa?"],
+          },
+        ],
+      },
+    },
+  });
+
+  it("takes the reply and its tokens from the history, whatever the stream looked like", async () => {
+    let sent = "";
+    const fake = await orchestrator(
+      (s, res) => {
+        sent = s.data.input.content;
+        // A stream Orbis cannot read as text; the chat's id comes as {"chat": {"_id": …}}.
+        sse(res, [
+          { kind: "chunk", payload: "Olá, tu" },
+          { kind: "chunk", payload: "do ótimo!" },
+          { kind: "final", chat: { _id: "chat-abc" } },
+        ]);
+      },
+      (path) =>
+        path === "/internal/v1/history/chats/chat-abc"
+          ? companyChat("chat-abc", sent, "Olá! Tudo ótimo por aqui 😊\n\nPosso te ajudar com algo hoje?")
+          : undefined,
+    );
+    t = await testHub();
+    const bot = await chatBot(t, fake.url);
+    const { runs, conversation } = await chat(t, bot.id, "Ola tudo bem como voce esta?");
+    expect(runs[0]).toMatchObject({ status: "done", reply: "Olá! Tudo ótimo por aqui 😊\n\nPosso te ajudar com algo hoje?" });
+    expect(runs[0].usage).toMatchObject({ inputTokens: 5760, outputTokens: 194, subscription: true });
+    expect(t.hub.repos.sessions.get(bot.id, conversation.id, "chat-http")).toBe("chat-abc");
+    expect(fake.reads).toEqual(["/internal/v1/history/chats/chat-abc"]);
+  });
+
+  it("prefers the history's reply to a stream it read wrong", async () => {
+    let sent = "";
+    const fake = await orchestrator(
+      (s, res) => {
+        sent = s.data.input.content;
+        // Pieces Orbis would join into the wrong text.
+        sse(res, [{ content: "Olá" }, { content: " (referência 1)" }, { content: "Olá! Tudo certo." }, { chatId: "chat-xyz" }]);
+      },
+      (path) => (path === "/internal/v1/history/chats/chat-xyz" ? companyChat("chat-xyz", sent, "Olá! Tudo certo.") : undefined),
+    );
+    t = await testHub();
+    const bot = await chatBot(t, fake.url);
+    expect((await chat(t, bot.id, "oi")).runs[0].reply).toBe("Olá! Tudo certo.");
+  });
+
+  it("reads the history's messages and nothing else of the chat (not the user's profile, not the follow-up questions)", () => {
+    const doc = companyChat("c", "pergunta", "resposta");
+    expect(historyMessages(doc)).toEqual([
+      { role: "user", text: "pergunta" },
+      { role: "assistant", text: "resposta", usage: { input: 5760, output: 194 } },
+    ]);
+  });
+});

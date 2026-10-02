@@ -44,6 +44,14 @@ const TEXT_KEYS = ["content", "text", "delta", "answer", "response", "output", "
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
 
+/** Token counts in the usual spellings (inputTokens, input_tokens, prompt_tokens, promptTokens…). */
+export function usageOf(value: unknown): { input: number; output: number } | null {
+  if (!isObject(value)) return null;
+  const input = Number(value.inputTokens ?? value.input_tokens ?? value.promptTokens ?? value.prompt_tokens ?? 0) || 0;
+  const output = Number(value.outputTokens ?? value.output_tokens ?? value.completionTokens ?? value.completion_tokens ?? 0) || 0;
+  return input || output ? { input, output } : null;
+}
+
 /** The answer text an event carries, or null. */
 export function eventText(value: unknown, depth = 0): string | null {
   if (typeof value === "string") return value;
@@ -90,12 +98,15 @@ export class AnswerReader {
     if (isObject(value)) {
       const err = value.error ?? (typeof value.type === "string" && /error/i.test(value.type) ? (value.message ?? value.detail) : undefined);
       if (err) this.error = typeof err === "string" ? err : isObject(err) && typeof err.message === "string" ? err.message : JSON.stringify(err).slice(0, 300);
-      const id = findKey(value, /^(chat_?id|conversation_?id)$/i);
-      if (typeof id === "string" && !this.chatId) this.chatId = id;
-      const usage = findKey(value, /^usage$/i);
-      if (isObject(usage)) {
-        this.usage.input = Math.max(this.usage.input, Number(usage.inputTokens ?? usage.input_tokens ?? usage.prompt_tokens ?? 0) || 0);
-        this.usage.output = Math.max(this.usage.output, Number(usage.outputTokens ?? usage.output_tokens ?? usage.completion_tokens ?? 0) || 0);
+      // The chat's id: a chatId-like key, or the id of a `chat` object ({"chat": {"_id": …}}).
+      const named = findKey(value, /^(chat_?id|conversation_?id)$/i);
+      const chat = findKey(value, /^chat$/i);
+      const id = typeof named === "string" ? named : isObject(chat) ? (chat._id ?? chat.id) : undefined;
+      if (typeof id === "string" && id && !this.chatId) this.chatId = id;
+      const usage = usageOf(findKey(value, /^(usage|totalUsage)$/i));
+      if (usage) {
+        this.usage.input = Math.max(this.usage.input, usage.input);
+        this.usage.output = Math.max(this.usage.output, usage.output);
       }
     }
     const chunk = eventText(value);
@@ -252,6 +263,8 @@ export function historyBase(chatUrl: string, explicit?: string): string | null {
 export interface HistoryMessage {
   role: "user" | "assistant";
   text: string;
+  /** The tokens of an answer, when the history records them. */
+  usage?: { input: number; output: number } | null;
 }
 
 /** A message's words: a string, parts of text, or an object holding them. */
@@ -302,7 +315,7 @@ export function historyMessages(doc: unknown): HistoryMessage[] {
               : null;
     const text = role ? messageText(value) : null;
     if (role && text) {
-      out.push({ role, text });
+      out.push({ role, text, ...(role === "assistant" && usageOf(value.usage) ? { usage: usageOf(value.usage) } : {}) });
       return;
     }
     for (const [k, v] of Object.entries(value)) walk(v, k, depth + 1);
@@ -316,15 +329,25 @@ const sentMark = (sent: string) => sent.trim().slice(-200).trim();
 
 /** The answer that follows our message in a chat's history, or null when our message is not there. */
 export function answerAfter(messages: HistoryMessage[], sent: string): string | null {
+  return replyAfter(messages, sent)?.text ?? null;
+}
+
+/** The answer after our message, with its tokens when the history records them. */
+export function replyAfter(messages: HistoryMessage[], sent: string): { text: string; usage: { input: number; output: number } | null } | null {
   const mark = sentMark(sent);
   let at = -1;
   messages.forEach((m, i) => {
     if (m.role === "user" && m.text.includes(mark)) at = i;
   });
   if (at < 0) return null;
-  const answers: string[] = [];
-  for (let i = at + 1; i < messages.length && messages[i]!.role === "assistant"; i++) answers.push(messages[i]!.text);
-  return answers.length ? answers.join("\n\n") : null;
+  const answers: HistoryMessage[] = [];
+  for (let i = at + 1; i < messages.length && messages[i]!.role === "assistant"; i++) answers.push(messages[i]!);
+  if (!answers.length) return null;
+  const usage = answers.reduce<{ input: number; output: number } | null>(
+    (sum, m) => (m.usage ? { input: (sum?.input ?? 0) + m.usage.input, output: (sum?.output ?? 0) + m.usage.output } : sum),
+    null,
+  );
+  return { text: answers.map((m) => m.text).join("\n\n"), usage };
 }
 
 /** The chat ids a list of chats holds, in its order. */
@@ -367,10 +390,12 @@ export async function fromHistory(
   sent: string,
   chatId: string | null,
   signal: AbortSignal,
-): Promise<{ chatId: string; reply: string | null } | null> {
+): Promise<{ chatId: string; reply: string | null; usage: { input: number; output: number } | null } | null> {
   const read = async (id: string) => {
     const messages = historyMessages(await getJson(`${base}/${encodeURIComponent(id)}`, token, origin, signal));
-    return messages.some((m) => m.role === "user" && m.text.includes(sentMark(sent))) ? { chatId: id, reply: answerAfter(messages, sent) } : null;
+    if (!messages.some((m) => m.role === "user" && m.text.includes(sentMark(sent)))) return null;
+    const reply = replyAfter(messages, sent);
+    return { chatId: id, reply: reply?.text ?? null, usage: reply?.usage ?? null };
   };
   if (chatId) return read(chatId);
   const list = await getJson(`${base}?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`, token, origin, signal);
@@ -380,6 +405,15 @@ export async function fromHistory(
   }
   return null;
 }
+
+/** How long to wait before reading a history again when the answer was not saved yet. */
+export const HISTORY_RETRY_MS = 1_500;
+
+const pause = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => (clearTimeout(timer), reject(signal.reason)), { once: true });
+  });
 
 export const chatHttpBrain: BrainAdapter = {
   kind: "chat-http",
@@ -459,29 +493,34 @@ export const chatHttpBrain: BrainAdapter = {
         yield { type: "run.failed", error: err instanceof Error ? err.message : String(err) };
         return;
       }
-      if (answer.usage.input || answer.usage.output) {
-        yield { type: "run.usage", inputTokens: answer.usage.input, outputTokens: answer.usage.output, cachedTokens: 0, costUsd: 0, subscription: true };
-      }
       if (answer.error && !answer.text) {
         yield { type: "run.failed", error: `the chat API reported: ${answer.error}` };
         return;
       }
-      let reply = answer.text.trim();
-      // The history fills in what the answer left out: the chat id (so the chat is continued
-      // instead of a new one each time) and, when no text was found in the answer, the reply.
+      // The chat's history is the reliable record: the reply that follows the message just sent,
+      // with its tokens, and the chat's id when the answer named none (so the chat is continued
+      // instead of a new one each time). The streamed text is the fallback.
       const history = historyBase(url, options.historyUrl);
-      const knownId = answer.chatId ?? chatId;
-      if (history && !historyFailed && (!reply || !knownId)) {
-        const found = await fromHistory(history, token, options.origin, content, knownId, ctx.signal).catch(() => {
+      let found: Awaited<ReturnType<typeof fromHistory>> = null;
+      if (history && !historyFailed) {
+        const look = () => fromHistory(history, token, options.origin, content, answer.chatId ?? chatId, ctx.signal);
+        try {
+          found = await look();
+          // The answer may be saved a moment after the stream ends: look once more.
+          if (found && !found.reply) {
+            await pause(HISTORY_RETRY_MS, ctx.signal);
+            found = (await look()) ?? found;
+          }
+        } catch (err) {
+          if (ctx.signal.aborted) throw err;
           // A server without this history: do not ask it again in this run.
           historyFailed = true;
-          return null;
-        });
-        if (found) {
-          answer.chatId ??= found.chatId;
-          if (!reply && found.reply) reply = found.reply.trim();
         }
       }
+      if (found) answer.chatId ??= found.chatId;
+      const usage = found?.usage ?? (answer.usage.input || answer.usage.output ? answer.usage : null);
+      if (usage) yield { type: "run.usage", inputTokens: usage.input, outputTokens: usage.output, cachedTokens: 0, costUsd: 0, subscription: true };
+      const reply = (found?.reply ?? answer.text).trim();
       if (answer.chatId && answer.chatId !== chatId) {
         chatId = answer.chatId;
         ctx.sessions.set(chatId);

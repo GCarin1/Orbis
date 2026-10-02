@@ -86,6 +86,10 @@ change that delivered it.
 
 ### Added
 
+- `chat-http` takes each reply and its tokens from the chat's history (change
+  0031-chat-http-history-first), the format the company chat returns
+  (`data.chat.messages` with `role`, `content`, `usage`); the streamed text is
+  only the fallback.
 - `chat-http` reads the chats' history (change 0030-chat-http-history): when
   an answer holds no readable text the reply comes from the chat's history,
   and when it names no chat the bot finds its own among the newest (never one

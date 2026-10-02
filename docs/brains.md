@@ -240,10 +240,13 @@ the token, the agent, the model and the `Origin` are read from it.
   maintains Orbis to add the format.
 - When the server returns a chat id (`chatId`, `chat_id`, `conversationId`),
   the bot continues that chat: later messages send only what is new.
-- The chats' history fills in what an answer leaves out. Orbis reads it at
-  `history/chats` beside the request address (or the address in Advanced):
-  `GET …/history/chats/<chat id>` gives the reply when the answer held no text
-  Orbis could read, and when the answer named no chat, the newest chats
+- The chats' history is the reliable record, and Orbis reads it after each
+  message, at `history/chats` beside the request address (or the address in
+  Advanced): `GET …/history/chats/<chat id>` — a `data.chat` with its
+  `messages`, each with `role`, `content` and `usage` — gives the reply that
+  follows the message just sent and its tokens (`promptTokens`,
+  `completionTokens`); the streamed text is the fallback. When the answer named
+  no chat, the newest chats
   (`GET …/history/chats?page=1&pageSize=5&sortBy=updatedAt&sortOrder=desc`) are
   searched for the one holding the message just sent — a chat you have open in
   the browser is never taken. A server without that history is asked once.
