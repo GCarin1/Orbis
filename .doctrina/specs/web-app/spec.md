@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.23.0
+**Version:** 0.24.0
 
 ## Purpose
 
@@ -72,6 +72,7 @@ run's steps.
 - When the web app loads a conversation's runs, it shall keep the steps that already streamed in for a run whose loaded copy has fewer.
 - When a pasted cURL only reads (no body), the web app shall keep the request address, take its token and, for a history request, the history's address, and say so.
 - When a connection test of a `chat-http` bot finds a way through, the web app shall say that the test sends no message, and that messages still blocked mean the firewall reads them.
+- When the user types an API key for an API brain in a bot's settings or on the new-bot screen and saves, the web app shall send it to the bot's vault, set the bot's `apiKeySecret` to that secret's name, empty the field and show that a key is saved, without the key being part of the bot.
 
 ### Unwanted-behavior (must-not)
 
@@ -81,6 +82,10 @@ run's steps.
 - The web app shall not count a bot starting to work as a new message below.
 - The web app shall not offer Try again on a routine's run, and shall say why when trying again is refused.
 - The web app shall not put a `chat-http` token in the bot; it shall save it as the bot's secret, keep a saved one when the field is left empty, and never show it back.
+
+### Optional
+
+- Where the brain is OpenAI-compatible, the web app shall offer how to send the key (Authorization Bearer or an `api-key` header) and say that `{model}` in the address is replaced by the model.
 
 ## Acceptance criteria
 
@@ -126,6 +131,7 @@ run's steps.
 40. [verified] Plain chat is off by default, explained, and saved as `plain: true` when turned on; a refused save names its field — verified by `packages/web/test/chat-http.test.tsx`.
 41. [verified] The tokens card changes the token of an API's two bots from a pasted cURL, refuses a cURL of another API and text with no token, and hides with no chat API; a new bot of an API with a token needs none typed; a bot's settings ask for the address first and say when a bot uses its own token from before; the panel's width follows the keys and a drag within its limits, is remembered and is reset by a double-click — verified by `packages/web/test/chat-http.test.tsx`.
 42. [verified] In a browser, a group shows its two joins with faces; a bot added from the header and one removed from its chip are said to join and leave and the member count follows; a deleted bot is said to leave and the last bot cannot be removed; clearing empties the conversation and deleting the group closes it — verified by `tests/e2e/groups.test.ts`.
+43. [verified] A typed key goes to `PUT /bots/:id/secrets/API_KEY` and the saved brain holds only the name and the `api-key` choice; a saved key is kept when the field is left empty; a new bot hands its key apart from the bot — verified by `packages/web/test/api-key.test.tsx`.
 
 ## Maturity
 

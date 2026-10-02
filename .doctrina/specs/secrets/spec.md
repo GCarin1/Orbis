@@ -6,7 +6,7 @@
 **Realizes:** SC9
 **Depends on:** bots, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -31,6 +31,7 @@ the moment a tool executes, redacting it from everything that comes back.
 - When a bot calls `secret.request` with a name and a reason, the system shall post a secret-request card with a masked input, set the bot state to `waiting` and pause the run until the user submits or declines.
 - When the user submits the form, the system shall store the value encrypted, mark the card `fulfilled` without the value, and resume the run with a result that names the placeholder to use.
 - When the user declines the request, the system shall mark the card `declined` and resume the run with a result saying the secret is unavailable.
+- When the hub starts and a bot's `apiKeySecret` holds a value that is not a secret's name, the system shall store that value in the bot's vault as `API_KEY`, point the bot's `apiKeySecret` at `API_KEY`, and mask the value in the run errors and timeline items that quote it.
 
 ### Unwanted-behavior (must-not)
 
@@ -38,6 +39,7 @@ the moment a tool executes, redacting it from everything that comes back.
 - The system shall not resolve a placeholder against another bot's vault.
 - The system shall not resolve a placeholder in the input of a tool that only posts inside Orbis (drafts, conversation posts, memory, handoffs); only `computer.shell`, `computer.write_file`, `browser.open`, `browser.type` and `http.fetch` receive values.
 - The system shall not keep a value with no token, nor a token for an address that is not http(s), and shall not leave a shared token unmasked in what a run stores or shows.
+- The system shall not accept a bot whose `apiKeySecret` is not a secret's name (1 to 64 characters of A-Z, 0-9 and _, starting with a letter).
 
 ## Acceptance criteria
 
@@ -46,6 +48,7 @@ the moment a tool executes, redacting it from everything that comes back.
 3. [verified] A shell command using `{{secret:NAME}}` receives the value, and its echoed output returns to the brain with `••••` in place of the value — verified by `packages/hub/test/secrets.test.ts`.
 4. [verified] A placeholder naming another bot's secret is not resolved — verified by `packages/hub/test/secrets.test.ts`.
 5. [verified] Saving a token for an API returns each API with its bots and token status and never the token; a value with no token or a non-http address is refused; the token is masked in a run's stored reply — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+6. [verified] A key pasted where its secret's name goes is refused by the API, and one already stored there is moved into the vault once, the bot pointed at `API_KEY`, the error that quoted it masked and the bot no longer holding it — verified by `packages/hub/test/runtimes/openai.test.ts`.
 
 ## Maturity
 

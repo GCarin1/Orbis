@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.17.0
+**Version:** 0.18.0
 
 ## Purpose
 
@@ -82,6 +82,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When a firewall in front of a `chat-http` server refuses the request (HTTP 403 with a Cloudflare page), the system shall fail the run naming the firewall, the program the request went through and what was sent.
 - When a connection test of a `chat-http` bot is asked for, the system shall try one GET of the chats' list (no message, no model call) by each way out of the computer — each curl it finds, through each proxy it knows and with none, and Node's fetch — and report for each whether it got through, was blocked by the firewall, had its token refused, or got no answer.
 - When a firewall blocks a `chat-http` message, the system shall say that a firewall reading the message takes Orbis's tool instructions for an attack, and point to the connection test and to plain chat.
+- When an OpenAI-compatible server answers one JSON document instead of a stream, the system shall read its text, tool calls, finish reason and usage as the stream's would be read, and when a server refuses the stream with a 4xx that names it, the system shall ask the same step again with `"stream": false`.
 
 ### State-driven
 
@@ -101,12 +102,14 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not fail or slow a `chat-http` run because the title request failed or timed out.
 - A template export shall not carry a `chat-http` brain's request address, `Origin`, history address or browser headers.
 - A template shall not carry or set a `chat-http` brain's curl program or proxy, and the system shall not accept a curl program whose file is not named curl or curl.exe.
+- The system shall not repeat in a brain check, a run error or a log a value set where a key's secret name goes that is not a secret's name.
 
 ### Optional
 
 - Where a bot selects the `openai` brain with a base URL on localhost (Ollama, LM Studio, vLLM), the system may run it with no API key.
 - Where the hub configuration declares an `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable, the system may use it for bots that name no key secret of their own.
 - Where a `chat-http` bot has plain chat on, the system may send only the conversation — the bot's name, role and description, its memories and the messages — without Orbis's instructions and tool list, and give that bot no tools.
+- Where an OpenAI-compatible bot's base address contains `{model}`, the system shall put the bot's model there and call that address followed by `/chat/completions`, and where the bot's `apiKeyHeader` is `api-key` the system shall send its key in an `api-key` header instead of `Authorization: Bearer`.
 
 ## Acceptance criteria
 
@@ -139,6 +142,7 @@ brain are owned by `contracts/cli-harnesses`.
 27. [verified] curl is given the proxy with the logged-in user's sign-in and an empty no-proxy list, or no proxy at all for `direct`, or nothing for the environment's; Windows' curl and Git's are found beside the one on PATH, once each; the environment's proxy is read for the address's scheme — verified by `packages/hub/test/runtimes/http-transport.test.ts`.
 28. [verified] A firewall that reads the message blocks Orbis's instructions with an error that points to plain chat, and lets a plain chat through carrying the bot's name, role and description and none of the instructions, tools, shell, placeholder or tag; a plain chat that is still blocked is told so; `C:\\WINDOWS\\system32\\curl.EXE` is accepted and a program not named curl is not — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 29. [verified] Two bots of one API use the token saved once for it and a bot of another API does not; changing it once changes it for both; a bot from before keeps its own token until its API has a shared one, which then wins; the shared token is masked in what a run stores; a missing or expired token points to Settings → Brains — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+30. [verified] A gateway with the model in its path and the key in an `api-key` header answers non-streamed JSON with a tool call and the run calls the tool and answers, with usage; the key is a Bearer token by default; a gateway that refuses the stream is asked again without it; a check of a bot whose secret name is a key says so without the key — verified by `packages/hub/test/runtimes/openai.test.ts`.
 
 ## Maturity
 

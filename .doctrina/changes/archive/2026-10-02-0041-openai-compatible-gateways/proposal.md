@@ -1,6 +1,7 @@
 # Change 0041-openai-compatible-gateways — openai-compatible gateways
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** runtime (confident; signals: secret) — opened anyway (--force)
