@@ -2,6 +2,7 @@
 // each group — pinned first and then by latest activity, with the bot's face,
 // what it is doing or said last, the time and an unread dot; the screens and
 // the user at the bottom.
+import { plainText } from "./Markdown.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Approval, Bot, Conversation } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
@@ -108,7 +109,7 @@ function Row({
   const bot = entry.bot;
   const busy = bot && bot.state !== "idle" && bot.state !== "done";
   let preview: ReactNode;
-  if (bot) preview = busy ? <StateLabel state={bot.state} /> : (bot.lastMessage?.text ?? bot.role);
+  if (bot) preview = busy ? <StateLabel state={bot.state} /> : bot.lastMessage ? plainText(bot.lastMessage.text).split("\n")[0] : bot.role;
   else preview = entry.group!.members.map((id) => bots[id]?.name ?? "?").join(", ");
   return (
     <li>
@@ -232,7 +233,16 @@ export function Sidebar({
         </div>
       )}
 
-      {approvals.some((a) => a.status === "pending") && <ApprovalsInbox approvals={approvals} bots={bots} onOpen={onOpenBot} />}
+      {approvals.some((a) => a.status === "pending") && <ApprovalsInbox
+          approvals={approvals}
+          bots={bots}
+          onOpen={(approval) => {
+            // Open the conversation the approval waits in: a group, or a bot's own conversation.
+            const conv = conversations.find((c) => c.id === approval.conversationId);
+            if (conv?.kind === "group") onOpenGroup(conv.id);
+            else onOpenBot(conv?.members[0] ?? approval.botId);
+          }}
+        />}
 
       <nav className="chat-list" aria-label={t("sidebar.chats")}>
         {all.length === 0 ? (

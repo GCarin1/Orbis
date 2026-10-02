@@ -2,6 +2,7 @@
 // recognition, a recording sent to the hub's transcription service where the
 // browser has none (the desktop app, Firefox), and replies read aloud with the
 // system's voices.
+import { plainText } from "./components/Markdown.js";
 import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import type { TimelineItem, TranscriptionStatus } from "@orbis/shared";
@@ -279,7 +280,7 @@ export function useReadAloud(conversationId: string | undefined, items: Timeline
     const before = heard.current;
     heard.current = { conversationId, last: last?.id, loaded };
     if (!readAloud || !before.loaded || before.conversationId !== conversationId || before.last === last?.id) return;
-    if (last?.kind === "message" && last.author.type === "bot") speak(last.text, lang);
+    if (last?.kind === "message" && last.author.type === "bot") speak(plainText(last.text), lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, last?.id, loaded, readAloud]);
 }

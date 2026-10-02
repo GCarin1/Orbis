@@ -9,6 +9,12 @@ change that delivered it.
 
 ### Fixed
 
+- Audit cycle 2 (change 0024-audit-cycle-2-web-app-state): the app finds a
+  connection that went quiet (after sleep or a Wi-Fi drop) and reconnects
+  instead of showing "connected" while replies never arrive; a refused
+  approval or draft answer says why; the approvals inbox says what each call
+  would do and opens the right conversation; previews and reading aloud skip
+  Markdown marks.
 - Audit cycle 1 (change 0023-audit-cycle-1-routines-and-usage): a routine
   scheduled faster than its work skips a turn instead of piling runs up; a
   routine run cut by a restart shows how it ended; Codex token counts of

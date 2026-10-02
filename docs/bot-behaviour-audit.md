@@ -82,6 +82,7 @@ change with its own regression tests (`packages/hub/test/audit-cycleN.test.ts`).
 | Cycle | Area read | Findings fixed |
 |---|---|---|
 | 1 (0023) | Routines, skills, secret requests, spend caps, handoff edge cases | A cron routine faster than its work piled runs up in the queue (now a turn is skipped, with one `routine.skipped` event); a routine run cut by a restart showed as running forever; Codex's older event shape had its cumulative token totals added whole |
+| 2 (0024) | The web app's state: stream, cards, approvals inbox, conversation list, reading aloud | A dead connection (after sleep or a Wi-Fi drop) still read "connected" and replies never came (now a ping every 25 s replaces it); a refused approval or draft answer failed silently; the inbox did not say what a call would do and opened the wrong conversation for a group; previews and reading aloud included Markdown marks |
 
 ## Settings
 

@@ -15,12 +15,16 @@ export function ApprovalCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
   const t = useT();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const data = item.card!.data as { approvalId: string; tool: string; input: unknown; reason?: string | null; locked?: boolean; note?: string | null };
   const state = item.card!.state;
   const answer = async (decision: "allow_once" | "allow_always" | "deny") => {
     setBusy(true);
+    setError(null);
     try {
       await useStore.getState().answerApproval(data.approvalId, decision, decision === "deny" ? note : undefined);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -53,6 +57,7 @@ export function ApprovalCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
         </>
       )}
       {state === "denied" && data.note && <p className="muted">“{data.note}”</p>}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }
@@ -64,11 +69,15 @@ export function DraftCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
   const editable = state === "pending" || state === "failed";
   const [fields, setFields] = useState({ to: data.to, subject: data.subject ?? "", body: data.body, url: data.url ?? "" });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const set = (key: keyof typeof fields) => (e: { target: { value: string } }) => setFields({ ...fields, [key]: e.target.value });
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
+    setError(null);
     try {
       await fn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -102,6 +111,7 @@ export function DraftCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
         </label>
       </div>
       {data.delivery && <p className="muted">{data.delivery.detail}</p>}
+      {error && <p className="error">{error}</p>}
       {editable && (
         <div className="card-actions">
           <button

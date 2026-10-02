@@ -2466,3 +2466,13 @@ label.check {
   background: var(--panel);
   max-width: 260px;
 }
+
+/* The approvals inbox says what each approval would do (audit cycle 2). */
+.inbox-what {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 2px 0 4px;
+}

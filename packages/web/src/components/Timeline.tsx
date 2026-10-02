@@ -10,7 +10,7 @@ import { canSpeak, speak } from "../voice.js";
 import { Avatar, BotFace } from "./Avatar.js";
 import { CardView } from "./Cards.js";
 import { SpeakerIcon } from "./Icons.js";
-import { Markdown } from "./Markdown.js";
+import { Markdown, plainText } from "./Markdown.js";
 
 export { RichText } from "./Markdown.js";
 
@@ -294,7 +294,7 @@ export function Timeline({
                     className="bubble-listen"
                     aria-label={t("voice.listen")}
                     title={t("voice.listen")}
-                    onClick={() => speak(item.text, lang)}
+                    onClick={() => speak(plainText(item.text), lang)}
                   >
                     <SpeakerIcon size={14} />
                   </button>

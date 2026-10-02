@@ -112,9 +112,16 @@ export class Api {
   }
 }
 
+/** How often the stream checks the hub still answers, and how long an answer may take. */
+export const STREAM_PING_MS = 25_000;
+export const STREAM_PONG_MS = 10_000;
+
 /**
  * The event stream with reconnection: exponential backoff up to 15 s, and
- * `onReconnect` so the app reloads what it may have missed.
+ * `onReconnect` so the app reloads what it may have missed. A connection that
+ * stopped answering without closing (a laptop that slept, a dropped Wi-Fi) is
+ * found by a ping and replaced, so the app never shows "connected" while
+ * missing events.
  */
 export function openStream(
   token: string,
@@ -124,6 +131,26 @@ export function openStream(
   let stopped = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let pingTimer: ReturnType<typeof setInterval> | null = null;
+  let pongTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const check = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || pongTimer) return;
+    try {
+      ws.send(JSON.stringify({ type: "ping" }));
+    } catch {
+      /* closing already */
+    }
+    const current = ws;
+    pongTimer = setTimeout(() => {
+      pongTimer = null;
+      current.close();
+    }, STREAM_PONG_MS);
+  };
+  const onWake = () => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+    check();
+  };
 
   const connect = () => {
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
@@ -135,10 +162,21 @@ export function openStream(
       attempt = 0;
     };
     ws.onmessage = (msg) => {
-      const event = JSON.parse(String(msg.data)) as StreamEvent;
+      // Anything from the hub proves the connection lives.
+      if (pongTimer) clearTimeout(pongTimer);
+      pongTimer = null;
+      let event: StreamEvent;
+      try {
+        event = JSON.parse(String(msg.data)) as StreamEvent;
+      } catch {
+        return;
+      }
+      if (event.type === "pong" || (event.type as string) === "subscribed") return;
       handlers.onEvent(event);
     };
     ws.onclose = () => {
+      if (pongTimer) clearTimeout(pongTimer);
+      pongTimer = null;
       handlers.onStatus(false);
       if (stopped) return;
       attempt++;
@@ -146,9 +184,16 @@ export function openStream(
     };
   };
   connect();
+  pingTimer = setInterval(check, STREAM_PING_MS);
+  globalThis.addEventListener?.("online", onWake);
+  globalThis.document?.addEventListener?.("visibilitychange", onWake);
   return () => {
     stopped = true;
     if (timer) clearTimeout(timer);
+    if (pingTimer) clearInterval(pingTimer);
+    if (pongTimer) clearTimeout(pongTimer);
+    globalThis.removeEventListener?.("online", onWake);
+    globalThis.document?.removeEventListener?.("visibilitychange", onWake);
     ws?.close();
   };
 }

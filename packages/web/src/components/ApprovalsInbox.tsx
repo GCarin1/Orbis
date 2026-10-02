@@ -3,7 +3,21 @@ import type { Approval, Bot } from "@orbis/shared";
 import { useT } from "../i18n.js";
 import { useStore } from "../store.js";
 
-export function ApprovalsInbox({ approvals, bots, onOpen }: { approvals: Approval[]; bots: Record<string, Bot>; onOpen(botId: string): void }) {
+/** One line saying what an approval would do: the command, the file, the address. */
+export function approvalSummary(input: unknown): string {
+  const value =
+    (input as { input?: unknown })?.input && typeof (input as { claudeTool?: unknown }).claudeTool === "string" ? (input as { input: unknown }).input : input;
+  if (value && typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    for (const key of ["command", "path", "file_path", "url", "to", "name", "query"]) {
+      if (typeof o[key] === "string" && o[key]) return String(o[key]).replace(/\s+/g, " ").slice(0, 120);
+    }
+  }
+  const text = typeof value === "string" ? value : JSON.stringify(value ?? {});
+  return text.slice(0, 120);
+}
+
+export function ApprovalsInbox({ approvals, bots, onOpen }: { approvals: Approval[]; bots: Record<string, Bot>; onOpen(approval: Approval): void }) {
   const t = useT();
   const pending = approvals.filter((a) => a.status === "pending").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   return (
@@ -20,14 +34,33 @@ export function ApprovalsInbox({ approvals, bots, onOpen }: { approvals: Approva
               <div>
                 <strong>@{bot?.handle ?? "bot"}</strong> → <code>{a.tool}</code>
               </div>
+              <div className="inbox-what muted" data-testid="inbox-what">
+                {approvalSummary(a.input)}
+              </div>
               <div className="card-actions">
-                <button className="btn btn-primary" onClick={() => void useStore.getState().answerApproval(a.id, "allow_once")}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() =>
+                    void useStore
+                      .getState()
+                      .answerApproval(a.id, "allow_once")
+                      .catch(() => undefined)
+                  }
+                >
                   {t("approval.once")}
                 </button>
-                <button className="btn btn-danger" onClick={() => void useStore.getState().answerApproval(a.id, "deny")}>
+                <button
+                  className="btn btn-danger"
+                  onClick={() =>
+                    void useStore
+                      .getState()
+                      .answerApproval(a.id, "deny")
+                      .catch(() => undefined)
+                  }
+                >
                   {t("approval.deny")}
                 </button>
-                <button className="link" onClick={() => onOpen(a.botId)}>
+                <button className="link" onClick={() => onOpen(a)}>
                   {t("inbox.open")}
                 </button>
               </div>

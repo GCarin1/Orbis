@@ -283,8 +283,15 @@ export const useStore = create<State>((set, get) => ({
   async answerApproval(id, decision, note) {
     const api = get().api;
     if (!api) return;
-    const approval = await api.post<Approval>(`/api/v1/approvals/${id}`, { decision, ...(note ? { note } : {}) });
-    set((s) => ({ approvals: { ...s.approvals, [id]: approval } }));
+    try {
+      const approval = await api.post<Approval>(`/api/v1/approvals/${id}`, { decision, ...(note ? { note } : {}) });
+      set((s) => ({ approvals: { ...s.approvals, [id]: approval } }));
+    } catch (err) {
+      // Answered elsewhere, or expired with its run: show what the hub has now.
+      const current = await api.get<Approval>(`/api/v1/approvals/${id}`).catch(() => null);
+      if (current) set((s) => ({ approvals: { ...s.approvals, [id]: current } }));
+      throw err;
+    }
   },
 
   async sendDraft(itemId, fields) {

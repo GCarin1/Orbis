@@ -93,6 +93,24 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
   );
 }
 
+/** The words of a Markdown text without its marks, for a one-line preview or reading aloud. */
+export function plainText(text: string): string {
+  return text
+    .replace(/```[\w+#.-]*\n?([\s\S]*?)```/g, "$1")
+    .replace(/`([^`\n]+)`/g, "$1")
+    .replace(/!?\[([^\]\n]+)\]\([^)\s]+\)/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/^\s*([-*+]|\d{1,3}[.)])\s+/gm, "")
+    .replace(/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/gm, "")
+    .replace(/\|/g, " ")
+    .replace(/(\*\*|__|~~)(.+?)\1/g, "$2")
+    .replace(/(^|[^\p{L}\p{N}*_])[*_]([^*_\s][^*_\n]*?)[*_](?![\p{L}\p{N}])/gu, "$1$2")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 const FENCE = /^\s*(```|~~~)\s*([\w+#.-]*)\s*$/;
 const HEADING = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
 const LIST = /^(\s*)([-*+]|\d{1,3}[.)])\s+(.*)$/;

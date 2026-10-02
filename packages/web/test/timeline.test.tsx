@@ -110,6 +110,6 @@ describe("timeline", () => {
     });
     expect(post).toHaveBeenCalledWith("/api/v1/approvals/apr_9", { decision: "allow_once" });
     fireEvent.click(screen.getByRole("button", { name: "Open conversation" }));
-    expect(onOpen).toHaveBeenCalledWith(ana.id);
+    expect(onOpen).toHaveBeenCalledWith(approval);
   });
 });

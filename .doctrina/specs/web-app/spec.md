@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.14.1
+**Version:** 0.15.0
 
 ## Purpose
 
@@ -40,6 +40,8 @@ run's steps.
 - The web app shall show, at the top of the brains settings, a ChatGPT card in three steps — install the Codex CLI, sign in with the ChatGPT account (in the browser, or with the one-time code shown large and the page to open), use it in a bot with a test — and the account once connected.
 - The web app shall render messages as Markdown — headings, lists, quotes, code blocks with a copy button, tables, links opening in a new tab, bold, italic and strikethrough — as elements, never as HTML, with mentions in each bot's color.
 - The web app shall show one working bubble per busy bot in a conversation, with the number of its runs waiting behind it, a stop button that cancels them, and "waiting for you" instead of typing dots while the bot waits for the user.
+- The approvals inbox shall say what each approval would do (the command, file, address or recipient) and open the conversation the approval waits in, a group included.
+- The web app shall show the conversation list's last message and read replies aloud without Markdown marks.
 
 ### Event-driven
 
@@ -54,6 +56,8 @@ run's steps.
 - When a bot message arrives in the open conversation while reading aloud is on, the web app shall read it with the system's voices in the interface language; any bot message can be read on demand with its Listen button.
 - When a run fails, the web app shall offer to try it again on its failure line, once.
 - When the user scrolls up in a conversation, the web app shall keep its place as messages arrive and offer a button to the newest; when older messages exist, a button loads the previous page.
+- When the event stream has not answered a ping within 10 seconds (sent every 25 seconds, when the network comes back and when the app is shown again), the web app shall close it, connect again and reload what it may have missed.
+- When the hub refuses an answer to an approval or a draft, the web app shall say why on the card and show the approval as the hub has it now.
 
 ### Unwanted-behavior (must-not)
 
@@ -92,6 +96,7 @@ run's steps.
 27. [verified] The ChatGPT card installs Codex, starts a sign-in with a code, shows the code and the OpenAI page, shows the connected account after it polls, and tests the ChatGPT brain — verified by `packages/web/test/chatgpt.test.tsx`.
 28. [verified] In a real browser with fake `npm` and `codex`, the user installs Codex from Settings, signs in with a code shown on the card, and sees the connected ChatGPT account — verified by `tests/e2e/chatgpt.test.ts`.
 29. [verified] Markdown lists, code, tables, links and mentions render and raw HTML stays text; one bubble per bot with "+1 queued" and a stop that cancels both runs; the waiting note; Try again posts the retry once; earlier messages load on request; a failed send keeps the text and says why; a composing Enter does not send — verified by `packages/web/test/chat-audit.test.tsx`.
+30. [verified] A stream that stops answering its ping is closed and replaced and the app reloads; a refused approval answer shows the hub's reason and the expired state; the inbox shows "npm run build" for a Claude Bash approval and opens its conversation; Markdown marks are dropped from a preview — verified by `packages/web/test/audit-cycle2.test.tsx`.
 
 ## Maturity
 
