@@ -6,7 +6,7 @@
 **Realizes:** SC2
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.12.0
+**Version:** 0.13.0
 
 ## Purpose
 
@@ -38,6 +38,9 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall provide the `chat-http` brain: a POST to the address the user gives (`baseUrl`) with the Bearer token of a bot secret (`apiKeySecret`, default `CHAT_BEARER_TOKEN`) and a `multipart/form-data` body whose `data` field holds the chat id, the agent, the message, and the model and request settings.
 - The system shall read a `chat-http` answer streamed as server-sent events, JSON lines, one JSON document or plain text, joining pieces or taking a growing answer whole, and skipping status, reference and user-echo events.
 - The system shall take a `chat-http` chat's id from a chat-id key or from the id of a `chat` object in the answer, and count tokens spelled as `promptTokens` and `completionTokens`.
+- The system shall report Claude Code's account (`claude auth status`), start its sign-in (`claude auth login`) from the settings screen and type the code the sign-in page shows to the waiting command, one sign-in at a time, and shall keep no credential itself.
+- The system shall take a `chat-http` token from whatever way it was pasted (bare, after "Bearer", a whole Authorization line, quoted or wrapped over lines), send only the token, and report whether a bot's token is saved and when it expires, never its value.
+- The system shall send a `chat-http` bot's `Origin` and kept browser headers (`Referer`, `User-Agent`, `Accept-Language`) with every request to the chat API — the message, the history and the title — and no header shall replace the token.
 
 ### Event-driven
 
@@ -68,6 +71,8 @@ brain are owned by `contracts/cli-harnesses`.
 - When a `chat-http` answer names no chat, the system shall look among the newest chats of the history for the one holding the message it sent, and continue that chat.
 - When a `chat-http` request ends and the chats' history can be read, the system shall take the reply that follows the sent message, and its tokens, from the chat's history, reading once more after 1.5 s when the reply is not saved yet, and use the streamed text only when the history has no reply.
 - When a `chat-http` run opens a new chat and the chats' history can be read, the system shall ask the chat API for that chat's title once, in the background, with a `POST` to `<history>/<chat id>/generate-title` carrying the message "Orbis · <bot name> — <task>", unless the bot's brain sets `chat.titles` to false.
+- When a run or a brain test of `claude-code` fails because Claude Code reports its login gone or expired, the system shall add to the error how to sign in again, in Orbis or with `claude auth login`.
+- When a `chat-http` server answers 401 or 403, the system shall fail the run telling the token (401, or an expired token) from a valid token the server still refuses, with what the server answered, what Orbis sent and what the browser sends that Orbis did not.
 
 ### State-driven
 
@@ -85,6 +90,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall not write a `chat-http` address or token in its code, tests or documentation.
 - The system shall not take as a bot's chat one that does not hold the message the bot sent, and shall not ask again in a run a history that failed.
 - The system shall not fail or slow a `chat-http` run because the title request failed or timed out.
+- A template export shall not carry a `chat-http` brain's request address, `Origin`, history address or browser headers.
 
 ### Optional
 
@@ -114,6 +120,8 @@ brain are owned by `contracts/cli-harnesses`.
 19. [verified] A reply missing from the answer is read from the chat's history; among the newest chats the one holding the sent message is continued and a browser chat beside it is not; a server without the history is asked once and the error shows how the answer began; history shapes of role lists, input/output pairs and user/answer fields are read; a history cURL gives its token and the history's address — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 20. [verified] With a history shaped like the owner's company chat (`data.chat.messages` with `role`, `content` and `usage`), a bot takes the reply and its 5760/194 tokens from the history whatever the stream held, prefers it to a stream read wrong, keeps the chat id given as `chat._id`, and reads neither the user's profile nor the follow-up questions as messages — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 21. [verified] A bot that opens a chat asks for its title once (Bearer token, JSON body `{"data":{"userMessage":"Orbis · Ana — …"}}`) and not again when it continues the chat; with `titles: false` no title is asked; a title request answered with 500 leaves the run done — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+22. [verified] A token pasted as a whole Authorization line, in quotes or wrapped is sent bare and read back by the history; the hub says a token is saved with its expiry and never the token; a 403 with a valid token says what the server answered and what was not sent, an expired token and a 401 say it is the token, the browser headers kept reach the message, the history and the title, and a template leaves out every address — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
+23. [verified] A fake Claude Code reports its account, signs in through the page it prints and the code typed to it, fails with its own words on a wrong code, can be cancelled, is reported missing when absent, and an expired-login failure carries how to sign in again — verified by `packages/hub/test/runtimes/claude-account.test.ts`.
 
 ## Maturity
 

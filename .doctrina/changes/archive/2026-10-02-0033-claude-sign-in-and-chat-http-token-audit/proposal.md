@@ -1,6 +1,7 @@
 # Change 0033-claude-sign-in-and-chat-http-token-audit — claude sign-in and chat-http token audit
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-02
 - **Date:** 2026-10-02
 - **Owner:** Claude Code
 - **Lane:** runtime (uncertain; signals: diagnosis)

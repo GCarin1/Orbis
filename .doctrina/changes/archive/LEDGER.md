@@ -35,3 +35,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0030-chat-http-history — chat-http history (specs: agent-runtimes MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0031-chat-http-history-first — chat-http history first (specs: agent-runtimes MODIFIED)
 - 2026-10-02 — 0032-chat-http-titles — chat-http titles (specs: agent-runtimes MODIFIED, web-app MODIFIED)
+- 2026-10-02 — 0033-claude-sign-in-and-chat-http-token-audit — claude sign-in and chat-http token audit (specs: agent-runtimes MODIFIED, web-app MODIFIED)

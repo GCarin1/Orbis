@@ -15,7 +15,7 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.12.0",
+        "version": "0.13.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims",
         "realizes": [
@@ -255,7 +255,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.17.0",
+        "version": "0.18.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -421,16 +421,7 @@
         "summary": "Every run carries a chain id: the user message that started the work, or"
       }
     ],
-    "changes": [
-      {
-        "id": "0033-claude-sign-in-and-chat-http-token-audit",
-        "title": "claude sign-in and chat-http token audit",
-        "path": ".doctrina/changes/0033-claude-sign-in-and-chat-http-token-audit",
-        "status": "proposed",
-        "opened": "2026-10-02",
-        "lane": "runtime (uncertain; signals: diagnosis)"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1147,6 +1138,24 @@
           }
         ],
         "lane": "product (confident; signals: feature)"
+      },
+      {
+        "id": "0033-claude-sign-in-and-chat-http-token-audit",
+        "title": "claude sign-in and chat-http token audit",
+        "path": ".doctrina/changes/archive/2026-10-02-0033-claude-sign-in-and-chat-http-token-audit",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "runtime (uncertain; signals: diagnosis)"
       }
     ],
     "skills": [

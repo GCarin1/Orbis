@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.17.0
+**Version:** 0.18.0
 
 ## Purpose
 
@@ -44,6 +44,8 @@ run's steps.
 - The web app shall show the conversation list's last message and read replies aloud without Markdown marks.
 - The web app shall offer, for the `chat-http` brain in the new-bot screen and the bot's settings, the address, a password field for the Bearer token with its expiry, the model, advanced request settings, and a box that fills them from a pasted cURL command and then clears it.
 - The web app shall offer, in the `chat-http` brain's advanced settings, a box to give new chats a title, checked by default, that saves `chat.titles: false` when cleared.
+- The web app shall show in the Claude Code card of the brains screen whether Claude Code is signed in and offer signing in, with the page to open and a box for the code it shows, and when a test of that brain fails because its login expired the web app shall say so and point to the sign-in.
+- The web app shall show in a `chat-http` bot's settings whether a token is saved in the vault and when it expires, and the browser headers copied from a pasted cURL, which can be removed.
 
 ### Event-driven
 
@@ -110,6 +112,8 @@ run's steps.
 33. [verified] A pasted cURL fills the address, token, model, agent and Origin and leaves the screen; saving puts the token in the bot's secret and the rest in the brain; a saved token is kept when the field is empty, with the brain's time and step limits; a new bot hands its token apart from the bot — verified by `packages/web/test/chat-http.test.tsx`.
 34. [verified] Pasting a history GET cURL keeps the request address, saves its token and the history's address — verified by `packages/web/test/chat-http.test.tsx`.
 35. [verified] The title box is checked for a bot with no setting, and clearing it saves the brain with `chat: { titles: false }` — verified by `packages/web/test/chat-http.test.tsx`.
+36. [verified] After a Claude Code test fails with an expired login the card says so, signs in with the page and the code, clears the failure and tests well; a login that fails shows why — verified by `packages/web/test/claude-sign-in.test.tsx`.
+37. [verified] The settings show a token saved with its expiry, expired, or none; a pasted Authorization line is saved bare and shown as saved; Referer, User-Agent and Accept-Language are copied from a cURL without a cookie or another header, and can be removed — verified by `packages/web/test/chat-http.test.tsx`.
 
 ## Maturity
 
