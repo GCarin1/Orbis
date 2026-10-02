@@ -6,7 +6,7 @@
 **Realizes:** SC3
 **Depends on:** bots, tool-gateway, secrets
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -34,6 +34,7 @@ are destroyed with their bot.
 - The system shall tell a bot in every run which kind of computer it has and where it works, and that a `host` folder holds the user's real files.
 - The system shall report, at `GET /api/v1/computers`, what each kind of computer needs on the hub's machine — whether Docker is installed and running, and whether the desktop image exists — and build the desktop image from `docker/desktop/` on request.
 - The system shall tell each bot the operating system of its computer and the shell `computer.shell` runs (cmd.exe on Windows), and to prefer the file tools for reading and writing files.
+- The system shall let `browser.snapshot` read a page's text from an offset, and say at the end of each part where the next part starts.
 
 ### Event-driven
 
@@ -45,12 +46,18 @@ are destroyed with their bot.
 - When the output of `computer.shell` is longer than the tool result allows, the system shall return its start and its end, say how much was left out, and suggest redirecting it to a file.
 - When a bot on a `host` computer writes a file and no rule or grant decides, the system shall ask the user first.
 - When the browser of a bot's computer cannot start because Playwright's Chromium is not downloaded, the system shall start the Google Chrome or Microsoft Edge installed on the machine, and when neither is installed, fail naming what to install.
+- When a file tool is given a path that does not exist, the system shall say so with the path the bot gave and point to `computer.list_files`.
+
+### State-driven
+
+- While the hub runs on Windows, the system shall switch cmd.exe to UTF-8 before each `computer.shell` command, give commands of the bot's own computer the system variables Windows programs need and a profile of the bot's own (USERPROFILE, APPDATA, LOCALAPPDATA, TEMP, TMP), and ask Python for UTF-8 output.
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not let a file tool read or write outside the bot's workspace, whether through `..` segments, absolute paths or symlinks.
 - The system shall never attempt to solve or bypass a CAPTCHA or a verification step.
 - The system shall not accept a `host` folder that is not an absolute path to an existing directory, shall not remove anything of it when the bot is deleted, and shall not carry `host` access in a template, exported or imported.
+- The system shall not read a binary file or a file over 10 MiB with `computer.read_file`; it shall say what the file is and point to the shell.
 
 ## Acceptance criteria
 
@@ -65,6 +72,7 @@ are destroyed with their bot.
 9. [verified] The noVNC pages and WebSocket answer only with the bot's own view cookie, and a local computer has no desktop to show — verified by `packages/hub/test/computer/docker.test.ts`.
 10. [verified] A host bot's commands run in its folder with the user's variables and without the hub's, file tools read and write there and refuse `..`, writes ask by default, a missing or relative folder is refused, a template carries no host access, the bot is told where it works, deleting it leaves the folder; `GET /computers` reports Docker installed, running or missing and the image, and one call builds it — verified by `packages/hub/test/computer/host.test.ts`.
 11. [verified] The context names Windows and cmd.exe on win32 and Linux and /bin/sh on linux; the browser launch falls back from the bundled Chromium to Chrome and Edge, and fails asking to install one — verified by `packages/hub/test/bot-behaviour.test.ts`.
+12. [verified] On win32 a command gets SystemRoot, ProgramFiles, a profile under the bot's home and PYTHONIOENCODING, and cmd.exe runs `chcp 65001` first; a missing file, a binary file, a file over 10 MiB, a missing folder and a file given as a folder each get a plain answer; a 12,003-character page reads in two parts — verified by `packages/hub/test/audit-cycle3.test.ts`.
 
 ## Maturity
 

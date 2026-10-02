@@ -20,6 +20,8 @@ export function hostEnv(source: NodeJS.ProcessEnv = process.env): Record<string,
   for (const [name, value] of Object.entries(source)) {
     if (value !== undefined && !HUB_SECRETS.test(name)) env[name] = value;
   }
+  // Python writes UTF-8 to the pipe instead of the Windows ANSI code page.
+  if (process.platform === "win32") env.PYTHONIOENCODING ??= "utf-8";
   return env;
 }
 

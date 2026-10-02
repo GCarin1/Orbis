@@ -27,3 +27,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0022-chat-and-bot-deep-audit — Chat and bot deep audit (specs: agent-runtimes MODIFIED, approvals MODIFIED, bots MODIFIED, conversations MODIFIED, handoff MODIFIED, memory MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0023-audit-cycle-1-routines-and-usage — Audit cycle 1 — routines and usage (specs: routines MODIFIED, usage MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0024-audit-cycle-2-web-app-state — Audit cycle 2 — web app state (specs: web-app MODIFIED)
+- 2026-10-02 — 0025-audit-cycle-3-computer-tools — Audit cycle 3 — computer tools (specs: computer MODIFIED)

@@ -71,7 +71,7 @@
         "id": "computer",
         "path": ".doctrina/specs/computer/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — local, host and docker providers (`packages/hub/src/computer/`), browser tools on Playwright (a visible window for host), hibernation, takeover, the live view, the computers setup with the one-click desktop image build, and the `orbis/desktop` image (`docker/desktop/`)",
         "realizes": [
@@ -978,6 +978,20 @@
         "specs_affected": [
           {
             "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: bug, audit)"
+      },
+      {
+        "id": "0025-audit-cycle-3-computer-tools",
+        "title": "Audit cycle 3 — computer tools",
+        "path": ".doctrina/changes/archive/2026-10-02-0025-audit-cycle-3-computer-tools",
+        "status": "applied",
+        "applied": "2026-10-02",
+        "specs_affected": [
+          {
+            "capability": "computer",
             "operation": "MODIFIED"
           }
         ],

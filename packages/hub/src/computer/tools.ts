@@ -1,5 +1,5 @@
 // Tools of a bot's computer: shell, files and browser (specs/computer, specs/tool-gateway).
-import { appendFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import Type from "typebox";
 import type { Bot } from "@orbis/shared";
@@ -11,6 +11,18 @@ import { confine, display } from "./paths.js";
 import { SHELL_OUTPUT_CAP, SHELL_TIMEOUT_SEC, type ExecResult } from "./provider.js";
 
 const READ_CHARS = 20_000;
+/** Files larger than this are not read whole into memory: the bot reads them with the shell (head, findstr…). */
+export const READ_MAX_BYTES = 10 * 1024 * 1024;
+
+/** A missing path, said as the bot can act on it (not as an ENOENT with the hub's full path). */
+function missing(requested: string, what: "file" | "folder"): { output: string; isError: true } {
+  return { output: `there is no ${what} "${requested}" in your workspace; computer.list_files shows what is there`, isError: true };
+}
+
+/** True when the start of a file holds NUL bytes: an image, a PDF, a program — not text. */
+export function looksBinary(head: Buffer): boolean {
+  return head.subarray(0, 8192).includes(0);
+}
 const LIST_ENTRIES = 500;
 
 function listDir(root: string, dir: string, recursive: boolean, out: string[]): void {
@@ -96,8 +108,19 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
         await computers.ensure(ctx.bot);
         const root = workspace(ctx.bot);
         const file = confine(root, input.path);
-        if (statSync(file).isDirectory()) return { output: `${input.path} is a directory; use computer.list_files`, isError: true };
-        const text = readFileSync(file, "utf8");
+        if (!existsSync(file)) return missing(input.path, "file");
+        const info = statSync(file);
+        if (info.isDirectory()) return { output: `${input.path} is a directory; use computer.list_files`, isError: true };
+        if (info.size > READ_MAX_BYTES) {
+          return {
+            output: `${input.path} has ${info.size} bytes, too large to read whole; look into it with computer.shell (a search or its first lines)`,
+            isError: true,
+          };
+        }
+        const raw = readFileSync(file);
+        if (looksBinary(raw))
+          return { output: `${input.path} is a binary file (${info.size} bytes), not text; computer.shell can inspect or convert it`, isError: true };
+        const text = raw.toString("utf8");
         const start = input.offset ?? 0;
         const page = text.slice(start, start + READ_CHARS);
         const more = text.length > start + READ_CHARS ? `\n[… ${text.length - start - READ_CHARS} more characters; next offset ${start + READ_CHARS}]` : "";
@@ -140,6 +163,8 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
         await computers.ensure(ctx.bot);
         const root = workspace(ctx.bot);
         const dir = confine(root, input.path ?? ".");
+        if (!existsSync(dir)) return missing(input.path ?? ".", "folder");
+        if (!statSync(dir).isDirectory()) return { output: `${input.path} is a file; read it with computer.read_file`, isError: true };
         const entries: string[] = [];
         listDir(dir, dir, input.recursive ?? false, entries);
         if (entries.length === 0) return `${display(root, dir)} is empty`;
@@ -166,11 +191,12 @@ export function computerTools(computers: ComputerManager, browser: BrowserServic
     },
     {
       name: "browser.snapshot",
-      description: "Return a text snapshot of the page open in your browser, with fresh references.",
-      input: Type.Object({}),
+      description:
+        "Return a text snapshot of the page open in your browser, with fresh references. A long page's text comes in parts: offset reads on from where the last part stopped.",
+      input: Type.Object({ offset: Type.Optional(Type.Integer({ minimum: 0, description: "character of the page text to start from" })) }),
       risk: "read",
-      handler: async (_input: object, ctx) => {
-        const { text, data } = await browser.snapshot(ctx.bot);
+      handler: async (input: { offset?: number }, ctx) => {
+        const { text, data } = await browser.snapshot(ctx.bot, input.offset ?? 0);
         return browsed(data.url, text);
       },
     },

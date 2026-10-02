@@ -38,10 +38,14 @@ export interface PageSnapshot {
 }
 
 /** The snapshot as the model reads it. */
-export function formatSnapshot(s: PageSnapshot): string {
+export function formatSnapshot(s: PageSnapshot, offset = 0): string {
   const lines = [`Title: ${s.title || "(untitled)"}`, `URL: ${s.url}`, ""];
   const text = s.text.replace(/\n{3,}/g, "\n\n").trim();
-  lines.push(text.length > SNAPSHOT_TEXT_CHARS ? `${text.slice(0, SNAPSHOT_TEXT_CHARS)}\n[… ${text.length - SNAPSHOT_TEXT_CHARS} more characters of page text]` : text || "(no text)");
+  const start = Math.min(offset, text.length);
+  const end = start + SNAPSHOT_TEXT_CHARS;
+  if (start > 0) lines.push(`[page text from character ${start} of ${text.length}]`);
+  lines.push(text.slice(start, end) || "(no text)");
+  if (text.length > end) lines.push(`[… ${text.length - end} more characters of page text: browser.snapshot with offset ${end} reads on]`);
   if (s.links.length) lines.push("", "Links:", ...s.links.map((l) => `[${l.ref}] ${l.text || "(no text)"} → ${l.href}`));
   if (s.fields.length) lines.push("", "Fields:", ...s.fields.map((f) => `[${f.ref}] ${f.kind} "${f.label}"${f.value ? ` = ${f.value}` : ""}`));
   if (s.buttons.length) lines.push("", "Buttons:", ...s.buttons.map((b) => `[${b.ref}] ${b.text || "(no text)"}`));
@@ -176,11 +180,11 @@ export class BrowserService {
     return this.sessions.has(botId);
   }
 
-  async snapshot(bot: Bot): Promise<{ text: string; data: PageSnapshot }> {
+  async snapshot(bot: Bot, offset = 0): Promise<{ text: string; data: PageSnapshot }> {
     const page = await this.page(bot);
     const data = (await page.evaluate(READ_PAGE)) as PageSnapshot;
     await this.capture(bot, page);
-    return { text: formatSnapshot(data), data };
+    return { text: formatSnapshot(data, offset), data };
   }
 
   /** Keep the latest screenshot for the live view. */

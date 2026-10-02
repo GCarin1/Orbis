@@ -9,6 +9,11 @@ change that delivered it.
 
 ### Fixed
 
+- Audit cycle 3 (change 0025-audit-cycle-3-computer-tools): on Windows,
+  accents in command output arrive intact (cmd.exe switched to UTF-8) and
+  npm, git and python run in a bot's isolated computer (APPDATA, TEMP and a
+  profile of its own); reading a missing, binary or huge file gets a plain
+  answer; `browser.snapshot` reads long pages in parts.
 - Audit cycle 2 (change 0024-audit-cycle-2-web-app-state): the app finds a
   connection that went quiet (after sleep or a Wi-Fi drop) and reconnects
   instead of showing "connected" while replies never arrive; a refused
