@@ -1,6 +1,7 @@
 # Change 0043-android-app-and-apk-workflow — android app and apk workflow
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-03
 - **Date:** 2026-10-03
 - **Owner:** Claude Code
 - **Lane:** runtime (confident; signals: github actions) — opened anyway (--force)

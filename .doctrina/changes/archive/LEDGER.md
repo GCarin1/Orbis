@@ -45,3 +45,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0040-group-membership-and-clearing-a-conversation — group membership and clearing a conversation (specs: conversations MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0041-openai-compatible-gateways — openai-compatible gateways (specs: agent-runtimes MODIFIED, secrets MODIFIED, web-app MODIFIED)
 - 2026-10-02 — 0042-group-info-like-a-chat-app — group info like a chat app (specs: agent-runtimes MODIFIED, conversations MODIFIED, desktop-app MODIFIED, web-app MODIFIED)
+- 2026-10-03 — 0043-android-app-and-apk-workflow — android app and apk workflow (specs: android-app ADDED, web-app MODIFIED)

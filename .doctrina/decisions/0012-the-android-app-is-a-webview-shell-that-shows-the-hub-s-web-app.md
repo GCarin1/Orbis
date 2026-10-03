@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`
-- **Landed:** —
+- **Landed:** 2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`
 
 ## Context
 

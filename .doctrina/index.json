@@ -28,6 +28,21 @@
         ]
       },
       {
+        "id": "android-app",
+        "path": ".doctrina/specs/android-app/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-10-03",
+        "implementation": "verified — Java WebView shell in `packages/android` (connect screen, hub-only navigation, file picker, Downloads, Back); APK built by `.github/workflows/android.yml`",
+        "realizes": [
+          "SC7"
+        ],
+        "depends_on": [
+          "web-app",
+          "hub-api"
+        ]
+      },
+      {
         "id": "approvals",
         "path": ".doctrina/specs/approvals/spec.md",
         "status": "active",
@@ -255,7 +270,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.25.0",
+        "version": "0.25.1",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -426,23 +441,15 @@
         "title": "The Android app is a WebView shell that shows the hub's web app",
         "status": "accepted",
         "date": "2026-10-03",
-        "summary": "The Android app is a small native shell in Java (`packages/android`): one",
         "scope": [
           "android-app",
           "web-app"
-        ]
+        ],
+        "summary": "The Android app is a small native shell in Java (`packages/android`): one",
+        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`"
       }
     ],
-    "changes": [
-      {
-        "id": "0043-android-app-and-apk-workflow",
-        "title": "android app and apk workflow",
-        "path": ".doctrina/changes/0043-android-app-and-apk-workflow",
-        "status": "proposed",
-        "opened": "2026-10-03",
-        "lane": "runtime (confident; signals: github actions) — opened anyway (--force)"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1347,6 +1354,24 @@
           }
         ],
         "lane": "product (confident; signals: feature)"
+      },
+      {
+        "id": "0043-android-app-and-apk-workflow",
+        "title": "android app and apk workflow",
+        "path": ".doctrina/changes/archive/2026-10-03-0043-android-app-and-apk-workflow",
+        "status": "applied",
+        "applied": "2026-10-03",
+        "specs_affected": [
+          {
+            "capability": "android-app",
+            "operation": "ADDED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "runtime (confident; signals: github actions) — opened anyway (--force)"
       }
     ],
     "skills": [

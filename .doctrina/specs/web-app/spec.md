@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.25.0
+**Version:** 0.25.1
 
 ## Purpose
 
@@ -74,7 +74,7 @@ run's steps.
 - When a connection test of a `chat-http` bot finds a way through, the web app shall say that the test sends no message, and that messages still blocked mean the firewall reads them.
 - When the user types an API key for an API brain in a bot's settings or on the new-bot screen and saves, the web app shall send it to the bot's vault, set the bot's `apiKeySecret` to that secret's name, empty the field and show that a key is saved, without the key being part of the bot.
 - When the user clicks a group's photo or name, the web app shall open the group's info beside the conversation (full screen on a phone) with its photo, name and description to change, buttons to add, search, mute and export, its links, its members with their role, state and lead badge (each offering a direct conversation, making it lead and removing it), its notifications, and clearing and deleting it.
-- When the user opens Add members, the web app shall list the visible bots outside the group with a search field, allow picking as many as the group's limit leaves room for, and say when every bot is already in the group (offering a new bot) or the group holds its limit (naming ORBIS_MAX_GROUP_SIZE).
+- When the user opens Add members, the web app shall list the visible bots outside the group with a search field, allow picking bots up to the room the group's limit leaves, and say when every bot is already in the group (offering a new bot) or the group holds its limit (naming ORBIS_MAX_GROUP_SIZE).
 - When the user picks a search result or a link's line in the group's info, the web app shall load the conversation back to that message, scroll to it and mark it for a moment.
 
 ### State-driven
