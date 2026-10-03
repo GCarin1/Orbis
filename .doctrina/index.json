@@ -145,6 +145,25 @@
         ]
       },
       {
+        "id": "hiring",
+        "path": ".doctrina/specs/hiring/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-10-03",
+        "implementation": "verified — `packages/hub/src/hiring/` (prompts, rounds, candidates, hires, routes), `packages/hub/src/brains/ask.ts` (one question to a brain), the web app's Hiring screen (`HiringScreen.tsx`)",
+        "realizes": [
+          "SC11"
+        ],
+        "depends_on": [
+          "bots",
+          "agent-runtimes",
+          "skills",
+          "conversations",
+          "usage",
+          "tool-gateway"
+        ]
+      },
+      {
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
@@ -493,16 +512,7 @@
         "summary": "Two steps, two prompts."
       }
     ],
-    "changes": [
-      {
-        "id": "0049-hiring",
-        "title": "hiring",
-        "path": ".doctrina/changes/0049-hiring",
-        "status": "proposed",
-        "opened": "2026-10-03",
-        "lane": "product"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1512,6 +1522,20 @@
           {
             "capability": "web-app",
             "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0049-hiring",
+        "title": "hiring",
+        "path": ".doctrina/changes/archive/2026-10-03-0049-hiring",
+        "status": "applied",
+        "applied": "2026-10-03",
+        "specs_affected": [
+          {
+            "capability": "hiring",
+            "operation": "ADDED"
           }
         ],
         "lane": "product"
