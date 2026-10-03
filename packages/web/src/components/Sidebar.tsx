@@ -4,15 +4,15 @@
 // the user at the bottom.
 import { plainText } from "./Markdown.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { Approval, Bot, Conversation } from "@orbis/shared";
+import type { Approval, Bot, Conversation, Squad } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import { ApprovalsInbox } from "./ApprovalsInbox.js";
 import { Avatar, Mascot, StateLabel } from "./Avatar.js";
-import { BellOffIcon, BriefcaseIcon, PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon } from "./Icons.js";
+import { BellOffIcon, BriefcaseIcon, PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon, UsersIcon } from "./Icons.js";
 import { LanguageSwitch } from "./LanguageSwitch.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 
-export type View = "chat" | "skills" | "tools" | "hiring" | "usage" | "settings" | "new-bot";
+export type View = "chat" | "skills" | "tools" | "hiring" | "squads" | "usage" | "settings" | "new-bot";
 
 export interface ChatEntry {
   key: string;
@@ -65,6 +65,15 @@ export function matches(entry: ChatEntry, query: string, bots: Record<string, Bo
   return hay.some((h) => h.toLowerCase().includes(q.replace(/^@/, "")));
 }
 
+const SQUAD_FILTER_KEY = "orbis.squadFilter";
+const remembered = () => {
+  try {
+    return globalThis.localStorage?.getItem(SQUAD_FILTER_KEY) ?? "";
+  } catch {
+    return "";
+  }
+};
+
 export function timeOf(iso: string, lang: string, yesterday: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -98,12 +107,15 @@ function Row({
   selected,
   unread,
   bots,
+  squad,
   onOpen,
 }: {
   entry: ChatEntry;
   selected: boolean;
   unread: boolean;
   bots: Record<string, Bot>;
+  /** The bot's squad (or the squad whose chat this group is), shown as a dot of its color. */
+  squad?: Squad;
   onOpen(): void;
 }) {
   const t = useT();
@@ -124,7 +136,10 @@ function Row({
         {bot ? <Avatar bot={bot} size={40} /> : <GroupFace group={entry.group!} bots={bots} />}
         <span className="chat-text">
           <span className="chat-line">
-            <strong className="chat-title">{entry.title}</strong>
+            <strong className="chat-title">
+              {squad && <span className="squad-dot" style={{ ["--squad" as string]: squad.color }} title={squad.name} aria-label={squad.name} />}
+              {entry.title}
+            </strong>
             {entry.at && <time>{timeOf(entry.at, lang, t("time.yesterday"))}</time>}
           </span>
           <span className="chat-line">
@@ -155,6 +170,7 @@ export function Sidebar({
   onNewBot,
   onNewGroup,
   onView,
+  squads = [],
 }: {
   bots: Record<string, Bot>;
   conversations: Conversation[];
@@ -168,13 +184,27 @@ export function Sidebar({
   onNewBot(): void;
   onNewGroup(): void;
   onView(view: View): void;
+  squads?: Squad[];
 }) {
   const t = useT();
   const [query, setQuery] = useState("");
+  /** Show one squad's bots and chat, the bots in no squad, or everything. */
+  const [squadFilter, setSquadFilter] = useState<string>(() => remembered());
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const all = chatEntries(Object.values(bots), conversations);
-  const entries = all.filter((e) => matches(e, query, bots));
+  const squadOfEntry = (e: ChatEntry) => squads.find((s) => (e.kind === "bot" ? s.id === e.bot!.squadId : s.conversationId === e.group!.id));
+  const filter = squads.some((s) => s.id === squadFilter) || squadFilter === "none" ? squadFilter : "";
+  const inFilter = (e: ChatEntry) => !filter || (filter === "none" ? e.kind === "bot" && !e.bot!.squadId : squadOfEntry(e)?.id === filter);
+  const entries = all.filter((e) => matches(e, query, bots) && inFilter(e));
+  const pickSquad = (id: string) => {
+    setSquadFilter(id);
+    try {
+      globalThis.localStorage?.setItem(SQUAD_FILTER_KEY, id);
+    } catch {
+      /* no storage */
+    }
+  };
   const favorites = all.filter((e) => e.kind === "bot").slice(0, 4);
 
   useEffect(() => {
@@ -251,6 +281,17 @@ export function Sidebar({
           }}
         />}
 
+      {squads.length > 0 && (
+        <div className="squad-filter" role="group" aria-label={t("sidebar.squadFilter")}>
+          {[{ id: "", name: t("sidebar.allSquads"), color: "" }, ...squads, { id: "none", name: t("sidebar.noSquad"), color: "" }].map((s) => (
+            <button key={s.id || "all"} type="button" className={`chip${filter === s.id ? " on" : ""}`} aria-pressed={filter === s.id} onClick={() => pickSquad(s.id)}>
+              {s.color && <span className="squad-dot" style={{ ["--squad" as string]: s.color }} aria-hidden="true" />}
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <nav className="chat-list" aria-label={t("sidebar.chats")}>
         {all.length === 0 ? (
           <>
@@ -271,6 +312,7 @@ export function Sidebar({
                   key={entry.key}
                   entry={entry}
                   bots={bots}
+                  squad={squadOfEntry(entry)}
                   selected={selected}
                   unread={!selected && isUnread(entry.conversationId)}
                   onOpen={() => (entry.kind === "bot" ? onOpenBot(entry.bot!.id) : onOpenGroup(entry.group!.id))}
@@ -285,6 +327,7 @@ export function Sidebar({
         <nav className="main-nav" aria-label="Orbis">
           {nav("skills", <SkillsIcon />, t("nav.skills"), "📘")}
           {nav("tools", <PuzzleIcon />, t("nav.tools"), "🧩")}
+          {nav("squads", <UsersIcon />, t("nav.squads"), "🛡")}
           {nav("hiring", <BriefcaseIcon />, t("nav.hiring"), "💼")}
           {nav("usage", <UsageIcon />, t("nav.usage"), "📊")}
           {nav("settings", <SlidersIcon />, t("nav.settings"), "⚙")}

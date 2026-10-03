@@ -40,7 +40,7 @@ afterAll(async () => {
 function sideways(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const vw = document.documentElement.clientWidth;
-    const meant = "pre, code, .table-scroll, .favorites, .settings-tabs, .market-tabs, .link-chips, .mcp-cats, .mcp-featured-row, .mcp-auth";
+    const meant = "pre, code, .table-scroll, .favorites, .settings-tabs, .market-tabs, .link-chips, .mcp-cats, .mcp-featured-row, .mcp-auth, .squad-filter";
     const name = (el: Element) =>
       `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${[...el.classList].map((c) => `.${c}`).join("")}${el.getAttribute("data-testid") ? `[${el.getAttribute("data-testid")}]` : ""}`;
     const found: string[] = [];
@@ -160,6 +160,15 @@ describe("the web app on a phone", () => {
     await page.getByRole("button", { name: "Your own server" }).click();
     await page.getByTestId("custom-server").waitFor();
     await check("your own MCP server");
+
+    // Squads: the org chart, a squad's card, the bots in no squad, and a new squad's form.
+    hub.squads.create({ name: "Squad de pesquisa e análise de mercado", members: [ana.id], managerId: bia.id });
+    await home();
+    await page.getByRole("button", { name: "🛡 Squads" }).click();
+    await page.getByRole("article").first().waitFor();
+    await check("squads");
+    await page.getByRole("button", { name: "New squad" }).first().click();
+    await check("a new squad");
 
     // Hiring: a new opening, a round of résumés, and the hire sheet (a scripted recruiter writes them).
     hub.brains.register(recruiterBrain());

@@ -3894,3 +3894,230 @@ label.check {
     padding: 12px;
   }
 }
+
+/* ── Squads (change 0050): org chart, squad cards, the sidebar's squad filter. ─────────────────────────── */
+.squad-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--squad, var(--muted));
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.chat-title .squad-dot {
+  margin-right: 6px;
+}
+.squad-filter {
+  display: flex;
+  gap: 6px;
+  padding: 2px 12px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.squad-filter .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 3px 10px;
+}
+.squads-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.squad-new {
+  max-width: 760px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.squad-new h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.squad-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.squad-pick legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.org-chart {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.org-branch {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+.org-manager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.org-none {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px dashed var(--muted);
+  flex-shrink: 0;
+}
+.org-squads {
+  list-style: none;
+  margin: 8px 0 0 15px;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+.org-squads li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.squads-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.squads-manager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.squads-manager label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  min-width: 0;
+}
+.squads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 12px;
+}
+.squad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--squad, var(--border));
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.squad-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.squad-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.squad-title h2 {
+  margin: 0;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.squad-title p {
+  margin: 4px 0 0;
+}
+.squad-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.squad-edit {
+  width: 100%;
+}
+.squad-color input {
+  width: 56px;
+  height: 32px;
+  padding: 2px;
+}
+.squad-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+}
+.squad-field select {
+  font-weight: 400;
+}
+.squad-members,
+.squads-loose ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.squad-members li,
+.squads-loose li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 10px;
+}
+.squad-members li.rep {
+  background: var(--panel-2);
+}
+.squad-member-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.squad-member-text strong,
+.squad-member-text .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.squad-star {
+  color: #d97706;
+  padding: 0 6px;
+}
+.squad-chat {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.squads-loose h2 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+.squads-loose select {
+  max-width: 45%;
+}

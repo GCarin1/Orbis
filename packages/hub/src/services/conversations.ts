@@ -43,6 +43,8 @@ export interface ConversationServiceDeps {
   runs: RunsRepo;
   sessions: BrainSessionsRepo;
   memory: MemoryRepo;
+  /** Other names a mention may use for a bot (a squad's handle). */
+  mentionAliases?: { all(): Record<string, string> };
 }
 
 export interface GroupInput {
@@ -327,10 +329,10 @@ export class ConversationService {
     return { item, runs: this.router.route(conversation, item) };
   }
 
-  /** The bots of the team a message mentions, by handle or by role (`@qa`). */
+  /** The bots of the team a message mentions, by handle, by role (`@qa`) or by squad (its representative). */
   private mentioned(item: TimelineItem): Bot[] {
     const mentions = item.mentions.filter((m) => m !== "everyone");
-    return mentions.length ? resolveMentions(mentions, this.d.bots.list({ includeHidden: true })) : [];
+    return mentions.length ? resolveMentions(mentions, this.d.bots.list({ includeHidden: true }), this.d.mentionAliases?.all()) : [];
   }
 
   /**

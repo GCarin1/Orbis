@@ -45,6 +45,7 @@ function toRun(r: Row): RoutineRun {
     status: r.status as string,
     summary: (r.summary as string | null) ?? null,
     startedAt: r.started_at as string,
+    calledBy: (r.called_by as string | null) ?? null,
   };
 }
 
@@ -110,7 +111,7 @@ export class RoutinesRepo {
   insertRun(r: RoutineRun): void {
     run(
       this.db,
-      "INSERT INTO routine_runs (id, routine_id, run_id, test, status, summary, started_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO routine_runs (id, routine_id, run_id, test, status, summary, started_at, called_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       r.id,
       r.routineId,
       r.runId,
@@ -118,6 +119,7 @@ export class RoutinesRepo {
       r.status,
       r.summary,
       r.startedAt,
+      r.calledBy ?? null,
     );
     run(
       this.db,

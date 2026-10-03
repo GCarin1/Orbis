@@ -62,9 +62,10 @@ import { ToolGateway } from "./tools/gateway.js";
 import { builtinTools } from "./tools/builtin.js";
 import { permissionTool } from "./tools/permission.js";
 import { registerMcp } from "./mcp/protocol.js";
-import { SecretResolvers, type HubContext } from "./context.js";
+import { type HubContext, MentionAliases, SecretResolvers } from "./context.js";
 import { SettingsRepo } from "./repos/settings.js";
 import { VoiceService } from "./voice/service.js";
+import { SquadService } from "./squads/service.js";
 import { HiringService } from "./hiring/service.js";
 import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
@@ -93,6 +94,7 @@ export interface Hub extends HubContext {
   voice: VoiceService;
   mcp: McpConnections;
   hiring: HiringService;
+  squads: SquadService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -185,6 +187,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   computer.startSweeper();
   const timeline = new Timeline(repos.items, repos.conversations, repos.bots, bus);
   const secretResolvers = new SecretResolvers();
+  const mentionAliases = new MentionAliases();
   const engine = new RunEngine({
     config,
     bus,
@@ -211,6 +214,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     runs: repos.runs,
     sessions: repos.sessions,
     memory: repos.memory,
+    mentionAliases,
   });
   // A deleted bot leaves its groups (said in each) before its rows go.
   botService.onDelete((bot) => conversationService.botDeleted(bot));
@@ -302,6 +306,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     botService,
     conversationService,
     secretResolvers,
+    mentionAliases,
     tools,
     approvals,
     drafts,
@@ -340,6 +345,12 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   routines.start();
   const templates = new TemplateService(ctx, skillService, routines);
   const hiring = new HiringService(ctx, { skills: skillService.store, vault: secrets.vault, mcp, usage });
+  const squads = new SquadService(ctx);
+  mentionAliases.register(() => squads.aliases());
+  engine.addContextSection((bot) => squads.contextSection(bot));
+  for (const tool of squads.tools()) tools.register(tool);
+  botService.onDelete((bot) => squads.botDeleted(bot));
+  tools.register(routines.callTool(collaboration));
   // While the user holds a bot's computer, its tool calls wait (specs/computer: takeover).
   gateway.onBeforeCall(async ({ run, bot, signal }) => {
     if (!computer.holdsTakeover(bot.id)) return;
@@ -373,6 +384,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await voice.routes(app);
   await registerMcpRoutes(app, mcp);
   await hiring.routes(app);
+  await squads.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -397,6 +409,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     voice,
     mcp,
     hiring,
+    squads,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });

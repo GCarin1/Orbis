@@ -198,6 +198,24 @@ gives a bot the server's tools; `POST …/reconnect`, `DELETE …` disconnects.
 Sign-ins come back to `GET /oauth/mcp/callback` (no API token; a one-time
 state). Details in [`mcp.md`](mcp.md#connecting-other-mcp-servers-the-mcp-screen).
 
+## Squads
+
+`GET /api/v1/squads` returns the squads and the room
+(`{ squads, roomId }`).
+
+- `POST /api/v1/squads` creates a squad:
+  `{ "name": "Growth", "members": ["ana", "bob"], "managerId": "max" }`.
+- `PATCH /api/v1/squads/:id` changes its `name`, `description`, `color`,
+  `representativeId` or `managerId`.
+- `PUT` / `DELETE /api/v1/squads/:id/members/:botId` adds or removes a bot.
+- `POST /api/v1/squads/manager` `{ "managerId": "max" }` gives every squad
+  one manager.
+- `DELETE /api/v1/squads/:id` deletes a squad.
+
+After each change, members report to the representative and the
+representative to the manager. A `squads.updated` event follows. Guide:
+[`squads.md`](squads.md).
+
 ## Hiring
 
 `GET /api/v1/hiring/tools` lists the tools a candidate may take: the

@@ -20,6 +20,7 @@ import { BotPanel } from "./components/BotPanel.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
 import { SettingsScreen } from "./components/SettingsScreen.js";
+import { SquadsScreen } from "./components/SquadsScreen.js";
 import { HiringScreen } from "./components/HiringScreen.js";
 import { Marketplace } from "./components/Marketplace.js";
 import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
@@ -103,6 +104,7 @@ export function App() {
     void useStore.getState().loadApprovals().catch(() => undefined);
     void useStore.getState().loadConversations().catch(() => undefined);
     void useStore.getState().loadMcpServers().catch(() => undefined);
+    void useStore.getState().loadSquads().catch(() => undefined);
     void useStore.getState().loadBots().catch((err: unknown) => {
       if ((err as { status?: number }).status === 401) {
         saveToken(null);
@@ -123,6 +125,7 @@ export function App() {
         void s.loadApprovals();
         void s.loadConversations();
         void s.loadMcpServers().catch(() => undefined);
+        void s.loadSquads().catch(() => undefined);
         const conv = s.selectedGroupId ?? (s.selectedBotId ? s.directByBot[s.selectedBotId] : undefined);
         if (conv) void s.loadTimeline(conv);
       },
@@ -287,11 +290,23 @@ export function App() {
         onNewBot={() => setView("new-bot")}
         onNewGroup={() => setCreatingGroup(true)}
         onView={setView}
+        squads={store.squads?.squads}
       />
       <main className="main">
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "tools" && store.api ? <Marketplace api={store.api} bots={bots} servers={store.mcpServers} onLoad={() => store.loadMcpServers()} /> : null}
+        {view === "squads" && store.api ? (
+          <SquadsScreen
+            api={store.api}
+            bots={bots}
+            view={store.squads}
+            onOpenGroup={(id) => {
+              setView("chat");
+              void store.selectGroup(id);
+            }}
+          />
+        ) : null}
         {view === "hiring" && store.api ? (
           <HiringScreen
             api={store.api}
@@ -468,6 +483,7 @@ export function App() {
           api={store.api}
           bot={selected}
           bots={bots}
+          squads={store.squads?.squads}
           onSave={async (patch) => void (await store.updateBot(selected.id, patch))}
           onExport={() => exportBot(selected)}
           onDuplicate={async () => {

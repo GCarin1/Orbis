@@ -45,7 +45,16 @@ export interface SecretBroker {
 /** Identical calls (same tool, same input) a run may make; the next one is refused. */
 export const MAX_IDENTICAL_CALLS = 2;
 /** Tools whose same input legitimately gives a new result each time (the page changed, the next page). */
-const REPEATABLE = new Set(["browser.snapshot", "browser.screenshot", "browser.press", "browser.close", "team.list_bots", "skills.list", "routine.list"]);
+const REPEATABLE = new Set([
+  "browser.snapshot",
+  "browser.screenshot",
+  "browser.press",
+  "browser.close",
+  "team.list_bots",
+  "team.list_squads",
+  "skills.list",
+  "routine.list",
+]);
 
 /** A key for "the same call": the tool and its input with keys in a stable order. */
 function callKey(name: string, input: unknown): string {

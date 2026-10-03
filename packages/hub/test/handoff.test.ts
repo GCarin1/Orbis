@@ -113,7 +113,7 @@ describe("handoff", () => {
     const { runs } = await chat(t, ana.id, handoff({ to: "@ana", task: "loop" }));
     expect(runs[0].steps.find((s: { type: string }) => s.type === "tool_result")).toMatchObject({ isError: true, output: "you cannot hand a task to yourself" });
     const unknown = await chat(t, ana.id, handoff({ to: "@nobody", task: "x" }));
-    expect(unknown.runs[0].steps.find((s: { type: string }) => s.type === "tool_result").output).toMatch(/no bot with the handle/);
+    expect(unknown.runs[0].steps.find((s: { type: string }) => s.type === "tool_result").output).toMatch(/no bot or squad with the handle/);
   });
 
   it("fails the card when the receiver is deleted before its run starts", async () => {

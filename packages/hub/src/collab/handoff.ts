@@ -71,10 +71,10 @@ export class Collaboration {
   /** The one bot a handoff names: a handle, or a role only one bot holds. */
   private receiverOf(ref: string): Bot | string {
     const mention = ref.replace(/^@/, "").toLowerCase();
-    const found = resolveMentions([mention], this.team());
+    const found = resolveMentions([mention], this.team(), this.hub.mentionAliases.all());
     if (found.length === 1) return found[0]!;
     if (found.length > 1) return `several bots have the role @${mention}: ${found.map((b) => `@${b.handle}`).sort().join(", ")}; name one handle`;
-    return `no bot with the handle or role ${ref}`;
+    return `no bot or squad with the handle or role ${ref}`;
   }
 
   /** The `team.handoff` tool. */
@@ -87,7 +87,11 @@ export class Collaboration {
         "one of them has ended you get all their answers together as a new task, so you can tell the user the outcome. Do not wait for them. " +
         "Set returnResult to false only for work you do not need to hear back about.",
       input: Type.Object({
-        to: Type.String({ minLength: 2, maxLength: 40, description: "the receiving bot's handle or role, e.g. @bob or @designer" }),
+        to: Type.String({
+          minLength: 2,
+          maxLength: 40,
+          description: "the receiving bot's handle or role, e.g. @bob or @designer, or a squad's handle, e.g. @growth (its representative receives it)",
+        }),
         task: Type.String({ minLength: 1, maxLength: 20_000 }),
         context: Type.Optional(Type.String({ maxLength: 20_000 })),
         returnResult: Type.Optional(Type.Boolean({ description: "default true: get the answer back with the rest of this turn's handoffs" })),
@@ -96,34 +100,6 @@ export class Collaboration {
       handler: async (input: { to: string; task: string; context?: string; returnResult?: boolean }, ctx) => {
         const receiver = this.receiverOf(input.to);
         if (typeof receiver === "string") return { output: receiver, isError: true };
-        if (receiver.id === ctx.bot.id) return { output: "you cannot hand a task to yourself", isError: true };
-        const conversationId = ctx.run.conversationId;
-        if (!conversationId) return { output: "a handoff needs a conversation to be shown in", isError: true };
-        const depth = ctx.run.depth + 1;
-        if (depth > this.maxDepth) {
-          this.depthExceeded(conversationId, ctx.bot, receiver, depth);
-          return { output: `the chain of bot-to-bot steps reached its limit (${this.maxDepth}); finish the work yourself or ask the user`, isError: true };
-        }
-        if (this.chainRunsLeft(ctx.run.chainId) <= 0) {
-          this.chainExhausted(conversationId, ctx.bot, receiver);
-          return { output: "this request already set off as many bot runs as allowed; finish the work yourself or ask the user", isError: true };
-        }
-        const data: HandoffCardData = {
-          from: ctx.bot.id,
-          to: receiver.id,
-          task: input.task,
-          context: input.context ?? null,
-          returnResult: input.returnResult ?? true,
-          receiverRunId: null,
-        };
-        const card = this.hub.timeline.post({
-          conversationId,
-          kind: "card",
-          author: { type: "bot", id: ctx.bot.id },
-          text: `@${ctx.bot.handle} → @${receiver.handle}: ${input.task}`,
-          runId: ctx.run.id,
-          card: { type: "handoff", state: "queued", data },
-        });
         const task = [
           `${label(ctx.bot)} handed you this task:`,
           input.task,
@@ -131,22 +107,66 @@ export class Collaboration {
           "",
           `Do it and answer with the result; @${ctx.bot.handle} gets your answer.`,
         ].join("\n");
-        const run = this.hub.engine.enqueue({
-          botId: receiver.id,
-          conversationId,
-          trigger: { type: "handoff", ref: card.id },
-          input: task,
-          depth,
-          chainId: ctx.run.chainId,
-          replyParentId: card.id,
-          includeHistory: false,
-        });
-        this.setCard(card.id, "queued", { receiverRunId: run.id });
-        return `Handed off to @${receiver.handle} (handoff ${card.id}). It answers in this conversation${
-          data.returnResult ? "; you get its answer back, with the rest of this turn's handoffs, as a new task" : ""
+        const handed = this.delegate(ctx, receiver, { task: input.task, context: input.context ?? null, input: task, returnResult: input.returnResult ?? true });
+        if (typeof handed === "string") return { output: handed, isError: true };
+        return `Handed off to @${receiver.handle} (handoff ${handed.card.id}). It answers in this conversation${
+          handed.returnResult ? "; you get its answer back, with the rest of this turn's handoffs, as a new task" : ""
         }. Do not wait for it.`;
       },
     };
+  }
+
+  /**
+   * Give another bot a piece of work from a run, as a handoff card in the run's conversation: the receiver
+   * runs `input` there, and with `returnResult` its answer comes back in the sender's report. Returns why
+   * not, as a message for the sender, when the work cannot go (itself, no conversation, the chain limits).
+   * `team.handoff` and `routine.call` both hand work over this way.
+   */
+  delegate(
+    ctx: { bot: Bot; run: Run },
+    receiver: Bot,
+    work: { task: string; context: string | null; input: string; returnResult: boolean },
+  ): string | { card: TimelineItem; run: Run; returnResult: boolean } {
+    if (receiver.id === ctx.bot.id) return "you cannot hand a task to yourself";
+    const conversationId = ctx.run.conversationId;
+    if (!conversationId) return "a handoff needs a conversation to be shown in";
+    const depth = ctx.run.depth + 1;
+    if (depth > this.maxDepth) {
+      this.depthExceeded(conversationId, ctx.bot, receiver, depth);
+      return `the chain of bot-to-bot steps reached its limit (${this.maxDepth}); finish the work yourself or ask the user`;
+    }
+    if (this.chainRunsLeft(ctx.run.chainId) <= 0) {
+      this.chainExhausted(conversationId, ctx.bot, receiver);
+      return "this request already set off as many bot runs as allowed; finish the work yourself or ask the user";
+    }
+    const data: HandoffCardData = {
+      from: ctx.bot.id,
+      to: receiver.id,
+      task: work.task,
+      context: work.context,
+      returnResult: work.returnResult,
+      receiverRunId: null,
+    };
+    const card = this.hub.timeline.post({
+      conversationId,
+      kind: "card",
+      author: { type: "bot", id: ctx.bot.id },
+      text: `@${ctx.bot.handle} → @${receiver.handle}: ${work.task}`,
+      runId: ctx.run.id,
+      card: { type: "handoff", state: "queued", data },
+    });
+    const run = this.hub.engine.enqueue({
+      botId: receiver.id,
+      conversationId,
+      trigger: { type: "handoff", ref: card.id },
+      input: work.input,
+      depth,
+      chainId: ctx.run.chainId,
+      replyParentId: card.id,
+      includeHistory: false,
+    });
+    this.setCard(card.id, "queued", { receiverRunId: run.id });
+    return { card, run, returnResult: data.returnResult };
   }
 
   /** Who this bot works with, for its context (specs/bots: hierarchy). */
@@ -273,7 +293,7 @@ export class Collaboration {
     const author = this.hub.repos.bots.get(run.botId);
     if (!author) return;
     const mentions = extractMentions(run.reply).filter((h) => h !== "everyone" && h !== author.handle && h !== roleSlug(author.role));
-    const named = resolveMentions(mentions, this.team()).filter((b) => b.id !== author.id);
+    const named = resolveMentions(mentions, this.team(), this.hub.mentionAliases.all()).filter((b) => b.id !== author.id);
     if (named.length === 0) return;
     if (new Set(named.map((b) => b.id)).size > MAX_MENTION_WAKES) {
       this.hub.timeline.event(

@@ -1,6 +1,6 @@
 // Client state, fed by REST loads and the event stream.
 import { create } from "zustand";
-import type { Approval, ApprovalDecision, Bot, ComputerStatus, Conversation, DraftFields, HiringRound, McpServer, Routine, RoutineApproval, RoutineTrigger, Run, SkillInfo, Step, StreamEvent, TimelineItem } from "@orbis/shared";
+import type { Approval, ApprovalDecision, Bot, ComputerStatus, Conversation, DraftFields, HiringRound, McpServer, Routine, RoutineApproval, RoutineTrigger, Run, SkillInfo, SquadsView, Step, StreamEvent, TimelineItem } from "@orbis/shared";
 import { Api } from "./api.js";
 
 export type RunView = Omit<Run, "steps"> & { steps: Step[] };
@@ -28,6 +28,8 @@ interface State {
   mcpServers: Record<string, McpServer>;
   /** Hiring rounds by id (specs/hiring), kept live by the stream; null until first loaded. */
   hiring: Record<string, HiringRound> | null;
+  /** The squads and their room (specs/squads), kept live by the stream; null until first loaded. */
+  squads: SquadsView | null;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -67,6 +69,7 @@ interface State {
   loadApprovals(): Promise<void>;
   loadMcpServers(): Promise<void>;
   loadHiring(): Promise<void>;
+  loadSquads(): Promise<void>;
   answerApproval(id: string, decision: ApprovalDecision, note?: string): Promise<void>;
   sendDraft(itemId: string, fields: Partial<DraftFields>): Promise<void>;
   discardDraft(itemId: string): Promise<void>;
@@ -138,6 +141,7 @@ export const useStore = create<State>((set, get) => ({
   readAt: loadReadAt(),
   mcpServers: {},
   hiring: null,
+  squads: null,
   error: null,
 
   setApi: (api) => set({ api }),
@@ -332,6 +336,12 @@ export const useStore = create<State>((set, get) => ({
     set({ hiring: Object.fromEntries(rounds.map((r) => [r.id, r])) });
   },
 
+  async loadSquads() {
+    const api = get().api;
+    if (!api) return;
+    set({ squads: await api.get<SquadsView>("/api/v1/squads") });
+  },
+
   async loadApprovals() {
     const api = get().api;
     if (!api) return;
@@ -461,6 +471,10 @@ export const useStore = create<State>((set, get) => ({
       case "hiring.updated": {
         const { round } = event.data as { round: HiringRound };
         set((s) => ({ hiring: { ...(s.hiring ?? {}), [round.id]: round } }));
+        break;
+      }
+      case "squads.updated": {
+        set({ squads: event.data as SquadsView });
         break;
       }
       case "hiring.deleted": {

@@ -42,6 +42,7 @@ export function brainTestBot(brain: Bot["brain"]): Bot {
     avatar: { initials: "OR", color: "#6d5dfc", shape: "orb" },
     brain,
     reportsTo: null,
+    squadId: null,
     policy: { rules: [], grants: [] },
     computer: { enabled: false },
     tools: [],

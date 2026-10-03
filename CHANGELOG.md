@@ -9,6 +9,23 @@ change that delivered it.
 
 ### Added
 
+- **Squads** (🛡 in the sidebar, change 0050-squads).
+  - Bots organized in named squads, each with a handle such as `@growth`.
+  - The members report to the squad's **representative** (★), and the
+    representative to the squad's **manager**. One manager may take every
+    squad. Delegation and report-back follow, and loops are refused.
+  - Each squad has its own chat, and representatives and managers share the
+    **squads room**. `@squad` in a group or in a handoff reaches the
+    representative.
+  - Bots know their squad and the others (`team.list_squads`).
+  - The screen holds an org chart, a card per squad, the bots in no squad,
+    one manager for all, and the squad in a bot's settings.
+  - The sidebar filters by squad.
+  - **Routines can be called by other bots** (`routine.call`): the answer
+    comes back like a handoff's, and the routine shows who called it.
+    `routine.list` with `bot: "all"` lists them.
+  - ADR 0016, guide `docs/squads.md`.
+
 - **Hiring** (💼 in the sidebar, change 0049-hiring).
   - A recruiter bot's brain writes short résumés of AI teammates, from 1 to 30
     at a time. Each résumé holds a name, a role, a headline, strengths and

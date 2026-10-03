@@ -1,5 +1,5 @@
 // Stream events (hub → client) from `.doctrina/contracts/hub-surface.md` § Stream.
-import type { Approval, Bot, BotState, ComputerStatus, Conversation, HiringRound, McpServer, Run, Step, TimelineItem } from "./types.js";
+import type { Approval, Bot, BotState, ComputerStatus, Conversation, HiringRound, McpServer, Run, SquadsView, Step, TimelineItem } from "./types.js";
 
 export interface StreamEventMap {
   "bot.state": { botId: string; state: BotState };
@@ -23,6 +23,8 @@ export interface StreamEventMap {
   /** A hiring round changed: candidates written, one hired or dismissed (specs/hiring). */
   "hiring.updated": { round: HiringRound };
   "hiring.deleted": { roundId: string };
+  /** The squads changed: one was created, renamed, deleted, or its members, representative or manager (specs/squads). */
+  "squads.updated": SquadsView;
   pong: Record<string, never>;
 }
 
@@ -47,6 +49,7 @@ export const GLOBAL_EVENTS: readonly StreamEventType[] = [
   "mcp.deleted",
   "hiring.updated",
   "hiring.deleted",
+  "squads.updated",
   "pong",
 ];
 

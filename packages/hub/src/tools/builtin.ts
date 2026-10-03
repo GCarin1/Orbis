@@ -2,6 +2,7 @@
 import Type from "typebox";
 import type { DraftFields } from "@orbis/shared";
 import type { HubContext } from "../context.js";
+import { all } from "../db/index.js";
 import type { DraftService } from "../approvals/drafts.js";
 import { untrusted, type ToolDefinition } from "./registry.js";
 
@@ -48,14 +49,22 @@ export function builtinTools(hub: HubContext, drafts: DraftService): ToolDefinit
     {
       name: "team.list_bots",
       description:
-        "List the bots of this Orbis team with their handle, name, role and whether they are busy. To tell the user who is on the team, write their names: writing @handle wakes that bot.",
+        "List the bots of this Orbis team with their handle, name, role, squad and whether they are busy. To tell the user who is on the team, write their names: writing @handle wakes that bot.",
       input: Type.Object({}),
       risk: "read",
       async handler() {
         const busy = new Set(["thinking", "working", "waiting"]);
         const bots = hub.repos.bots.list();
+        const squads = new Map(all(hub.db, "SELECT id, handle FROM squads").map((r) => [r.id as string, r.handle as string]));
         return JSON.stringify(
-          bots.map((b) => ({ handle: b.handle, name: b.name, role: b.role, busy: busy.has(b.state), state: b.state })),
+          bots.map((b) => ({
+            handle: b.handle,
+            name: b.name,
+            role: b.role,
+            squad: b.squadId ? (squads.get(b.squadId) ?? null) : null,
+            busy: busy.has(b.state),
+            state: b.state,
+          })),
           null,
           2,
         );

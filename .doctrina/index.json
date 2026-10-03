@@ -510,9 +510,34 @@
           "hiring"
         ],
         "summary": "Two steps, two prompts."
+      },
+      {
+        "id": "0016",
+        "path": ".doctrina/decisions/0016-squads-set-who-reports-to-whom-their-chats-and-room-follow-them.md",
+        "title": "Squads set who reports to whom; their chats and room follow them",
+        "status": "accepted",
+        "date": "2026-10-03",
+        "landed": "2026-10-03 — `packages/hub/src/squads/service.ts`, `packages/hub/src/routines/service.ts`",
+        "scope": [
+          "squads",
+          "handoff",
+          "routines",
+          "bots",
+          "conversations"
+        ],
+        "summary": "A squad is a table, membership a column."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0050-squads",
+        "title": "squads",
+        "path": ".doctrina/changes/0050-squads",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

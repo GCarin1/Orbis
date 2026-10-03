@@ -72,6 +72,15 @@ other task.
   card says so; enabling one resumes it.
 - **Bots can propose routines** with `routine.create`, which asks you first
   by default; the routine still needs your test and enable.
+- **Bots call each other's routines** with `routine.call`.
+  - Name the routine as `@handle/name`, or by its id, and add a note.
+  - The routine's bot runs the instruction and the note in the caller's
+    conversation, and the caller gets the answer back, as with a handoff.
+  - A draft-only routine stays draft-only.
+  - Only enabled routines can be called, and never the caller's own.
+  - `routine.list` with `bot: "all"` lists every enabled routine.
+  - In the web app, an enabled routine shows the name to call it by, and its
+    last run shows who called it.
 
 ```bash
 orbis routines add @ana --name "Daily QA report" --cron "0 9 * * 1-5" --tz America/Sao_Paulo \

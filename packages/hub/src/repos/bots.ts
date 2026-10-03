@@ -20,6 +20,7 @@ function toBot(r: Row): Bot {
     avatar: { initials: initialsOf(name), color: r.avatar_color as string, shape: isAvatarShape(r.avatar_shape) ? r.avatar_shape : "orb" },
     brain: json<Brain>(r.brain, { kind: "mock" }),
     reportsTo: (r.reports_to as string | null) ?? null,
+    squadId: (r.squad_id as string | null) ?? null,
     policy: json<Policy>(r.policy, { rules: [], grants: [] }),
     computer: json<ComputerConfig>(r.computer, { enabled: true }),
     tools: json<string[]>(r.tools, ["*"]),
@@ -89,6 +90,11 @@ export class BotsRepo {
       bot.createdAt,
       bot.updatedAt,
     );
+  }
+
+  /** Move a bot into a squad, or out of every squad (specs/squads). */
+  setSquad(botId: string, squadId: string | null): void {
+    run(this.db, "UPDATE bots SET squad_id = ? WHERE id = ?", squadId, botId);
   }
 
   /** Persist every editable field of `bot`. */

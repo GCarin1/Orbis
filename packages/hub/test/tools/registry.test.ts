@@ -35,7 +35,7 @@ describe("tool registry", () => {
     const restricted = await createBot(t, { name: "Restricted", tools: ["team.list_*", "http.fetch"] });
     const names = (id: string) => t!.hub.gateway.descriptors(t!.hub.botService.get(id)).map((d) => d.name).sort();
     expect(names(open.id)).toEqual(expect.arrayContaining(["conversation.post", "draft.create", "http.fetch", "team.list_bots"]));
-    expect(names(restricted.id)).toEqual(["http.fetch", "team.list_bots"]);
+    expect(names(restricted.id)).toEqual(["http.fetch", "team.list_bots", "team.list_squads"]);
     // approval_prompt is offered to Claude Code runs only.
     expect(names(open.id)).not.toContain("approval_prompt");
     const claude = await createBot(t, { name: "Claude", brain: { kind: "claude-code" } });

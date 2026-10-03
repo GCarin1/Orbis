@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { Bot, Routine, RoutineApproval, RoutineTrigger } from "@orbis/shared";
 import { useT } from "../i18n.js";
+import { useStore } from "../store.js";
 
 export interface RoutineInput {
   name: string;
@@ -19,6 +20,8 @@ const localZone = () => {
 };
 
 function RoutineRow({ routine, onAction }: { routine: Routine; onAction(action: "test" | "enable" | "disable" | "delete", force?: boolean): Promise<void> }) {
+  const bots = useStore((s) => s.bots);
+  const owner = bots[routine.botId];
   const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,7 +50,16 @@ function RoutineRow({ routine, onAction }: { routine: Routine; onAction(action: 
       <div className="muted routine-meta">
         {routine.nextRunAt && <span>{t("routines.next", { at: new Date(routine.nextRunAt).toLocaleString() })} </span>}
         {routine.lastRun && <span>{t("routines.last", { status: `${routine.lastRun.status}${routine.lastRun.test ? " (test)" : ""}` })}</span>}
+        {routine.lastRun?.calledBy && <span> · {t("routines.calledBy", { name: bots[routine.lastRun.calledBy]?.name ?? "?" })}</span>}
       </div>
+      {routine.enabled && owner && (
+        <div className="muted routine-meta" title={t("routines.callableHelp")}>
+          {t("routines.callable")}{" "}
+          <code>
+            @{owner.handle}/{routine.name}
+          </code>
+        </div>
+      )}
       <div className="card-actions">
         <button className="btn" disabled={busy} onClick={() => void act("test")}>
           {t("routines.test")}

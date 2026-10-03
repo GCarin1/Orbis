@@ -286,4 +286,23 @@ CREATE TABLE hiring_candidates (
 );
 CREATE INDEX candidates_by_round ON hiring_candidates (round_id, position);`,
   },
+  {
+    // specs/squads: bots organized in squads with a representative and a manager; routines called
+    // by other bots say who called them (change 0050-squads).
+    version: 11,
+    sql: `CREATE TABLE squads (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  handle TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL DEFAULT '',
+  color TEXT NOT NULL,
+  representative_id TEXT REFERENCES bots(id) ON DELETE SET NULL,
+  manager_id TEXT REFERENCES bots(id) ON DELETE SET NULL,
+  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+ALTER TABLE bots ADD COLUMN squad_id TEXT REFERENCES squads(id) ON DELETE SET NULL;
+ALTER TABLE routine_runs ADD COLUMN called_by TEXT;`,
+  },
 ];

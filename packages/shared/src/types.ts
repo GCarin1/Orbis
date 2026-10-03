@@ -222,6 +222,8 @@ export interface Bot {
   brain: Brain;
   /** The bot this one reports to (its manager), or null at the top of the team. */
   reportsTo: string | null;
+  /** The squad this bot belongs to (specs/squads), or null. */
+  squadId: string | null;
   policy: Policy;
   computer: ComputerConfig;
   /** Tool allowlist (names or globs such as `computer.*`); `["*"]` offers every registered tool. */
@@ -493,6 +495,8 @@ export interface RoutineRun {
   routineId: string;
   runId: string | null;
   test: boolean;
+  /** The bot that called this routine with routine.call; null for the schedule, a webhook or a test. */
+  calledBy?: string | null;
   status: string;
   summary: string | null;
   startedAt: string;
@@ -826,4 +830,36 @@ export interface HiringTool {
   description: string;
   /** An MCP server's logo (`/logos/mcp/<id>.svg`), or null. */
   logo: string | null;
+}
+
+// --- squads (specs/squads) -------------------------------------------------------
+
+/**
+ * A squad: bots organized under a name. Its members report to its representative, who reports to the
+ * squad's manager; one manager may take every squad. `@handle` reaches the representative.
+ */
+export interface Squad {
+  id: string;
+  name: string;
+  /** How bots and the user call the squad: `@handle` reaches its representative. */
+  handle: string;
+  description: string;
+  color: string;
+  /** The member who speaks for the squad; the other members report to it. */
+  representativeId: string | null;
+  /** The bot the representative reports to; any bot outside this squad, or null. */
+  managerId: string | null;
+  /** The squad's own group conversation, kept to its members (from two of them). */
+  conversationId: string | null;
+  /** Member bot ids, by name. */
+  members: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Every squad, and the room where the representatives and the managers talk. */
+export interface SquadsView {
+  squads: Squad[];
+  /** The group of every representative and manager, from two of them; null before. */
+  roomId: string | null;
 }

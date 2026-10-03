@@ -36,6 +36,20 @@ export class SecretResolvers {
   }
 }
 
+/** Other names a mention may use for a bot: a squad's handle names its representative (specs/squads). */
+export class MentionAliases {
+  private readonly providers: Array<() => Record<string, string>> = [];
+
+  register(provider: () => Record<string, string>): void {
+    this.providers.push(provider);
+  }
+
+  /** Every alias, as handle → bot id. */
+  all(): Record<string, string> {
+    return Object.assign({}, ...this.providers.map((p) => p()));
+  }
+}
+
 export interface HubContext {
   config: HubConfig;
   db: Database;
@@ -57,6 +71,7 @@ export interface HubContext {
   botService: BotService;
   conversationService: ConversationService;
   secretResolvers: SecretResolvers;
+  mentionAliases: MentionAliases;
   tools: ToolRegistry;
   approvals: ApprovalService;
   drafts: DraftService;

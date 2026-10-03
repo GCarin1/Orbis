@@ -104,9 +104,15 @@ export function roleSlug(role: string): string | null {
 
 /**
  * The bots a list of mentions names: a handle names that bot; a mention that is
- * no handle names every bot whose role slug matches it (`@qa`, `@designer`).
+ * no handle names every bot whose role slug matches it (`@qa`, `@designer`); a
+ * mention that is neither names the bot an alias points to (a squad's handle
+ * names its representative, specs/squads).
  */
-export function resolveMentions<T extends { handle: string; role: string }>(mentions: string[], bots: readonly T[]): T[] {
+export function resolveMentions<T extends { id?: string; handle: string; role: string }>(
+  mentions: string[],
+  bots: readonly T[],
+  aliases: Readonly<Record<string, string>> = {},
+): T[] {
   const out: T[] = [];
   const add = (bot: T) => {
     if (!out.includes(bot)) out.push(bot);
@@ -117,7 +123,12 @@ export function resolveMentions<T extends { handle: string; role: string }>(ment
       add(byHandle);
       continue;
     }
-    for (const bot of bots) if (roleSlug(bot.role) === mention) add(bot);
+    const byRole = bots.filter((b) => roleSlug(b.role) === mention);
+    byRole.forEach(add);
+    if (byRole.length) continue;
+    const alias = aliases[mention];
+    const aliased = alias ? bots.find((b) => b.id === alias || b.handle === alias) : undefined;
+    if (aliased) add(aliased);
   }
   return out;
 }

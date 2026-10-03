@@ -76,6 +76,7 @@ are proven by tests.
 | ChatGPT with your paid plan and no API key: Settings installs the Codex CLI and signs in with your ChatGPT account (browser or a code on any device) | ✅ verified |
 | MCP marketplace: 37 free MCP servers, each with its own logo, connected in one click. With no account: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel and more. Signing in with your account: Notion, Linear, Jira & Confluence, Todoist, Vercel, Neon, Stripe and more. With a free key: GitHub, Brave, Tavily, Alpha Vantage, Airtable and more. Or add your own. Switches choose each bot's tools and servers. | ✅ verified |
 | Hiring: a recruiter bot writes short résumés of AI teammates for a project or one of your teams, up to 30 at a low token cost. You hire only the ones you want. A hire writes the full profile (instructions, what it will do and needs, tools, skills) and becomes a bot that joins the team and says hello. | ✅ verified |
+| Squads: bots organized in named squads. Each squad has a representative the members report to, and a manager (one may take every squad). Each squad has a chat, representatives and managers share a room, `@squad` reaches the representative, and any bot calls another bot's routines (`routine.call`). | ✅ verified |
 | Voice and theme: talk to a bot with the microphone (browser dictation, or any OpenAI-compatible transcription service — OpenAI, Groq, a local Whisper — for the desktop app), replies read aloud, and a System/Light/Dark theme switch | ✅ verified |
 
 The status of each capability is always current in
@@ -160,7 +161,7 @@ More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md), [`docs/android.md`](docs/android.md),
-[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) and [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/squads.md`](docs/squads.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration
 

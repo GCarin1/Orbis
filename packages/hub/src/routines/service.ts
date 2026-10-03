@@ -5,8 +5,9 @@ import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
 import { Cron } from "croner";
-import type { Routine, RoutineApproval, RoutineRun, RoutineTrigger, Run } from "@orbis/shared";
+import type { Bot, Routine, RoutineApproval, RoutineRun, RoutineTrigger, Run } from "@orbis/shared";
 import type { HubContext } from "../context.js";
+import type { Collaboration } from "../collab/handoff.js";
 import type { DraftService } from "../approvals/drafts.js";
 import { badRequest, conflict, HttpError, notFound, unauthorized } from "../errors.js";
 import { newId } from "../ids.js";
@@ -15,6 +16,11 @@ import type { BeforeToolCall } from "../tools/gateway.js";
 import { TOOL_RESULT_CAP, untrusted, type ToolDefinition } from "../tools/registry.js";
 import { IdParams } from "../api/schemas.js";
 import { ROUTINES_PER_BOT, RoutinesRepo, type RoutineRow } from "./repo.js";
+
+const clip = (text: string, n: number) => {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > n ? `${flat.slice(0, n - 1)}…` : flat;
+};
 
 const ACTIVITY_KEY = "user.lastActiveAt";
 const DAY_MS = 86_400_000;
@@ -382,10 +388,25 @@ export class RoutineService {
       },
       {
         name: "routine.list",
-        description: "List your routines with their trigger, state and last run.",
-        input: Type.Object({}),
+        description:
+          'List your routines with their trigger, state and last run. With bot set to a handle, list that bot\'s enabled routines; with "all", every bot\'s: you can call them with routine.call.',
+        input: Type.Object({
+          bot: Type.Optional(Type.String({ maxLength: 40, description: 'a bot\'s handle, or "all"; default: your own routines' })),
+        }),
         risk: "read",
-        handler: async (_input: object, ctx) => {
+        handler: async (input: { bot?: string }, ctx) => {
+          const ref = input.bot?.replace(/^@/, "").trim();
+          if (ref) {
+            const owners = ref === "all" ? this.hub.repos.bots.list({ includeHidden: true }) : [this.hub.repos.bots.get(ref)].filter((b): b is Bot => b !== undefined);
+            if (owners.length === 0) return { output: `no bot @${ref}`, isError: true };
+            const lines = owners.flatMap((owner) =>
+              this.repo
+                .listForBot(owner.id)
+                .filter((r) => r.enabled)
+                .map((r) => `@${owner.handle}/${r.name} (${r.id}): ${describeTrigger(r.trigger)}${r.approval === "draft_only" ? ", draft-only" : ""} — ${clip(r.instruction, 160)}`),
+            );
+            return lines.length ? lines.join("\n") : ref === "all" ? "no bot has an enabled routine" : `@${ref} has no enabled routine`;
+          }
           const routines = this.list(ctx.bot.id);
           if (routines.length === 0) return "you have no routines";
           return routines
@@ -394,6 +415,71 @@ export class RoutineService {
         },
       },
     ];
+  }
+
+  /**
+   * `routine.call` (specs/routines, specs/squads): run another bot's enabled routine now, as a handoff to
+   * that bot in this conversation — its answer comes back like a handoff's, its draft-only mode holds, and
+   * the routine's runs say who called it.
+   */
+  callTool(collaboration: Pick<Collaboration, "delegate">): ToolDefinition {
+    return {
+      name: "routine.call",
+      description:
+        'Call another bot\'s enabled routine now: it runs its routine\'s instruction (with your note) in this conversation, and you get its answer back like a handoff\'s. Name it as "@handle/routine name" or by its id; routine.list with bot "all" lists them.',
+      input: Type.Object({
+        routine: Type.String({ minLength: 2, maxLength: 200, description: 'e.g. "@lia/weekly report", or a routine id' }),
+        note: Type.Optional(Type.String({ maxLength: 20_000, description: "what you need from this run, added to the routine's instruction" })),
+        returnResult: Type.Optional(Type.Boolean({ description: "default true: get the answer back with the rest of this turn's handoffs" })),
+      }),
+      risk: "write",
+      handler: async (input: { routine: string; note?: string; returnResult?: boolean }, ctx) => {
+        const row = this.findCalled(input.routine);
+        if (typeof row === "string") return { output: row, isError: true };
+        const owner = this.hub.repos.bots.get(row.botId);
+        if (!owner) return { output: "the routine's bot is gone", isError: true };
+        if (owner.id === ctx.bot.id) return { output: `"${row.name}" is your own routine: do its instruction yourself`, isError: true };
+        if (!row.enabled) return { output: `the routine "${row.name}" of @${owner.handle} is disabled: only enabled (tested) routines can be called`, isError: true };
+        const parts = [`@${ctx.bot.handle} called your routine "${row.name}". Do this now:`, row.instruction];
+        if (input.note) parts.push(`What @${ctx.bot.handle} needs from this run:`, input.note);
+        if (row.approval === "draft_only") parts.push("This run is draft-only: tools that act outside Orbis do not run; each call becomes a draft for the user to review.");
+        parts.push(`Answer with the result; @${ctx.bot.handle} gets your answer.`);
+        const handed = collaboration.delegate(ctx, owner, {
+          task: `routine "${row.name}"${input.note ? `: ${clip(input.note, 200)}` : ""}`,
+          context: input.note ?? null,
+          input: parts.join("\n\n"),
+          returnResult: input.returnResult ?? true,
+        });
+        if (typeof handed === "string") return { output: handed, isError: true };
+        this.active.set(handed.run.id, { routineId: row.id, name: row.name, mode: row.approval });
+        this.repo.insertRun({
+          id: newId("rrn"),
+          routineId: row.id,
+          runId: handed.run.id,
+          test: false,
+          status: handed.run.status,
+          summary: null,
+          startedAt: this.now().toISOString(),
+          calledBy: ctx.bot.id,
+        });
+        return `Called the routine "${row.name}" of @${owner.handle} (handoff ${handed.card.id}); it runs in this conversation${
+          handed.returnResult ? " and you get its answer back, with the rest of this turn's handoffs, as a new task" : ""
+        }. Do not wait for it.`;
+      },
+    };
+  }
+
+  /** A routine by id, or as "@handle/name" (any case). */
+  private findCalled(ref: string): RoutineRow | string {
+    const byId = this.repo.get(ref.trim());
+    if (byId) return byId;
+    const m = /^@?([a-z0-9-]+)\/(.+)$/i.exec(ref.trim());
+    if (!m) return `no routine ${ref}: name it as "@handle/routine name" or by its id`;
+    const owner = this.hub.repos.bots.get(m[1]!.toLowerCase());
+    if (!owner) return `no bot @${m[1]}`;
+    const name = m[2]!.trim().toLowerCase();
+    const row = this.repo.listForBot(owner.id).find((r) => r.name.toLowerCase() === name);
+    return row ?? `@${owner.handle} has no routine "${m[2]!.trim()}"; routine.list with bot "${owner.handle}" lists its routines`;
   }
 
   // --- REST -----------------------------------------------------------------------

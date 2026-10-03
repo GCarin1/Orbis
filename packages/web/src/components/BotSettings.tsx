@@ -13,6 +13,7 @@ import {
   type ChatTokenStatus,
   type ComputerProviderKind,
   type PolicyDecision,
+  type Squad,
 } from "@orbis/shared";
 import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
 import { ApiKeyFields, keySecretName, type KeyHeader } from "./ApiKeyFields.js";
@@ -39,6 +40,7 @@ export function BotSettings({
   api,
   bot,
   bots = [],
+  squads = [],
   onSave,
   onExport,
   onDuplicate,
@@ -50,6 +52,8 @@ export function BotSettings({
   bot: Bot;
   /** The team, for "reports to". */
   bots?: Bot[];
+  /** The squads, to put the bot in one (specs/squads). */
+  squads?: Squad[];
   onSave(patch: object): Promise<void>;
   onExport(): Promise<void>;
   onDuplicate(): Promise<void>;
@@ -63,6 +67,7 @@ export function BotSettings({
   const [color, setColor] = useState(bot.avatar.color);
   const [shape, setShape] = useState<AvatarShape>(bot.avatar.shape ?? "orb");
   const [reportsTo, setReportsTo] = useState(bot.reportsTo ?? "");
+  const [squadError, setSquadError] = useState<string | null>(null);
   const [kind, setKind] = useState<BrainKind>(bot.brain.kind);
   const [model, setModel] = useState(bot.brain.model ?? "");
   const [command, setCommand] = useState(bot.brain.command ?? "");
@@ -168,7 +173,8 @@ export function BotSettings({
           description,
           avatarColor: color,
           avatarShape: shape,
-          reportsTo: reportsTo || null,
+          // A squad decides who its bots report to.
+          ...(bot.squadId ? {} : { reportsTo: reportsTo || null }),
           brain:
             kind === "chat-http"
               ? { kind, ...kept, ...chatHttpBrainFields(chat) }
@@ -229,9 +235,39 @@ export function BotSettings({
             {t("newbot.description")}
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} name="settings-description" />
           </label>
+          {squads.length > 0 && (
+            <label>
+              {t("settings.squad")}
+              <select
+                value={bot.squadId ?? ""}
+                onChange={(e) => {
+                  setSquadError(null);
+                  const next = e.target.value;
+                  const call = next
+                    ? api?.request("PUT", `/api/v1/squads/${next}/members/${bot.id}`)
+                    : api?.delete(`/api/v1/squads/${bot.squadId}/members/${bot.id}`);
+                  void call?.catch((err: unknown) => setSquadError(err instanceof Error ? err.message : String(err)));
+                }}
+                name="settings-squad"
+              >
+                <option value="">{t("sidebar.noSquad")}</option>
+                {squads.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              {squadError && <span className="error small">{squadError}</span>}
+            </label>
+          )}
           <label>
             {t("newbot.reportsTo")}
-            <select value={reportsTo} onChange={(e) => setReportsTo(e.target.value)} name="settings-reports-to">
+            <select
+              value={bot.squadId ? (bot.reportsTo ?? "") : reportsTo}
+              onChange={(e) => setReportsTo(e.target.value)}
+              name="settings-reports-to"
+              disabled={Boolean(bot.squadId)}
+            >
               <option value="">{t("newbot.noManager")}</option>
               {bots
                 .filter((b) => b.id !== bot.id && !b.hidden)
@@ -242,6 +278,7 @@ export function BotSettings({
                   </option>
                 ))}
             </select>
+            {bot.squadId && <span className="muted small">{t("settings.reportsBySquad")}</span>}
           </label>
           <div className="face-pickers">
             <BotFace shape={shape} color={color} size={56} />

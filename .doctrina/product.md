@@ -118,6 +118,7 @@ Out of scope (deferred or rejected):
   timeline, in logs or in any prompt sent to a brain.
 - [SC10] A bot exported as a YAML template carries its identity,
 - [SC11] A user hires AI teammates: a recruiter bot's brain writes up to 30 short résumés at a time for a project or one of the user's groups, at a low token cost, and only a hire writes the full profile (instructions, tools, skills, what it will do and needs) that becomes a bot
+- [SC12] A user organizes bots in named squads, each with a representative the members report to and a manager the representative reports to (one manager may take every squad); squads talk in their own chats and a shared room, reach each other by @squad, and any bot can call another bot's routines
   description, skills and routines, never its computer, logins, history or
   secrets, and export is refused when the secret scan finds a credential.
 

@@ -139,6 +139,7 @@ export class BotService {
       avatar: { initials: initialsOf(name), color: input.avatarColor ?? colorFor(role || name), shape: input.avatarShape ?? shapeFor(name) },
       brain: input.brain ?? DEFAULT_BRAIN,
       reportsTo: this.manager(input.reportsTo),
+      squadId: null,
       policy: input.policy ?? DEFAULT_POLICY,
       computer: input.computer ? this.computerConfig(input.computer) : DEFAULT_COMPUTER,
       tools: input.tools ?? ["*"],

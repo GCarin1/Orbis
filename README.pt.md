@@ -76,6 +76,7 @@ fecha quando os critérios de aceite são provados por testes.
 | ChatGPT com o seu plano pago e sem API: as Configurações instalam o Codex CLI e entram com a sua conta do ChatGPT (navegador ou código em qualquer aparelho) | ✅ verificado |
 | Marketplace de MCP: 37 servidores MCP gratuitos, cada um com a sua logo, conectados com um clique. Sem conta: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel e outros. Entrando com a sua conta: Notion, Linear, Jira e Confluence, Todoist, Vercel, Neon, Stripe e outros. Com uma chave grátis: GitHub, Brave, Tavily, Alpha Vantage, Airtable e outros. Ou o seu próprio. Chaves escolhem as ferramentas e os servidores de cada bot. | ✅ verificado |
 | Contratação: um bot recrutador escreve currículos curtos de colegas de IA para um projeto ou um dos seus times, até 30 gastando poucos tokens. Você contrata só quem quiser. A contratação escreve o perfil completo (instruções, o que vai fazer e do que precisa, ferramentas, skills) e vira um bot que entra no time e se apresenta. | ✅ verificado |
+| Squads: bots organizados em squads com nome. Cada squad tem um representante, a quem os membros reportam, e um gerente (um gerente pode cuidar de todas). Cada squad tem uma conversa, representantes e gerentes dividem uma sala, `@squad` chama o representante, e qualquer bot chama as rotinas de outro (`routine.call`). | ✅ verificado |
 | Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
@@ -145,7 +146,7 @@ Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
-[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) e [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/squads.md`](docs/squads.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 
