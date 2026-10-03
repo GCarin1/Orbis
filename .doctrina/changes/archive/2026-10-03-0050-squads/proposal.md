@@ -1,6 +1,7 @@
 # Change 0050-squads — squads
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-03
 - **Date:** 2026-10-03
 - **Owner:** Claude Code
 - **Lane:** product

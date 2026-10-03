@@ -6,7 +6,7 @@
 **Realizes:** SC4
 **Depends on:** conversations, agent-runtimes, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -37,6 +37,7 @@ themselves forever.
 - When the receiving bot is deleted before its handoff run starts, the system shall set the handoff card state to `failed`.
 - When a `report` run finishes with a reply, the system shall post the reply as a new message of the conversation, not a thread reply, and broadcast a `bot.report` event naming the bot, the conversation, the item and the text.
 - When the hub starts with handoff cards still `queued` or `running`, the system shall set them to `failed`, as their runs did not survive the restart.
+- When a bot hands off to a squad's handle (`@growth`) that no bot's handle or role matches, the system shall hand the task to that squad's representative.
 
 ### Unwanted-behavior (must-not)
 
@@ -57,6 +58,7 @@ themselves forever.
 6. [verified] A handoff to a role reaches the one bot holding it, and a role two bots hold is refused naming both — verified by `packages/hub/test/team.test.ts`.
 7. [verified] With ORBIS_MAX_CHAIN_RUNS at 3, a bot handing off to four reports gets two acknowledgments and two refusals, three runs exist and a `chain.limit` event is posted — verified by `packages/hub/test/bot-behaviour.test.ts`.
 8. [verified] A handoff card left running by a stopped hub reads failed after the restart — verified by `packages/hub/test/chat-audit.test.ts`.
+9. [verified] A handoff to `@growth` reaches Growth's representative — verified by `packages/hub/test/squads.test.ts`.
 
 ## Maturity
 

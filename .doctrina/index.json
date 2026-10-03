@@ -132,7 +132,7 @@
         "id": "handoff",
         "path": ".doctrina/specs/handoff/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — handoff tool (to a handle, or a role one bot holds), cards, threaded replies, one report back per delegating run, bot.report events, bot-to-bot mentions in any conversation, depth limit",
         "realizes": [
@@ -196,7 +196,7 @@
         "id": "routines",
         "path": ".doctrina/specs/routines/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — routines service, scheduler and webhooks (`packages/hub/src/routines/`)",
         "realizes": [
@@ -236,6 +236,23 @@
         "depends_on": [
           "tool-gateway",
           "bots"
+        ]
+      },
+      {
+        "id": "squads",
+        "path": ".doctrina/specs/squads/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-10-03",
+        "implementation": "verified — `packages/hub/src/squads/service.ts` (squads, members, representative, manager, who reports to whom, the squads' groups and room, `@squad` aliases, the squads' context, `team.list_squads`, routes), `routine.call` in `packages/hub/src/routines/service.ts`, the web app's Squads screen (`SquadsScreen.tsx`), the sidebar's squad filter and the squad in a bot's settings",
+        "realizes": [
+          "SC12"
+        ],
+        "depends_on": [
+          "bots",
+          "conversations",
+          "handoff",
+          "routines"
         ]
       },
       {
@@ -528,16 +545,7 @@
         "summary": "A squad is a table, membership a column."
       }
     ],
-    "changes": [
-      {
-        "id": "0050-squads",
-        "title": "squads",
-        "path": ".doctrina/changes/0050-squads",
-        "status": "proposed",
-        "opened": "2026-10-03",
-        "lane": "product"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1560,6 +1568,28 @@
         "specs_affected": [
           {
             "capability": "hiring",
+            "operation": "ADDED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0050-squads",
+        "title": "squads",
+        "path": ".doctrina/changes/archive/2026-10-03-0050-squads",
+        "status": "applied",
+        "applied": "2026-10-03",
+        "specs_affected": [
+          {
+            "capability": "handoff",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "routines",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "squads",
             "operation": "ADDED"
           }
         ],
