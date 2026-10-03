@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.29.0
+**Version:** 0.30.0
 
 ## Purpose
 
@@ -81,6 +81,9 @@ run's steps.
 - When the user picks a search result or a link's line in the group's info, the web app shall load the conversation back to that message, scroll to it and mark it for a moment.
 - When the web app opens with `#pair=<code>` in its address, or the user types six digits where the token goes, the web app shall trade the code for the hub's token, save the token and remove the code from the address bar, or say that the code is wrong, used or expired.
 - When the user opens a catalog server (its card or its name), the web app shall show its details in a sheet — on the right edge, the whole screen on a phone — with how it connects, where it runs (the program it starts or the address it calls), whether it only reads or asks before changing something, who may use it, and its key fields or its Connect button; Esc, the close button and the phone's Back close the sheet.
+- When the user opens Claude Code's card in Settings → Brains, the system shall show whether a subscription token is saved, since when and until about when, or set on the server, say how to get one with `claude setup-token`, and let the user save it in a masked field, replace it or remove it, showing the hub's reason when it is refused.
+- When a test of Claude Code fails because its saved subscription token was refused, the system shall say to make a new token with `claude setup-token` and replace it.
+- When the user opens Settings → Phone, the system shall point to running Orbis in the cloud with the Claude subscription token, in `docs/cloud.md`.
 
 ### State-driven
 
@@ -153,6 +156,8 @@ run's steps.
 49. [verified] The QR code holds the address picked and the code, and decoding its image gives back exactly that link; the page's own address comes first when it is not this computer's; the sign-in screen trades a QR code's code once and six typed digits, and says when a code is refused — verified by `packages/web/test/android.test.tsx`.
 50. [verified] In a real browser, Settings → Phone shows the QR code, its link opens the web app on a phone signed in with the code gone from the address bar, the same link again is refused, and six digits typed on the sign-in screen sign in — verified by `tests/e2e/phone-pairing.test.ts`.
 51. [verified] Explore shows where to start until a search or a filter, filters by search, by how a server connects and by category, says when nothing matches and clears the filters; a card or its name opens the details with how it connects, the address, whether it only reads and who uses it, and Esc or Close shuts them; a key is asked in the details; Connected says when nothing is connected and sums up what is; a connected server's card says so; Reconnect waits in the ⋮ menu — verified by `packages/web/test/marketplace.test.tsx`.
+52. [verified] Claude Code's card saves the token from a masked field and clears it, shows the hub's refusal of an API key, says since when and until about when the token lasts, replaces and removes it, names a token set on the server, and asks for a new token when a saved one was refused — verified by `packages/web/test/claude-sign-in.test.tsx`.
+53. [verified] The phone pairing card points to the cloud guide and the claude setup-token token — verified by `packages/web/test/android.test.tsx`.
 
 ## Maturity
 

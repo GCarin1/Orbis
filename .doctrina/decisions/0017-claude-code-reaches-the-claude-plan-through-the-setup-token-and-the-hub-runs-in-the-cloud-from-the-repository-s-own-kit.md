@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** `packages/hub/src/secrets/claude-token.ts`, `packages/hub/src/brains/claude-code.ts`, `Dockerfile`, `deploy/docker-compose.yml`, `.devcontainer/devcontainer.json`
-- **Landed:** —
+- **Landed:** 2026-10-03 — `packages/hub/src/secrets/claude-token.ts`, `packages/hub/src/brains/claude-code.ts`, `Dockerfile`
 
 ## Context
 

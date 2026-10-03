@@ -6,7 +6,7 @@
 **Realizes:** SC9
 **Depends on:** bots, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -25,6 +25,7 @@ the moment a tool executes, redacting it from everything that comes back.
 - The system shall replace every occurrence of a secret value in tool results, run events, timeline items and log lines with `••••` before storing or returning them.
 - The system shall authenticate each encrypted value together with its bot id and name, so a value copied to another bot or name does not decrypt.
 - The system shall keep one Bearer token per chat API, encrypted with the hub's secrets, list each chat API that `chat-http` bots use with its token's status and its bots, and replace an API's token on request; it shall never return the token itself.
+- The system shall keep the Claude subscription token as a hub secret encrypted with the vault's key, and mask that token, saved or from the hub's environment, in everything a run stores or shows.
 
 ### Event-driven
 
@@ -49,6 +50,7 @@ the moment a tool executes, redacting it from everything that comes back.
 4. [verified] A placeholder naming another bot's secret is not resolved — verified by `packages/hub/test/secrets.test.ts`.
 5. [verified] Saving a token for an API returns each API with its bots and token status and never the token; a value with no token or a non-http address is refused; the token is masked in a run's stored reply — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 6. [verified] A key pasted where its secret's name goes is refused by the API, and one already stored there is moved into the vault once, the bot pointed at `API_KEY`, the error that quoted it masked and the bot no longer holding it — verified by `packages/hub/test/runtimes/openai.test.ts`.
+7. [verified] The Claude subscription token is not in the database files, survives a restart, never comes back from the API, and shows as •••• in a run's reply and in the timeline — verified by `packages/hub/test/runtimes/claude-token.test.ts`.
 
 ## Maturity
 

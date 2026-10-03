@@ -3,10 +3,10 @@
 **Capability:** hub-api
 **Status:** active
 **Implementation:** verified
-**Realizes:** SC7
+**Realizes:** SC7, SC13
 **Depends on:** bots, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -26,6 +26,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 - The system shall validate every request body against its schema and answer 400 naming each failing field.
 - The system shall publish an OpenAPI 3.1 document of the REST API at `/api/v1/openapi.json`.
 - The system shall keep hub-wide settings changed from the app in its database, and hub-wide secrets (a transcription key) encrypted with the vault's key, reporting whether a secret is set and never its value.
+- The system shall ship a container image of the hub (`Dockerfile`) that listens on every address at port 7420, keeps its data and Claude Code's sign-in on the `/data` volume and runs as an unprivileged user, a compose file (`deploy/docker-compose.yml`) that publishes that port on the machine's own address only and may add a Cloudflare tunnel, and a GitHub Codespaces dev container that builds and starts the hub with its data outside the repository folder.
 
 ### Event-driven
 
@@ -42,6 +43,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 - The system shall not accept a recording when no transcription service is set up (it answers 503 `transcription_unavailable`), nor pass off a failed transcription as text (it answers 502 `transcription_failed` with the service's status).
 - The system shall not fail with a server error when a `/v1/chat/completions` message starts no run (a `/skill` the bot is not offered); it shall answer 400 `no_run`.
 - The hub shall not accept a pairing code after its fifth wrong try, nor more than 20 pairing claims a minute from anywhere.
+- The image, the compose file, its example environment and the dev container shall not hold a token, a key or an address of the user's, and shall not set `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
 
 ## Acceptance criteria
 
@@ -53,6 +55,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 6. [verified] A completion asking for a skill the bot is not offered answers 400 with code `no_run` — verified by `packages/hub/test/audit-cycle4.test.ts`.
 7. [verified] A code works once, for five minutes, dies after five wrong tries and when cancelled; claims past 20 a minute are refused; the hub knows when it listens on the network and its addresses; the claim route alone takes no token — verified by `packages/hub/test/pairing.test.ts`.
 8. [verified] In a real browser, Settings → Phone makes a code, says how long it works and that the hub listens on this computer only, and the code is traded for the token once — verified by `tests/e2e/phone-pairing.test.ts`.
+9. [verified] The image serves on 0.0.0.0:7420 as the node user with /data and Claude Code's folder on the volume; compose publishes on 127.0.0.1 with the tunnels as profiles; the example environment leaves every secret empty and git ignores the real one; the dev container forwards 7420, keeps its data outside the repository and asks for ORBIS_TOKEN and CLAUDE_CODE_OAUTH_TOKEN as Codespaces secrets — verified by `packages/hub/test/cloud-kit.test.ts`.
 
 ## Maturity
 

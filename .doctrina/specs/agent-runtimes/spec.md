@@ -2,11 +2,11 @@
 
 **Capability:** agent-runtimes
 **Status:** active
-**Implementation:** verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims
-**Realizes:** SC2
+**Implementation:** verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims, Claude Code on the plan's token from `claude setup-token`
+**Realizes:** SC2, SC13
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.18.1
+**Version:** 0.19.0
 
 ## Purpose
 
@@ -38,7 +38,7 @@ brain are owned by `contracts/cli-harnesses`.
 - The system shall provide the `chat-http` brain: a POST to the address the user gives (`baseUrl`) with the Bearer token of a bot secret (`apiKeySecret`, default `CHAT_BEARER_TOKEN`) and a `multipart/form-data` body whose `data` field holds the chat id, the agent, the message, and the model and request settings.
 - The system shall read a `chat-http` answer streamed as server-sent events, JSON lines, one JSON document or plain text, joining pieces or taking a growing answer whole, and skipping status, reference and user-echo events.
 - The system shall take a `chat-http` chat's id from a chat-id key or from the id of a `chat` object in the answer, and count tokens spelled as `promptTokens` and `completionTokens`.
-- The system shall report Claude Code's account (`claude auth status`), start its sign-in (`claude auth login`) from the settings screen and type the code the sign-in page shows to the waiting command, one sign-in at a time, and shall keep no credential itself.
+- The system shall report Claude Code's account (`claude auth status`), start its sign-in (`claude auth login`) from the settings screen and type the code the sign-in page shows to the waiting command, one sign-in at a time, and shall keep no credential of Claude Code other than the subscription token the user saves.
 - The system shall take a `chat-http` token from whatever way it was pasted (bare, after "Bearer", a whole Authorization line, quoted or wrapped over lines), send only the token, and report whether a bot's token is saved and when it expires, never its value.
 - The system shall send a `chat-http` bot's `Origin` and kept browser headers (`Referer`, `User-Agent`, `Accept-Language`) with every request to the chat API — the message, the history and the title — and no header shall replace the token.
 - The system shall make every request of a `chat-http` brain — the message, the history and the title — through the system's `curl` program when it is installed, and through Node's `fetch` otherwise or when the bot's `chat.transport` is `fetch`, keeping the Authorization header in a private temporary file that is removed afterwards and never on curl's command line.
@@ -83,6 +83,8 @@ brain are owned by `contracts/cli-harnesses`.
 - When a connection test of a `chat-http` bot is asked for, the system shall try one GET of the chats' list (no message, no model call) by each way out of the computer — each curl it finds, through each proxy it knows and with none, and Node's fetch — and report for each whether it got through, was blocked by the firewall, had its token refused, or got no answer.
 - When a firewall blocks a `chat-http` message, the system shall say that a firewall reading the message takes Orbis's tool instructions for an attack, and point to the connection test and to plain chat.
 - When an OpenAI-compatible server answers one JSON document instead of a stream, the system shall read its text, tool calls, finish reason and usage as the stream's would be read, and when a server refuses the stream with a 4xx that names it, the system shall ask the same step again with `"stream": false`.
+- When the user saves the token that `claude setup-token` prints, the system shall keep it encrypted with the hub's secrets, answer only whether it is saved, where it comes from, when it was saved and until about when it lasts (one year), and give it to Claude Code as `CLAUDE_CODE_OAUTH_TOKEN` in every `claude-code` run, brain test and account check, in place of Claude Code's sign-in.
+- When a `claude-code` run or brain test that had the subscription token fails because Claude Code reports its login refused, the system shall add to the error to run `claude setup-token` again and replace the token in Orbis.
 
 ### State-driven
 
@@ -103,6 +105,7 @@ brain are owned by `contracts/cli-harnesses`.
 - A template export shall not carry a `chat-http` brain's request address, `Origin`, history address or browser headers.
 - A template shall not carry or set a `chat-http` brain's curl program or proxy, and the system shall not accept a curl program whose file is not named curl or curl.exe.
 - The system shall not repeat in a brain check, a run error or a log a value set where a key's secret name goes that is not a secret's name.
+- The system shall not give the Claude subscription token to a brain other than `claude-code`, to Claude Code's sign-in or to a bot's commands, shall not accept an Anthropic API key (`sk-ant-api…`) as that token, and shall not pass `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` to Claude Code.
 
 ### Optional
 
@@ -110,6 +113,7 @@ brain are owned by `contracts/cli-harnesses`.
 - Where the hub configuration declares an `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable, the system may use it for bots that name no key secret of their own.
 - Where a `chat-http` bot has plain chat on, the system may send only the conversation — the bot's name, role and description, its memories and the messages — without Orbis's instructions and tool list, and give that bot no tools.
 - Where an OpenAI-compatible bot's base address contains `{model}`, the system may put the bot's model there and call that address followed by `/chat/completions`, and where the bot's `apiKeyHeader` is `api-key` the system may send its key in an `api-key` header instead of `Authorization: Bearer`.
+- Where the hub's environment sets `CLAUDE_CODE_OAUTH_TOKEN` and no token is saved, the system may give Claude Code that token, and where a bot has a secret named `CLAUDE_CODE_OAUTH_TOKEN`, the system may give Claude Code that bot's token instead.
 
 ## Acceptance criteria
 
@@ -143,6 +147,8 @@ brain are owned by `contracts/cli-harnesses`.
 28. [verified] A firewall that reads the message blocks Orbis's instructions with an error that points to plain chat, and lets a plain chat through carrying the bot's name, role and description and none of the instructions, tools, shell, placeholder or tag; a plain chat that is still blocked is told so; `C:\\WINDOWS\\system32\\curl.EXE` is accepted and a program not named curl is not — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 29. [verified] Two bots of one API use the token saved once for it and a bot of another API does not; changing it once changes it for both; a bot from before keeps its own token until its API has a shared one, which then wins; the shared token is masked in what a run stores; a missing or expired token points to Settings → Brains — verified by `packages/hub/test/runtimes/chat-http.test.ts`.
 30. [verified] A gateway with the model in its path and the key in an `api-key` header answers non-streamed JSON with a tool call and the run calls the tool and answers, with usage; the key is a Bearer token by default; a gateway that refuses the stream is asked again without it; a check of a bot whose secret name is a key says so without the key — verified by `packages/hub/test/runtimes/openai.test.ts`.
+31. [verified] A pasted token is taken bare, from an export line, quoted or wrapped, and an API key is refused; the saved token wins over the server's; a fake Claude Code gets it as CLAUDE_CODE_OAUTH_TOKEN in runs and the brain test with no ANTHROPIC_API_KEY even when the hub has one, a bot's own token secret comes first, a refused token says to run claude setup-token again, and neither the other brains nor host commands get it — verified by `packages/hub/test/runtimes/claude-token.test.ts`.
+32. [verified] A fake Claude Code reports the account with the saved token, and its sign-in runs without the token — verified by `packages/hub/test/runtimes/claude-account.test.ts`.
 
 ## Maturity
 

@@ -1,6 +1,7 @@
 # Change 0051-claude-subscription-anywhere — Orbis from anywhere, on the Claude plan
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-03
 - **Date:** 2026-10-03
 - **Owner:** Claude Code
 - **Lane:** product
