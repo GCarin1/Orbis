@@ -8,6 +8,7 @@ import path from "node:path";
 import { build } from "vite";
 import { chromium, type Browser, type Page } from "playwright-core";
 import { createHub, type Hub } from "@orbis/hub";
+import { recruiterBrain } from "./recruiter-brain.js";
 
 const TOKEN = "e2e-phone";
 const webRoot = path.resolve(import.meta.dirname, "../../packages/web");
@@ -29,6 +30,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await hub?.hiring.wait();
   await browser?.close();
   await hub?.close();
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
@@ -158,6 +160,20 @@ describe("the web app on a phone", () => {
     await page.getByRole("button", { name: "Your own server" }).click();
     await page.getByTestId("custom-server").waitFor();
     await check("your own MCP server");
+
+    // Hiring: a new opening, a round of résumés, and the hire sheet (a scripted recruiter writes them).
+    hub.brains.register(recruiterBrain());
+    hub.hiring.start({ basis: "project", brief: "Um painel de ações brasileiras com alertas de preço", recruiterId: bia.id, count: 4, lang: "pt-BR" });
+    await hub.hiring.wait();
+    await home();
+    await page.getByRole("button", { name: "💼 Hiring" }).click();
+    await page.getByRole("article").first().waitFor();
+    await check("hiring");
+    await page.getByRole("radio", { name: "My team" }).click();
+    await check("hiring for a team");
+    await page.getByRole("article").first().getByRole("button", { name: "Hire" }).click();
+    await page.getByTestId("hire-sheet").waitFor();
+    await check("the hire sheet");
     expect(failures).toEqual([]);
   }, 180_000);
 });

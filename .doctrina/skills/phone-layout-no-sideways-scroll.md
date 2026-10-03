@@ -32,6 +32,11 @@ when: A change adds or edits a screen, panel, dialog, form, fieldset, select, ta
      column (`@media (max-width: 760px)`).
    - A wide table goes inside `<div className="table-scroll">`. The table
      then scrolls on its own, and the screen around it stays in place.
+   - Text cut with `white-space: nowrap` and an ellipsis needs a box with a
+     width. In a row flexbox, give that box `min-width: 0`. In a column
+     flexbox, keep `align-items: stretch`: with `flex-start` the box grows
+     to the text, and the text pushes the screen (the hiring round title
+     did this, at 418 px).
 4. Run `npx vitest run --project web` and `npm run build`.
 
 ## Anti-patterns
@@ -42,6 +47,8 @@ when: A change adds or edits a screen, panel, dialog, form, fieldset, select, ta
 - `overflow-x: auto` on a whole screen body for one table. The screen,
   its headings and its buttons then all scroll sideways together
   (Settings → Brains and Usage did this).
+- `align-items: flex-start` on a column flexbox whose children hold a
+  long, unbroken line: each child takes the line's width.
 - Checking only the screen that was reported. The sweep that found the
   bot settings bug (the brain fieldset at 586 px) also found two others:
   the new-bot form at 509 px and the brains and usage tables.

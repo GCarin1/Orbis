@@ -251,4 +251,39 @@ CREATE INDEX routine_runs_by_run ON routine_runs (run_id);`,
 ALTER TABLE conversations ADD COLUMN photo TEXT;
 ALTER TABLE conversations ADD COLUMN muted INTEGER NOT NULL DEFAULT 0;`,
   },
+  {
+    // specs/hiring: rounds of short résumés written by a recruiter bot's brain, and the candidates
+    // hired from them (change 0049-hiring).
+    version: 10,
+    sql: `CREATE TABLE hiring_rounds (
+  id TEXT PRIMARY KEY,
+  basis TEXT NOT NULL,
+  brief TEXT NOT NULL DEFAULT '',
+  group_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  recruiter_id TEXT REFERENCES bots(id) ON DELETE SET NULL,
+  requested INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  error TEXT,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  cost_usd REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE hiring_candidates (
+  id TEXT PRIMARY KEY,
+  round_id TEXT NOT NULL REFERENCES hiring_rounds(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  headline TEXT NOT NULL,
+  strengths TEXT NOT NULL,
+  tools TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  error TEXT,
+  bot_id TEXT REFERENCES bots(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX candidates_by_round ON hiring_candidates (round_id, position);`,
+  },
 ];

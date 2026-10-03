@@ -117,6 +117,7 @@ Out of scope (deferred or rejected):
 - [SC9] A secret typed into a masked request form never appears in the
   timeline, in logs or in any prompt sent to a brain.
 - [SC10] A bot exported as a YAML template carries its identity,
+- [SC11] A user hires AI teammates: a recruiter bot's brain writes up to 30 short résumés at a time for a project or one of the user's groups, at a low token cost, and only a hire writes the full profile (instructions, tools, skills, what it will do and needs) that becomes a bot
   description, skills and routines, never its computer, logins, history or
   secrets, and export is refused when the secret scan finds a credential.
 

@@ -3715,3 +3715,182 @@ label.check {
     background: var(--panel);
   }
 }
+
+/* ── Hiring (change 0049): a new opening, rounds of short résumés, the hire sheet. ─────────────────────── */
+.hire-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.hire-new {
+  max-width: 760px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.hire-new h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.hire-new .segmented {
+  align-self: flex-start;
+  max-width: 100%;
+}
+.hire-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.hire-count input {
+  width: 96px;
+}
+.hire-quick {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+.hire-estimate {
+  margin: 0;
+}
+.hire-empty {
+  margin: 0;
+}
+.hire-round {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.hire-round-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.hire-round-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.hire-round-title h2 {
+  margin: 0;
+  font-size: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hire-round-title p {
+  margin: 0;
+}
+.hire-round-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.hire-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 12px;
+}
+.hire-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.hire-card.hired {
+  border-color: rgb(22 163 74 / 45%);
+}
+.hire-card.dismissed {
+  opacity: 0.6;
+}
+.hire-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.hire-card-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.hire-card-title strong,
+.hire-card-title .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hire-headline {
+  margin: 0;
+  font-size: 14px;
+}
+.hire-strengths {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hire-strengths li {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.hire-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hire-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 2px 8px 2px 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  max-width: 100%;
+}
+.hire-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.hire-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hire-hero p {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  /* One column: the title takes the row's width, so its ellipsis cuts a long brief (not the screen). */
+  .hire-round-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hire-new {
+    padding: 12px;
+  }
+}

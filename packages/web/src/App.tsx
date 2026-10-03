@@ -20,6 +20,7 @@ import { BotPanel } from "./components/BotPanel.js";
 import { SkillsScreen } from "./components/SkillsScreen.js";
 import { UsageScreen } from "./components/UsageScreen.js";
 import { SettingsScreen } from "./components/SettingsScreen.js";
+import { HiringScreen } from "./components/HiringScreen.js";
 import { Marketplace } from "./components/Marketplace.js";
 import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
@@ -291,6 +292,16 @@ export function App() {
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "tools" && store.api ? <Marketplace api={store.api} bots={bots} servers={store.mcpServers} onLoad={() => store.loadMcpServers()} /> : null}
+        {view === "hiring" && store.api ? (
+          <HiringScreen
+            api={store.api}
+            bots={bots}
+            conversations={Object.values(store.conversations)}
+            rounds={store.hiring}
+            onLoad={() => store.loadHiring()}
+            onOpenBot={openBot}
+          />
+        ) : null}
         {view === "usage" && store.api ? <UsageScreen api={store.api} bots={store.bots} /> : null}
         {view === "settings" && store.api ? (
           <SettingsScreen

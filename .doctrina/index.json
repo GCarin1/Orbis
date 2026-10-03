@@ -479,9 +479,30 @@
           "hub-api"
         ],
         "summary": "Everything ADR 0013 decided stands."
+      },
+      {
+        "id": "0015",
+        "path": ".doctrina/decisions/0015-hiring-writes-short-resumes-first-and-a-full-profile-only-on-hire.md",
+        "title": "Hiring writes short résumés first and a full profile only on hire",
+        "status": "accepted",
+        "date": "2026-10-03",
+        "landed": "2026-10-03 — `packages/hub/src/hiring/service.ts`, `packages/hub/src/brains/ask.ts`",
+        "scope": [
+          "hiring"
+        ],
+        "summary": "Two steps, two prompts."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0049-hiring",
+        "title": "hiring",
+        "path": ".doctrina/changes/0049-hiring",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

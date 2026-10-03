@@ -198,6 +198,34 @@ gives a bot the server's tools; `POST …/reconnect`, `DELETE …` disconnects.
 Sign-ins come back to `GET /oauth/mcp/callback` (no API token; a one-time
 state). Details in [`mcp.md`](mcp.md#connecting-other-mcp-servers-the-mcp-screen).
 
+## Hiring
+
+`GET /api/v1/hiring/tools` lists the tools a candidate may take: the
+computer, browser and web, and every connected MCP server.
+
+`POST /api/v1/hiring/rounds` starts a round and answers 202, with
+`status: "generating"`. Examples:
+
+- for a project:
+  `{ "basis": "project", "brief": "…", "recruiterId": "rita", "count": 20, "lang": "pt-BR" }`
+- for a team:
+  `{ "basis": "team", "groupId": "cnv_…", "brief": "someone for data", … }`
+
+The round reaches `ready` with its candidates, or `failed` with an `error`.
+`hiring.updated` stream events follow.
+
+On a round and its candidates:
+
+- `POST …/rounds/:id/more` `{ "count": 10 }` asks for more without repeats.
+- `PATCH /api/v1/hiring/candidates/:id` `{ "status": "dismissed" }` dismisses
+  a candidate, and `"open"` brings it back.
+- `DELETE …/rounds/:id` deletes the round.
+
+`POST /api/v1/hiring/candidates/:id/hire` writes the full profile and makes
+the bot. Its body is `{ "brainFrom": "rita", "reportsTo": "bob", "joinGroup": true, "lang": "pt-BR" }`.
+The candidate goes `hiring`, then `hired` with its `botId`. Guide:
+[`hiring.md`](hiring.md).
+
 ## Voice
 
 `GET /api/v1/voice` → `{ transcription: { configured, source, url, model, hasKey } }`:

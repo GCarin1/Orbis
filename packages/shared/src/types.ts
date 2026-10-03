@@ -317,7 +317,7 @@ export const RUN_STATUSES = ["queued", "running", "waiting", "done", "failed", "
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 /** `report`: a bot's follow-up once every task it handed off in one run has ended. */
-export type RunTriggerType = "message" | "handoff" | "mention" | "report" | "routine" | "webhook" | "api";
+export type RunTriggerType = "message" | "handoff" | "mention" | "report" | "routine" | "webhook" | "api" | "hiring";
 
 export interface RunTrigger {
   type: RunTriggerType;
@@ -765,4 +765,65 @@ export interface CodexAccount {
   /** The last line of `codex login status`. */
   detail: string | null;
   job: CliJob | null;
+}
+
+// --- hiring (specs/hiring) -----------------------------------------------------
+
+/** What a round of candidates is based on: a project's scope typed by the user, or one of the user's groups. */
+export type HiringBasis = "project" | "team";
+
+export type CandidateStatus = "open" | "hiring" | "hired" | "dismissed";
+
+/**
+ * A short résumé: what the recruiter's brain writes for each candidate, kept small so that many fit in
+ * one answer. The full profile is written only when the user hires the candidate.
+ */
+export interface Candidate {
+  id: string;
+  roundId: string;
+  name: string;
+  role: string;
+  /** One sentence: who this is and what they bring. */
+  headline: string;
+  /** Three to five short strengths. */
+  strengths: string[];
+  /** The tools they would use, among the ones available: `computer`, `browser`, `web` or `mcp.<server>`. */
+  tools: string[];
+  status: CandidateStatus;
+  /** Why the last hire failed, until the next try. */
+  error: string | null;
+  /** The bot hired from this candidate. */
+  botId: string | null;
+  createdAt: string;
+}
+
+export type HiringRoundStatus = "generating" | "ready" | "failed";
+
+export interface HiringRound {
+  id: string;
+  basis: HiringBasis;
+  /** The project's scope, or the focus the user gave for a team round. */
+  brief: string;
+  /** The group of a team round; null when the group was deleted. */
+  groupId: string | null;
+  /** The bot whose brain writes the résumés and the profiles; null when it was deleted. */
+  recruiterId: string | null;
+  /** How many candidates the last generation asked for. */
+  requested: number;
+  status: HiringRoundStatus;
+  error: string | null;
+  /** Every generation and profile of this round together. */
+  usage: { inputTokens: number; outputTokens: number; costUsd: number };
+  candidates: Candidate[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The tools a candidate may use, as the recruiter is told them. */
+export interface HiringTool {
+  id: string;
+  name: string;
+  description: string;
+  /** An MCP server's logo (`/logos/mcp/<id>.svg`), or null. */
+  logo: string | null;
 }

@@ -65,6 +65,7 @@ import { registerMcp } from "./mcp/protocol.js";
 import { SecretResolvers, type HubContext } from "./context.js";
 import { SettingsRepo } from "./repos/settings.js";
 import { VoiceService } from "./voice/service.js";
+import { HiringService } from "./hiring/service.js";
 import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
 
@@ -91,6 +92,7 @@ export interface Hub extends HubContext {
   usage: UsageService;
   voice: VoiceService;
   mcp: McpConnections;
+  hiring: HiringService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -337,6 +339,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   gateway.onBeforeCall(routines.draftOnlyHook());
   routines.start();
   const templates = new TemplateService(ctx, skillService, routines);
+  const hiring = new HiringService(ctx, { skills: skillService.store, vault: secrets.vault, mcp, usage });
   // While the user holds a bot's computer, its tool calls wait (specs/computer: takeover).
   gateway.onBeforeCall(async ({ run, bot, signal }) => {
     if (!computer.holdsTakeover(bot.id)) return;
@@ -369,6 +372,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerRuntimeRoutes(app, ctx, codexAccount, claudeAccount);
   await voice.routes(app);
   await registerMcpRoutes(app, mcp);
+  await hiring.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -392,6 +396,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     usage,
     voice,
     mcp,
+    hiring,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });

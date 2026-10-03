@@ -1,22 +1,6 @@
 // Client state, fed by REST loads and the event stream.
 import { create } from "zustand";
-import type {
-  Approval,
-  ApprovalDecision,
-  Bot,
-  ComputerStatus,
-  Conversation,
-  DraftFields,
-  McpServer,
-  Routine,
-  RoutineApproval,
-  RoutineTrigger,
-  Run,
-  SkillInfo,
-  Step,
-  StreamEvent,
-  TimelineItem,
-} from "@orbis/shared";
+import type { Approval, ApprovalDecision, Bot, ComputerStatus, Conversation, DraftFields, HiringRound, McpServer, Routine, RoutineApproval, RoutineTrigger, Run, SkillInfo, Step, StreamEvent, TimelineItem } from "@orbis/shared";
 import { Api } from "./api.js";
 
 export type RunView = Omit<Run, "steps"> & { steps: Step[] };
@@ -42,6 +26,8 @@ interface State {
   readAt: Record<string, string>;
   /** MCP servers connected to the hub (the marketplace), kept live by the stream. */
   mcpServers: Record<string, McpServer>;
+  /** Hiring rounds by id (specs/hiring), kept live by the stream; null until first loaded. */
+  hiring: Record<string, HiringRound> | null;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -80,6 +66,7 @@ interface State {
   createBot(input: object): Promise<Bot>;
   loadApprovals(): Promise<void>;
   loadMcpServers(): Promise<void>;
+  loadHiring(): Promise<void>;
   answerApproval(id: string, decision: ApprovalDecision, note?: string): Promise<void>;
   sendDraft(itemId: string, fields: Partial<DraftFields>): Promise<void>;
   discardDraft(itemId: string): Promise<void>;
@@ -150,6 +137,7 @@ export const useStore = create<State>((set, get) => ({
   routines: {},
   readAt: loadReadAt(),
   mcpServers: {},
+  hiring: null,
   error: null,
 
   setApi: (api) => set({ api }),
@@ -337,6 +325,13 @@ export const useStore = create<State>((set, get) => ({
     set({ mcpServers: Object.fromEntries(servers.map((m) => [m.id, m])) });
   },
 
+  async loadHiring() {
+    const api = get().api;
+    if (!api) return;
+    const rounds = await api.get<HiringRound[]>("/api/v1/hiring/rounds");
+    set({ hiring: Object.fromEntries(rounds.map((r) => [r.id, r])) });
+  },
+
   async loadApprovals() {
     const api = get().api;
     if (!api) return;
@@ -460,6 +455,20 @@ export const useStore = create<State>((set, get) => ({
         set((s) => {
           const { [serverId]: _gone, ...rest } = s.mcpServers;
           return { mcpServers: rest };
+        });
+        break;
+      }
+      case "hiring.updated": {
+        const { round } = event.data as { round: HiringRound };
+        set((s) => ({ hiring: { ...(s.hiring ?? {}), [round.id]: round } }));
+        break;
+      }
+      case "hiring.deleted": {
+        const { roundId } = event.data as { roundId: string };
+        set((s) => {
+          if (!s.hiring) return {};
+          const { [roundId]: _gone, ...rest } = s.hiring;
+          return { hiring: rest };
         });
         break;
       }

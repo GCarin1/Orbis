@@ -9,6 +9,26 @@ change that delivered it.
 
 ### Added
 
+- **Hiring** (💼 in the sidebar, change 0049-hiring).
+  - A recruiter bot's brain writes short résumés of AI teammates, from 1 to 30
+    at a time. Each résumé holds a name, a role, a headline, strengths and
+    the tools they would use. The tools come only from what you have: the
+    computer, browser, web and your connected MCP servers.
+  - A round is based on a project's scope, or on one of your groups: its
+    description, members and latest messages, plus an optional focus.
+  - More asks for new résumés without repeats; you can also dismiss, bring
+    back, or delete a round.
+  - Only a hire writes the full profile: instructions, what it will do and
+    needs, tools, and one to three skills of its own. It becomes a bot with a
+    chosen brain and key. The bot joins the team under its lead and says
+    hello with what it will do and what it needs.
+  - The spend counts as runs of the recruiter, so it shows in usage and
+    toward its cap.
+  - New routes (`/api/v1/hiring/…`), new events (`hiring.updated`,
+    `hiring.deleted`), ADR 0015, and the guide `docs/hiring.md`.
+  - The brain test now asks through the same one-question path
+    (`askBrain`).
+
 - The MCP screen, redesigned after the MCP marketplaces of Claude, Cursor and
   VS Code (change 0048-mcp-screen-redesign). It has two tabs.
   - **Explore**:
