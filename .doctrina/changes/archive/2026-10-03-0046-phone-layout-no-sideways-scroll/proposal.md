@@ -1,6 +1,7 @@
 # Change 0046-phone-layout-no-sideways-scroll — phone layout no sideways scroll
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-03
 - **Date:** 2026-10-03
 - **Owner:** Claude Code
 - **Lane:** product

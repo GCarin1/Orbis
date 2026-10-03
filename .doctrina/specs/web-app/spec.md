@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.26.0
+**Version:** 0.27.1
 
 ## Purpose
 
@@ -35,7 +35,7 @@ run's steps.
 - The web app shall, on a screen narrower than 760 px, show either the conversation list or one conversation with a back button.
 - The web app shall offer three themes — follow the system, light and dark — from a switch in the sidebar and in the settings screen, remembered per browser and applied before the first paint.
 - The web app shall let the user pick each bot's computer among three cards — a private folder, "My computer" with the folder it works in, and a Docker container — show what Docker needs with a button that prepares the desktop image, and name the bot's kind of computer under its screen.
-- The web app shall provide a Tools screen: a catalog of MCP servers with search and categories, each card saying whether it needs no account, a sign-in or a key, connecting in one click (a form for a key, with where to get it; a sign-in link for an account); the connected servers with their state, tools, the bots that may use each one and Reconnect and Disconnect; and a form for a custom server.
+- The web app shall provide an MCP screen, named MCP in the sidebar: a catalog of MCP servers with search and categories (finance among them), each card showing its service's logo and saying whether it needs no account, a sign-in or a key, connecting in one click (a form for a key, with where to get it; a sign-in link for an account); the connected servers with their logo, state, tools, the bots that may use each one and Reconnect and Disconnect; and a form for a custom server.
 - The web app shall let the user choose each bot's tools in its settings with switches for Orbis's tool groups and for each connected server, written to the bot's allowlist.
 - The web app shall show, at the top of the brains settings, a ChatGPT card in three steps — install the Codex CLI, sign in with the ChatGPT account (in the browser, or with the one-time code shown large and the page to open), use it in a bot with a test — and the account once connected.
 - The web app shall render messages as Markdown — headings, lists, quotes, code blocks with a copy button, tables, links opening in a new tab, bold, italic and strikethrough — as elements, never as HTML, with mentions in each bot's color.
@@ -53,6 +53,7 @@ run's steps.
 - The web app shall let the user change the side panel's width by dragging its left edge or with the arrow keys, keep it within the window, remember it in the browser, and show a wide bot settings panel in two columns.
 - The web app shall show a group's joins, leaves and info changes in its timeline (joins, leaves and a new lead with the bot's face), and offer in the group's ⋮ menu adding members, its info, its links, search, muting, and under More exporting the conversation as text, clearing it and deleting the group, each destructive one after a confirmation, and follow a deleted bot out of its groups.
 - The web app shall offer a Phone tab in Settings: in a browser, a pairing code with this computer's addresses, how long the code works and a warning when the hub listens on this computer only; inside the Android app, the hub, the app's version, changing the hub, the notification permission, staying connected in the background and the battery settings.
+- The web app shall show each MCP server's logo on a white tile on its catalog card, its connected card and the bot's tool switches, and the server's emoji in its place when the server has no logo or the logo does not load.
 
 ### Event-driven
 
@@ -90,6 +91,7 @@ run's steps.
 - The web app shall not count a bot starting to work as a new message below.
 - The web app shall not offer Try again on a routine's run, and shall say why when trying again is refused.
 - The web app shall not put a `chat-http` token in the bot; it shall save it as the bot's secret, keep a saved one when the field is left empty, and never show it back.
+- The web app shall not scroll a screen, panel or dialog sideways on a screen 390 px wide; a table wider than its screen scrolls inside its own box.
 
 ### Optional
 
@@ -142,6 +144,9 @@ run's steps.
 43. [verified] A typed key goes to `PUT /bots/:id/secrets/API_KEY` and the saved brain holds only the name and the `api-key` choice; a saved key is kept when the field is left empty; a new bot hands its key apart from the bot — verified by `packages/web/test/api-key.test.tsx`.
 44. [verified] The header shows the photo, the members or who works and opens the info; the ⋮ menu lists every option with the rarer ones under More; Add members picks outsiders up to the limit and says when all are in or the group is full; the info changes the photo, description and name, makes a member lead, removes it, opens its conversation, mutes and deletes; search marks the words and shows the message; links show who wrote them; the timeline says the info changes in pt-BR; the export writes one line per message — verified by `packages/web/test/group-info.test.tsx`.
 45. [verified] In a real browser, a user adds a member from the ⋮ menu, opens the group's info on the right edge from its name, sets a description and a photo (shrunk to a JPEG and shown in the header and the list), mutes the group, removes a member from its row, finds a message by searching without accents and sees it marked, then clears and deletes the group from ⋮ → More — verified by `tests/e2e/groups.test.ts`.
+46. [verified] The catalog and a connected server show the service's logo; with no logo, or when the logo fails to load, the catalog and a bot's tool switches show the emoji on the same tile; the search box is "Search MCPs" — verified by `packages/web/test/marketplace.test.tsx`.
+47. [verified] In a real browser the sidebar names the screen MCP and the GitHub card's logo loads from `/logos/mcp/github.svg` — verified by `tests/e2e/marketplace.test.ts`.
+48. [verified] In a real browser 390 px wide, no screen, panel or dialog scrolls sideways. The sweep covers the list, a conversation, its details, the bot settings with each brain, routines, computer, the new-bot screen, the new-group dialog, a group with its info, search, menu and add-members dialog, every Settings tab, MCP, Skills and Usage — verified by `tests/e2e/phone-layout.test.ts`.
 
 ## Maturity
 

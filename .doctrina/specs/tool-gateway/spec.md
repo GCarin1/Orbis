@@ -2,11 +2,11 @@
 
 **Capability:** tool-gateway
 **Status:** active
-**Implementation:** verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets)
+**Implementation:** verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets, 37 free servers with their logos)
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -29,10 +29,11 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall serve the registry over MCP (JSON-RPC 2.0, protocol version 2025-06-18) at `/mcp` for requests that carry a valid run token.
 - The system shall cap every tool result returned to a brain at 20,000 characters, cutting the rest and appending a truncation marker.
 - The system shall connect external MCP servers — a program it starts (stdio) or a streamable HTTP endpoint — from a marketplace of checked servers or from a custom command or address, register each server's tools as `mcp.<server>.<tool>`, keep the tools known across restarts and start the server again on first use.
-- The system shall keep the keys, tokens and sign-ins of connected servers as hub secrets encrypted with the vault's key, pass them only to the server they belong to (as its environment or its `Authorization` header), and never return them through the API.
+- The system shall keep the keys, tokens and sign-ins of connected servers as hub secrets encrypted with the vault's key, pass them only to the server they belong to (as its environment, an argument, its `Authorization` header or a parameter of its address), and never return them through the API.
 - The system shall return from `team.list_bots` each bot's handle without `@`, its name, role, busy flag and state.
 - The system shall forward each `tools/call` of the stdio MCP bridge as it arrives, without waiting for earlier calls, and wait for the hub's answer without a time limit.
 - The system shall give every tool a wire name of at most 52 characters of `[A-Za-z0-9_-]` — a longer name keeps its start and gets a short hash of the whole name — and resolve a call by that name.
+- The system shall list in its MCP marketplace only servers that are free to use (no account, a free plan or a free key), each checked before it is listed (its program starts and lists its tools, or its address answers `initialize`, and a sign-in lets Orbis register itself), each with its service's logo.
 
 ### Event-driven
 
@@ -56,6 +57,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall not accept a sign-in callback whose state is unknown, expired or already used.
 - The system shall not run a tool call identical (same tool, same input) to two earlier calls of the same run, except the tools that read changing state (browser snapshot, screenshot, press and close, the team list, the skill and routine lists); it shall return an error result telling the bot to use the results it has.
 - The system shall not count a tool call the user denied toward the identical-call limit.
+- The system shall not show a key that goes in a server's address: the address the API returns and every error quote the address without it.
 
 ## Acceptance criteria
 
@@ -68,6 +70,7 @@ call through the approvals policy and marks outside content as untrusted.
 7. [verified] The third identical `memory.search` of a run is refused while a different one runs, and `team.list_bots` returns handles without `@` — verified by `packages/hub/test/bot-behaviour.test.ts`.
 8. [verified] Through the bridge a slow call answers after a quick one sent later; a call denied twice is asked again and runs when allowed; `http.fetch` to a closed port names ECONNREFUSED — verified by `packages/hub/test/chat-audit.test.ts`.
 9. [verified] A tool named after a long server and a long remote name gets a wire name of at most 52 characters that resolves back; it runs, and runs again after the server ended its session, with one new `initialize` — verified by `packages/hub/test/audit-cycle4.test.ts`.
+10. [verified] A key that goes in the address reaches the server from the vault on every call and appears neither in the API nor in an error, and every marketplace entry has a logo file — verified by `packages/hub/test/mcp-servers.test.ts`.
 
 ## Maturity
 

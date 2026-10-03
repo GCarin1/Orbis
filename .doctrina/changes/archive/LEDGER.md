@@ -47,3 +47,5 @@ One line per archived change, newest last. Appended by
 - 2026-10-02 — 0042-group-info-like-a-chat-app — group info like a chat app (specs: agent-runtimes MODIFIED, conversations MODIFIED, desktop-app MODIFIED, web-app MODIFIED)
 - 2026-10-03 — 0043-android-app-and-apk-workflow — android app and apk workflow (specs: android-app ADDED, web-app MODIFIED)
 - 2026-10-03 — 0044-android-notifications-pairing-voice-and-sharing — android notifications pairing voice and sharing (specs: android-app MODIFIED, hub-api MODIFIED, web-app MODIFIED)
+- 2026-10-03 — 0045-mcp-catalog-free-servers-and-logos — mcp catalog free servers and logos (specs: tool-gateway MODIFIED, web-app MODIFIED)
+- 2026-10-03 — 0046-phone-layout-no-sideways-scroll — phone layout no sideways scroll (specs: web-app MODIFIED)
