@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.25.1
+**Version:** 0.26.0
 
 ## Purpose
 
@@ -52,6 +52,7 @@ run's steps.
 - The web app shall show in Settings → Brains, for each chat API that `chat-http` bots use, its token's status and its bots, and take a new token or cURL that applies to all of them; a bot's settings and the new-bot screen shall save the token as its API's.
 - The web app shall let the user change the side panel's width by dragging its left edge or with the arrow keys, keep it within the window, remember it in the browser, and show a wide bot settings panel in two columns.
 - The web app shall show a group's joins, leaves and info changes in its timeline (joins, leaves and a new lead with the bot's face), and offer in the group's ⋮ menu adding members, its info, its links, search, muting, and under More exporting the conversation as text, clearing it and deleting the group, each destructive one after a confirmation, and follow a deleted bot out of its groups.
+- The web app shall offer a Phone tab in Settings: in a browser, a pairing code with this computer's addresses, how long the code works and a warning when the hub listens on this computer only; inside the Android app, the hub, the app's version, changing the hub, the notification permission, staying connected in the background and the battery settings.
 
 ### Event-driven
 

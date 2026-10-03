@@ -2,11 +2,11 @@
 
 **Capability:** android-app
 **Status:** active
-**Implementation:** verified — Java WebView shell in `packages/android` (connect screen, hub-only navigation, file picker, Downloads, Back); APK built by `.github/workflows/android.yml`
+**Implementation:** verified — Java WebView shell in `packages/android` (connect screen with pairing, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); APK built by `.github/workflows/android.yml`
 **Realizes:** SC7
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -21,7 +21,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 ### Ubiquitous
 
 - The Android app shall show in a WebView the web app served by the hub at the address the user gave, with JavaScript and the page's storage on and file access off.
-- The Android app shall expose to the page only connecting to a hub, the hub's address, the app's version, changing the hub and saving a text file to Downloads.
+- The Android app shall expose to the page only connecting to a hub (from its connect screen alone), reading the clipboard (from its connect screen alone), the hub's address, the app's version, changing the hub, saving a text file to Downloads, showing a notification, the notification permission, keeping connected in the background, the battery settings, the phone's dictation and the phone's voice.
 - The Android app shall take its version name from Orbis's version (the root `package.json`) and its version code from the build number.
 - The web app shall, inside the Android app, save the files it exports (a conversation, a bot template) through the app, show the hub and the app's version in Settings with a button to change the hub, and tell the app what the phone's Back button closes first.
 
@@ -33,12 +33,19 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When the user presses Back, the Android app shall let the web app close what is open first (a dialog, a panel, a conversation), and otherwise go back or move to the background, keeping the page.
 - When the Android APK workflow runs by hand, on a `v*` tag or on a push that changes the app, it shall run the app's unit tests and lint, build a release APK named with the version and build number, attach it to the run, and publish it in a GitHub release when run by hand with release on or on a tag.
 - When the Windows launcher is started with `--celular` (or `Orbis-Celular.bat`), it shall start the hub listening on the network and print the address and sign-in link of each network card for the phone.
+- When the web app reports, while the app is off screen, a bot's message, an approval or a secret request, or a manager's report, the Android app shall show a notification — one per conversation, the latest replacing the one before — whose tap opens that conversation, and shall show none for a muted group's messages and reports.
+- When the user turns on staying connected, the Android app shall run a foreground service with a lasting notification that keeps the page's connection alive in the background, until the user turns it off or removes the app from the recent apps.
+- When the user gives a pairing code with the address, the Android app shall trade it for the hub's token through `POST /api/v1/pairing/claim` and sign in with it, or say why it was refused.
+- When another app shares text with Orbis, the Android app shall connect if the text holds a sign-in link (`…#token=…`), and otherwise hand the text to the web app, which puts it in the message box of the next conversation opened.
+- When the page asks for dictation or to read a reply aloud, the Android app shall use the phone's speech recognizer and voice.
+- When a hub's saved address does not answer, the connect screen shall try it again every 10 seconds until the user stops it, and offer the last five hubs and a link from the clipboard.
 
 ### Unwanted-behavior (must-not)
 
 - The Android app shall not open a page of another origin than the saved hub inside the app; a link elsewhere opens in the phone's browser or app.
 - The Android app shall not grant the page the camera or the microphone, nor let its saved hub, token or files leave the phone in a backup or a device transfer.
 - The APK workflow shall not need a signing key to build: without the `ANDROID_KEYSTORE_*` secrets it signs with a debug key and says so.
+- The Android app shall not load an https hub whose certificate the phone does not trust; its connect screen shall say why.
 
 ## Acceptance criteria
 
@@ -48,6 +55,9 @@ GitHub Actions workflow builds the APK of the current version on demand.
 4. [verified] In a real browser, the page's Back handler takes a group's search back to its info — verified by `tests/e2e/groups.test.ts`.
 5. [verified] The launcher takes `--celular`, knows when the hub listens on the network, and lists a link with the token for each IPv4 network card — verified by `packages/cli/test/windows-launcher.test.ts`.
 6. [verified] The workflow builds, tests, lints and names the APK with the version and build number, signs with the release key from the secrets or with a debug key, and publishes the release on demand or on a tag — verified by `.github/workflows/android.yml`.
+7. [verified] A shared sign-in link becomes the hub and the page to load, other text is no link, recent hubs put the last first without repeats, and a pairing code is its digits — verified by `packages/android/app/src/test/java/app/orbis/android/HubTest.java`.
+8. [verified] In a real browser, the connect screen hands a pairing code to the app, shows "connecting" and why a code was refused, offers the recent hubs and a copied link, tries the saved hub again after 10 seconds, and explains an untrusted certificate without trying again — verified by `tests/e2e/android-connect.test.ts`.
+9. [verified] The web app maps a bot's reply, an approval, a secret request and a report to one notification per conversation, keeps a muted group's messages quiet but not its requests, hands notifications to the app only off screen, uses the phone's recognizer and voice, shows the phone tab's notifications and keep-connected controls (or asks an older app to be updated), and puts shared text after what is typed — verified by `packages/web/test/android.test.tsx`.
 
 ## Maturity
 

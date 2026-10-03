@@ -1,6 +1,7 @@
 # Change 0044-android-notifications-pairing-voice-and-sharing — android notifications pairing voice and sharing
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-03
 - **Date:** 2026-10-03
 - **Owner:** Claude Code
 - **Lane:** runtime (confident; signals: secret) — opened anyway (--force)

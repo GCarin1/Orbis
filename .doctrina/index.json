@@ -31,9 +31,9 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-10-03",
-        "implementation": "verified — Java WebView shell in `packages/android` (connect screen, hub-only navigation, file picker, Downloads, Back); APK built by `.github/workflows/android.yml`",
+        "implementation": "verified — Java WebView shell in `packages/android` (connect screen with pairing, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); APK built by `.github/workflows/android.yml`",
         "realizes": [
           "SC7"
         ],
@@ -148,7 +148,7 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -270,7 +270,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.25.1",
+        "version": "0.26.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -441,13 +441,13 @@
         "title": "The Android app is a WebView shell that shows the hub's web app",
         "status": "superseded by 0013",
         "date": "2026-10-03",
+        "superseded_by": "0013",
+        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`",
         "scope": [
           "android-app",
           "web-app"
         ],
-        "summary": "The Android app is a small native shell in Java (`packages/android`): one",
-        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`",
-        "superseded_by": "0013"
+        "summary": "The Android app is a small native shell in Java (`packages/android`): one"
       },
       {
         "id": "0013",
@@ -461,19 +461,11 @@
           "web-app",
           "hub-api"
         ],
-        "summary": "The app stays a WebView shell showing the hub's web app (ADR 0012's core)."
+        "summary": "The app stays a WebView shell showing the hub's web app (ADR 0012's core).",
+        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/hub/src/api/pairing-routes.ts`"
       }
     ],
-    "changes": [
-      {
-        "id": "0044-android-notifications-pairing-voice-and-sharing",
-        "title": "android notifications pairing voice and sharing",
-        "path": ".doctrina/changes/0044-android-notifications-pairing-voice-and-sharing",
-        "status": "proposed",
-        "opened": "2026-10-03",
-        "lane": "runtime (confident; signals: secret) — opened anyway (--force)"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1396,6 +1388,28 @@
           }
         ],
         "lane": "runtime (confident; signals: github actions) — opened anyway (--force)"
+      },
+      {
+        "id": "0044-android-notifications-pairing-voice-and-sharing",
+        "title": "android notifications pairing voice and sharing",
+        "path": ".doctrina/changes/archive/2026-10-03-0044-android-notifications-pairing-voice-and-sharing",
+        "status": "applied",
+        "applied": "2026-10-03",
+        "specs_affected": [
+          {
+            "capability": "android-app",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "runtime (confident; signals: secret) — opened anyway (--force)"
       }
     ],
     "skills": [

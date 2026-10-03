@@ -7,7 +7,7 @@
 - **Supersedes:** 0012
 - **Superseded by:** —
 - **Evidence:** `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/android/app/src/main/java/app/orbis/android/KeepAliveService.java`, `packages/hub/src/api/pairing-routes.ts`, `packages/web/src/phone.ts`
-- **Landed:** —
+- **Landed:** 2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/hub/src/api/pairing-routes.ts`
 
 ## Context
 

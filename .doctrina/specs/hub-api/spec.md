@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** bots, conversations
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -33,12 +33,15 @@ routes and shapes are owned by `contracts/hub-surface`.
 - When a `/v1/models` request arrives, the system shall list one model `orbis:<handle>` per visible bot.
 - When a WebSocket client sends a subscribe message listing conversation ids, the system shall deliver the events of those conversations and every `bot.state` and `approval.requested` event; with no list it shall deliver every event.
 - When a recording arrives at `/api/v1/voice/transcribe`, the system shall send it to the transcription service in use — the one saved in the settings screen, else ORBIS_TRANSCRIBE_URL, else OpenAI's with OPENAI_API_KEY — as an OpenAI-compatible `/audio/transcriptions` upload with the model and the spoken language, and answer the text.
+- When the signed-in web app asks for a pairing code, the hub shall make a six-digit code that works once, for five minutes, replacing the one before, and answer it with whether the hub takes connections from the network and its addresses on this computer's network cards.
+- When a phone sends a pairing code to `POST /api/v1/pairing/claim`, which needs no token, the hub shall answer the hub's token for the current code and use the code up, and otherwise answer `invalid_code`.
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not answer a request without a valid token with anything other than 401, except `/health`, `/hooks/*` (which carry their own signatures) and the static web app files.
 - The system shall not accept a recording when no transcription service is set up (it answers 503 `transcription_unavailable`), nor pass off a failed transcription as text (it answers 502 `transcription_failed` with the service's status).
 - The system shall not fail with a server error when a `/v1/chat/completions` message starts no run (a `/skill` the bot is not offered); it shall answer 400 `no_run`.
+- The hub shall not accept a pairing code after its fifth wrong try, nor more than 20 pairing claims a minute from anywhere.
 
 ## Acceptance criteria
 
@@ -48,6 +51,8 @@ routes and shapes are owned by `contracts/hub-surface`.
 4. [verified] A stream client subscribed to one conversation receives that conversation's items and not another's — verified by `packages/hub/test/stream.test.ts`.
 5. [verified] Without a service the transcription answers 503; the service saved in settings receives the recording as a multipart upload with the file named after its format, the model, the language and the key, and the text comes back; the key is never returned nor stored in clear; the environment's service and the OpenAI key are used when nothing is saved, and the test reports a failing service — verified by `packages/hub/test/voice.test.ts`.
 6. [verified] A completion asking for a skill the bot is not offered answers 400 with code `no_run` — verified by `packages/hub/test/audit-cycle4.test.ts`.
+7. [verified] A code works once, for five minutes, dies after five wrong tries and when cancelled; claims past 20 a minute are refused; the hub knows when it listens on the network and its addresses; the claim route alone takes no token — verified by `packages/hub/test/pairing.test.ts`.
+8. [verified] In a real browser, Settings → Phone makes a code, says how long it works and that the hub listens on this computer only, and the code is traded for the token once — verified by `tests/e2e/phone-pairing.test.ts`.
 
 ## Maturity
 
