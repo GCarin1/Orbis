@@ -1,6 +1,7 @@
 # Change 0048-mcp-screen-redesign — mcp screen redesign
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-03
 - **Date:** 2026-10-03
 - **Owner:** Claude Code
 - **Lane:** product

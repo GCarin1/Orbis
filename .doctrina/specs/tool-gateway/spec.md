@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.8.0
+**Version:** 0.8.1
 
 ## Purpose
 
@@ -48,6 +48,7 @@ call through the approvals policy and marks outside content as untrusted.
 - When `http.fetch` cannot reach a server, the system shall name the network error (for example ECONNREFUSED) in the result.
 - When an HTTP MCP server answers 404 because it ended the session, the system shall connect again and repeat the call once.
 - When a run is stopped while an external MCP tool call is in progress, the system shall stop waiting for the server's answer.
+- When the web app asks for the MCP marketplace, the system shall say for each entry whether every tool of it only reads, so the user knows before connecting it.
 
 ### Unwanted-behavior (must-not)
 
@@ -71,6 +72,7 @@ call through the approvals policy and marks outside content as untrusted.
 8. [verified] Through the bridge a slow call answers after a quick one sent later; a call denied twice is asked again and runs when allowed; `http.fetch` to a closed port names ECONNREFUSED — verified by `packages/hub/test/chat-audit.test.ts`.
 9. [verified] A tool named after a long server and a long remote name gets a wire name of at most 52 characters that resolves back; it runs, and runs again after the server ended its session, with one new `initialize` — verified by `packages/hub/test/audit-cycle4.test.ts`.
 10. [verified] A key that goes in the address reaches the server from the vault on every call and appears neither in the API nor in an error, and every marketplace entry has a logo file — verified by `packages/hub/test/mcp-servers.test.ts`.
+11. [verified] The marketplace says that DeepWiki only reads and says nothing of the kind for GitHub — verified by `packages/hub/test/mcp-servers.test.ts`.
 
 ## Maturity
 

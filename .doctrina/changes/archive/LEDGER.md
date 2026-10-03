@@ -50,3 +50,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-03 — 0045-mcp-catalog-free-servers-and-logos — mcp catalog free servers and logos (specs: tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-10-03 — 0046-phone-layout-no-sideways-scroll — phone layout no sideways scroll (specs: web-app MODIFIED)
 - 2026-10-03 — 0047-pairing-qr-code — pairing qr code (specs: android-app MODIFIED, web-app MODIFIED)
+- 2026-10-03 — 0048-mcp-screen-redesign — mcp screen redesign (specs: tool-gateway MODIFIED, web-app MODIFIED)

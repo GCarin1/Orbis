@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.28.0
+**Version:** 0.29.0
 
 ## Purpose
 
@@ -35,7 +35,7 @@ run's steps.
 - The web app shall, on a screen narrower than 760 px, show either the conversation list or one conversation with a back button.
 - The web app shall offer three themes — follow the system, light and dark — from a switch in the sidebar and in the settings screen, remembered per browser and applied before the first paint.
 - The web app shall let the user pick each bot's computer among three cards — a private folder, "My computer" with the folder it works in, and a Docker container — show what Docker needs with a button that prepares the desktop image, and name the bot's kind of computer under its screen.
-- The web app shall provide an MCP screen, named MCP in the sidebar: a catalog of MCP servers with search and categories (finance among them), each card showing its service's logo and saying whether it needs no account, a sign-in or a key, connecting in one click (a form for a key, with where to get it; a sign-in link for an account); the connected servers with their logo, state, tools, the bots that may use each one and Reconnect and Disconnect; and a form for a custom server.
+- The web app shall provide an MCP screen, named MCP in the sidebar, with two tabs. Explore holds a search, a filter for how a server connects (no account, sign-in, free key), categories with their counts, the servers to start with, and a card per server with its logo, name, category, where it runs, what it does, how it connects, whether it only reads, and Connect (or its state once connected). Connected lists each server with its logo, its state, the faces of the bots that may use it, a switch per bot, its tools with which only read and which ask first, and Reconnect and Disconnect in its ⋮ menu; with nothing connected, it says so and leads to Explore. Your own server opens a form for an address or a program.
 - The web app shall let the user choose each bot's tools in its settings with switches for Orbis's tool groups and for each connected server, written to the bot's allowlist.
 - The web app shall show, at the top of the brains settings, a ChatGPT card in three steps — install the Codex CLI, sign in with the ChatGPT account (in the browser, or with the one-time code shown large and the page to open), use it in a bot with a test — and the account once connected.
 - The web app shall render messages as Markdown — headings, lists, quotes, code blocks with a copy button, tables, links opening in a new tab, bold, italic and strikethrough — as elements, never as HTML, with mentions in each bot's color.
@@ -80,6 +80,7 @@ run's steps.
 - When the user opens Add members, the web app shall list the visible bots outside the group with a search field, allow picking bots up to the room the group's limit leaves, and say when every bot is already in the group (offering a new bot) or the group holds its limit (naming ORBIS_MAX_GROUP_SIZE).
 - When the user picks a search result or a link's line in the group's info, the web app shall load the conversation back to that message, scroll to it and mark it for a moment.
 - When the web app opens with `#pair=<code>` in its address, or the user types six digits where the token goes, the web app shall trade the code for the hub's token, save the token and remove the code from the address bar, or say that the code is wrong, used or expired.
+- When the user opens a catalog server (its card or its name), the web app shall show its details in a sheet — on the right edge, the whole screen on a phone — with how it connects, where it runs (the program it starts or the address it calls), whether it only reads or asks before changing something, who may use it, and its key fields or its Connect button; Esc, the close button and the phone's Back close the sheet.
 
 ### State-driven
 
@@ -151,6 +152,7 @@ run's steps.
 48. [verified] In a real browser 390 px wide, no screen, panel or dialog scrolls sideways. The sweep covers the list, a conversation, its details, the bot settings with each brain, routines, computer, the new-bot screen, the new-group dialog, a group with its info, search, menu and add-members dialog, every Settings tab, MCP, Skills and Usage — verified by `tests/e2e/phone-layout.test.ts`.
 49. [verified] The QR code holds the address picked and the code, and decoding its image gives back exactly that link; the page's own address comes first when it is not this computer's; the sign-in screen trades a QR code's code once and six typed digits, and says when a code is refused — verified by `packages/web/test/android.test.tsx`.
 50. [verified] In a real browser, Settings → Phone shows the QR code, its link opens the web app on a phone signed in with the code gone from the address bar, the same link again is refused, and six digits typed on the sign-in screen sign in — verified by `tests/e2e/phone-pairing.test.ts`.
+51. [verified] Explore shows where to start until a search or a filter, filters by search, by how a server connects and by category, says when nothing matches and clears the filters; a card or its name opens the details with how it connects, the address, whether it only reads and who uses it, and Esc or Close shuts them; a key is asked in the details; Connected says when nothing is connected and sums up what is; a connected server's card says so; Reconnect waits in the ⋮ menu — verified by `packages/web/test/marketplace.test.tsx`.
 
 ## Maturity
 
