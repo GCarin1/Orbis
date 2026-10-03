@@ -9,6 +9,17 @@ change that delivered it.
 
 ### Added
 
+- An Android app (change 0043-android-app-and-apk-workflow): `packages/android`, a
+  small Java shell that shows the web app your hub serves on the phone (a first
+  screen for the hub's address; a link with `#token=…` signs in), with the file
+  picker, exports saved to Downloads, Back that closes what is open first, and
+  links opening in the phone's browser. **Actions → Android APK → Run workflow**
+  builds the APK of the current version (tests, lint, `orbis-android-<version>-build<N>.apk`),
+  attaches it to the run and publishes it in a release for a direct download; a
+  `v*` tag attaches it to that release; the `ANDROID_KEYSTORE_*` secrets sign it
+  with your key so updates install in place. `Orbis-Celular.bat` (`Orbis.bat
+  --celular`) starts the hub on the network and prints the address to type in
+  the app. Guide: `docs/android.md`.
 - Groups like WhatsApp or Telegram (change 0042-group-info-like-a-chat-app): the
   header shows the group's photo, name and members (or who is working); a **⋮**
   menu holds every option (add members, group info, links, search, mute, and

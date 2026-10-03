@@ -669,6 +669,10 @@ const pt = {
   "group.descriptionRemovedEvent": "Você apagou a descrição do grupo",
   "group.photoEvent": "Você mudou a foto do grupo",
   "group.photoRemovedEvent": "Você removeu a foto do grupo",
+  "android.title": "App Android",
+  "android.connected": "Conectado ao Orbis em {url}",
+  "android.version": "versão {version} do app",
+  "android.changeHub": "Trocar servidor",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1339,6 +1343,10 @@ const en: Record<TextKey, string> = {
   "group.descriptionRemovedEvent": "You removed the group description",
   "group.photoEvent": "You changed the group photo",
   "group.photoRemovedEvent": "You removed the group photo",
+  "android.title": "Android app",
+  "android.connected": "Connected to Orbis at {url}",
+  "android.version": "app version {version}",
+  "android.changeHub": "Change server",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

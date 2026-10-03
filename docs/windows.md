@@ -1,13 +1,14 @@
 # Orbis on Windows: start, restart and sign in with a double-click
 
-Three scripts in `scripts/windows/` start Orbis, give you its login token and
-put Orbis-icon shortcuts on your Desktop and Start menu. They need Node.js
+The scripts in `scripts/windows/` start Orbis, give you its login token, open it
+to your phone and put Orbis-icon shortcuts on your Desktop and Start menu. They need Node.js
 22.12 or later and a built checkout (`npm install` first).
 
 | Script | What it does |
 |---|---|
 | `Orbis.bat` | Installs what is missing, builds (`npm run build`), starts the hub in this window and opens the web app already signed in. **If Orbis is already running, it restarts it:** it builds first, stops the old hub, starts the new one and closes the old window. |
 | `Orbis-Token.bat` | Shows the login token (and copies it), creating it when there is none. `Orbis-Token.bat --novo` replaces it. |
+| `Orbis-Celular.bat` | `Orbis.bat --celular`: starts Orbis listening on the network (`ORBIS_HOST=0.0.0.0`) and prints the address, with the token, to type in the Android app — see [android.md](android.md). |
 | `Orbis-Atalhos.bat` | Creates the **Orbis** and **Orbis Token** shortcuts, with the Orbis icon, on the Desktop and in the Start menu. Run it once. |
 
 A `.bat` file cannot carry an icon; a shortcut can. That is why the icon lives in

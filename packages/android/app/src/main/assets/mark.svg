@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Orbis">
+  <title>Orbis</title>
+  <defs>
+    <linearGradient id="o-g" gradientUnits="userSpaceOnUse" x1="14" y1="18" x2="112" y2="110">
+      <stop offset="0" stop-color="#3ecbff"/>
+      <stop offset="0.5" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#7c4dff"/>
+    </linearGradient>
+  </defs>
+  <mask id="o-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128">
+    <rect width="128" height="128" fill="#fff"/>
+    <g transform="translate(62 68) rotate(-25)"><path d="M -52 0 A 52 25 0 0 0 52 0 A 52 13 0 0 1 -52 0 Z" fill="#000" stroke="#000" stroke-width="9" stroke-linejoin="round"/></g>
+  </mask>
+  <g mask="url(#o-cut)">
+    <circle cx="64" cy="61" r="35" fill="none" stroke="url(#o-g)" stroke-width="12.5"/>
+    <circle cx="61.5" cy="58.5" r="16.5" fill="url(#o-g)"/>
+  </g>
+  <g transform="translate(62 68) rotate(-25)"><path d="M -52 0 A 52 25 0 0 0 52 0 A 52 13 0 0 1 -52 0 Z" fill="url(#o-g)"/></g>
+  <circle cx="106.5" cy="19.5" r="7.5" fill="url(#o-g)"/>
+  <circle cx="17" cy="104" r="4.5" fill="url(#o-g)"/>
+</svg>

@@ -2989,3 +2989,14 @@ label.check {
     box-shadow: 0 0 0 0 transparent;
   }
 }
+
+/* The Android app's card in Settings (change 0043): the hub it shows and changing it. */
+.android-card {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.android-card h2 {
+  margin-top: 0;
+}

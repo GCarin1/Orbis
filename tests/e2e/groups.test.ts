@@ -103,7 +103,9 @@ describe("groups in a browser", () => {
     await page.locator(".message.flash").getByText("A AÇÃO subiu hoje").waitFor();
 
     // Delete Cid: it leaves the group, and the info follows.
-    await info.getByRole("button", { name: "Back" }).click();
+    // The phone's Back (the Android app asks the page first): from the search back to the info.
+    expect(await page.evaluate(() => (window as unknown as { __orbisBack(): boolean }).__orbisBack())).toBe(true);
+    await info.getByRole("heading", { name: "2 members" }).waitFor();
     await hub.botService.delete(cid.id);
     await expect.poll(() => events.allTextContents()).toContain("Cid left the group (the bot was deleted)");
     await info.getByRole("heading", { name: "1 members" }).waitFor();

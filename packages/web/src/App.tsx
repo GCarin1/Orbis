@@ -4,6 +4,7 @@ import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./ap
 import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
+import { saveTextFile, setBackHandler } from "./native.js";
 import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
 import { NewBotScreen } from "./components/NewBotScreen.js";
@@ -180,6 +181,23 @@ export function App() {
   const transcription = useVoice((s) => s.transcription);
   const transcribe = store.api && transcription?.configured ? (audio: Blob, spokenLang: string) => store.api!.transcribe(audio, spokenLang) : null;
 
+  // The phone's Back button in the Android app: close what is open, most recent first; false lets it leave.
+  useEffect(() => {
+    setBackHandler(() => {
+      if (addingMembers) setAddingMembers(false);
+      else if (creatingGroup) setCreatingGroup(false);
+      else if (computerFull) setComputerFull(false);
+      else if (groupView) setGroupView(groupView === "info" ? null : "info");
+      else if (selected && panel) setPanel(null);
+      else if (view !== "chat") setView("chat");
+      else if (group) void useStore.getState().selectGroup(null);
+      else if (selected) void useStore.getState().selectBot(null);
+      else return false;
+      return true;
+    });
+    return () => setBackHandler(null);
+  });
+
   if (!token) {
     return (
       <TokenGate
@@ -197,21 +215,10 @@ export function App() {
   };
   const exportBot = async (bot: Bot) => {
     const yaml = await store.api!.text(`/api/v1/bots/${bot.id}/export`);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([yaml], { type: "text/yaml" }));
-    link.download = `${bot.handle}.orbis.yaml`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    saveTextFile(`${bot.handle}.orbis.yaml`, yaml, "text/yaml");
   };
   const chatOpen = view !== "chat" || Boolean(selected || group);
   const sidePanel = view === "chat" && ((selected && panel && !group) || (group && groupView));
-  const download = (name: string, text: string) => {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
-    link.download = name;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
   // Everything the group's header, menu and info do.
   const groupActions: GroupActions | null = group
     ? {
@@ -222,7 +229,7 @@ export function App() {
           act(async () => {
             const all = await store.allItems(group.id);
             const name = group.title.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "group";
-            download(`${name}.txt`, conversationText(group, all, store.bots, lang, t("group.you")));
+            saveTextFile(`${name}.txt`, conversationText(group, all, store.bots, lang, t("group.you")));
           }),
         clear: async () => {
           if (window.confirm(t("conv.confirmClear", { name: group.title }))) await act(() => store.clearConversation(group.id));

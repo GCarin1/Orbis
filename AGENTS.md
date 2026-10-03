@@ -94,6 +94,7 @@ npm run desktop                         # the desktop app
 
 `packages/shared` types/events · `packages/hub` server, run engine, brains, computer ·
 `packages/cli` the `orbis` command · `packages/web` web app · `packages/desktop` Electron shell ·
+`packages/android` Android WebView shell (Gradle; `.github/workflows/android.yml` builds the APK) ·
 `docker/desktop` bot computer image · `tests/e2e` browser tests · `docs/` guides · `docs/brand` logo.
 
 ## Conventions and boundaries

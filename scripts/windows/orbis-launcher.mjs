@@ -28,17 +28,39 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // --- reading what the system says ----------------------------------------------------------------
 
 export function parseArgs(argv) {
-  const options = { build: true, install: false, open: true, help: false, shortcuts: "once" };
+  const options = { build: true, install: false, open: true, help: false, shortcuts: "once", phone: false };
   for (const arg of argv) {
     if (arg === "--rapido" || arg === "--no-build") options.build = false;
     else if (arg === "--instalar" || arg === "--install") options.install = true;
     else if (arg === "--sem-navegador" || arg === "--no-open") options.open = false;
     else if (arg === "--atalhos") options.shortcuts = "now";
     else if (arg === "--sem-atalhos") options.shortcuts = "never";
+    else if (arg === "--celular" || arg === "--phone") options.phone = true;
     else if (arg === "--ajuda" || arg === "--help" || arg === "-h") options.help = true;
     else throw new Error(`opcao desconhecida: ${arg} (veja --ajuda)`);
   }
   return options;
+}
+
+/** Whether the hub listens only on this computer (the default), or on the network too (ORBIS_HOST). */
+export function listensOnNetwork(env = process.env) {
+  const host = env.ORBIS_HOST?.trim();
+  return Boolean(host) && !/^(127\.|localhost$|::1$|\[::1\]$)/i.test(host);
+}
+
+/**
+ * The addresses the Orbis Android app (or a phone's browser) reaches this computer at: each IPv4 address
+ * of a network card, with the login token in the link so the app signs in by itself.
+ */
+export function phoneLinks(port, token, interfaces = os.networkInterfaces()) {
+  const links = [];
+  for (const list of Object.values(interfaces)) {
+    for (const a of list ?? []) {
+      if (a.internal || (a.family !== "IPv4" && a.family !== 4)) continue;
+      links.push(`http://${a.address}:${port}/${token ? `#token=${encodeURIComponent(token)}` : ""}`);
+    }
+  }
+  return links;
 }
 
 export function portOf(env = process.env) {
@@ -216,7 +238,9 @@ const HELP = `Orbis.bat - inicia o Orbis; se ele ja estiver rodando, reinicia.
   --sem-navegador    nao abre o navegador
   --atalhos          cria os atalhos com o icone do Orbis (na area de trabalho e no menu Iniciar)
   --sem-atalhos      nao cria os atalhos (por padrao eles sao criados na primeira vez, no Windows)
+  --celular          aceita conexoes da rede (ORBIS_HOST=0.0.0.0) e mostra o endereco para o app Orbis Android
   ORBIS_PORT         porta do Orbis (padrao ${DEFAULT_PORT})
+  ORBIS_HOST         onde o Orbis escuta (padrao 127.0.0.1: so este computador; 0.0.0.0: a rede tambem)
 `;
 
 export async function main(argv, env = process.env, log = console.log) {
@@ -265,8 +289,11 @@ export async function main(argv, env = process.env, log = console.log) {
   }
 
   const url = `http://127.0.0.1:${port}`;
+  // --celular: the hub listens on the network too, for the Android app on the same Wi-Fi.
+  const hubEnv = options.phone ? { ...env, ORBIS_HOST: "0.0.0.0" } : env;
+  const phone = listensOnNetwork(hubEnv);
   log(`Iniciando o Orbis em ${url}  (feche esta janela, ou Ctrl+C, para parar)\n`);
-  const child = spawn(process.execPath, [path.join(ROOT, "packages/cli/dist/index.js"), "serve"], { cwd: ROOT, stdio: "inherit", env });
+  const child = spawn(process.execPath, [path.join(ROOT, "packages/cli/dist/index.js"), "serve"], { cwd: ROOT, stdio: "inherit", env: hubEnv });
   let interrupted = false;
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => {
@@ -288,8 +315,16 @@ export async function main(argv, env = process.env, log = console.log) {
     }
     if (!up) return;
     rmSync(RESTART_FLAG, { force: true });
-    if (!options.open) return;
     const token = tokenFor(env);
+    if (phone) {
+      const links = phoneLinks(port, token);
+      log(
+        links.length
+          ? `\nNo celular (app Orbis Android, na mesma rede Wi-Fi), digite um destes enderecos:\n${links.map((l) => `  ${l}`).join("\n")}\nSe o Windows perguntar, permita o Node nas redes privadas.\n`
+          : "\nO Orbis aceita conexoes da rede, mas este computador nao tem um endereco de rede (Wi-Fi ou cabo) agora.\n",
+      );
+    }
+    if (!options.open) return;
     const opener = spawn(process.execPath, [path.join(ROOT, "packages/cli/dist/index.js"), "open"], {
       cwd: ROOT,
       stdio: "ignore",

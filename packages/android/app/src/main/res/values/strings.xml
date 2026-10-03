@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Orbis</string>
+    <string name="saved_to">Salvo em %1$s</string>
+    <string name="save_failed">Não deu para salvar o arquivo: %1$s</string>
+    <string name="no_app_for_link">Nenhum app abre este link.</string>
+</resources>

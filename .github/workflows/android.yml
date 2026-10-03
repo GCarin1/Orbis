@@ -1,0 +1,139 @@
+# Builds the Orbis Android app (APK) of the current version (specs/android-app, ADR 0012).
+#
+# Run it by hand: Actions → "Android APK" → Run workflow (pick the branch). The APK is attached to the run,
+# and — unless you untick "release" — published in a GitHub release too, for a direct download on the phone.
+# A pushed tag v* publishes a release with the APK; a push that changes the app only builds it.
+#
+# Signing: with the secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and
+# ANDROID_KEY_PASSWORD the APK is signed with your key, so each new APK installs over the last one. Without
+# them it is signed with a throwaway debug key: it installs, but replacing it needs the old one uninstalled.
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish the APK in a GitHub release (a direct download link for the phone)"
+        type: boolean
+        default: true
+  push:
+    branches: ["**"]
+    paths:
+      - "packages/android/**"
+      - ".github/workflows/android.yml"
+    tags: ["v*"]
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # the release; nothing else is written
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Version
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          short=$(git rev-parse --short HEAD)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then suffix=""; else suffix="+$short"; fi
+          {
+            echo "version=$version"
+            echo "build=$GITHUB_RUN_NUMBER"
+            echo "suffix=$suffix"
+            echo "short=$short"
+            echo "file=orbis-android-$version-build$GITHUB_RUN_NUMBER.apk"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Signing key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orbis.keystore"
+            echo "path=$RUNNER_TEMP/orbis.keystore" >> "$GITHUB_OUTPUT"
+            echo "kind=your release key" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "kind=a throwaway debug key (add the ANDROID_KEYSTORE_* secrets to update installs in place)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test, lint and build the APK
+        env:
+          ORBIS_ANDROID_KEYSTORE: ${{ steps.key.outputs.path }}
+          ORBIS_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORBIS_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORBIS_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: >-
+          gradle -p packages/android --no-daemon
+          testReleaseUnitTest lintRelease assembleRelease
+          -PorbisBuildNumber=${{ steps.version.outputs.build }}
+          -PorbisVersionSuffix=${{ steps.version.outputs.suffix }}
+
+      - name: Name the APK
+        run: |
+          mkdir -p dist
+          cp packages/android/app/build/outputs/apk/release/app-release.apk "dist/${{ steps.version.outputs.file }}"
+          sha256sum "dist/${{ steps.version.outputs.file }}" | tee "dist/${{ steps.version.outputs.file }}.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orbis-android-${{ steps.version.outputs.version }}-build${{ steps.version.outputs.build }}
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: dist/${{ steps.version.outputs.file }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD: ${{ steps.version.outputs.build }}
+          SHORT: ${{ steps.version.outputs.short }}
+          KEY: ${{ steps.key.outputs.kind }}
+        run: |
+          notes="Orbis Android $VERSION, build $BUILD ($SHORT), signed with $KEY.
+
+          Instalar: abra este link no celular, baixe o .apk e toque nele (permita instalar apps desta origem).
+          Depois, no computador, abra o Orbis pelo Orbis-Celular.bat e digite no app o endereço que ele mostra.
+          Install: open this page on the phone, download the .apk and tap it; then start Orbis on the computer
+          with Orbis-Celular.bat (or orbis serve --host 0.0.0.0) and type the address it shows in the app."
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+            gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Orbis $tag" --notes "$notes" --verify-tag
+            gh release upload "$tag" "$FILE" "$FILE.sha256" --clobber
+          else
+            tag="android-build-$BUILD"
+            # A re-run of the same build replaces its files.
+            gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
+              --title "Orbis Android $VERSION (build $BUILD)" --notes "$notes"
+            gh release upload "$tag" "$FILE" "$FILE.sha256" --clobber
+          fi
+          echo "RELEASE_URL=$(gh release view "$tag" --json url --jq .url)" >> "$GITHUB_ENV"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Orbis Android ${{ steps.version.outputs.version }} — build ${{ steps.version.outputs.build }}"
+            echo
+            echo "- APK: \`${{ steps.version.outputs.file }}\` (in this run's artifacts${RELEASE_URL:+, and at $RELEASE_URL})"
+            echo "- Commit: \`${{ steps.version.outputs.short }}\`"
+            echo "- Signed with ${{ steps.key.outputs.kind }}"
+          } >> "$GITHUB_STEP_SUMMARY"

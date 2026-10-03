@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-10-03",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -419,9 +419,30 @@
           "handoff"
         ],
         "summary": "Every run carries a chain id: the user message that started the work, or"
+      },
+      {
+        "id": "0012",
+        "path": ".doctrina/decisions/0012-the-android-app-is-a-webview-shell-that-shows-the-hub-s-web-app.md",
+        "title": "The Android app is a WebView shell that shows the hub's web app",
+        "status": "accepted",
+        "date": "2026-10-03",
+        "summary": "The Android app is a small native shell in Java (`packages/android`): one",
+        "scope": [
+          "android-app",
+          "web-app"
+        ]
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0043-android-app-and-apk-workflow",
+        "title": "android app and apk workflow",
+        "path": ".doctrina/changes/0043-android-app-and-apk-workflow",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "runtime (confident; signals: github actions) — opened anyway (--force)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

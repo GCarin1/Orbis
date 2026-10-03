@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The web app lays itself out below the status bar and above the keyboard: keep the window out of
+         Android 15's edge-to-edge, so adjustResize keeps the message box above the keyboard. -->
+    <style name="Theme.Orbis" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/orbis_night</item>
+        <item name="android:statusBarColor">@color/orbis_night</item>
+        <item name="android:navigationBarColor">@color/orbis_night</item>
+        <item name="android:colorAccent">#3B82F6</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>

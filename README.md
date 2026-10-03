@@ -9,7 +9,7 @@
 a role, durable rules, its own memory and its own computer; it works on a task
 from start to finish, hands work to other bots and stops for your approval
 before anything risky. You reach the same bots from a **web app**, a **desktop
-app**, the **`orbis` CLI** and an **HTTP API**.
+app**, an **Android app**, the **`orbis` CLI** and an **HTTP API**.
 
 Bots work as a **team**: ask your chief of staff, it splits the work across
 the bots that report to it, they talk to each other in the open, and the chief
@@ -69,6 +69,7 @@ are proven by tests.
 | Secrets (per-bot AES-256-GCM vault, `{{secret:NAME}}` resolved only in the tool gateway, redaction, secret-request cards) and usage (per bot and month, price table, spend caps) | ✅ verified |
 | Bot templates (YAML export with a secret scan, import with routines disabled) and the bot settings screen | ✅ verified |
 | Desktop app (Electron: finds or starts the hub, hardened window, native notifications, tray) | ✅ verified |
+| Android app (an APK built by GitHub Actions: the hub's web app on the phone, over your Wi-Fi) | ✅ verified |
 | A team with a hierarchy: managers delegate to their reports and report back on their own when all the work is done; mentions by handle or role (`@qa`); bots bring each other into a conversation | ✅ verified |
 | The Orbis look: bot faces (8 shapes, 10 colors, eyes that follow the bot's state), one conversation list with unread dots, the bot panel (screen, routines, team), the new-bot screen, dark mode and phones | ✅ verified |
 | Three kinds of computer per bot: a private folder, **your own computer** (a folder you choose, your programs, a visible browser; by explicit consent, writes ask first) or a Docker container with a desktop you watch live, with one-click image preparation | ✅ verified |
@@ -109,6 +110,10 @@ orbis open                 # opens the web app already signed in
 
 Or the **desktop app**, which starts the hub for you: `npm run desktop`.
 
+On the **phone**, the Android app: build the APK from **Actions → Android APK →
+Run workflow** and start Orbis with `Orbis-Celular.bat` (or `orbis serve --host
+0.0.0.0`) — see [docs/android.md](docs/android.md).
+
 **On Windows**, `scripts\windows\Orbis.bat` starts Orbis (or restarts it when it
 is already running), `Orbis-Token.bat` shows the login token and
 `Orbis-Atalhos.bat` puts both on your Desktop with the Orbis icon — see
@@ -128,6 +133,7 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
 ```
  web app ─┐                         ┌─ mock
  desktop ─┤  REST + WebSocket       ├─ claude-code ─┐
+ android ─┤                         │               │
  orbis CLI┼──────────────► HUB ─────┼─ custom-cli   ├─ child process in the
  HTTP API ┘  (one port, one token)  ├─ codex        │  bot's own workspace,
  OpenAI clients (/v1)               ├─ gemini-cli   ┘  your CLI login
@@ -152,7 +158,7 @@ database, the API token (`~/.orbis/token`) and each bot's workspace.
 More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
-[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
+[`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md), [`docs/android.md`](docs/android.md),
 [`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration

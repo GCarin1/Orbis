@@ -1,0 +1,142 @@
+<!doctype html>
+<!-- The Android app's first screen (specs/android-app): the address of the hub on the user's computer. -->
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Orbis</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: #131a30;
+        --border: #26304d;
+        --text: #eef1f8;
+        --muted: #8ea0c8;
+        --blue: #3b82f6;
+        --danger: #f87171;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px 18px;
+        background: radial-gradient(circle at 30% 20%, #16224a 0%, var(--bg) 60%);
+        color: var(--text);
+        font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main { width: min(420px, 100%); display: flex; flex-direction: column; gap: 16px; }
+      header { text-align: center; }
+      header img { width: 84px; height: 84px; }
+      h1 { margin: 6px 0 0; font-size: 26px; letter-spacing: 0.5px; }
+      .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+      form { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 18px; }
+      label { font-weight: 600; font-size: 14px; }
+      input {
+        width: 100%;
+        padding: 13px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 16px;
+      }
+      input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+      button {
+        padding: 13px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .error { margin: 0; color: var(--danger); font-size: 14px; overflow-wrap: anywhere; }
+      .help { color: var(--muted); font-size: 13.5px; margin: 0; }
+      .help ol { margin: 6px 0 0; padding-left: 20px; }
+      .help li { margin: 4px 0; }
+      code { background: #1c2542; padding: 1px 5px; border-radius: 6px; font-size: 12.5px; }
+      .version { text-align: center; color: var(--muted); font-size: 12px; margin: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="mark.svg" alt="" />
+        <h1>Orbis</h1>
+        <p class="tagline" data-t="tagline"></p>
+      </header>
+      <form id="form" novalidate>
+        <label for="address" data-t="label"></label>
+        <input id="address" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="http://192.168.0.10:7420" />
+        <p id="error" class="error" role="alert" hidden></p>
+        <button type="submit" data-t="connect"></button>
+      </form>
+      <div class="help">
+        <span data-t="howTitle"></span>
+        <ol>
+          <li data-t="step1"></li>
+          <li data-t="step2"></li>
+          <li data-t="step3"></li>
+        </ol>
+      </div>
+      <p class="version" id="version"></p>
+    </main>
+    <script>
+      const pt = {
+        tagline: "Seus bots, no celular.",
+        label: "Endereço do Orbis no seu computador",
+        connect: "Conectar",
+        howTitle: "Como conectar:",
+        step1: "No computador, abra o Orbis pelo <code>Orbis-Celular.bat</code> (ou rode <code>orbis serve --host 0.0.0.0</code>): ele passa a aceitar conexões da rede. Se o Windows perguntar, permita o Node nas redes privadas.",
+        step2: "Digite aqui o endereço que ele mostra, como <code>192.168.0.10</code> (a porta 7420 entra sozinha). O link com <code>#token=…</code> já entra direto; sem ele, o Orbis pede o token (o <code>Orbis-Token.bat</code> mostra).",
+        step3: "O celular precisa estar na mesma rede Wi-Fi do computador, ou numa VPN até ele.",
+        empty: "Digite o endereço do Orbis.",
+        scheme: "Use um endereço http:// ou https://.",
+        host: "Falta o computador no endereço.",
+        invalid: "Isso não é um endereço válido.",
+        failed: "O Orbis não respondeu em",
+        version: "versão",
+      };
+      const en = {
+        tagline: "Your bots, on your phone.",
+        label: "Address of Orbis on your computer",
+        connect: "Connect",
+        howTitle: "How to connect:",
+        step1: "On the computer, open Orbis with <code>Orbis-Celular.bat</code> (or run <code>orbis serve --host 0.0.0.0</code>): it then takes connections from the network. If Windows asks, allow Node on private networks.",
+        step2: "Type here the address it shows, like <code>192.168.0.10</code> (port 7420 is added for you). The link with <code>#token=…</code> signs in directly; without it, Orbis asks for the token (<code>Orbis-Token.bat</code> shows it).",
+        step3: "The phone must be on the computer's Wi-Fi, or on a VPN to it.",
+        empty: "Type the address of Orbis.",
+        scheme: "Use an http:// or https:// address.",
+        host: "The address names no computer.",
+        invalid: "That is not a valid address.",
+        failed: "Orbis did not answer at",
+        version: "version",
+      };
+      const t = /^pt\b/i.test(navigator.language) ? pt : en;
+      document.documentElement.lang = t === pt ? "pt-BR" : "en";
+      for (const el of document.querySelectorAll("[data-t]")) el.innerHTML = t[el.dataset.t];
+
+      const params = new URLSearchParams(location.search);
+      const input = document.getElementById("address");
+      const errorBox = document.getElementById("error");
+      const show = (text) => {
+        errorBox.textContent = text;
+        errorBox.hidden = !text;
+      };
+      if (params.get("hub")) input.value = params.get("hub");
+      if (params.get("error")) show(`${t.failed} ${params.get("error")}`);
+      document.getElementById("version").textContent = `Orbis Android · ${t.version} ${params.get("v") || ""}`;
+
+      document.getElementById("form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!window.orbisAndroid) return show(t.invalid);
+        const why = window.orbisAndroid.connect(input.value);
+        show(why ? t[why] || why : "");
+      });
+      if (!input.value) input.focus();
+    </script>
+  </body>
+</html>

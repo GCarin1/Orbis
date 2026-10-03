@@ -75,15 +75,24 @@ describe("a restart seen from the old window", () => {
 
 describe("the launcher's options", () => {
   it("takes the options in Portuguese or English, the port from ORBIS_PORT, and refuses what it does not know", () => {
-    expect(launcher.parseArgs([])).toEqual({ build: true, install: false, open: true, help: false, shortcuts: "once" });
+    expect(launcher.parseArgs([])).toEqual({ build: true, install: false, open: true, help: false, shortcuts: "once", phone: false });
     expect(launcher.parseArgs(["--rapido", "--instalar", "--sem-navegador"])).toEqual({
       build: false,
       install: true,
       open: false,
       help: false,
       shortcuts: "once",
+      phone: false,
     });
-    expect(launcher.parseArgs(["--no-build", "--install", "--no-open"])).toEqual({ build: false, install: true, open: false, help: false, shortcuts: "once" });
+    expect(launcher.parseArgs(["--no-build", "--install", "--no-open"])).toEqual({
+      build: false,
+      install: true,
+      open: false,
+      help: false,
+      shortcuts: "once",
+      phone: false,
+    });
+    expect(launcher.parseArgs(["--celular"]).phone).toBe(true);
     expect(launcher.parseArgs(["--atalhos"]).shortcuts).toBe("now");
     expect(launcher.parseArgs(["--sem-atalhos"]).shortcuts).toBe("never");
     expect(() => launcher.parseArgs(["--zzz"])).toThrow(/opcao desconhecida/);
@@ -91,6 +100,24 @@ describe("the launcher's options", () => {
     expect(launcher.portOf({ ORBIS_PORT: "8123" })).toBe(8123);
     expect(launcher.portOf({ ORBIS_PORT: "lixo" })).toBe(7420);
     expect(launcher.DEFAULT_PORT).toBe(DEFAULT_PORT);
+  });
+
+  it("gives the phone's addresses when the hub listens on the network (change 0043)", () => {
+    expect(launcher.listensOnNetwork({})).toBe(false);
+    expect(launcher.listensOnNetwork({ ORBIS_HOST: "127.0.0.1" })).toBe(false);
+    expect(launcher.listensOnNetwork({ ORBIS_HOST: "localhost" })).toBe(false);
+    expect(launcher.listensOnNetwork({ ORBIS_HOST: "0.0.0.0" })).toBe(true);
+    expect(launcher.listensOnNetwork({ ORBIS_HOST: "192.168.0.10" })).toBe(true);
+    const cards = {
+      lo: [{ address: "127.0.0.1", family: "IPv4", internal: true }],
+      wifi: [
+        { address: "192.168.0.10", family: "IPv4", internal: false },
+        { address: "fe80::1", family: "IPv6", internal: false },
+      ],
+      vpn: [{ address: "10.8.0.2", family: 4, internal: false }],
+    };
+    expect(launcher.phoneLinks(7420, "tok en", cards)).toEqual(["http://192.168.0.10:7420/#token=tok%20en", "http://10.8.0.2:7420/#token=tok%20en"]);
+    expect(launcher.phoneLinks(7421, null, cards)).toEqual(["http://192.168.0.10:7421/", "http://10.8.0.2:7421/"]);
   });
 });
 

@@ -1,0 +1,17 @@
+// The Orbis Android app: a native shell around the web app the hub serves (specs/android-app, ADR 0012).
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "orbis-android"
+include ":app"

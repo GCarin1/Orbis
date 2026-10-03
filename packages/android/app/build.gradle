@@ -1,0 +1,59 @@
+// The app's version follows Orbis's (the root package.json); CI adds the build number and the commit.
+import groovy.json.JsonSlurper
+
+plugins {
+    id "com.android.application"
+}
+
+def orbisVersion = new JsonSlurper().parse(rootProject.file("../../package.json")).version
+def buildNumber = (findProperty("orbisBuildNumber") ?: "1").toString().toInteger()
+def versionSuffix = (findProperty("orbisVersionSuffix") ?: "").toString()
+
+// A release key from the environment (CI secrets); without one the APK is signed with the debug key,
+// which installs fine but cannot update an install signed by another machine's key.
+def keystorePath = System.getenv("ORBIS_ANDROID_KEYSTORE")
+def hasReleaseKey = keystorePath != null && !keystorePath.isEmpty() && file(keystorePath).exists()
+
+android {
+    namespace "app.orbis.android"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "app.orbis.android"
+        minSdk 24
+        targetSdk 35
+        versionCode buildNumber
+        versionName "${orbisVersion}${versionSuffix}"
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv("ORBIS_ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ORBIS_ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ORBIS_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+}
