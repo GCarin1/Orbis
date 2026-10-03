@@ -64,11 +64,11 @@ GitHub Actions workflow builds the APK of the current version on demand.
 **MVP (committed):**
 
 - WebView shell with a connect screen, hub-only navigation, file picker, Downloads, Back; adaptive icon; APK workflow with optional signing; launcher's phone mode.
+- Pairing by code or QR code (change 0047).
 
 **Future (aspirational, not committed):**
 
 - Native push notifications for approvals and reports.
-- A QR code in the web app to connect the phone without typing.
 - Publishing in an app store.
 
 ## Out of scope for this spec

@@ -9,6 +9,18 @@ change that delivered it.
 
 ### Added
 
+- Connecting the phone with a QR code (change 0047-pairing-qr-code).
+  - **⚙ Settings → Phone** shows a QR code next to the six-digit code. It
+    holds `<address>#pair=<code>`, never the token, and with several network
+    cards you pick the address.
+  - The Android app's first screen gets **Scan QR code**. It uses Google
+    Play's scanner, so the app asks for no camera permission.
+  - Without the app, the phone's camera opens the link in the browser,
+    already signed in. The browser's sign-in screen also takes the six
+    digits in place of the token.
+  - A shared `#pair=` link connects too.
+  - ADR 0014 supersedes ADR 0013.
+
 - More free MCP servers, each with its own logo (change 0045-mcp-catalog-free-servers-and-logos).
   The sidebar's **🧩 Tools** is now **🧩 MCP**, and its catalog lists 37 servers.
   All of them are free: no account, a free plan or a free key. Each one was

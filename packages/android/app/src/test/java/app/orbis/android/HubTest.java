@@ -59,6 +59,21 @@ public class HubTest {
     }
 
     @Test
+    public void theComputersQrCodeIsTheHubAndAPairingCode() {
+        String link = "http://192.168.0.10:7420/#pair=483219";
+        assertEquals("483219", Hub.pairCode(link));
+        assertEquals("483219", Hub.pairCode("https://orbis.example.com/#x=1&pair=483219"));
+        assertNull(Hub.pairCode("http://192.168.0.10:7420/#pair=4832"));
+        assertNull(Hub.pairCode("http://192.168.0.10:7420/?pair=483219"));
+        assertNull(Hub.pairCode(null));
+        Hub.Target t = Hub.pairLink("Abra no celular: " + link);
+        assertEquals("http://192.168.0.10:7420/", t.base);
+        assertEquals("483219", Hub.pairCode(t.load));
+        assertNull(Hub.pairLink("http://192.168.0.10:7420/#token=abc"));
+        assertNull(Hub.pairLink("ftp://pc/#pair=483219"));
+    }
+
+    @Test
     public void recentHubsPutTheLastFirstWithoutRepeats() {
         java.util.List<String> before = java.util.Arrays.asList("http://a:7420/", "http://b:7420/", "http://c:7420/");
         assertEquals(java.util.Arrays.asList("http://b:7420/", "http://a:7420/", "http://c:7420/"), Hub.recent(before, "http://b:7420/", 5));

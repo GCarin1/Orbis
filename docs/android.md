@@ -38,16 +38,32 @@ Android Studio opens `packages/android` too (it adds the Gradle wrapper).
    sign-in token, e.g. `http://192.168.0.10:7420/#token=…`. If Windows asks,
    allow Node on **private** networks. Elsewhere: `orbis serve --host 0.0.0.0`
    (or `ORBIS_HOST=0.0.0.0`).
-2. **Pair the phone with a code** — no token to type. On the computer, open
-   **⚙ Settings → Phone** in Orbis and press **Make a code**: it shows a
-   six-digit code (it works once, for five minutes) and this computer's
-   addresses, and warns when Orbis only listens on the computer. In the app,
-   type an address (a bare `192.168.0.10` becomes `http://192.168.0.10:7420/`)
-   and the code, and press **Connect**: the app trades the code for the token
-   (`POST /api/v1/pairing/claim`). Other ways in: **Paste** a link copied on the
-   computer, **share** the link to the Orbis app from another app (a chat with
-   yourself, say), or type the address alone and Orbis asks for the token
-   (`Orbis-Token.bat` shows it).
+2. **Pair the phone with the QR code.** You don't type the token.
+   - On the computer, open **⚙ Settings → Phone** in Orbis and press
+     **Make a code**. It shows:
+     - a QR code;
+     - a six-digit code, which works once, for five minutes;
+     - this computer's addresses;
+     - a warning when Orbis listens only on the computer.
+   - In the app, tap **Scan QR code** and point the phone at the screen. The
+     app trades the code for the token (`POST /api/v1/pairing/claim`) and
+     opens Orbis.
+     - The scanner is Google Play's own camera screen, so the app never asks
+       for the camera permission.
+   - With no app, the phone's camera opens the same link in the browser,
+     already signed in.
+   - The QR code holds `<address>#pair=<code>`, never the token. With more
+     than one network card, pick the address the phone reaches.
+   - No scanner (a phone without Google Play)? Type an address (a bare
+     `192.168.0.10` becomes `http://192.168.0.10:7420/`) and the code, then
+     press **Connect**. In a browser, type the six digits where the token
+     goes.
+   - Other ways in:
+     - **Paste** a link copied on the computer.
+     - **Share** a link to the Orbis app from another app (a chat with
+       yourself, say).
+     - Type the address alone. Orbis then asks for the token, which
+       `Orbis-Token.bat` shows.
 3. The phone must be on the same Wi-Fi as the computer, or on a VPN to it
    (Tailscale, WireGuard…). Anyone on that network who has the token can use
    your hub: keep `0.0.0.0` for networks you trust, and replace the token with

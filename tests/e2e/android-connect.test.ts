@@ -1,7 +1,7 @@
 // specs/android-app — the Android app's first screen (packages/android/app/src/main/assets/connect.html),
 // in a real browser with the app's bridge stood in for: it hands the typed address (and a pairing code) to
 // the app, translates why one is refused, says when the hub did not answer and tries again, offers the
-// recent hubs and a copied link, and explains an untrusted certificate.
+// recent hubs and a copied link, reads the computer's QR code, and explains an untrusted certificate.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -32,6 +32,11 @@ async function open(locale: string, query = ""): Promise<Page> {
         return code.trim() ? "pending" : "";
       },
       clipboardText: () => "No celular, digite:\n  http://192.168.0.10:7420/#token=abc\n",
+      // Google Play's scanner answers later, as the app does: what the test put in `scan`.
+      scanQr() {
+        const scan = (window as unknown as { scan: [string | null, string | null] }).scan;
+        setTimeout(() => (window as unknown as { onScanned(text: string | null, why: string | null): void }).onScanned(...scan), 10);
+      },
     };
   });
   await tab.goto(page + query);
@@ -71,6 +76,24 @@ describe("the Android app's connect screen", () => {
     expect(await tab.getByLabel("Endereço do Orbis no seu computador").inputValue()).toBe("https://orbis.example.com/");
     await tab.getByRole("button", { name: "Colar" }).click();
     expect(await tab.getByLabel("Endereço do Orbis no seu computador").inputValue()).toBe("http://192.168.0.10:7420/#token=abc");
+  });
+
+  it("reads the computer's QR code and connects with its address and code, or says why not", async () => {
+    const tab = await open("pt-BR");
+    const scan = async (text: string | null, why: string | null) => {
+      await tab.evaluate((s) => ((window as unknown as { scan: unknown }).scan = s), [text, why]);
+      await tab.getByRole("button", { name: "Ler QR code" }).click();
+    };
+    await tab.getByText("ou digite o endereço", { exact: true }).waitFor();
+    await scan("https://example.com/menu", null);
+    await tab.getByText(/Esse QR code não é de um Orbis/).waitFor();
+    await scan(null, "unavailable");
+    await tab.getByText(/não tem o leitor de QR code do Google Play/).waitFor();
+    await scan(null, "cancelled");
+    await scan("http://192.168.0.10:7420/#pair=483219", null);
+    await tab.getByRole("button", { name: "Conectando…" }).waitFor();
+    expect(await tab.getByLabel("Endereço do Orbis no seu computador").inputValue()).toBe("http://192.168.0.10:7420/");
+    expect(await calls(tab)).toEqual([["http://192.168.0.10:7420/", "483219"]]);
   });
 
   it("says why the saved hub did not answer and tries it again by itself, in English too", async () => {

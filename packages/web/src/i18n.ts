@@ -681,8 +681,8 @@ const pt = {
   "phone.secret": "{name} pede o segredo {secret}",
   "phone.pairTitle": "Conectar o celular",
   "phone.pairStep1": "Abra o Orbis no computador pelo Orbis-Celular.bat (ou orbis serve --host 0.0.0.0), para ele aceitar conexões da rede.",
-  "phone.pairStep2": "No app Orbis do celular, na mesma rede Wi-Fi, digite um dos endereços abaixo.",
-  "phone.pairStep3": "Digite também o código: o app entra sem você digitar o token.",
+  "phone.pairStep2": "Gere um código: no app Orbis do celular, na mesma rede Wi-Fi, toque em Ler QR code e aponte para o QR abaixo.",
+  "phone.pairStep3": "Ou digite no app um dos endereços e o código de 6 dígitos: ele entra sem você digitar o token.",
   "phone.makeCode": "Gerar código",
   "phone.newCode": "Gerar outro código",
   "phone.code": "Código de pareamento",
@@ -701,6 +701,11 @@ const pt = {
   "phone.shared": "Escolha a conversa para enviar o texto compartilhado:",
   "phone.sharedDismiss": "Descartar o texto compartilhado",
   "market.cat.finance": "Finanças",
+  "phone.qrLabel": "QR code para conectar o celular em {address}",
+  "phone.qrHelp": "No app Orbis, toque em Ler QR code. Sem o app, a câmera do celular abre o Orbis no navegador já conectado.",
+  "token.orCode": "No celular: digite aqui o código de 6 dígitos de Configurações → Celular do computador, ou leia o QR code de lá com a câmera.",
+  "token.pairing": "Conectando com o código do computador…",
+  "token.codeInvalid": "Código errado, já usado ou vencido: gere outro no computador, em Configurações → Celular.",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1383,8 +1388,8 @@ const en: Record<TextKey, string> = {
   "phone.secret": "{name} asks for the secret {secret}",
   "phone.pairTitle": "Connect your phone",
   "phone.pairStep1": "Start Orbis on the computer with Orbis-Celular.bat (or orbis serve --host 0.0.0.0) so it takes connections from the network.",
-  "phone.pairStep2": "In the Orbis app on the phone, on the same Wi-Fi, type one of the addresses below.",
-  "phone.pairStep3": "Type the code too: the app signs in without you typing the token.",
+  "phone.pairStep2": "Make a code: in the Orbis app on the phone, on the same Wi-Fi, tap Scan QR code and point it at the QR code below.",
+  "phone.pairStep3": "Or type one of the addresses and the 6-digit code in the app: it signs in without you typing the token.",
   "phone.makeCode": "Make a code",
   "phone.newCode": "Make another code",
   "phone.code": "Pairing code",
@@ -1403,6 +1408,11 @@ const en: Record<TextKey, string> = {
   "phone.shared": "Pick the conversation to send the shared text to:",
   "phone.sharedDismiss": "Discard the shared text",
   "market.cat.finance": "Finance",
+  "phone.qrLabel": "QR code to connect the phone at {address}",
+  "phone.qrHelp": "In the Orbis app, tap Scan QR code. Without the app, the phone's camera opens Orbis in the browser, signed in.",
+  "token.orCode": "On a phone: type here the 6-digit code from Settings → Phone on the computer, or scan its QR code with the camera.",
+  "token.pairing": "Connecting with the computer's code…",
+  "token.codeInvalid": "Wrong, used or expired code: make another on the computer, in Settings → Phone.",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

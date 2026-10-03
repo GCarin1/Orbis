@@ -453,9 +453,10 @@
         "id": "0013",
         "path": ".doctrina/decisions/0013-the-android-app-is-a-webview-shell-with-a-native-bridge-for-notifications-voice-and-pairing.md",
         "title": "The Android app is a WebView shell with a native bridge for notifications, voice and pairing",
-        "status": "accepted",
+        "status": "superseded by 0014",
         "date": "2026-10-03",
         "supersedes": "0012",
+        "superseded_by": "0014",
         "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/hub/src/api/pairing-routes.ts`",
         "scope": [
           "android-app",
@@ -463,9 +464,32 @@
           "hub-api"
         ],
         "summary": "The app stays a WebView shell showing the hub's web app (ADR 0012's core)."
+      },
+      {
+        "id": "0014",
+        "path": ".doctrina/decisions/0014-the-android-app-is-a-webview-shell-with-a-native-bridge-for-notifications-voice-and-pairing-by-code-or-qr-code.md",
+        "title": "The Android app is a WebView shell with a native bridge for notifications, voice and pairing by code or QR code",
+        "status": "accepted",
+        "date": "2026-10-03",
+        "supersedes": "0013",
+        "scope": [
+          "android-app",
+          "web-app",
+          "hub-api"
+        ],
+        "summary": "Everything ADR 0013 decided stands."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0047-pairing-qr-code",
+        "title": "pairing qr code",
+        "path": ".doctrina/changes/0047-pairing-qr-code",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

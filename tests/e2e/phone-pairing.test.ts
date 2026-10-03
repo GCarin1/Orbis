@@ -1,5 +1,6 @@
 // specs/android-app, specs/hub-api — pairing a phone, end to end: the web app on the computer makes a code in
-// Settings → Phone, and the code (as the Android app sends it, with no token) is traded once for the token.
+// Settings → Phone, and the code (as the Android app sends it, with no token) is traded once for the token; the
+// QR code's link opens the web app on a phone signed in, and a code typed on the sign-in screen does too.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -56,4 +57,43 @@ describe("pairing a phone", () => {
     expect(await first.json()).toEqual({ token: TOKEN });
     expect((await claim(code)).status).toBe(401);
   }, 60_000);
+
+  it("signs a phone's browser in from the QR code's link, and from a code typed on the sign-in screen", async () => {
+    const computer = await (await browser.newContext({ locale: "en-US" })).newPage();
+    await computer.goto(`${url}/#token=${TOKEN}`);
+    const makeCode = async () => {
+      await computer
+        .getByRole("button", { name: /Settings/ })
+        .first()
+        .click();
+      await computer.getByRole("tab", { name: "Phone" }).click();
+      await computer.getByRole("button", { name: /Make (a|another) code/ }).click();
+      return (await computer.getByTestId("pairing-code").textContent())!.replace(/\s/g, "");
+    };
+    const code = await makeCode();
+    const link = (await computer.getByTestId("pairing-qr").getAttribute("data-link"))!;
+    expect(link).toMatch(new RegExp(`^https?://[^/]+/#pair=${code}$`));
+    await computer.getByRole("img", { name: /QR code to connect the phone at/ }).waitFor();
+
+    // The phone's camera opens the link in its browser: the hub here is on 127.0.0.1, so the test opens the
+    // same fragment on it. The web app trades the code, signs in and drops the code from the address bar.
+    const phone = await (await browser.newContext({ locale: "en-US", viewport: { width: 390, height: 844 }, isMobile: true })).newPage();
+    await phone.goto(`${url}/${link.slice(link.indexOf("#"))}`);
+    await expect.poll(() => phone.evaluate(() => localStorage.getItem("orbis.token"))).toBe(TOKEN);
+    await phone.locator("main.gate").waitFor({ state: "detached" });
+    expect(new URL(phone.url()).hash).toBe("");
+
+    // The same link again: the code is used up, and the sign-in screen says so.
+    const again = await (await browser.newContext({ locale: "en-US" })).newPage();
+    await again.goto(`${url}/${link.slice(link.indexOf("#"))}`);
+    await again.getByText(/Wrong, used or expired code/).waitFor();
+
+    // The 6 digits typed where the token goes sign in too.
+    await computer.reload();
+    const typed = await makeCode();
+    await again.getByLabel("API token").fill(`${typed.slice(0, 3)} ${typed.slice(3)}`);
+    await again.getByRole("button", { name: "Connect" }).click();
+    await again.locator("main.gate").waitFor({ state: "detached" });
+    expect(await again.evaluate(() => localStorage.getItem("orbis.token"))).toBe(TOKEN);
+  }, 90_000);
 });

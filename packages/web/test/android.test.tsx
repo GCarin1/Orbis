@@ -1,10 +1,14 @@
 // specs/android-app — what the web app does inside the Android app: files go to the phone's Downloads, the
 // phone tab shows the hub, its notifications and keeping it connected; on the computer it pairs the phone
-// with a code; notifications for what happens off screen; the phone's dictation and voice; shared text.
+// with a code and a QR code; a phone's browser signs in with either; notifications for what happens off
+// screen; the phone's dictation and voice; shared text.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import jsQR from "jsqr";
 import type { Bot, Conversation, StreamEvent, TimelineItem } from "@orbis/shared";
-import { PhoneSettings } from "../src/components/PhoneSettings.js";
+import { pairingLink, phoneAddresses, PhoneSettings } from "../src/components/PhoneSettings.js";
+import { qrPath } from "../src/components/QrCode.js";
+import { pairingDigits, TokenGate } from "../src/components/TokenGate.js";
 import { Composer } from "../src/components/Composer.js";
 import { androidApp, saveTextFile, setBackHandler } from "../src/native.js";
 import { notifyPhone, phoneNote } from "../src/phone.js";
@@ -100,11 +104,78 @@ describe("pairing the phone, on the computer", () => {
     expect(screen.getByText("vale uma vez, por mais 5:00")).toBeTruthy();
     expect(screen.getByText("http://192.168.0.10:7420/")).toBeTruthy();
     expect(screen.getByText(/escutando só neste computador/)).toBeTruthy();
+    // The QR code holds the address and the code, and a camera reads exactly that back.
+    expect(screen.getByTestId("pairing-qr").dataset.link).toBe("http://192.168.0.10:7420/#pair=483219");
+    expect(screen.getByRole("img", { name: "QR code para conectar o celular em http://192.168.0.10:7420/" })).toBeTruthy();
+    expect(readQr("http://192.168.0.10:7420/#pair=483219")).toBe("http://192.168.0.10:7420/#pair=483219");
     await act(async () => {
       vi.advanceTimersByTime(5 * 60_000 + 1000);
     });
     expect(screen.getByRole("button", { name: "Gerar outro código" })).toBeTruthy();
     vi.useRealTimers();
+  });
+});
+
+/** Draw the QR code's path as pixels and read it back as a phone's camera would. */
+function readQr(text: string): string | null {
+  const { size, d } = qrPath(text);
+  const scale = 6;
+  const px = size * scale;
+  const rgba = new Uint8ClampedArray(px * px * 4).fill(255);
+  for (const [, x, y] of d.matchAll(/M(\d+) (\d+)/g))
+    for (let dy = 0; dy < scale; dy++)
+      for (let dx = 0; dx < scale; dx++) {
+        const i = ((Number(y) * scale + dy) * px + Number(x) * scale + dx) * 4;
+        rgba[i] = rgba[i + 1] = rgba[i + 2] = 0;
+      }
+  return jsQR(rgba, px, px)?.data ?? null;
+}
+
+describe("the pairing QR code", () => {
+  it("holds the address picked among the computer's, and the page's own address when it is not this computer", async () => {
+    const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+    const post = vi.fn(async () => ({ code: "483219", expiresAt, listening: true, addresses: ["http://192.168.0.10:7420/", "http://10.8.0.2:7420/"] }));
+    render(<PhoneSettings api={{ post } as unknown as Api} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Gerar código" })));
+    expect(screen.getByTestId("pairing-qr").dataset.link).toBe("http://192.168.0.10:7420/#pair=483219");
+    fireEvent.click(screen.getByRole("radio", { name: "http://10.8.0.2:7420/" }));
+    expect(screen.getByTestId("pairing-qr").dataset.link).toBe("http://10.8.0.2:7420/#pair=483219");
+    expect(readQr("http://10.8.0.2:7420/#pair=483219")).toBe("http://10.8.0.2:7420/#pair=483219");
+
+    expect(phoneAddresses(["http://192.168.0.10:7420/"], { origin: "http://127.0.0.1:7420", hostname: "127.0.0.1" })).toEqual(["http://192.168.0.10:7420/"]);
+    expect(phoneAddresses(["http://192.168.0.10:7420/"], { origin: "https://orbis.example.com", hostname: "orbis.example.com" })).toEqual([
+      "https://orbis.example.com/",
+      "http://192.168.0.10:7420/",
+    ]);
+    expect(phoneAddresses(["http://192.168.0.10:7420/"], { origin: "http://192.168.0.10:7420", hostname: "192.168.0.10" })).toEqual([
+      "http://192.168.0.10:7420/",
+    ]);
+    expect(pairingLink("https://orbis.example.com", "123456")).toBe("https://orbis.example.com/#pair=123456");
+  });
+});
+
+describe("signing a phone's browser in", () => {
+  const answer = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  it("trades the QR code's code once, and takes the 6 digits typed where the token goes", async () => {
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(answer(200, { token: "the-token" }));
+    const onToken = vi.fn();
+    const { unmount } = render(<TokenGate pairCode="483219" onToken={onToken} />);
+    expect(screen.getByRole("status").textContent).toBe("Conectando com o código do computador…");
+    await waitFor(() => expect(onToken).toHaveBeenCalledWith("the-token"));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0]![0]).toBe("/api/v1/pairing/claim");
+    expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).toEqual({ code: "483219" });
+    unmount();
+
+    fetch.mockResolvedValue(answer(401, { error: { code: "invalid_code", message: "wrong" } }));
+    render(<TokenGate onToken={onToken} />);
+    fireEvent.change(screen.getByLabelText("token da API"), { target: { value: "483 219" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Conectar" })));
+    expect(JSON.parse(String(fetch.mock.calls[1]![1]!.body))).toEqual({ code: "483219" });
+    expect(screen.getByText(/Código errado, já usado ou vencido/)).toBeTruthy();
+    expect(pairingDigits("483-219")).toBe("483219");
+    expect(pairingDigits("a1b2c3d4e5f6a7b8")).toBeNull();
   });
 });
 

@@ -22,6 +22,29 @@ export function captureTokenFromUrl(): void {
   history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
+/**
+ * Take a pairing code handed over in the URL fragment (#pair=483219: the computer's QR code read by the
+ * phone's camera) and remove it from the address bar; the sign-in screen trades it for the token.
+ */
+export function capturePairingFromUrl(): string | null {
+  const m = /(?:^#|&)pair=(\d{6})(?:&|$)/.exec(window.location.hash);
+  if (!m) return null;
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+  return m[1]!;
+}
+
+/** Trade a pairing code for the hub's token (`POST /api/v1/pairing/claim`, the one route without the token). */
+export async function claimPairing(code: string, base = ""): Promise<string> {
+  const res = await fetch(`${base}/api/v1/pairing/claim`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  const body = (await res.json().catch(() => null)) as { token?: unknown } | ApiErrorBody | null;
+  if (res.ok && body && "token" in body && typeof body.token === "string") return body.token;
+  throw new ApiError(res.status, body && "error" in body ? body : null);
+}
+
 export function loadToken(): string | null {
   const injected = (window as unknown as { orbisDesktop?: { token?: string } }).orbisDesktop?.token;
   if (injected) return injected;

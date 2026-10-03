@@ -55,5 +55,8 @@ android {
 }
 
 dependencies {
+    // Google Play's code scanner: reads the computer's QR code with its own camera screen, so the app asks
+    // for no camera permission (ADR 0014).
+    implementation "com.google.android.gms:play-services-code-scanner:16.1.0"
     testImplementation "junit:junit:4.13.2"
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
-import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
+import { Api, capturePairingFromUrl, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
 import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
@@ -47,6 +47,8 @@ export function App() {
     captureTokenFromUrl();
     return loadToken();
   });
+  /** A pairing code from a QR code's link (#pair=…), for the sign-in screen to trade for the token. */
+  const [pairCode] = useState(capturePairingFromUrl);
   const lang = useLang((s) => s.lang);
   const [creatingGroup, setCreatingGroup] = useState(false);
   /** A group's info beside its conversation (a flyout; full screen on a phone), and which part of it. */
@@ -217,6 +219,7 @@ export function App() {
   if (!token) {
     return (
       <TokenGate
+        pairCode={pairCode}
         onToken={(value) => {
           saveToken(value);
           setToken(value);

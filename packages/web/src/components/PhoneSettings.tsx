@@ -1,21 +1,38 @@
-// Settings → Phone (specs/android-app, specs/web-app): on the computer, a code that pairs the Android app
-// with this hub without typing the token; inside the Android app, the hub it shows, its notifications and
-// keeping it connected in the background.
+// Settings → Phone (specs/android-app, specs/web-app): on the computer, a QR code and a code that pair the
+// phone with this hub without typing the token; inside the Android app, the hub it shows, its notifications
+// and keeping it connected in the background.
 import { useEffect, useState } from "react";
 import type { PairingCode } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT } from "../i18n.js";
 import { androidApp } from "../native.js";
+import { QrCode } from "./QrCode.js";
 
 /** "483219" → "483 219", easier to read aloud and to type. */
 export const spacedCode = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
+
+/** The link a QR code holds: the hub's address and the code, which the app or the phone's browser trades for the token. */
+export const pairingLink = (address: string, code: string) => `${address.replace(/\/?$/, "/")}#pair=${code}`;
+
+/**
+ * The addresses a phone can reach this hub at: the one this page was opened at when it is not this computer's
+ * own (a network address or a domain), then the hub's network cards.
+ */
+export function phoneAddresses(addresses: string[], here: { origin: string; hostname: string }): string[] {
+  const local = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\])$/i.test(here.hostname);
+  const all = local ? addresses : [`${here.origin}/`, ...addresses];
+  return [...new Set(all)];
+}
 
 function PairingCard({ api }: { api: Api }) {
   const t = useT();
   const [pairing, setPairing] = useState<PairingCode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [chosen, setChosen] = useState(0);
   const left = pairing ? Math.max(0, Math.round((new Date(pairing.expiresAt).getTime() - now) / 1000)) : 0;
+  const addresses = pairing ? phoneAddresses(pairing.addresses, window.location) : [];
+  const address = addresses[Math.min(chosen, addresses.length - 1)];
 
   useEffect(() => {
     if (!pairing) return;
@@ -48,17 +65,30 @@ function PairingCard({ api }: { api: Api }) {
       )}
       {pairing && left > 0 ? (
         <div className="pairing-code">
+          {address && (
+            <figure className="pairing-qr" data-testid="pairing-qr" data-link={pairingLink(address, pairing.code)}>
+              <QrCode text={pairingLink(address, pairing.code)} label={t("phone.qrLabel", { address })} />
+              <figcaption className="muted small">{t("phone.qrHelp")}</figcaption>
+            </figure>
+          )}
           <span className="code" aria-label={t("phone.code")} data-testid="pairing-code">
             {spacedCode(pairing.code)}
           </span>
           <span className="muted">{t("phone.codeLeft", { time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` })}</span>
-          {pairing.addresses.length > 0 && (
+          {addresses.length > 0 && (
             <div>
               <p className="field-label">{t("phone.addresses")}</p>
-              <ul className="phone-addresses">
-                {pairing.addresses.map((a) => (
+              {/* More than one network card: the QR code holds the address picked here. */}
+              <ul className="phone-addresses" role={addresses.length > 1 ? "radiogroup" : undefined} aria-label={t("phone.addresses")}>
+                {addresses.map((a, i) => (
                   <li key={a}>
-                    <code>{a}</code>
+                    {addresses.length > 1 ? (
+                      <label className="check">
+                        <input type="radio" name="pairing-address" checked={a === address} onChange={() => setChosen(i)} /> <code>{a}</code>
+                      </label>
+                    ) : (
+                      <code>{a}</code>
+                    )}
                   </li>
                 ))}
               </ul>

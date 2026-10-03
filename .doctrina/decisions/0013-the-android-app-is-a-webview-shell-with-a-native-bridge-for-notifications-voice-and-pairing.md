@@ -1,11 +1,11 @@
 # ADR 0013 — The Android app is a WebView shell with a native bridge for notifications, voice and pairing
 
-- **Status:** accepted
+- **Status:** superseded by 0014
 - **Scope:** android-app, web-app, hub-api
 - **Date:** 2026-10-03
 - **Deciders:** project owner (requirement: "rode uma auditoria e procure por funcionalidades faltantes"), Claude Code
 - **Supersedes:** 0012
-- **Superseded by:** —
+- **Superseded by:** 0014
 - **Evidence:** `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/android/app/src/main/java/app/orbis/android/KeepAliveService.java`, `packages/hub/src/api/pairing-routes.ts`, `packages/web/src/phone.ts`
 - **Landed:** 2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/hub/src/api/pairing-routes.ts`
 

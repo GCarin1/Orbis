@@ -30,6 +30,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Orbis">
 
+        <!-- Google Play downloads its QR code scanner with the app, so the first scan does not wait. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

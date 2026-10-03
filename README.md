@@ -69,7 +69,7 @@ are proven by tests.
 | Secrets (per-bot AES-256-GCM vault, `{{secret:NAME}}` resolved only in the tool gateway, redaction, secret-request cards) and usage (per bot and month, price table, spend caps) | ✅ verified |
 | Bot templates (YAML export with a secret scan, import with routines disabled) and the bot settings screen | ✅ verified |
 | Desktop app (Electron: finds or starts the hub, hardened window, native notifications, tray) | ✅ verified |
-| Android app (an APK built by GitHub Actions: the hub's web app on the phone over your Wi-Fi, notifications when a bot replies or needs you, pairing with a six-digit code, the phone's dictation and voice, share to Orbis) | ✅ verified |
+| Android app (an APK built by GitHub Actions: the hub's web app on the phone over your Wi-Fi, notifications when a bot replies or needs you, pairing with a QR code or a six-digit code, the phone's dictation and voice, share to Orbis) | ✅ verified |
 | A team with a hierarchy: managers delegate to their reports and report back on their own when all the work is done; mentions by handle or role (`@qa`); bots bring each other into a conversation | ✅ verified |
 | The Orbis look: bot faces (8 shapes, 10 colors, eyes that follow the bot's state), one conversation list with unread dots, the bot panel (screen, routines, team), the new-bot screen, dark mode and phones | ✅ verified |
 | Three kinds of computer per bot: a private folder, **your own computer** (a folder you choose, your programs, a visible browser; by explicit consent, writes ask first) or a Docker container with a desktop you watch live, with one-click image preparation | ✅ verified |

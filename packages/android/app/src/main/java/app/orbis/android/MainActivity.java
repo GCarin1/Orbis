@@ -35,6 +35,10 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -156,6 +160,37 @@ public class MainActivity extends Activity {
         open(load);
     }
 
+    /** Trade a pairing code for the token, then connect; the connect screen hears why a code was refused. */
+    private void pair(Hub.Target target, String code) {
+        new Thread(() -> {
+            Pairing.Result r = Pairing.claim(target.base, code);
+            runOnUiThread(() -> {
+                if (r.token != null) connectTo(target, target.base + "#token=" + Uri.encode(r.token));
+                else if (onConnectPage) web.evaluateJavascript("window.onConnectResult&&window.onConnectResult(" + JSONObject.quote(r.error) + ")", null);
+                else Toast.makeText(MainActivity.this, r.error.equals("code") ? R.string.pair_code_refused : R.string.pair_failed, Toast.LENGTH_LONG).show();
+            });
+        }, "orbis-pairing").start();
+    }
+
+    /**
+     * Google Play's code scanner: its own camera screen, so the app asks for no camera permission. The connect
+     * screen gets what was read, or why nothing was ("cancelled", or "unavailable" without Google Play).
+     */
+    private void scanQr() {
+        GmsBarcodeScannerOptions options = new GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build();
+        GmsBarcodeScanning.getClient(this, options)
+                .startScan()
+                .addOnSuccessListener(code -> scanned(code.getRawValue(), null))
+                .addOnCanceledListener(() -> scanned(null, "cancelled"))
+                .addOnFailureListener(e -> scanned(null, "unavailable"));
+    }
+
+    private void scanned(String text, String error) {
+        if (!onConnectPage) return;
+        String args = (text == null ? "null" : JSONObject.quote(text)) + "," + (error == null ? "null" : JSONObject.quote(error));
+        web.evaluateJavascript("window.onScanned&&window.onScanned(" + args + ")", null);
+    }
+
     /** Show the hub's web app at `url` (which may end in #token=... for the web app to sign in). */
     private void open(String url) {
         hubOrigin = Hub.origin(url);
@@ -196,9 +231,12 @@ public class MainActivity extends Activity {
         if (Intent.ACTION_SEND.equals(intent.getAction()) && intent.getStringExtra(Intent.EXTRA_TEXT) != null) {
             String text = intent.getStringExtra(Intent.EXTRA_TEXT);
             intent.setAction(Intent.ACTION_MAIN); // handled once, not again after a rotation
-            // A sign-in link (as Orbis-Celular.bat prints it) connects; any other text goes to a message box.
+            // A sign-in link (as Orbis-Celular.bat prints it) or a pairing link (the computer's QR code)
+            // connects; any other text goes to a message box.
             Hub.Target link = Hub.signInLink(text);
+            Hub.Target pairing = link == null ? Hub.pairLink(text) : null;
             if (link != null) connectTo(link, link.load);
+            else if (pairing != null) pair(pairing, Hub.pairCode(pairing.load));
             else toPage(callHook("__orbisShare", JSONObject.quote(text)));
         }
     }
@@ -321,18 +359,21 @@ public class MainActivity extends Activity {
             if (!onConnectPage) return "invalid";
             Hub.Target target = Hub.parse(address);
             if (target.error != null) return target.error;
-            if (Pairing.digits(code).isEmpty()) {
+            // A link from the computer's QR code carries its own code (…#pair=483219).
+            String linkCode = Hub.pairCode(address);
+            String pairing = Pairing.digits(code).isEmpty() && linkCode != null ? linkCode : code;
+            if (Pairing.digits(pairing).isEmpty()) {
                 runOnUiThread(() -> connectTo(target, target.load));
                 return "";
             }
-            new Thread(() -> {
-                Pairing.Result r = Pairing.claim(target.base, code);
-                runOnUiThread(() -> {
-                    if (r.token != null) connectTo(target, target.base + "#token=" + Uri.encode(r.token));
-                    else web.evaluateJavascript("window.onConnectResult&&window.onConnectResult(" + JSONObject.quote(r.error) + ")", null);
-                });
-            }, "orbis-pairing").start();
+            pair(target, pairing);
             return "pending";
+        }
+
+        /** Read the computer's QR code with the phone's camera (Google Play's scanner) — from the connect screen only. */
+        @JavascriptInterface
+        public void scanQr() {
+            if (onConnectPage) runOnUiThread(MainActivity.this::scanQr);
         }
 
         /** The text on the phone's clipboard (a link copied from the computer), for the connect screen. */

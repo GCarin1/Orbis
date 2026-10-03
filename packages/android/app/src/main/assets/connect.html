@@ -69,6 +69,9 @@
       .retry { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
       .retry button { padding: 7px 12px; font-size: 14px; }
       button:disabled { opacity: 0.6; }
+      .scan { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 17px; padding: 15px; }
+      .scan svg { width: 22px; height: 22px; }
+      .or { margin: 2px 0 -2px; text-align: center; color: var(--muted); font-size: 13px; }
     </style>
   </head>
   <body>
@@ -79,6 +82,11 @@
         <p class="tagline" data-t="tagline"></p>
       </header>
       <form id="form" novalidate>
+        <button type="button" id="scan" class="scan" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
+          <span data-t="scan"></span>
+        </button>
+        <p id="or" class="or" data-t="orType" hidden></p>
         <label for="address" data-t="label"></label>
         <div class="row">
           <input id="address" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="http://192.168.0.10:7420" />
@@ -108,7 +116,7 @@
         connect: "Conectar",
         howTitle: "Como conectar:",
         step1: "No computador, abra o Orbis pelo <code>Orbis-Celular.bat</code> (ou rode <code>orbis serve --host 0.0.0.0</code>): ele passa a aceitar conexões da rede. Se o Windows perguntar, permita o Node nas redes privadas.",
-        step2: "Digite aqui o endereço que ele mostra, como <code>192.168.0.10</code> (a porta 7420 entra sozinha), e o código de <b>Configurações → Celular</b> do Orbis no computador: o app entra sem você digitar o token. Um link com <code>#token=…</code> (cole ou compartilhe com o app) também entra direto.",
+        step2: "No Orbis do computador, abra <b>Configurações → Celular</b>, gere um código e toque em <b>Ler QR code</b> aqui. Ou digite o endereço que ele mostra, como <code>192.168.0.10</code> (a porta 7420 entra sozinha), e o código: o app entra sem você digitar o token. Um link com <code>#token=…</code> (cole ou compartilhe com o app) também entra direto.",
         step3: "O celular precisa estar na mesma rede Wi-Fi do computador, ou numa VPN até ele.",
         empty: "Digite o endereço do Orbis.",
         scheme: "Use um endereço http:// ou https://.",
@@ -128,6 +136,10 @@
         cert: "o certificado desse endereço não é confiável para o celular. Use http:// na rede local ou um certificado válido.",
         retryIn: "Tentando de novo em {n} s…",
         stop: "Parar",
+        scan: "Ler QR code",
+        orType: "ou digite o endereço",
+        scanUnavailable: "Este celular não tem o leitor de QR code do Google Play: digite o endereço e o código.",
+        scanNotOrbis: "Esse QR code não é de um Orbis. No computador, abra Configurações → Celular e gere um código.",
       };
       const en = {
         tagline: "Your bots, on your phone.",
@@ -135,7 +147,7 @@
         connect: "Connect",
         howTitle: "How to connect:",
         step1: "On the computer, open Orbis with <code>Orbis-Celular.bat</code> (or run <code>orbis serve --host 0.0.0.0</code>): it then takes connections from the network. If Windows asks, allow Node on private networks.",
-        step2: "Type here the address it shows, like <code>192.168.0.10</code> (port 7420 is added for you), and the code from <b>Settings → Phone</b> of Orbis on the computer: the app signs in without you typing the token. A link with <code>#token=…</code> (paste it, or share it to the app) signs in directly too.",
+        step2: "In Orbis on the computer, open <b>Settings → Phone</b>, make a code and tap <b>Scan QR code</b> here. Or type the address it shows, like <code>192.168.0.10</code> (port 7420 is added for you), and the code: the app signs in without you typing the token. A link with <code>#token=…</code> (paste it, or share it to the app) signs in directly too.",
         step3: "The phone must be on the computer's Wi-Fi, or on a VPN to it.",
         empty: "Type the address of Orbis.",
         scheme: "Use an http:// or https:// address.",
@@ -155,6 +167,10 @@
         cert: "the phone does not trust that address's certificate. Use http:// on the local network, or a valid certificate.",
         retryIn: "Trying again in {n} s…",
         stop: "Stop",
+        scan: "Scan QR code",
+        orType: "or type the address",
+        scanUnavailable: "This phone has no Google Play QR code scanner: type the address and the code.",
+        scanNotOrbis: "That QR code is not from Orbis. On the computer, open Settings → Phone and make a code.",
       };
       const t = /^pt\b/i.test(navigator.language) ? pt : en;
       document.documentElement.lang = t === pt ? "pt-BR" : "en";
@@ -225,6 +241,26 @@
         submit.disabled = false;
         submit.textContent = t.connect;
         show(t[why] || why);
+      };
+      // The computer's QR code, read by the phone's camera: its link holds the hub and the code (#pair=…).
+      const scan = document.getElementById("scan");
+      if (window.orbisAndroid?.scanQr) {
+        scan.hidden = false;
+        document.getElementById("or").hidden = false;
+        scan.addEventListener("click", () => {
+          show("");
+          window.orbisAndroid.scanQr();
+        });
+      }
+      window.onScanned = (text, why) => {
+        if (why === "unavailable") return show(t.scanUnavailable);
+        if (!text) return;
+        const link = /https?:\/\/\S+/i.exec(text);
+        const code = link && /#(?:[^#]*&)?pair=(\d{6})(?:&|$)/.exec(link[0]);
+        if (!link || !(code || /#token=/.test(link[0]))) return show(t.scanNotOrbis);
+        input.value = code ? link[0].split("#")[0] : link[0];
+        codeInput.value = code ? code[1] : "";
+        connect();
       };
       document.getElementById("form").addEventListener("submit", (e) => {
         e.preventDefault();

@@ -3065,6 +3065,26 @@ label.check {
   margin: 4px 0 0;
   padding-left: 18px;
 }
+.phone-addresses:has(input[type="radio"]) {
+  list-style: none;
+  padding-left: 0;
+}
+/* The pairing QR code: dark on white in both themes, with room around it for a camera. */
+.pairing-qr {
+  margin: 4px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+}
+.qr-code {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--border);
+}
 /* Text shared into the Android app, waiting for a conversation. */
 .share-banner {
   position: fixed;

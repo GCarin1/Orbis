@@ -81,6 +81,22 @@ final class Hub {
         return t.error == null ? t : null;
     }
 
+    /** The pairing code of a link the computer's QR code holds (http://pc:7420/#pair=483219), or null. */
+    static String pairCode(String link) {
+        if (link == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("#(?:[^#]*&)?pair=(\\d{6})(?:&|$)").matcher(link.trim());
+        return m.find() ? m.group(1) : null;
+    }
+
+    /** A pairing link (…#pair=…) inside shared text or a scanned QR code, as the hub to connect to; else null. */
+    static Target pairLink(String text) {
+        if (text == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("https?://\\S+#\\S*pair=\\d{6}\\S*", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(text);
+        if (!m.find() || pairCode(m.group()) == null) return null;
+        Target t = parse(m.group());
+        return t.error == null ? t : null;
+    }
+
     /** The hubs to offer on the connect screen: this one first, then the others, at most `max`. */
     static java.util.List<String> recent(java.util.List<String> before, String hub, int max) {
         java.util.List<String> list = new java.util.ArrayList<>();
