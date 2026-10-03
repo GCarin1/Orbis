@@ -3114,3 +3114,604 @@ label.check {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── The MCP screen, redesigned (change 0048): explore and connected, like Claude's, Cursor's and VS Code's
+   MCP marketplaces; one column and full-screen sheets on a phone. ─────────────────────────────────────── */
+.mcp-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mcp-head-row > div {
+  min-width: 0;
+}
+.mcp-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mcp-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.mcp-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 9px 12px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mcp-tabs button[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+.mcp-count {
+  font-size: 12px;
+  color: var(--muted);
+}
+.mcp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.mcp-search {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--muted);
+}
+.mcp-search:focus-within {
+  border-color: var(--link);
+}
+/* The box around the field is the border: the field itself has none (beating the base input rule). */
+.mcp-search input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  padding: 10px 0;
+  outline: none;
+  color: var(--text);
+}
+.mcp-auth {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.mcp-auth button {
+  white-space: nowrap;
+}
+.mcp-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.mcp-cats .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip-count {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.mcp-featured h2,
+.mcp-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.mcp-featured {
+  margin-bottom: 18px;
+}
+.mcp-featured-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.mcp-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.mcp-feature:hover {
+  border-color: var(--muted);
+}
+.mcp-feature-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.mcp-feature-text strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mcp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 12px;
+}
+.mcp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.mcp-card:hover {
+  border-color: var(--muted);
+  box-shadow: var(--shadow);
+}
+.mcp-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.mcp-card-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mcp-card-title .muted {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mcp-card-name {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mcp-card-desc {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mcp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mcp-tag {
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.mcp-tag.auth-none,
+.mcp-tag.read {
+  color: #15803d;
+  background: rgb(22 163 74 / 10%);
+}
+.mcp-tag.auth-oauth {
+  color: var(--link);
+  background: rgb(37 99 235 / 10%);
+}
+.mcp-tag.auth-token,
+.mcp-tag.asks {
+  color: #b45309;
+  background: rgb(217 119 6 / 12%);
+}
+:root[data-theme="dark"] .mcp-tag.auth-none,
+:root[data-theme="dark"] .mcp-tag.read {
+  color: #4ade80;
+}
+:root[data-theme="dark"] .mcp-tag.auth-token,
+:root[data-theme="dark"] .mcp-tag.asks {
+  color: #fbbf24;
+}
+.btn.btn-sm {
+  padding: 5px 12px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.status-pill.ok {
+  color: #15803d;
+  background: rgb(22 163 74 / 12%);
+}
+.status-pill.wait {
+  color: #b45309;
+  background: rgb(217 119 6 / 12%);
+}
+.status-pill.bad {
+  color: var(--danger);
+  background: rgb(220 38 38 / 10%);
+}
+.mcp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+.mcp-empty h2 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  color: var(--text);
+}
+.mcp-empty p {
+  margin: 0;
+}
+.mcp-summary {
+  margin: 0 0 10px;
+}
+/* A connected server. */
+.mcp-server {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.mcp-server.bad {
+  border-color: rgb(220 38 38 / 35%);
+}
+.mcp-server-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.mcp-server-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mcp-server-title strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.status-line .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.status-line.ok .dot {
+  background: #16a34a;
+}
+.status-line.wait .dot {
+  background: #d97706;
+  animation: mcp-pulse 1.2s ease-in-out infinite;
+}
+.status-line.bad {
+  color: var(--danger);
+}
+@keyframes mcp-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.bot-stack {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.bot-stack > * + * {
+  margin-left: -6px;
+}
+.bot-stack .avatar {
+  box-shadow: 0 0 0 2px var(--panel);
+  border-radius: 50%;
+}
+.bot-stack-more {
+  font-size: 12px;
+  color: var(--muted);
+  padding-left: 10px;
+}
+.mcp-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+.mcp-callout.bad {
+  background: rgb(220 38 38 / 7%);
+}
+.mcp-callout .error {
+  margin: 0;
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+}
+.mcp-section {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.mcp-section legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.bot-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bot-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13.5px;
+  max-width: 100%;
+}
+.bot-toggle.on {
+  border-color: var(--text);
+  background: var(--panel-2);
+}
+.bot-toggle input {
+  margin: 0;
+}
+.mcp-tools-toggle {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: none;
+  padding: 10px 0 0;
+  color: var(--link);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mcp-tools {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.mcp-tools li {
+  min-width: 0;
+}
+.mcp-tool-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.mcp-tool-name code {
+  overflow-wrap: anywhere;
+}
+.menu button.danger {
+  color: var(--danger);
+}
+/* The details sheet. */
+.mcp-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.mcp-hero p {
+  margin: 0 0 2px;
+}
+.mcp-facts {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0;
+}
+.mcp-facts > div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+.mcp-facts dt {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.mcp-facts dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.mcp-connect {
+  margin-top: 4px;
+}
+/* A sheet over a screen: the right edge on a wide screen, the whole screen on a phone. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / 35%);
+  animation: sheet-fade 0.15s ease-out;
+}
+.sheet {
+  width: min(460px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  outline: none;
+  animation: sheet-in 0.18s ease-out;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.sheet-head h2 {
+  margin: 0;
+  font-size: 17px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+@keyframes sheet-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0.6;
+  }
+}
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (max-width: 760px) {
+  .mcp-add span {
+    display: none;
+  }
+  .mcp-add {
+    padding: 8px 10px;
+  }
+  .mcp-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mcp-search {
+    flex-basis: auto;
+  }
+  .mcp-auth {
+    display: flex;
+  }
+  .mcp-auth button {
+    flex: 1;
+    justify-content: center;
+    padding: 6px 8px;
+  }
+  /* The categories and the featured servers scroll on their own, in one row. */
+  .mcp-cats,
+  .mcp-featured-row {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 0 20px 2px;
+  }
+  .mcp-cats .chip {
+    flex-shrink: 0;
+  }
+  .mcp-feature {
+    flex: 0 0 170px;
+  }
+  .mcp-card {
+    padding: 12px;
+  }
+  .sheet {
+    width: 100%;
+    border-left: 0;
+  }
+  .sheet-backdrop {
+    background: var(--panel);
+  }
+}

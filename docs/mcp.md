@@ -33,9 +33,25 @@ underscores on the wire: Claude sees `mcp__orbis__team_list_bots`,
 
 Orbis is also an MCP **client**: it connects to MCP servers of other
 services and hands their tools to the bots you choose (ADR 0010). Open
-**🧩 MCP** in the sidebar. Each card shows the service's own logo.
+**🧩 MCP** in the sidebar. The screen follows the MCP marketplaces of Claude,
+Cursor and VS Code, and has two tabs:
 
-- **Catalog**: 37 checked servers, all free to use. Each one needs no
+- **Explore** — search, filter by how a server connects (no account,
+  sign-in, free key) and by category, or start from the picks at the top.
+  Each card shows the service's logo, where it runs (on this computer or on
+  the web), what it does, how it connects and whether it only reads.
+  - A click opens its **details**: how it connects, the program it starts or
+    the address it calls, whether it only reads or asks before changing
+    something, and who may use it.
+  - The details hold the key fields, and the **Connect** button.
+  - On a phone the details take the whole screen, and Back closes them.
+- **Connected** — each server with its state, the faces of the bots that
+  may use it, a switch per bot and its tools (which only read, which ask
+  first). Reconnect and Disconnect are in its ⋮ menu.
+- **Your own server** (top right, **+** on a phone) takes an address or a
+  program to start.
+
+- **The catalog**: 37 checked servers, all free to use. Each one needs no
   account, has a free plan, or takes a free key. Every entry was checked
   before it went in: its npm package exists and starts and lists its tools,
   or its address answers `initialize`. For a sign-in, the service also lets
@@ -69,11 +85,11 @@ services and hands their tools to the bots you choose (ADR 0010). Open
   - Left out, because they did not pass these checks: Asana (no
     self-registration for sign-in), and DuckDuckGo and Wikipedia (their
     packages are no longer maintained).
-- **Connected** — each server's state, its tools (which only read and which
-  ask first), **the bots that may use it** (tick them), Reconnect and
-  Disconnect. **Add your own MCP server** takes an address (streamable HTTP,
-  with an optional token; without one Orbis tries signing in) or a program to
-  start (a command, with environment variables kept encrypted).
+- **Your own server** takes one of two things:
+  - an address: streamable HTTP, with an optional token (without one, Orbis
+    tries signing in);
+  - a program to start: a command, whose environment variables are kept
+    encrypted.
 
 A server's tools are named `mcp.<server>.<tool>` and go through the gateway
 like Orbis's own: the bot's policy, approvals (tools that are not read-only

@@ -472,16 +472,25 @@
         "status": "accepted",
         "date": "2026-10-03",
         "supersedes": "0013",
+        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/web/src/components/QrCode.tsx`",
         "scope": [
           "android-app",
           "web-app",
           "hub-api"
         ],
-        "summary": "Everything ADR 0013 decided stands.",
-        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/web/src/components/QrCode.tsx`"
+        "summary": "Everything ADR 0013 decided stands."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0048-mcp-screen-redesign",
+        "title": "mcp screen redesign",
+        "path": ".doctrina/changes/0048-mcp-screen-redesign",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

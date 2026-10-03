@@ -4,7 +4,7 @@ import { Api, capturePairingFromUrl, captureTokenFromUrl, loadToken, openStream,
 import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
-import { saveTextFile, setBackHandler, setOpenConversationHandler, setShareHandler } from "./native.js";
+import { closeBackLayer, saveTextFile, setBackHandler, setOpenConversationHandler, setShareHandler } from "./native.js";
 import { notifyPhone } from "./phone.js";
 import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
@@ -202,6 +202,7 @@ export function App() {
   // The phone's Back button in the Android app: close what is open, most recent first; false lets it leave.
   useEffect(() => {
     setBackHandler(() => {
+      if (closeBackLayer()) return true;
       if (addingMembers) setAddingMembers(false);
       else if (creatingGroup) setCreatingGroup(false);
       else if (computerFull) setComputerFull(false);

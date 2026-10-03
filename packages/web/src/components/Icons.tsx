@@ -256,3 +256,16 @@ export const ChatIcon = (p: P) => (
     <path d="M4 5h16v11H9l-5 4z" />
   </Icon>
 );
+
+export const CheckIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Icon>
+);
+
+export const BriefcaseIcon = (p: P) => (
+  <Icon {...p}>
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18" />
+  </Icon>
+);

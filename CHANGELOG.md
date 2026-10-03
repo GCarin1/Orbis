@@ -9,6 +9,26 @@ change that delivered it.
 
 ### Added
 
+- The MCP screen, redesigned after the MCP marketplaces of Claude, Cursor and
+  VS Code (change 0048-mcp-screen-redesign). It has two tabs.
+  - **Explore**:
+    - a search box;
+    - a filter by how a server connects;
+    - categories, each with its count;
+    - **Start here** picks at the top.
+  - Each card shows the logo, where the server runs, what it does, how it
+    connects, whether it only reads, and **Connect**.
+  - A click opens the server's **details**: how it connects, the program or
+    address, whether it asks before changing something, and who uses it. The
+    key form is there too.
+  - **Connected** shows each server's state, the faces of its bots, a switch
+    per bot, and its tools split by what only reads and what asks first.
+    Reconnect and Disconnect are in its ⋮ menu. With nothing connected, it
+    says so and leads to Explore.
+  - On a phone: one column, the categories in one scrolling row, and the
+    details full screen, closed by Back. The catalog now says whether each
+    server only reads (`readOnly`).
+
 - Connecting the phone with a QR code (change 0047-pairing-qr-code).
   - **⚙ Settings → Phone** shows a QR code next to the six-digit code. It
     holds `<address>#pair=<code>`, never the token, and with several network

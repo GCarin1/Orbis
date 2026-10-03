@@ -208,7 +208,7 @@ export class McpConnections {
 
   catalog(): Array<McpCatalogEntry & { connected: string | null }> {
     const connected = new Map(this.rows().map((r) => [r.catalogId, r.id]));
-    return MCP_CATALOG.map(({ readOnly: _readOnly, ...entry }) => ({ ...entry, connected: connected.get(entry.id) ?? null }));
+    return MCP_CATALOG.map((entry) => ({ ...entry, connected: connected.get(entry.id) ?? null }));
   }
 
   list(): McpServer[] {

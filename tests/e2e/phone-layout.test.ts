@@ -38,7 +38,7 @@ afterAll(async () => {
 function sideways(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const vw = document.documentElement.clientWidth;
-    const meant = "pre, code, .table-scroll, .favorites, .settings-tabs, .market-tabs, .link-chips";
+    const meant = "pre, code, .table-scroll, .favorites, .settings-tabs, .market-tabs, .link-chips, .mcp-cats, .mcp-featured-row, .mcp-auth";
     const name = (el: Element) =>
       `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${[...el.classList].map((c) => `.${c}`).join("")}${el.getAttribute("data-testid") ? `[${el.getAttribute("data-testid")}]` : ""}`;
     const found: string[] = [];
@@ -136,7 +136,7 @@ describe("the web app on a phone", () => {
 
     for (const [nav, tabs] of [
       ["⚙ Settings", ["Brains", "Computers", "Voice and appearance", "Phone"]],
-      ["🧩 MCP", ["Catalog", "Connected"]],
+      ["🧩 MCP", ["Explore", "Connected"]],
       ["📘 Skills", []],
       ["📊 Usage", []],
     ] as const) {
@@ -148,6 +148,16 @@ describe("the web app on a phone", () => {
         await check(`${nav} → ${tab}`);
       }
     }
+    // The MCP screen's sheets: a server's details and your own server.
+    await home();
+    await page.getByRole("button", { name: "🧩 MCP" }).click();
+    await page.getByTestId("catalog-github").click();
+    await page.getByTestId("details-github").waitFor();
+    await check("an MCP's details");
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("button", { name: "Your own server" }).click();
+    await page.getByTestId("custom-server").waitFor();
+    await check("your own MCP server");
     expect(failures).toEqual([]);
   }, 180_000);
 });

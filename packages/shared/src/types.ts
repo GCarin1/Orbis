@@ -676,6 +676,8 @@ export interface McpCatalogEntry {
   homepage: string;
   /** What the machine needs, e.g. Node.js for npx servers. */
   needs?: string;
+  /** Every tool of this server only reads: they run without asking, unless a rule says otherwise. */
+  readOnly?: boolean;
 }
 
 export interface McpServerTool {

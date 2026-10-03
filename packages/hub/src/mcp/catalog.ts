@@ -8,10 +8,7 @@ import type { McpCatalogEntry } from "@orbis/shared";
 
 const NODE = "Node.js (npx)";
 
-export interface CatalogEntry extends McpCatalogEntry {
-  /** Tools of this server only read: they run without asking, unless a rule says otherwise. */
-  readOnly?: boolean;
-}
+export type CatalogEntry = McpCatalogEntry;
 
 export const MCP_CATALOG: CatalogEntry[] = [
   // --- no account -------------------------------------------------------------------------

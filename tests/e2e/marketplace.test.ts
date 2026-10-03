@@ -60,7 +60,7 @@ describe("the tools marketplace in a browser", () => {
     expect(await market.getByTestId("catalog-deepwiki").count()).toBe(0);
 
     await market.getByRole("tab", { name: /Connected/ }).click();
-    await market.getByText("Add your own MCP server").click();
+    await market.getByRole("button", { name: "Your own server" }).click();
     await market.getByLabel("Name").fill("Fake Notes");
     await market.getByRole("radio", { name: "Program (on this computer)" }).click();
     await market.getByLabel("Command").fill(`${process.execPath} ${fakeServer} from-arg`);

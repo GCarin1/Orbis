@@ -59,6 +59,26 @@ export function setBackHandler(handler: (() => boolean) | null): void {
   (window as unknown as Hooks).__orbisBack = handler ?? undefined;
 }
 
+/** Sheets open over a screen (an MCP's details, a candidate's résumé), newest last. */
+const layers: Array<() => void> = [];
+
+/** Register a sheet the phone's Back closes before anything else; returns the function that forgets it. */
+export function addBackLayer(close: () => void): () => void {
+  layers.push(close);
+  return () => {
+    const at = layers.lastIndexOf(close);
+    if (at >= 0) layers.splice(at, 1);
+  };
+}
+
+/** Close the newest sheet, if one is open. */
+export function closeBackLayer(): boolean {
+  const close = layers.pop();
+  if (!close) return false;
+  close();
+  return true;
+}
+
 /** A tap on a notification: the app asks the page to open its conversation. */
 export function setOpenConversationHandler(handler: ((conversationId: string) => void) | null): void {
   (window as unknown as Hooks).__orbisOpenConversation = handler ?? undefined;
