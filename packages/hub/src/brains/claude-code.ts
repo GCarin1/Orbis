@@ -1,6 +1,6 @@
 // Claude Code as a subscription brain (contracts/cli-harnesses § claude-code).
 import { randomUUID } from "node:crypto";
-import { CLAUDE_AUTH_FAILURE } from "@orbis/shared";
+import { CLAUDE_AUTH_FAILURE, CLAUDE_OAUTH_TOKEN } from "@orbis/shared";
 import { MAX_ARGV_PROMPT, resolveExecutable, runProcess, describeExit, harnessEnv } from "./process.js";
 import { renderSystem, renderTask } from "./prompt.js";
 import type { BrainAdapter, BrainContext, BrainEvent, BrainInput, McpWiring } from "./types.js";
@@ -48,6 +48,8 @@ export interface ClaudeStreamState {
   sessionId: string | null;
   toolNames: Map<string, string>;
   finished: boolean;
+  /** The run has the subscription token: a login error is about that token. */
+  viaToken?: boolean;
 }
 
 /** Map one stream-json object to normalized events. Unknown types map to nothing. */
@@ -98,7 +100,7 @@ export function mapClaudeMessage(obj: Json, state: ClaudeStreamState): BrainEven
       });
       state.finished = true;
       if (obj.is_error === true || (typeof obj.subtype === "string" && obj.subtype.startsWith("error"))) {
-        out.push({ type: "run.failed", error: withSignInHint(String(obj.result ?? obj.subtype ?? "Claude Code reported an error")) });
+        out.push({ type: "run.failed", error: withSignInHint(String(obj.result ?? obj.subtype ?? "Claude Code reported an error"), state.viaToken) });
       } else {
         out.push({ type: "run.finished", reply: String(obj.result ?? "") });
       }
@@ -112,9 +114,14 @@ export function mapClaudeMessage(obj: Json, state: ClaudeStreamState): BrainEven
 
 const MISSING_SESSION = /no conversation found|session .*not found/i;
 
-/** The error, with the way out when it is about the login: the CLI's own session needs signing in again. */
-export function withSignInHint(error: string): string {
-  if (!CLAUDE_AUTH_FAILURE.test(error) || /sign in/i.test(error)) return error;
+/**
+ * The error, with the way out when it is about the login: the CLI's own session needs signing in
+ * again, or — when it ran on the subscription token — a new token from `claude setup-token`.
+ */
+export function withSignInHint(error: string, viaToken = false): string {
+  if (!CLAUDE_AUTH_FAILURE.test(error) || /sign in|setup-token/i.test(error)) return error;
+  if (viaToken)
+    return `${error} — the Claude subscription token was refused (wrong, expired or revoked): run "claude setup-token" on a computer signed in to Claude and paste the new token in Orbis (Settings → Brains → Claude Code)`;
   return `${error} — Claude Code's login needs renewing: sign in again in Orbis (Settings → Brains → Claude Code → Sign in), or run "claude auth login" in a terminal`;
 }
 
@@ -128,13 +135,17 @@ export const claudeCodeBrain: BrainAdapter = {
 
   async *run(input: BrainInput, ctx: BrainContext): AsyncGenerator<BrainEvent> {
     const command = resolveExecutable(input.bot.brain.command ?? "claude")!;
+    // The Claude plan's token (`claude setup-token`) when one is saved; else Claude Code's own sign-in.
+    // ANTHROPIC_API_KEY never reaches the process, so a run never bills the API.
+    const token = ctx.secret(CLAUDE_OAUTH_TOKEN);
+    const env = harnessEnv(token ? { [CLAUDE_OAUTH_TOKEN]: token } : {});
     const stored = ctx.sessions.get();
     const attempts: Array<{ sessionId: string; resume: boolean }> = stored
       ? [{ sessionId: stored, resume: true }, { sessionId: randomUUID(), resume: false }]
       : [{ sessionId: randomUUID(), resume: false }];
 
     for (const [index, attempt] of attempts.entries()) {
-      const state: ClaudeStreamState = { sessionId: null, toolNames: new Map(), finished: false };
+      const state: ClaudeStreamState = { sessionId: null, toolNames: new Map(), finished: false, viaToken: token !== null };
       const prompt = renderTask(input, attempt.resume);
       const viaStdin = prompt.length > MAX_ARGV_PROMPT;
       const args = [
@@ -156,7 +167,7 @@ export const claudeCodeBrain: BrainAdapter = {
         command,
         args,
         cwd: ctx.workspaceDir,
-        env: harnessEnv(),
+        env,
         ...(viaStdin ? { stdin: prompt } : {}),
         signal: ctx.signal,
       })) {
@@ -189,7 +200,7 @@ export const claudeCodeBrain: BrainAdapter = {
         continue;
       }
       if (!state.finished) {
-        yield { type: "run.failed", error: withSignInHint(exitMessage ?? "Claude Code ended without a result") };
+        yield { type: "run.failed", error: withSignInHint(exitMessage ?? "Claude Code ended without a result", token !== null) };
       }
       return;
     }

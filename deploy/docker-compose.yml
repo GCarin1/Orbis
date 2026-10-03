@@ -1,0 +1,52 @@
+# Orbis on a server that stays on (docs/cloud.md): the hub, and — if you want to
+# reach it from anywhere without opening ports — a Cloudflare tunnel.
+#
+#   cd deploy
+#   cp .env.example .env        # then fill it in (never commit .env)
+#   docker compose up -d --build                         # the hub on this machine only
+#   docker compose --profile quick-tunnel up -d --build  # + a free https://….trycloudflare.com address
+#   docker compose --profile tunnel up -d --build        # + your own Cloudflare tunnel (TUNNEL_TOKEN)
+#
+# The quick tunnel prints its address in its log: docker compose logs quick-tunnel
+# Orbis's own token still guards every request; the address alone opens nothing.
+services:
+  orbis:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: orbis:local
+    restart: unless-stopped
+    environment:
+      # The hub's token (the web app and the phone ask for it). Empty: one is made in /data/token.
+      ORBIS_TOKEN: ${ORBIS_TOKEN:-}
+      # The token `claude setup-token` prints: Claude Code runs on your Claude plan, not the API.
+      # Empty: paste it later in Settings → Brains → Claude Code.
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - orbis-data:/data
+    # Only this machine reaches the port; from elsewhere, go through a tunnel (or a VPN such as Tailscale).
+    ports:
+      - "127.0.0.1:${ORBIS_PORT:-7420}:7420"
+
+  quick-tunnel:
+    profiles: ["quick-tunnel"]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://orbis:7420
+    depends_on:
+      - orbis
+
+  tunnel:
+    profiles: ["tunnel"]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      # The token of a tunnel made in Cloudflare Zero Trust → Networks → Tunnels (deploy/.env).
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - orbis
+
+volumes:
+  orbis-data:

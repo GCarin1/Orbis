@@ -18,16 +18,21 @@ export class CliJobs {
   private job: CliJob | null = null;
   private child: ChildProcess | null = null;
 
-  /** `onLog` reads what a job printed so far (the sign-in page, a device code) into the job. */
+  /**
+   * `onLog` reads what a job printed so far (the sign-in page, a device code) into the job; `extraEnv`
+   * adds the CLI's own login variables (Claude Code's subscription token) to the short commands — a
+   * status reads the account runs use — and not to a sign-in, which makes a login of its own.
+   */
   constructor(
     private readonly envPath: () => string = () => process.env.PATH ?? "",
     private readonly onLog: (job: CliJob) => void = () => undefined,
+    private readonly extraEnv: () => Record<string, string> = () => ({}),
   ) {}
 
-  private start(file: string, args: string[], stdin = false): ChildProcess {
+  private start(file: string, args: string[], stdin = false, extra: Record<string, string> = {}): ChildProcess {
     const launch = launchCommand(file, args);
     return spawn(launch.command, launch.args, {
-      env: harnessEnv({ PATH: this.envPath(), NO_COLOR: "1" }),
+      env: harnessEnv({ ...extra, PATH: this.envPath(), NO_COLOR: "1" }),
       stdio: [stdin ? "pipe" : "ignore", "pipe", "pipe"],
       windowsHide: true,
     });
@@ -39,7 +44,7 @@ export class CliJobs {
       let output = "";
       let child: ChildProcess;
       try {
-        child = this.start(file, args);
+        child = this.start(file, args, false, this.extraEnv());
       } catch (err) {
         resolve({ code: null, output: err instanceof Error ? err.message : String(err) });
         return;

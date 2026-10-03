@@ -77,6 +77,7 @@ are proven by tests.
 | MCP marketplace: 37 free MCP servers, each with its own logo, connected in one click. With no account: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel and more. Signing in with your account: Notion, Linear, Jira & Confluence, Todoist, Vercel, Neon, Stripe and more. With a free key: GitHub, Brave, Tavily, Alpha Vantage, Airtable and more. Or add your own. Switches choose each bot's tools and servers. | ✅ verified |
 | Hiring: a recruiter bot writes short résumés of AI teammates for a project or one of your teams, up to 30 at a low token cost. You hire only the ones you want. A hire writes the full profile (instructions, what it will do and needs, tools, skills) and becomes a bot that joins the team and says hello. | ✅ verified |
 | Squads: bots organized in named squads. Each squad has a representative the members report to, and a manager (one may take every squad). Each squad has a chat, representatives and managers share a room, `@squad` reaches the representative, and any bot calls another bot's routines (`routine.call`). | ✅ verified |
+| Orbis from anywhere: Claude Code on your Claude plan (Pro or Max) with the token of `claude setup-token`, never the API; the hub in a GitHub Codespace or in Docker on a server that stays on, reached through a Cloudflare tunnel or Tailscale | ✅ verified |
 | Voice and theme: talk to a bot with the microphone (browser dictation, or any OpenAI-compatible transcription service — OpenAI, Groq, a local Whisper — for the desktop app), replies read aloud, and a System/Light/Dark theme switch | ✅ verified |
 
 The status of each capability is always current in
@@ -115,6 +116,11 @@ Or the **desktop app**, which starts the hub for you: `npm run desktop`.
 On the **phone**, the Android app: build the APK from **Actions → Android APK →
 Run workflow** and start Orbis with `Orbis-Celular.bat` (or `orbis serve --host
 0.0.0.0`) — see [docs/android.md](docs/android.md).
+
+**Away from home, with your computer off?** Run the hub in a GitHub Codespace
+(free hours, to try it) or with Docker on a server that stays on, and let
+Claude Code use your Claude plan with the token of `claude setup-token`
+instead of the API — see [docs/cloud.md](docs/cloud.md).
 
 **On Windows**, `scripts\windows\Orbis.bat` starts Orbis (or restarts it when it
 is already running), `Orbis-Token.bat` shows the login token and
@@ -161,7 +167,7 @@ More in [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md), [`docs/android.md`](docs/android.md),
-[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/squads.md`](docs/squads.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) and [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/squads.md`](docs/squads.md), [`docs/cloud.md`](docs/cloud.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) and [`docs/cli.md`](docs/cli.md).
 
 ## Configuration
 
@@ -178,6 +184,7 @@ Every variable is optional; see [`.env.example`](.env.example).
 | `ORBIS_BROWSER_EXECUTABLE` | Playwright's Chromium | Chromium for the local browser tools |
 | `ORBIS_DOCKER` | `docker` | the docker CLI used by the docker provider |
 | `ORBIS_URL` | `http://127.0.0.1:7420` | hub URL for the CLI |
+| `CLAUDE_CODE_OAUTH_TOKEN` | none | your Claude plan's token from `claude setup-token`, for Claude Code on a server; a token saved in Settings → Brains → Claude Code comes first |
 | `ORBIS_TRANSCRIBE_URL` / `_MODEL` / `_API_KEY` | none (OpenAI's with `OPENAI_API_KEY`) / `whisper-1` | transcription service for voice input where the browser has none; Settings → Voice and appearance overrides them |
 
 ## Development

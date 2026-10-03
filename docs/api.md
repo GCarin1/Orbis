@@ -285,6 +285,16 @@ for the `ollama` and `lmstudio` servers (`GET <baseUrl>/models`).
 — poll the account while `job.state` is `running`; `url` and `code` appear as
 Codex prints them. `POST …/codex/logout` runs `codex logout`.
 
+`GET /api/v1/runtimes/claude/account` → `{ installed, version, path, loggedIn, method, detail, job, token }`
+(from `claude --version` and `claude auth status`); `POST …/claude/login`,
+`POST …/claude/code` `{ "code": "…" }` and `POST …/claude/cancel` drive the
+sign-in. `PUT …/claude/token` `{ "token": "…" }` saves the subscription token
+`claude setup-token` prints, which Claude Code then runs with instead of the
+sign-in. `DELETE …/claude/token` removes it. Both answer only
+`{ saved, source: "saved"|"server"|null, savedAt, expiresAround }`, never the
+token. An API key (`sk-ant-api…`) is refused with 400: it would bill the API
+(see [cloud.md](cloud.md)).
+
 `POST /api/v1/runtimes/test` with `{ "botId": "ana" }` (that bot's brain and
 secrets) or `{ "brain": { "kind": "ollama", "model": "llama3.2" } }` asks the
 brain `What is 17 × 23? Answer with the number only.` with no tools and

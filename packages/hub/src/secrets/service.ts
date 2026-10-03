@@ -3,7 +3,7 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
-import { CHAT_HTTP_SHARED_TOKEN, chatApiOrigin, cleanBearer, type ChatTokenGroup, type TimelineItem } from "@orbis/shared";
+import { CHAT_HTTP_SHARED_TOKEN, CLAUDE_OAUTH_TOKEN, chatApiOrigin, cleanBearer, type ChatTokenGroup, type TimelineItem } from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import type { ToolDefinition } from "../tools/registry.js";
@@ -12,6 +12,7 @@ import { SettingsRepo } from "../repos/settings.js";
 import { run } from "../db/index.js";
 import { HubSecrets } from "./hub-secrets.js";
 import { ChatTokens } from "./chat-tokens.js";
+import { ClaudeSubscriptionToken } from "./claude-token.js";
 import { hasPlaceholder, loadMasterKey, SECRET_NAME, Vault } from "./vault.js";
 
 type Answer = "fulfilled" | "declined" | "expired";
@@ -22,6 +23,8 @@ export class SecretService {
   readonly hubSecrets: HubSecrets;
   /** The Bearer token each chat API's chat-http bots share. */
   readonly chatTokens: ChatTokens;
+  /** The Claude subscription token Claude Code runs with (`claude setup-token`). */
+  readonly claudeToken: ClaudeSubscriptionToken;
   /** Runs waiting on a secret-request card, by card item id. */
   private readonly waiting = new Map<string, (answer: Answer) => void>();
 
@@ -29,11 +32,12 @@ export class SecretService {
     this.vault = new Vault(hub.db, loadMasterKey(hub.config.dataDir, hub.config.masterKey));
     this.hubSecrets = new HubSecrets(new SettingsRepo(hub.db), this.vault);
     this.chatTokens = new ChatTokens(this.hubSecrets);
+    this.claudeToken = new ClaudeSubscriptionToken(this.hubSecrets, new SettingsRepo(hub.db), hub.config.claudeOauthToken);
   }
 
-  /** Mask the shared chat tokens too: they belong to no bot, so the vault's own masking does not know them. */
+  /** Mask the shared chat tokens and the Claude token too: they belong to no bot, so the vault's own masking does not know them. */
   private maskShared<T>(value: T): T {
-    const known = this.chatTokens.known();
+    const known = [...this.chatTokens.known(), ...this.claudeToken.known()];
     if (!known.length) return value;
     const walk = (v: unknown): unknown => {
       if (typeof v === "string") return known.reduce((text, token) => text.split(token).join("••••"), v);
@@ -70,6 +74,8 @@ export class SecretService {
     this.hub.secretResolvers.register((botId, name) => this.vault.get(botId, name));
     // A chat API's shared token, asked for by the name `chat-http-token:<origin>`.
     this.hub.secretResolvers.register((_botId, name) => (name.startsWith(CHAT_HTTP_SHARED_TOKEN) ? this.chatTokens.get(name.slice(CHAT_HTTP_SHARED_TOKEN.length)) : null));
+    // The Claude subscription token, for every claude-code bot without one of its own.
+    this.hub.secretResolvers.register((_botId, name) => (name === CLAUDE_OAUTH_TOKEN ? (this.claudeToken.get()?.token ?? null) : null));
     this.hub.gateway.setSecrets({
       resolve: (botId, input) => this.vault.resolve(botId, input),
       redact: (botId, text) => this.maskShared(this.vault.redact(botId, text)),

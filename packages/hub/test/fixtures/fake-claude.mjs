@@ -59,6 +59,32 @@ if (prompt.includes("ASK_BASH")) {
   out({ type: "result", subtype: "success", is_error: false, result: reply, session_id: sessionId, usage: {} });
   process.exit(0);
 }
+if (prompt.includes("ECHO_TOKEN")) {
+  // What Claude Code would bill: the subscription token it was given, and whether an API key came along.
+  const reply = `token ${process.env.CLAUDE_CODE_OAUTH_TOKEN ?? "none"} · api key ${process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN ? "yes" : "no"}`;
+  out({ type: "system", subtype: "init", session_id: sessionId, tools: [], mcp_servers: [] });
+  out({ type: "result", subtype: "success", is_error: false, result: reply, session_id: sessionId, usage: {} });
+  process.exit(0);
+}
+if (argv.includes("--token-seen")) {
+  // A brain test: the answer, and whether a subscription token came (never its value).
+  out({ type: "system", subtype: "init", session_id: sessionId, tools: [], mcp_servers: [] });
+  const reply = `391 · token ${process.env.CLAUDE_CODE_OAUTH_TOKEN ? "given" : "none"}`;
+  out({ type: "result", subtype: "success", is_error: false, result: reply, session_id: sessionId, usage: {} });
+  process.exit(0);
+}
+if (prompt.includes("TOKEN_REFUSED")) {
+  out({ type: "system", subtype: "init", session_id: sessionId, tools: [], mcp_servers: [] });
+  out({
+    type: "result",
+    subtype: "success",
+    is_error: true,
+    result: "Failed to authenticate. API Error: 401 OAuth token has expired",
+    session_id: sessionId,
+    usage: {},
+  });
+  process.exit(1);
+}
 if (prompt.includes("EXIT_WITH_ERROR")) {
   process.stderr.write("fatal: the model is unavailable\n");
   process.exit(3);

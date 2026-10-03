@@ -12,7 +12,7 @@ import { runShell } from "./local.js";
 import type { ComputerPaths, ComputerProvider, ComputerView, ExecOptions, ExecResult } from "./provider.js";
 
 /** Variables of the hub that a command on the user's machine never sees. */
-const HUB_SECRETS = /^(ORBIS_.*|ANTHROPIC_API_KEY|OPENAI_API_KEY)$/i;
+const HUB_SECRETS = /^(ORBIS_.*|ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|CLAUDE_CODE_OAUTH_TOKEN|OPENAI_API_KEY)$/i;
 
 /** The user's environment without the hub's own secrets and tokens. */
 export function hostEnv(source: NodeJS.ProcessEnv = process.env): Record<string, string> {

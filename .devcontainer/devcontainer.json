@@ -1,0 +1,35 @@
+{
+  // Orbis in a GitHub Codespace (docs/cloud.md): the hub runs in GitHub's cloud, your
+  // computer can be off, and the phone opens it at https://<codespace>-7420.app.github.dev.
+  // Codespaces secrets (github.com → Settings → Codespaces) reach the hub as variables:
+  // ORBIS_TOKEN (the token you type on the phone) and CLAUDE_CODE_OAUTH_TOKEN (claude setup-token).
+  "name": "Orbis",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "containerEnv": {
+    "ORBIS_HOST": "0.0.0.0",
+    "ORBIS_PORT": "7420",
+    "ORBIS_DATA_DIR": "/workspaces/.orbis-data",
+    "CLAUDE_CONFIG_DIR": "/workspaces/.orbis-data/claude",
+    "ELECTRON_SKIP_BINARY_DOWNLOAD": "1",
+    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1"
+  },
+  "secrets": {
+    "ORBIS_TOKEN": {
+      "description": "Orbis's token: a long password of yours that the web app and the phone ask for. Empty: Orbis makes one (cat /workspaces/.orbis-data/token)."
+    },
+    "CLAUDE_CODE_OAUTH_TOKEN": {
+      "description": "Your Claude plan's token: run `claude setup-token` on a computer signed in to Claude (Pro or Max) and paste what it prints. Claude Code then uses the plan, not the API. Optional: it can also be pasted in Settings → Brains → Claude Code."
+    }
+  },
+  "onCreateCommand": "npm ci --no-audit --no-fund && npm run build && npm install -g @anthropic-ai/claude-code --no-audit --no-fund",
+  "postStartCommand": "bash .devcontainer/start.sh --quiet",
+  "postAttachCommand": "bash .devcontainer/start.sh",
+  "forwardPorts": [7420],
+  "portsAttributes": {
+    "7420": { "label": "Orbis", "onAutoForward": "notify" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": ["docs/cloud.md"] }
+  }
+}

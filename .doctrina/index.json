@@ -543,9 +543,32 @@
           "conversations"
         ],
         "summary": "A squad is a table, membership a column."
+      },
+      {
+        "id": "0017",
+        "path": ".doctrina/decisions/0017-claude-code-reaches-the-claude-plan-through-the-setup-token-and-the-hub-runs-in-the-cloud-from-the-repository-s-own-kit.md",
+        "title": "Claude Code reaches the Claude plan through the setup-token and the hub runs in the cloud from the repository's own kit",
+        "status": "accepted",
+        "date": "2026-10-03",
+        "scope": [
+          "agent-runtimes",
+          "secrets",
+          "hub-api",
+          "web-app"
+        ],
+        "summary": "The plan through Claude Code, by its token."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0051-claude-subscription-anywhere",
+        "title": "Orbis from anywhere, on the Claude plan",
+        "path": ".doctrina/changes/0051-claude-subscription-anywhere",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1615,13 +1638,13 @@
         "id": "cli-harnesses",
         "path": ".doctrina/contracts/cli-harnesses.md",
         "status": "active",
-        "last_updated": "2026-09-28"
+        "last_updated": "2026-10-03"
       },
       {
         "id": "hub-surface",
         "path": ".doctrina/contracts/hub-surface.md",
         "status": "active",
-        "last_updated": "2026-09-28"
+        "last_updated": "2026-10-03"
       }
     ],
     "entrypoint": {

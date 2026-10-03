@@ -102,6 +102,7 @@ function PairingCard({ api }: { api: Api }) {
       )}
       {error && <p className="error">{error}</p>}
       <p className="muted small">{t("phone.getApp")}</p>
+      <p className="muted small">{t("phone.anywhere")}</p>
     </div>
   );
 }

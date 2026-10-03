@@ -2490,6 +2490,26 @@ label.check {
 .chatgpt-login {
   margin-top: 6px;
 }
+/* Claude Code's subscription token, under its sign-in. */
+.claude-token {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.claude-token summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.claude-token-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.claude-token-form input {
+  width: 100%;
+  min-width: 0;
+}
 .chatgpt-code {
   font: 600 24px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: 0.08em;

@@ -104,6 +104,8 @@ describe("pairing the phone, on the computer", () => {
     expect(screen.getByText("vale uma vez, por mais 5:00")).toBeTruthy();
     expect(screen.getByText("http://192.168.0.10:7420/")).toBeTruthy();
     expect(screen.getByText(/escutando só neste computador/)).toBeTruthy();
+    // Away from home, or with the computer off: the cloud and the Claude subscription's token (change 0051).
+    expect(screen.getByText(/Fora de casa, ou com o computador desligado\?.*claude setup-token.*docs\/cloud\.md/)).toBeTruthy();
     // The QR code holds the address and the code, and a camera reads exactly that back.
     expect(screen.getByTestId("pairing-qr").dataset.link).toBe("http://192.168.0.10:7420/#pair=483219");
     expect(screen.getByRole("img", { name: "QR code para conectar o celular em http://192.168.0.10:7420/" })).toBeTruthy();

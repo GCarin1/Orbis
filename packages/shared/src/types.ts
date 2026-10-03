@@ -756,6 +756,25 @@ export interface ClaudeAccount {
   /** What `claude auth status` said, for a person to read. */
   detail: string | null;
   job: CliJob | null;
+  /** The subscription token Claude Code runs with, when there is one (never its value). */
+  token: ClaudeTokenStatus;
+}
+
+/**
+ * The variable Claude Code reads its subscription's long-lived token from: the
+ * token `claude setup-token` prints, which bills the Claude plan and not the API.
+ * A bot secret of this name gives that bot another account.
+ */
+export const CLAUDE_OAUTH_TOKEN = "CLAUDE_CODE_OAUTH_TOKEN";
+
+/** Whether Claude Code has a subscription token from Orbis (`PUT /api/v1/runtimes/claude/token`), never the token. */
+export interface ClaudeTokenStatus {
+  saved: boolean;
+  /** Saved in Orbis, or set as CLAUDE_CODE_OAUTH_TOKEN in the hub's environment. */
+  source: "saved" | "server" | null;
+  savedAt: string | null;
+  /** `claude setup-token` makes a token for one year: about when this one ends. */
+  expiresAround: string | null;
 }
 
 /** The Codex CLI on the hub's machine and whose account it uses (`GET /api/v1/runtimes/codex/account`). */

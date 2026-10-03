@@ -1,9 +1,10 @@
 // specs/agent-runtimes — Claude Code's sign-in from the settings screen (change
 // 0033): the hub reads the account (`claude auth status`), starts the sign-in
 // (`claude auth login`), hands it the code the sign-in page shows, and tells a
-// failed run that its login needs renewing. All with a fake `claude`.
+// failed run that its login needs renewing; the account reads the subscription
+// token once one is saved (change 0051). All with a fake `claude`.
 import { afterEach, describe, expect, it } from "vitest";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseAuthStatus, parseSignInUrl } from "../../src/brains/claude-account.js";
@@ -28,11 +29,12 @@ const state = path.join(__dirname, "signed-in");
 const [a, b] = process.argv.slice(2);
 if (a === "--version") { console.log("9.9.9 (Claude Code)"); process.exit(0); }
 if (a === "auth" && b === "status") {
-  const on = fs.existsSync(state);
+  const on = !!process.env.CLAUDE_CODE_OAUTH_TOKEN || fs.existsSync(state);
   console.log(JSON.stringify({ loggedIn: on, authMethod: on ? "oauth_token" : "none", apiProvider: "firstParty" }));
   process.exit(on ? 0 : 1);
 }
 if (a === "auth" && b === "login") {
+  fs.writeFileSync(path.join(__dirname, "login-had-token"), String(!!process.env.CLAUDE_CODE_OAUTH_TOKEN));
   console.log("Opening browser to sign in…");
   console.log("If the browser didn't open, visit: https://sign-in.example.com/oauth/authorize?code=true&client_id=made-up&state=xyz");
   process.stdout.write("Paste code here if prompted > ");
@@ -149,5 +151,21 @@ describe.skipIf(process.platform === "win32")("signing in to Claude Code from th
     expect(await account(t)).toMatchObject({ installed: false, loggedIn: false });
     const refused = await t.api("POST", "/api/v1/runtimes/claude/login");
     expect(refused.body).toMatchObject({ state: "failed", error: expect.stringContaining("not installed") });
+  });
+  it("reads the account with the subscription token once one is saved, and signs in without it (change 0051)", async () => {
+    fakeBin();
+    t = await testHub();
+    expect(await account(t)).toMatchObject({ loggedIn: false, token: { saved: false, source: null } });
+    const saved = await t.api("PUT", "/api/v1/runtimes/claude/token", { token: "sk-ant-oat01-made-up-for-tests" });
+    expect(saved.status).toBe(200);
+    const now = await account(t);
+    expect(now).toMatchObject({ loggedIn: true, method: "oauth_token", token: { saved: true, source: "saved" } });
+    expect(JSON.stringify(now)).not.toContain("made-up-for-tests");
+    // A sign-in makes a login of its own: the token stays out of it.
+    await t.api("POST", "/api/v1/runtimes/claude/login");
+    await waitJob(t, (a) => a.job?.url != null);
+    expect(readFileSync(path.join(bin!, "login-had-token"), "utf8")).toBe("false");
+    await t.api("POST", "/api/v1/runtimes/claude/cancel");
+    await waitJob(t, (a) => a.job?.state !== "running");
   });
 });

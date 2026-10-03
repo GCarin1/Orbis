@@ -1,0 +1,16 @@
+# What the Orbis hub image (Dockerfile) never needs: build output, other apps, tests and history.
+.git
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+packages/android
+packages/desktop/out
+packages/web/dev-dist
+tests
+coverage
+test-results
+playwright-report
+.doctrina
+docs
+.env
+deploy/.env

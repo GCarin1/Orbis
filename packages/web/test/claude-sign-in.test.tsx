@@ -1,11 +1,14 @@
 // specs/web-app — Claude Code's login from the settings screen (change
 // 0033): the brain's card says whether it is signed in, offers signing in, and
 // when its test fails because the login expired says so and brings the way
-// out; the sign-in shows the page and takes the code it displays.
+// out; the sign-in shows the page and takes the code it displays. The
+// subscription token from `claude setup-token` is saved, replaced and removed
+// from the same card (change 0051).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { BrainTestResult, ClaudeAccount, CliJob, RuntimeHealth } from "@orbis/shared";
+import type { BrainTestResult, ClaudeAccount, ClaudeTokenStatus, CliJob, RuntimeHealth } from "@orbis/shared";
 import type { Api } from "../src/api.js";
+import { ClaudeSignIn } from "../src/components/ClaudeSignIn.js";
 import { SettingsScreen } from "../src/components/SettingsScreen.js";
 import { useLang } from "../src/i18n.js";
 
@@ -25,6 +28,7 @@ const job = (fields: Partial<CliJob>): CliJob => ({
   ...fields,
 });
 const EXPIRED = "Failed to authenticate: OAuth session expired and could not be refreshed";
+const NO_TOKEN = { saved: false, source: null, savedAt: null, expiresAround: null } as const;
 
 describe("Claude Code's card in the settings screen", () => {
   it("shows the expired login after a test, signs in with the page and the code, then tests well", async () => {
@@ -36,6 +40,7 @@ describe("Claude Code's card in the settings screen", () => {
       method: "oauth_token",
       detail: null,
       job: null,
+      token: NO_TOKEN,
     };
     let signedInAgain = false;
     const health: RuntimeHealth[] = [{ kind: "claude-code", executable: "claude", found: true, path: "/bin/claude", version: "2.1.283 (Claude Code)" }];
@@ -100,7 +105,16 @@ describe("Claude Code's card in the settings screen", () => {
   });
 
   it("offers the plain sign-in when the CLI is not signed in, and shows why a sign-in failed", async () => {
-    let account: ClaudeAccount = { installed: true, version: "2.1.283", path: "/bin/claude", loggedIn: false, method: "none", detail: null, job: null };
+    let account: ClaudeAccount = {
+      installed: true,
+      version: "2.1.283",
+      path: "/bin/claude",
+      loggedIn: false,
+      method: "none",
+      detail: null,
+      job: null,
+      token: NO_TOKEN,
+    };
     const post = vi.fn(async () => {
       account = { ...account, job: job({ state: "failed", error: "Invalid code." }) };
       return account.job;
@@ -118,5 +132,76 @@ describe("Claude Code's card in the settings screen", () => {
     expect(box.textContent).toContain("Account: Not signed in");
     await act(async () => fireEvent.click(within(box).getByRole("button", { name: "Sign in with your Claude account" })));
     await waitFor(() => expect(box.textContent).toContain("Invalid code."));
+  });
+  it("saves the subscription token from claude setup-token, says until about when it lasts, replaces and removes it", async () => {
+    const saved: ClaudeTokenStatus = {
+      saved: true,
+      source: "saved",
+      savedAt: "2026-10-03T12:00:00.000Z",
+      expiresAround: "2027-10-03T12:00:00.000Z",
+    };
+    let account: ClaudeAccount = {
+      installed: true,
+      version: "2.1.288",
+      path: "/bin/claude",
+      loggedIn: false,
+      method: "none",
+      detail: null,
+      job: null,
+      token: NO_TOKEN,
+    };
+    const put = vi.fn(async (_path: string, body: { token: string }) => {
+      if (body.token.startsWith("sk-ant-api")) throw new Error("this is an API key, which bills the Claude API");
+      account = { ...account, loggedIn: true, method: "oauth_token", token: saved };
+      return saved;
+    });
+    const del = vi.fn(async () => {
+      account = { ...account, loggedIn: false, method: "none", token: NO_TOKEN };
+      return NO_TOKEN;
+    });
+    const api = { get: vi.fn(async () => account), post: vi.fn(), put, delete: del } as unknown as Api;
+    render(<ClaudeSignIn api={api} expired={false} />);
+    const box = await screen.findByTestId("claude-token");
+    expect(box.textContent).toContain("No token: Claude Code uses this computer's sign-in.");
+    expect(box.textContent).toContain("claude setup-token");
+    const field = within(box).getByLabelText("Token from claude setup-token") as HTMLInputElement;
+    expect(field.type).toBe("password");
+    expect((within(box).getByRole("button", { name: "Save token" }) as HTMLButtonElement).disabled).toBe(true);
+
+    // An API key is refused with the hub's words.
+    fireEvent.change(field, { target: { value: "sk-ant-api03-not-this" } });
+    await act(async () => fireEvent.click(within(box).getByRole("button", { name: "Save token" })));
+    expect(within(box).getByRole("alert").textContent).toContain("API key");
+
+    fireEvent.change(field, { target: { value: "  sk-ant-oat01-made-up  " } });
+    await act(async () => fireEvent.click(within(box).getByRole("button", { name: "Save token" })));
+    expect(put).toHaveBeenLastCalledWith("/api/v1/runtimes/claude/token", { token: "sk-ant-oat01-made-up" });
+    await waitFor(() => expect(box.textContent).toMatch(/Token saved on Oct 3, 2026 · lasts until about Oct 3, 2027/));
+    expect(field.value).toBe("");
+    expect(box.textContent).toContain("Claude Code uses it instead of the sign-in");
+    expect(screen.getByTestId("claude-sign-in").textContent).toContain("Signed in (oauth_token)");
+    expect(within(box).getByRole("button", { name: "Replace token" })).toBeTruthy();
+
+    await act(async () => fireEvent.click(within(box).getByRole("button", { name: "Remove token" })));
+    expect(del).toHaveBeenCalledWith("/api/v1/runtimes/claude/token");
+    await waitFor(() => expect(box.textContent).toContain("No token"));
+  });
+
+  it("says a refused token needs a new one from claude setup-token, and a token set on the server", async () => {
+    const account: ClaudeAccount = {
+      installed: true,
+      version: "2.1.288",
+      path: "/bin/claude",
+      loggedIn: true,
+      method: "oauth_token",
+      detail: null,
+      job: null,
+      token: { saved: true, source: "server", savedAt: null, expiresAround: null },
+    };
+    render(<ClaudeSignIn api={{ get: vi.fn(async () => account) } as unknown as Api} expired />);
+    const box = await screen.findByTestId("claude-sign-in");
+    expect(within(box).getByRole("alert").textContent).toContain("Run claude setup-token again");
+    expect(within(screen.getByTestId("claude-token")).getByText("✓ Token set on the server (CLAUDE_CODE_OAUTH_TOKEN)")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Remove token" })).toBeNull();
   });
 });

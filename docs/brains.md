@@ -61,6 +61,14 @@ shows a code, paste it in the box under the button (the page's address is also
 shown, so it works when you reach Orbis from another device). Sign in, press
 **Test**, done. The same from a terminal: `claude auth login`.
 
+**On a server, the subscription token.** `claude setup-token`, run once on any
+computer signed in to Claude, prints a token for your plan that lasts a year.
+Paste it under **🔑 Subscription token** on the same card, or set
+`CLAUDE_CODE_OAUTH_TOKEN` on the hub. Claude Code then runs on it, on the
+plan's limits and never on the API: Orbis passes it to Claude Code alone and
+never passes `ANTHROPIC_API_KEY`. This is how a hub in the cloud uses your plan
+(see [cloud.md](cloud.md)).
+
 ### Codex (ChatGPT subscription)
 
 ```

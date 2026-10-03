@@ -2,7 +2,7 @@
 
 **Contract:** cli-harnesses
 **Status:** active
-**Last updated:** 2026-09-28
+**Last updated:** 2026-10-03
 
 ## Purpose
 
@@ -32,7 +32,12 @@ The hub builds each harness environment from scratch: PATH, HOME, LANG, TERM,
 USER, the harness's own login variables that already exist in the hub's
 environment (for example `CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
 `GEMINI_API_KEY` only when the bot's brain names it), and — only inside the
-MCP server entry — ORBIS_URL and ORBIS_RUN_TOKEN.
+MCP server entry — ORBIS_URL and ORBIS_RUN_TOKEN. Claude Code alone also gets
+`CLAUDE_CODE_OAUTH_TOKEN`, the subscription token `claude setup-token` prints:
+the bot's own secret of that name, else the one saved in Settings → Brains,
+else the hub's environment variable. It never gets `ANTHROPIC_API_KEY` or
+`ANTHROPIC_AUTH_TOKEN`, which Claude Code would put before the token and bill
+to the API.
 
 ## Wiring
 

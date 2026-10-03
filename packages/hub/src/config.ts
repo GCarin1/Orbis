@@ -28,6 +28,11 @@ export interface HubConfig {
   computerProvider: ComputerProviderKind;
   logLevel: LogLevel;
   anthropicApiKey: string | null;
+  /**
+   * The Claude subscription's token (`claude setup-token`) from CLAUDE_CODE_OAUTH_TOKEN, for Claude Code
+   * when none is saved in Orbis; never an API key.
+   */
+  claudeOauthToken: string | null;
   openaiApiKey: string | null;
   /** OpenAI-compatible address of the local Ollama server, for `ollama` brains that name none. */
   ollamaBaseUrl: string;
@@ -131,6 +136,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
       overrides.computerProvider ?? readEnum(env, "ORBIS_COMPUTER_PROVIDER", ["local", "host", "docker"] as const, "local"),
     logLevel: overrides.logLevel ?? readEnum(env, "ORBIS_LOG_LEVEL", ["debug", "info", "warn", "error"] as const, "info"),
     anthropicApiKey: overrides.anthropicApiKey ?? readVar(env, "ANTHROPIC_API_KEY") ?? null,
+    claudeOauthToken: overrides.claudeOauthToken ?? readVar(env, "CLAUDE_CODE_OAUTH_TOKEN") ?? null,
     openaiApiKey: overrides.openaiApiKey ?? readVar(env, "OPENAI_API_KEY") ?? null,
     ollamaBaseUrl: overrides.ollamaBaseUrl ?? readVar(env, "ORBIS_OLLAMA_URL") ?? DEFAULT_OLLAMA_URL,
     lmstudioBaseUrl: overrides.lmstudioBaseUrl ?? readVar(env, "ORBIS_LMSTUDIO_URL") ?? DEFAULT_LMSTUDIO_URL,

@@ -4,6 +4,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
 import {
   CHAT_HTTP_TOKEN_SECRET,
+  CLAUDE_OAUTH_TOKEN,
   cleanBearer,
   tokenExpiry,
   type Bot,
@@ -18,6 +19,7 @@ import { brainTestBot, testBrain } from "../brains/probe.js";
 import { botToken, checkConnection } from "../brains/chat-http.js";
 import type { ClaudeAccount } from "../brains/claude-account.js";
 import type { CodexAccount } from "../brains/codex-account.js";
+import { ClaudeTokenError, type ClaudeSubscriptionToken } from "../secrets/claude-token.js";
 import { BrainSchema, IdParams } from "./schemas.js";
 
 const TestBody = Type.Object(
@@ -30,7 +32,13 @@ const TestBody = Type.Object(
   { additionalProperties: false },
 );
 
-export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubContext, codex: CodexAccount, claude: ClaudeAccount): Promise<void> {
+export async function registerRuntimeRoutes(
+  root: FastifyInstance,
+  ctx: HubContext,
+  codex: CodexAccount,
+  claude: ClaudeAccount,
+  claudeToken: ClaudeSubscriptionToken,
+): Promise<void> {
   const app = root.withTypeProvider<TypeBoxTypeProvider>();
 
   // ChatGPT through the Codex CLI: install it, sign in with the ChatGPT account, sign out.
@@ -59,6 +67,17 @@ export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubConte
     return { sent: true };
   });
   app.post("/api/v1/runtimes/claude/cancel", { schema: { tags: ["runtimes"] } }, async () => claude.cancel());
+  // The subscription token `claude setup-token` prints: saved encrypted, answered as a status, never read back.
+  const TokenBody = Type.Object({ token: Type.String({ minLength: 1, maxLength: 4_000 }) }, { additionalProperties: false });
+  app.put("/api/v1/runtimes/claude/token", { schema: { tags: ["runtimes"], body: TokenBody } }, async (req) => {
+    try {
+      return claudeToken.set(req.body.token);
+    } catch (err) {
+      if (err instanceof ClaudeTokenError) throw badRequest(err.message, { token: "the token claude setup-token prints" });
+      throw err;
+    }
+  });
+  app.delete("/api/v1/runtimes/claude/token", { schema: { tags: ["runtimes"] } }, async () => claudeToken.clear());
   const { config, brains, botService, secretResolvers } = ctx;
   // One test at a time per bot or brain kind: each one may start a CLI process.
   const running = new Set<string>();
@@ -120,7 +139,11 @@ export async function registerRuntimeRoutes(root: FastifyInstance, ctx: HubConte
       return await testBrain(adapter, bot, {
         config,
         signal: controller.signal,
-        ...(botId !== undefined ? { secret: (name: string) => secretResolvers.resolve(bot.id, name) } : {}),
+        // A brain tested on its own has no secrets but the hub's Claude subscription token.
+        secret:
+          botId !== undefined
+            ? (name: string) => secretResolvers.resolve(bot.id, name)
+            : (name: string) => (name === CLAUDE_OAUTH_TOKEN ? (claudeToken.get()?.token ?? null) : null),
       });
     } finally {
       running.delete(key);

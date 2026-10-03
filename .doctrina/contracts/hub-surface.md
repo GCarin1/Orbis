@@ -2,7 +2,7 @@
 
 **Contract:** hub-surface
 **Status:** active
-**Last updated:** 2026-09-28
+**Last updated:** 2026-10-03
 
 ## Purpose
 
@@ -47,6 +47,7 @@ the WebSocket events, the MCP endpoint and the OpenAI-compatible endpoint.
 | ORBIS_URL                | no       | —                               | http://127.0.0.1:7420    |
 | ORBIS_RUN_TOKEN          | no       | —                               | set by the hub per run   |
 | ANTHROPIC_API_KEY        | no       | —                               | sk-ant-...               |
+| CLAUDE_CODE_OAUTH_TOKEN  | no       | —                               | from `claude setup-token` |
 | OPENAI_API_KEY           | no       | —                               | sk-...                   |
 | ORBIS_OLLAMA_URL         | no       | —                               | http://127.0.0.1:11434/v1 |
 | ORBIS_LMSTUDIO_URL       | no       | —                               | http://127.0.0.1:1234/v1 |
@@ -85,6 +86,7 @@ machine that runs Orbis; none is injected by CI.
 | ORBIS_BROWSER_EXECUTABLE | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_DOCKER             | local  | —        | —        | packages/hub/src/computer/docker.ts |
 | ANTHROPIC_API_KEY        | local  | —        | —        | packages/hub/src/config.ts        |
+| CLAUDE_CODE_OAUTH_TOKEN  | local  | —        | —        | packages/hub/src/config.ts        |
 | OPENAI_API_KEY           | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_OLLAMA_URL         | local  | —        | —        | packages/hub/src/config.ts        |
 | ORBIS_LMSTUDIO_URL       | local  | —        | —        | packages/hub/src/config.ts        |
@@ -182,7 +184,7 @@ machine that runs Orbis; none is injected by CI.
 - `POST /bots/:id/chat-check` → `ChatConnectionCheck` `{ url, proxies: { windows, env }, results: [{ transport, curl, proxy, verdict: "ok"|"token"|"reached"|"blocked"|"error", status, detail, ms }] }`: one GET of the chats' list (no message) by each way out — each curl, each proxy and none, Node; 400 for a bot that is not chat-http or has no token; 409 `test_running` while one runs.
 - `GET /bots/:id/chat-token` → `{ saved, expiresAt, expired, source: "shared"|"bot"|null }`: whether the bot has a `chat-http` token — its chat API's shared one, else its own — and when its `exp` says it stops working (never the token).
 - `GET /chat-http/tokens` → `ChatTokenGroup[]` `[{ origin, token: { saved, expiresAt, expired, source }, bots: [{ id, name, handle }] }]`, one per chat API (the origin of chat-http bots' addresses) · `PUT /chat-http/tokens` `{ origin, value }` (an address or origin, and the token, bare or as `Bearer …`) → the list: that API's token, shared by its bots, kept encrypted in the hub's vault (400 for an address that is not http(s) or a value with no token).
-- `GET /runtimes/claude/account` → `{ installed, version, path, loggedIn, method, detail, job: CliJob|null }` (`claude --version`, `claude auth status`) · `POST /runtimes/claude/login` → 202 `CliJob` (`claude auth login --claudeai`; `url` is the page it prints) · `POST /runtimes/claude/code` `{ code }` → `{ sent: true }` (the code that page shows, typed to the waiting login; 409 `no_sign_in` when none waits) · `POST /runtimes/claude/cancel` → the job.
+- `GET /runtimes/claude/account` → `{ installed, version, path, loggedIn, method, detail, job: CliJob|null, token: ClaudeTokenStatus }` (`claude --version`, `claude auth status` with the subscription token when there is one) · `POST /runtimes/claude/login` → 202 `CliJob` (`claude auth login --claudeai`; `url` is the page it prints) · `POST /runtimes/claude/code` `{ code }` → `{ sent: true }` (the code that page shows, typed to the waiting login; 409 `no_sign_in` when none waits) · `POST /runtimes/claude/cancel` → the job · `PUT /runtimes/claude/token` `{ token }` → `ClaudeTokenStatus` `{ saved, source: "saved"|"server"|null, savedAt, expiresAround }` (the token `claude setup-token` prints, kept encrypted and never answered; 400 for an API key `sk-ant-api…` or a value that is not a token) · `DELETE /runtimes/claude/token` → `ClaudeTokenStatus` (CLAUDE_CODE_OAUTH_TOKEN of the hub's environment, if set, then applies).
 - `GET /runtimes/codex/account` → `{ installed, version, path, loggedIn, method: "chatgpt"|"api-key"|null, detail, job: CliJob|null }` · `POST /runtimes/codex/install` → 202 `CliJob` (`npm install -g @openai/codex@latest`) · `POST /runtimes/codex/login` `{ device? }` → 202 `CliJob` (`codex login`, or `codex login --device-auth`) · `POST /runtimes/codex/cancel` → the job · `POST /runtimes/codex/logout` → the account. `CliJob`: `{ kind: "install"|"login", state: "running"|"done"|"failed", startedAt, finishedAt, url, code, log, error }`; one job at a time.
 - `POST /runtimes/test` `{ botId }` (the bot's brain, with its secrets) or `{ brain }` → `{ kind, ok, reply, error, durationMs, answered }`; `409 test_running` while the same bot or brain kind is being tested.
 - `GET /voice` → `{ transcription: { configured, source: "settings"|"env"|"openai"|null, url, model, hasKey } }` (never the key) · `PUT /voice/transcription` `{ url?, model?, apiKey? }` (a value replaces, `null` or `""` clears, absent keeps; 400 for a non-http URL) → the same · `POST /voice/test` → `{ ok, text, durationMs, error }` (a second of silence sent to the service) · `POST /voice/transcribe?lang=<pt-BR|en-US>` with an `audio/*` or `application/octet-stream` body up to 25 MiB → `{ text }`; 503 `transcription_unavailable` when no service is set up, 502 `transcription_failed` when it fails. The hub forwards the audio as `multipart/form-data` (`file` named `speech.<ext>` after the content type, `model`, `language` as two letters, `response_format=json`) to `<url>/audio/transcriptions` with `Authorization: Bearer <key>` when a key is set. The service is the one saved from the settings screen (the key encrypted with the vault's key in the `settings` table), else `ORBIS_TRANSCRIBE_URL`, else `https://api.openai.com/v1` with `OPENAI_API_KEY`; the model defaults to `whisper-1`.

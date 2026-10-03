@@ -9,6 +9,30 @@ change that delivered it.
 
 ### Added
 
+- **Orbis from anywhere, on your Claude plan** (change
+  0051-claude-subscription-anywhere).
+  - Claude Code can run on the token `claude setup-token` prints. That token
+    is for your Pro or Max plan, lasts a year, and is never billed to the API.
+  - The token is saved in **Settings → Brains → Claude Code → 🔑 Subscription
+    token**, or set as `CLAUDE_CODE_OAUTH_TOKEN` on the hub.
+  - It is kept encrypted and shown only as saved, with since when and until
+    about when.
+  - It is given to Claude Code alone, in runs, the brain test and the account
+    check, and masked in run output. Claude Code never gets
+    `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
+  - An API key pasted as the token is refused. A refused token says how to
+    get a new one, and a bot secret of the same name gives that bot another
+    account.
+  - **Cloud kit**:
+    - a `Dockerfile` for the hub, with Claude Code and Chromium; data and
+      Claude Code's sign-in live in `/data`, and it runs as a normal user;
+    - `deploy/docker-compose.yml`, with a free Cloudflare quick tunnel or
+      your own tunnel;
+    - a GitHub Codespaces `.devcontainer` that builds and starts the hub and
+      asks for `ORBIS_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN` as Codespaces
+      secrets.
+  - Settings → Phone points to it. ADR 0017, guide `docs/cloud.md`.
+
 - **Squads** (🛡 in the sidebar, change 0050-squads).
   - Bots organized in named squads, each with a handle such as `@growth`.
   - The members report to the squad's **representative** (★), and the

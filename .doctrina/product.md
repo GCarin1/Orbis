@@ -119,6 +119,7 @@ Out of scope (deferred or rejected):
 - [SC10] A bot exported as a YAML template carries its identity,
 - [SC11] A user hires AI teammates: a recruiter bot's brain writes up to 30 short résumés at a time for a project or one of the user's groups, at a low token cost, and only a hire writes the full profile (instructions, tools, skills, what it will do and needs) that becomes a bot
 - [SC12] A user organizes bots in named squads, each with a representative the members report to and a manager the representative reports to (one manager may take every squad); squads talk in their own chats and a shared room, reach each other by @squad, and any bot can call another bot's routines
+- [SC13] A user reaches Orbis from the phone anywhere, with the computer off — the hub in a GitHub Codespace or on a server with Docker, behind a tunnel — and its Claude Code bots run on the user's own Claude plan through the token of claude setup-token, never on the API
   description, skills and routines, never its computer, logins, history or
   secrets, and export is refused when the secret scan finds a credential.
 

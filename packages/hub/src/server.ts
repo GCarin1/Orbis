@@ -379,8 +379,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await usage.routes(app);
   await templates.routes(app);
   const codexAccount = new CodexAccount();
-  const claudeAccount = new ClaudeAccount();
-  await registerRuntimeRoutes(app, ctx, codexAccount, claudeAccount);
+  const claudeAccount = new ClaudeAccount(undefined, secrets.claudeToken);
+  await registerRuntimeRoutes(app, ctx, codexAccount, claudeAccount, secrets.claudeToken);
   await voice.routes(app);
   await registerMcpRoutes(app, mcp);
   await hiring.routes(app);

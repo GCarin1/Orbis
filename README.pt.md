@@ -77,6 +77,7 @@ fecha quando os critérios de aceite são provados por testes.
 | Marketplace de MCP: 37 servidores MCP gratuitos, cada um com a sua logo, conectados com um clique. Sem conta: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel e outros. Entrando com a sua conta: Notion, Linear, Jira e Confluence, Todoist, Vercel, Neon, Stripe e outros. Com uma chave grátis: GitHub, Brave, Tavily, Alpha Vantage, Airtable e outros. Ou o seu próprio. Chaves escolhem as ferramentas e os servidores de cada bot. | ✅ verificado |
 | Contratação: um bot recrutador escreve currículos curtos de colegas de IA para um projeto ou um dos seus times, até 30 gastando poucos tokens. Você contrata só quem quiser. A contratação escreve o perfil completo (instruções, o que vai fazer e do que precisa, ferramentas, skills) e vira um bot que entra no time e se apresenta. | ✅ verificado |
 | Squads: bots organizados em squads com nome. Cada squad tem um representante, a quem os membros reportam, e um gerente (um gerente pode cuidar de todas). Cada squad tem uma conversa, representantes e gerentes dividem uma sala, `@squad` chama o representante, e qualquer bot chama as rotinas de outro (`routine.call`). | ✅ verificado |
+| Orbis de qualquer lugar: o Claude Code na sua assinatura Claude (Pro ou Max) com o token do `claude setup-token`, nunca a API; o hub num Codespace do GitHub ou com Docker num servidor sempre ligado, alcançado por um túnel da Cloudflare ou pelo Tailscale | ✅ verificado |
 | Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e
@@ -112,6 +113,11 @@ orbis open                 # abre o app web já autenticado
 
 Ou o **app desktop**, que inicia o hub para você: `npm run desktop`.
 
+**Fora de casa, com o computador desligado?** Rode o hub num Codespace do
+GitHub (horas grátis, para testar) ou com Docker num servidor sempre ligado, e
+deixe o Claude Code usar a sua assinatura Claude com o token do
+`claude setup-token` em vez da API — veja [docs/cloud.md](docs/cloud.md).
+
 **No Windows**, `scripts\windows\Orbis.bat` inicia o Orbis (ou reinicia, se ele
 já estiver rodando), `Orbis-Token.bat` mostra o token de login e
 `Orbis-Atalhos.bat` coloca os dois na área de trabalho com o ícone do Orbis —
@@ -146,7 +152,7 @@ Mais em [`docs/architecture.md`](docs/architecture.md),
 [`docs/brains.md`](docs/brains.md), [`docs/approvals.md`](docs/approvals.md),
 [`docs/collaboration.md`](docs/collaboration.md), [`docs/computer.md`](docs/computer.md),
 [`docs/skills-and-routines.md`](docs/skills-and-routines.md), [`docs/secrets-and-usage.md`](docs/secrets-and-usage.md), [`docs/templates.md`](docs/templates.md), [`docs/desktop.md`](docs/desktop.md),
-[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/squads.md`](docs/squads.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) e [`docs/cli.md`](docs/cli.md).
+[`docs/voice.md`](docs/voice.md), [`docs/mcp.md`](docs/mcp.md), [`docs/hiring.md`](docs/hiring.md), [`docs/squads.md`](docs/squads.md), [`docs/cloud.md`](docs/cloud.md), [`docs/bot-behaviour-audit.md`](docs/bot-behaviour-audit.md) e [`docs/cli.md`](docs/cli.md).
 
 ## Configuração
 
@@ -163,6 +169,7 @@ Todas as variáveis são opcionais; veja [`.env.example`](.env.example).
 | `ORBIS_BROWSER_EXECUTABLE` | Chromium do Playwright | Chromium das ferramentas de navegador locais |
 | `ORBIS_DOCKER` | `docker` | a CLI do docker usada pelo provedor docker |
 | `ORBIS_URL` | `http://127.0.0.1:7420` | URL do hub para a CLI |
+| `CLAUDE_CODE_OAUTH_TOKEN` | nenhum | o token da sua assinatura Claude, do `claude setup-token`, para o Claude Code num servidor; um token salvo em Configurações → Cérebros → Claude Code vem primeiro |
 | `ORBIS_TRANSCRIBE_URL` / `_MODEL` / `_API_KEY` | nenhum (o da OpenAI com `OPENAI_API_KEY`) / `whisper-1` | serviço de transcrição da voz onde o navegador não transcreve; Configurações → Voz e aparência tem prioridade |
 
 ## Desenvolvimento

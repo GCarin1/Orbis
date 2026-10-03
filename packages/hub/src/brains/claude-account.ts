@@ -2,8 +2,10 @@
 // hub reads the account (`claude auth status`) and starts the sign-in
 // (`claude auth login`), which opens the browser on this machine, or prints a
 // page and waits for the code that page shows. Orbis never sees the password
-// or the tokens: Claude Code keeps them in its own folder.
-import type { ClaudeAccount as ClaudeAccountStatus, CliJob } from "@orbis/shared";
+// or the sign-in's tokens: Claude Code keeps them in its own folder. The one
+// credential Orbis may hold is the subscription token the user pastes (the one
+// `claude setup-token` prints), which wins over the sign-in when saved.
+import type { ClaudeAccount as ClaudeAccountStatus, ClaudeTokenStatus, CliJob } from "@orbis/shared";
 import { ANSI, CliJobs } from "./cli-jobs.js";
 import { findExecutable } from "./health.js";
 
@@ -31,13 +33,31 @@ export function parseSignInUrl(output: string): string | null {
   return urls.find((u) => /oauth\/authorize/.test(u)) ?? urls[0] ?? null;
 }
 
+/** The subscription token Claude Code runs with (secrets/claude-token.ts). */
+export interface ClaudeTokenSource {
+  env(): Record<string, string>;
+  status(): ClaudeTokenStatus;
+}
+
+const NO_TOKEN: ClaudeTokenSource = {
+  env: () => ({}),
+  status: () => ({ saved: false, source: null, savedAt: null, expiresAround: null }),
+};
+
 export class ClaudeAccount {
   private readonly jobs: CliJobs;
 
-  constructor(private readonly envPath: () => string = () => process.env.PATH ?? "") {
-    this.jobs = new CliJobs(envPath, (job) => {
-      job.url = job.url ?? parseSignInUrl(job.log);
-    });
+  constructor(
+    private readonly envPath: () => string = () => process.env.PATH ?? "",
+    private readonly token: ClaudeTokenSource = NO_TOKEN,
+  ) {
+    this.jobs = new CliJobs(
+      envPath,
+      (job) => {
+        job.url = job.url ?? parseSignInUrl(job.log);
+      },
+      () => token.env(),
+    );
   }
 
   private claude(): string | null {
@@ -47,7 +67,8 @@ export class ClaudeAccount {
   async status(): Promise<ClaudeAccountStatus> {
     const file = this.claude();
     const job = this.jobs.current();
-    if (!file) return { installed: false, version: null, path: null, loggedIn: false, method: null, detail: null, job };
+    const token = this.token.status();
+    if (!file) return { installed: false, version: null, path: null, loggedIn: false, method: null, detail: null, job, token };
     const [version, auth] = await Promise.all([
       this.jobs.run(file, ["--version"], STATUS_TIMEOUT_MS),
       this.jobs.run(file, ["auth", "status"], STATUS_TIMEOUT_MS),
@@ -58,7 +79,7 @@ export class ClaudeAccount {
         .split("\n")
         .map((l) => l.trim())
         .find(Boolean) ?? null;
-    return { installed: true, version: line(version.output), path: file, ...parseAuthStatus(auth.output, auth.code), detail: null, job };
+    return { installed: true, version: line(version.output), path: file, ...parseAuthStatus(auth.output, auth.code), detail: null, job, token };
   }
 
   /** `claude auth login`: the browser opens on this machine; the page it prints works from any device. */

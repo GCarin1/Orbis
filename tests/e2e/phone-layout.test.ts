@@ -150,6 +150,17 @@ describe("the web app on a phone", () => {
         await check(`${nav} → ${tab}`);
       }
     }
+    // Claude Code's subscription token, open — when this machine has Claude Code (change 0051).
+    await home();
+    await page.getByRole("button", { name: "⚙ Settings" }).click();
+    const claudeCard = page.getByTestId("brain-claude-code");
+    await claudeCard.waitFor();
+    if (await claudeCard.getByText("✓ Installed").count()) {
+      const token = page.getByTestId("claude-token");
+      await token.waitFor({ timeout: 30_000 });
+      await token.locator("summary").click();
+      await check("Claude Code's subscription token");
+    }
     // The MCP screen's sheets: a server's details and your own server.
     await home();
     await page.getByRole("button", { name: "🧩 MCP" }).click();
