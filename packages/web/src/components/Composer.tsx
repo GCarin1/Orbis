@@ -1,6 +1,6 @@
 // Message box with autocomplete: `@` for bot handles, `/` for skills, and the
 // microphone and read-aloud switch (specs/web-app).
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Bot } from "@orbis/shared";
 import { useLang, useT, type TextKey } from "../i18n.js";
 import { canSpeak, useDictation, useVoice } from "../voice.js";
@@ -58,6 +58,8 @@ export function Composer({
   mentions = [],
   skills = [],
   transcribe = null,
+  prefill = null,
+  onPrefilled,
   onSend,
 }: {
   name: string;
@@ -65,6 +67,9 @@ export function Composer({
   skills?: SkillOption[];
   /** The hub's transcription service, used where the browser cannot take dictation. */
   transcribe?: ((audio: Blob, lang: string) => Promise<string>) | null;
+  /** Text to put in the box (shared into the Android app); `onPrefilled` once it is there. */
+  prefill?: string | null;
+  onPrefilled?(): void;
   onSend(text: string): Promise<void>;
 }) {
   const t = useT();
@@ -88,6 +93,19 @@ export function Composer({
     box.current.setSelectionRange(pendingCaret.current, pendingCaret.current);
     pendingCaret.current = null;
   });
+
+  // Shared text: after what is already typed, ready to send.
+  useEffect(() => {
+    if (!prefill) return;
+    setText((current) => {
+      const next = current.trim() ? `${current.replace(/\s+$/, "")}\n${prefill}` : prefill;
+      pendingCaret.current = next.length;
+      setCaret(next.length);
+      return next;
+    });
+    onPrefilled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill]);
 
   /** The text before the dictation started: what is said goes after it. */
   const spokenBase = useRef("");

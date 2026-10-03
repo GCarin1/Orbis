@@ -1,11 +1,11 @@
 # ADR 0012 — The Android app is a WebView shell that shows the hub's web app
 
-- **Status:** accepted
+- **Status:** superseded by 0013
 - **Scope:** android-app, web-app
 - **Date:** 2026-10-03
 - **Deciders:** project owner (requirement: "um build .apk do app e um Actions que gere o APK da versão atual"), Claude Code
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** 0013
 - **Evidence:** `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`
 - **Landed:** 2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`
 

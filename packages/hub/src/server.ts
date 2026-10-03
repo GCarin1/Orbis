@@ -48,6 +48,7 @@ import { ClaudeAccount } from "./brains/claude-account.js";
 import { CodexAccount } from "./brains/codex-account.js";
 import { registerOpenAiCompat } from "./api/openai-compat.js";
 import { registerGroupRoutes } from "./api/groups-routes.js";
+import { registerPairingRoutes } from "./api/pairing-routes.js";
 import { Collaboration } from "./collab/handoff.js";
 import { MemoryService } from "./collab/memory.js";
 import { registerCoreRoutes } from "./api/routes.js";
@@ -124,6 +125,8 @@ function bearer(req: FastifyRequest): string | null {
 function needsHubToken(url: string): "bearer" | "query" | null {
   const p = url.split("?")[0]!;
   if (p === "/api/v1/stream") return "query";
+  // A phone trades a pairing code for the token: it has no token yet (api/pairing-routes.ts).
+  if (p === "/api/v1/pairing/claim") return null;
   if (p.startsWith("/api/") || p.startsWith("/v1/")) return "bearer";
   return null;
 }
@@ -353,6 +356,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerMcp(app, gateway);
   await registerOpenAiCompat(app, ctx);
   await registerGroupRoutes(app, ctx);
+  await registerPairingRoutes(app, ctx);
   await memoryService.routes(app);
   await registerComputerRoutes(app, ctx, browser, vncSessions, opts.computerSetup ?? new ComputerSetup(config.computerProvider));
   await skillService.routes(app);

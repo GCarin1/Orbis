@@ -17,6 +17,7 @@
         --danger: #f87171;
       }
       * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
       body {
         margin: 0;
         min-height: 100vh;
@@ -59,6 +60,15 @@
       .help li { margin: 4px 0; }
       code { background: #1c2542; padding: 1px 5px; border-radius: 6px; font-size: 12.5px; }
       .version { text-align: center; color: var(--muted); font-size: 12px; margin: 0; }
+      .row { display: flex; gap: 8px; }
+      .row input { flex: 1; min-width: 0; }
+      .secondary { background: #1c2542; color: var(--text); font-weight: 500; padding: 13px 14px; }
+      .optional { color: var(--muted); font-weight: 400; }
+      .recent { display: flex; flex-wrap: wrap; gap: 6px; }
+      .recent button { background: #1c2542; color: var(--text); font-size: 13px; font-weight: 500; padding: 7px 11px; border-radius: 999px; }
+      .retry { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
+      .retry button { padding: 7px 12px; font-size: 14px; }
+      button:disabled { opacity: 0.6; }
     </style>
   </head>
   <body>
@@ -70,9 +80,16 @@
       </header>
       <form id="form" novalidate>
         <label for="address" data-t="label"></label>
-        <input id="address" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="http://192.168.0.10:7420" />
+        <div class="row">
+          <input id="address" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="http://192.168.0.10:7420" />
+          <button type="button" id="paste" class="secondary" data-t="paste"></button>
+        </div>
+        <div id="recent" class="recent" hidden></div>
+        <label for="code"><span data-t="codeLabel"></span> <span class="optional" data-t="optional"></span></label>
+        <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="483 219" />
         <p id="error" class="error" role="alert" hidden></p>
-        <button type="submit" data-t="connect"></button>
+        <div id="retry" class="retry" hidden><span id="retry-text"></span><button type="button" id="retry-stop" class="secondary" data-t="stop"></button></div>
+        <button type="submit" id="submit" data-t="connect"></button>
       </form>
       <div class="help">
         <span data-t="howTitle"></span>
@@ -91,7 +108,7 @@
         connect: "Conectar",
         howTitle: "Como conectar:",
         step1: "No computador, abra o Orbis pelo <code>Orbis-Celular.bat</code> (ou rode <code>orbis serve --host 0.0.0.0</code>): ele passa a aceitar conexões da rede. Se o Windows perguntar, permita o Node nas redes privadas.",
-        step2: "Digite aqui o endereço que ele mostra, como <code>192.168.0.10</code> (a porta 7420 entra sozinha). O link com <code>#token=…</code> já entra direto; sem ele, o Orbis pede o token (o <code>Orbis-Token.bat</code> mostra).",
+        step2: "Digite aqui o endereço que ele mostra, como <code>192.168.0.10</code> (a porta 7420 entra sozinha), e o código de <b>Configurações → Celular</b> do Orbis no computador: o app entra sem você digitar o token. Um link com <code>#token=…</code> (cole ou compartilhe com o app) também entra direto.",
         step3: "O celular precisa estar na mesma rede Wi-Fi do computador, ou numa VPN até ele.",
         empty: "Digite o endereço do Orbis.",
         scheme: "Use um endereço http:// ou https://.",
@@ -99,6 +116,18 @@
         invalid: "Isso não é um endereço válido.",
         failed: "O Orbis não respondeu em",
         version: "versão",
+        paste: "Colar",
+        pasteEmpty: "Não há um endereço copiado.",
+        codeLabel: "Código de pareamento",
+        optional: "(opcional)",
+        connecting: "Conectando…",
+        code: "Código errado, já usado ou vencido: gere outro no computador (Configurações → Celular).",
+        busy: "Muitas tentativas: espere um minuto.",
+        unreachable: "O Orbis não respondeu nesse endereço. O computador está ligado, na mesma rede, com o Orbis aberto pelo Orbis-Celular.bat?",
+        http: "O Orbis respondeu com um erro ao código. Tente de novo.",
+        cert: "o certificado desse endereço não é confiável para o celular. Use http:// na rede local ou um certificado válido.",
+        retryIn: "Tentando de novo em {n} s…",
+        stop: "Parar",
       };
       const en = {
         tagline: "Your bots, on your phone.",
@@ -106,7 +135,7 @@
         connect: "Connect",
         howTitle: "How to connect:",
         step1: "On the computer, open Orbis with <code>Orbis-Celular.bat</code> (or run <code>orbis serve --host 0.0.0.0</code>): it then takes connections from the network. If Windows asks, allow Node on private networks.",
-        step2: "Type here the address it shows, like <code>192.168.0.10</code> (port 7420 is added for you). The link with <code>#token=…</code> signs in directly; without it, Orbis asks for the token (<code>Orbis-Token.bat</code> shows it).",
+        step2: "Type here the address it shows, like <code>192.168.0.10</code> (port 7420 is added for you), and the code from <b>Settings → Phone</b> of Orbis on the computer: the app signs in without you typing the token. A link with <code>#token=…</code> (paste it, or share it to the app) signs in directly too.",
         step3: "The phone must be on the computer's Wi-Fi, or on a VPN to it.",
         empty: "Type the address of Orbis.",
         scheme: "Use an http:// or https:// address.",
@@ -114,6 +143,18 @@
         invalid: "That is not a valid address.",
         failed: "Orbis did not answer at",
         version: "version",
+        paste: "Paste",
+        pasteEmpty: "No address is copied.",
+        codeLabel: "Pairing code",
+        optional: "(optional)",
+        connecting: "Connecting…",
+        code: "Wrong, used or expired code: make another one on the computer (Settings → Phone).",
+        busy: "Too many tries: wait a minute.",
+        unreachable: "Orbis did not answer at that address. Is the computer on, on the same network, with Orbis started by Orbis-Celular.bat?",
+        http: "Orbis answered the code with an error. Try again.",
+        cert: "the phone does not trust that address's certificate. Use http:// on the local network, or a valid certificate.",
+        retryIn: "Trying again in {n} s…",
+        stop: "Stop",
       };
       const t = /^pt\b/i.test(navigator.language) ? pt : en;
       document.documentElement.lang = t === pt ? "pt-BR" : "en";
@@ -121,21 +162,89 @@
 
       const params = new URLSearchParams(location.search);
       const input = document.getElementById("address");
+      const codeInput = document.getElementById("code");
+      const submit = document.getElementById("submit");
       const errorBox = document.getElementById("error");
       const show = (text) => {
         errorBox.textContent = text;
         errorBox.hidden = !text;
       };
-      if (params.get("hub")) input.value = params.get("hub");
-      if (params.get("error")) show(`${t.failed} ${params.get("error")}`);
+      const hub = params.get("hub");
+      if (hub) input.value = hub;
+      if (params.get("cert")) show(`${params.get("error") || ""}: ${t.cert}`);
+      else if (params.get("error")) show(`${t.failed} ${params.get("error")}`);
       document.getElementById("version").textContent = `Orbis Android · ${t.version} ${params.get("v") || ""}`;
 
+      // The hubs used before, a tap away.
+      let recent = [];
+      try {
+        recent = JSON.parse(params.get("recent") || "[]");
+      } catch {
+        recent = [];
+      }
+      const recentBox = document.getElementById("recent");
+      for (const address of recent) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.textContent = address.replace(/^https?:\/\//, "").replace(/\/$/, "");
+        chip.addEventListener("click", () => (input.value = address));
+        recentBox.appendChild(chip);
+      }
+      recentBox.hidden = recent.length === 0;
+
+      // A link copied on the computer (as Orbis-Celular.bat prints it), from the phone's clipboard.
+      document.getElementById("paste").addEventListener("click", () => {
+        const text = window.orbisAndroid?.clipboardText ? window.orbisAndroid.clipboardText() : "";
+        const link = /https?:\/\/\S+/i.exec(text || "");
+        if (link) input.value = link[0];
+        else show(t.pasteEmpty);
+      });
+
+      let retryTimer = null;
+      const stopRetry = () => {
+        clearInterval(retryTimer);
+        retryTimer = null;
+        document.getElementById("retry").hidden = true;
+      };
+      document.getElementById("retry-stop").addEventListener("click", stopRetry);
+
+      const connect = () => {
+        stopRetry();
+        if (!window.orbisAndroid) return show(t.invalid);
+        const why = window.orbisAndroid.connect(input.value, codeInput.value);
+        if (why === "pending") {
+          show("");
+          submit.disabled = true;
+          submit.textContent = t.connecting;
+          return;
+        }
+        show(why ? t[why] || why : "");
+      };
+      // The answer to a pairing code that did not work.
+      window.onConnectResult = (why) => {
+        submit.disabled = false;
+        submit.textContent = t.connect;
+        show(t[why] || why);
+      };
       document.getElementById("form").addEventListener("submit", (e) => {
         e.preventDefault();
-        if (!window.orbisAndroid) return show(t.invalid);
-        const why = window.orbisAndroid.connect(input.value);
-        show(why ? t[why] || why : "");
+        connect();
       });
+
+      // The saved hub did not answer (computer off, another network): try again by itself, every 10 s.
+      if (hub && params.get("error") && !params.get("cert")) {
+        let left = 10;
+        const text = document.getElementById("retry-text");
+        const tick = () => (text.textContent = t.retryIn.replace("{n}", left));
+        tick();
+        document.getElementById("retry").hidden = false;
+        retryTimer = setInterval(() => {
+          left -= 1;
+          if (left > 0) return tick();
+          stopRetry();
+          if (input.value === hub && !codeInput.value) connect();
+        }, 1000);
+      }
       if (!input.value) input.focus();
     </script>
   </body>

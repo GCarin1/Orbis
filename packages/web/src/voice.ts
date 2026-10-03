@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import type { TimelineItem, TranscriptionStatus } from "@orbis/shared";
 import { useLang, type Lang } from "./i18n.js";
+import { androidApp, androidCan } from "./native.js";
 
 interface RecognitionAlternative {
   transcript: string;
@@ -33,7 +34,43 @@ export function isDesktopShell(): boolean {
   return Boolean((window as unknown as { orbisDesktop?: unknown }).orbisDesktop) || /\bElectron\//.test(navigator.userAgent);
 }
 
+/**
+ * The Android app's dictation as the browser's recognition: the phone's speech recognizer (its own screen)
+ * gives the words once, final; a page on plain http has neither the browser's recognition nor a microphone.
+ */
+export class AndroidRecognition implements Recognition {
+  lang = "pt-BR";
+  continuous = false;
+  interimResults = false;
+  onresult: Recognition["onresult"] = null;
+  onerror: Recognition["onerror"] = null;
+  onend: Recognition["onend"] = null;
+  private done = false;
+
+  start(): void {
+    (window as unknown as { __orbisDictation?: (r: { text?: string; error?: string }) => void }).__orbisDictation = (r) => {
+      if (this.done) return;
+      this.done = true;
+      if (r.text) this.onresult?.({ results: { length: 1, 0: { isFinal: true, length: 1, 0: { transcript: r.text } } } });
+      else this.onerror?.({ error: r.error ?? "no-speech" });
+      this.onend?.();
+    };
+    androidApp()!.dictate!(this.lang);
+  }
+
+  stop(): void {
+    /* the recognizer's screen ends by itself when the user stops speaking */
+  }
+
+  abort(): void {
+    if (this.done) return;
+    this.done = true;
+    this.onend?.();
+  }
+}
+
 export function dictationCtor(): RecognitionCtor | null {
+  if (androidCan("dictate")) return AndroidRecognition;
   if (isDesktopShell()) return null;
   const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
@@ -44,7 +81,10 @@ export function canRecord(): boolean {
 }
 
 export function canSpeak(): boolean {
-  return typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
+  if (typeof window === "undefined") return false;
+  // The Android app speaks with the phone's voice (its WebView has no speech synthesis).
+  if (androidCan("speak")) return true;
+  return "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
 }
 
 export const speechLang = (lang: Lang) => (lang === "pt-BR" ? "pt-BR" : "en-US");
@@ -65,6 +105,11 @@ export function speak(text: string, lang: Lang): boolean {
   if (!canSpeak()) return false;
   const words = speakable(text);
   if (!words) return false;
+  const android = androidApp();
+  if (android?.speak) {
+    android.speak(words, speechLang(lang));
+    return true;
+  }
   const synth = window.speechSynthesis;
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(words);
@@ -76,7 +121,9 @@ export function speak(text: string, lang: Lang): boolean {
 }
 
 export function stopSpeaking(): void {
-  if (canSpeak()) window.speechSynthesis.cancel();
+  const android = androidApp();
+  if (android?.stopSpeaking) android.stopSpeaking();
+  else if (canSpeak()) window.speechSynthesis.cancel();
 }
 
 const READ_KEY = "orbis.readAloud";

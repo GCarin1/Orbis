@@ -38,20 +38,44 @@ Android Studio opens `packages/android` too (it adds the Gradle wrapper).
    sign-in token, e.g. `http://192.168.0.10:7420/#token=…`. If Windows asks,
    allow Node on **private** networks. Elsewhere: `orbis serve --host 0.0.0.0`
    (or `ORBIS_HOST=0.0.0.0`).
-2. **Open the app** and type that address. A bare `192.168.0.10` becomes
-   `http://192.168.0.10:7420/`. With the `#token=…` part you are signed in at
-   once; without it, Orbis asks for the token (`Orbis-Token.bat` shows it).
+2. **Pair the phone with a code** — no token to type. On the computer, open
+   **⚙ Settings → Phone** in Orbis and press **Make a code**: it shows a
+   six-digit code (it works once, for five minutes) and this computer's
+   addresses, and warns when Orbis only listens on the computer. In the app,
+   type an address (a bare `192.168.0.10` becomes `http://192.168.0.10:7420/`)
+   and the code, and press **Connect**: the app trades the code for the token
+   (`POST /api/v1/pairing/claim`). Other ways in: **Paste** a link copied on the
+   computer, **share** the link to the Orbis app from another app (a chat with
+   yourself, say), or type the address alone and Orbis asks for the token
+   (`Orbis-Token.bat` shows it).
 3. The phone must be on the same Wi-Fi as the computer, or on a VPN to it
    (Tailscale, WireGuard…). Anyone on that network who has the token can use
    your hub: keep `0.0.0.0` for networks you trust, and replace the token with
    `Orbis-Token.bat --novo` if it leaks.
 
-The app remembers the hub. **⚙ Settings → Voice and appearance → Android app**
-shows it and **Change server** goes back to the first screen, which also comes
-back by itself when the hub does not answer (computer off, another network).
+The app remembers the hub, and the last five as chips on the first screen.
+**⚙ Settings → Phone** shows it and **Change server** goes back to the first
+screen, which also comes back by itself when the hub does not answer (computer
+off, another network) — and tries again every 10 seconds. An `https` hub whose
+certificate the phone does not trust is never loaded; the first screen says so.
 
 ## What the app adds to the web app
 
+- **Notifications** while the app is off screen: a bot's reply (one per
+  conversation, the latest replacing the one before), an approval or a secret
+  it asks for, a manager reporting back. A tap opens that conversation. A muted
+  group's messages stay quiet; its requests still notify. The app asks for the
+  permission the first time it shows your hub (Android 13+); **⚙ Settings →
+  Phone** asks again.
+- **Stay connected with the app closed** (⚙ Settings → Phone): Android stops a
+  background app within minutes, and with it the notifications. On, Orbis keeps
+  running with a lasting "Orbis connected" notification (a foreground service);
+  **Battery settings** lets you take it out of battery optimization if your
+  phone still stops it. Off by default; it uses a little more battery.
+- **Voice**: the microphone in the message box uses the phone's speech
+  recognizer (its own screen), and "read replies aloud" uses the phone's voice.
+- **Share to Orbis**: text or a link shared from another app waits for a
+  conversation — open one and it is in the message box.
 - **Back** closes what is open first — a dialog, the group info, a panel, the
   conversation — and then puts the app in the background, keeping it live.
 - **Files**: a group's photo uses the phone's picker; exporting a conversation
@@ -60,8 +84,8 @@ back by itself when the hub does not answer (computer off, another network).
 - Nothing is backed up or moved to another phone: the hub's address and the
   login token stay on this one.
 
-Not yet: the microphone and notifications (a hub on plain http is not a secure
-origin for them) — type, and keep the desktop app for notifications.
+The page itself gets no camera or microphone (a hub on plain http is not a
+secure origin for them); voice goes through the phone's recognizer instead.
 
 ## Signing, and updating in place
 

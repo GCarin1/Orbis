@@ -257,6 +257,16 @@ export interface Conversation {
   lastItemAt: string | null;
 }
 
+/** A code that pairs a phone with the hub (the Android app trades it for the token, once). */
+export interface PairingCode {
+  code: string;
+  expiresAt: string;
+  /** Whether the hub takes connections from the network; else the phone cannot reach it. */
+  listening: boolean;
+  /** The hub's addresses on this computer's network cards, for the phone. */
+  addresses: string[];
+}
+
 /** A link found in a conversation's messages (its "media, links and docs"). */
 export interface ConversationLink {
   url: string;

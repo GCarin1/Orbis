@@ -48,4 +48,27 @@ public class HubTest {
         assertEquals("orbis.txt", Hub.safeFileName("   "));
         assertEquals("ana.orbis.yaml", Hub.safeFileName("ana.orbis.yaml"));
     }
+
+    @Test
+    public void aSharedSignInLinkConnects() {
+        Hub.Target t = Hub.signInLink("No celular, digite:\n  http://192.168.0.10:7420/#token=abc%20def\nobrigado");
+        assertEquals("http://192.168.0.10:7420/", t.base);
+        assertEquals("http://192.168.0.10:7420/#token=abc%20def", t.load);
+        assertNull(Hub.signInLink("veja https://example.com/artigo"));
+        assertNull(Hub.signInLink(null));
+    }
+
+    @Test
+    public void recentHubsPutTheLastFirstWithoutRepeats() {
+        java.util.List<String> before = java.util.Arrays.asList("http://a:7420/", "http://b:7420/", "http://c:7420/");
+        assertEquals(java.util.Arrays.asList("http://b:7420/", "http://a:7420/", "http://c:7420/"), Hub.recent(before, "http://b:7420/", 5));
+        assertEquals(java.util.Arrays.asList("http://d:7420/", "http://a:7420/"), Hub.recent(before, "http://d:7420/", 2));
+    }
+
+    @Test
+    public void aPairingCodeIsItsDigits() {
+        assertEquals("483219", Pairing.digits(" 483 219 "));
+        assertEquals("483219", Pairing.digits("483-219"));
+        assertEquals("", Pairing.digits(null));
+    }
 }

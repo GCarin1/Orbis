@@ -2990,13 +2990,57 @@ label.check {
   }
 }
 
-/* The Android app's card in Settings (change 0043): the hub it shows and changing it. */
-.android-card {
-  padding: 12px 14px;
+/* Settings → Phone (change 0044): pairing on the computer, notifications in the Android app. */
+.phone-card {
+  padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
 }
-.android-card h2 {
-  margin-top: 0;
+.phone-card h2,
+.phone-card h3 {
+  margin: 0;
+}
+.phone-steps {
+  margin: 0;
+  padding-left: 20px;
+}
+.pairing-code {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pairing-code .code {
+  font: 600 34px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 4px;
+}
+.phone-addresses {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+/* Text shared into the Android app, waiting for a conversation. */
+.share-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 9;
+  width: min(560px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--brand-blue);
+  box-shadow: var(--shadow);
+}
+.share-banner span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

@@ -8,7 +8,6 @@ import { useLang, useT, type TextKey } from "../i18n.js";
 import { canSpeak, dictationCtor, isDesktopShell, speak, useVoice } from "../voice.js";
 import { LanguageSwitch } from "./LanguageSwitch.js";
 import { ThemeChoice } from "./ThemeSwitch.js";
-import { androidApp } from "../native.js";
 
 export function VoiceSettings({ api }: { api: Api }) {
   const t = useT();
@@ -66,21 +65,8 @@ export function VoiceSettings({ api }: { api: Api }) {
   const dictation = dictationCtor() !== null;
   const source = transcription?.source;
 
-  const android = androidApp();
-
   return (
     <div className="settings-section" data-testid="voice-settings">
-      {android && (
-        <div className="android-card" data-testid="android-card">
-          <h2>{t("android.title")}</h2>
-          <p className="muted">
-            {t("android.connected", { url: android.hubUrl() })} · {t("android.version", { version: android.version() })}
-          </p>
-          <button type="button" className="btn" onClick={() => android.changeHub()}>
-            {t("android.changeHub")}
-          </button>
-        </div>
-      )}
       <h2>{t("appearance.title")}</h2>
       <div className="prefs-form">
         <div>

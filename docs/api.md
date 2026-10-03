@@ -13,6 +13,15 @@ The token is `ORBIS_TOKEN`, or the content of `~/.orbis/token` (created at
 first start with mode 0600). `GET /health` needs no token. The stream takes
 the token as a query parameter because browsers cannot set WebSocket headers.
 
+**Pairing a phone.** `POST /api/v1/pairing` (with the token) → `{ code,
+expiresAt, listening, addresses }`: a six-digit code that works once, for five
+minutes, and dies after five wrong tries (the next one replaces it; `DELETE
+/api/v1/pairing` cancels it). `POST /api/v1/pairing/claim` `{ "code": "483 219" }`
+needs no token — it is how the Android app gets one — and answers `{ token }`,
+`401 invalid_code` or, past 20 tries a minute, `429 too_many_tries`.
+`listening` says whether the hub takes connections from the network
+(`ORBIS_HOST`), `addresses` its addresses on this computer's network cards.
+
 Errors always have one shape:
 
 ```json

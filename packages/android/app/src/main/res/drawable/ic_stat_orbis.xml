@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The status bar's Orbis mark: one color, as Android asks of notification icons (a ring, its core, a moon). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,4.5A7.5,7.5 0,1 1,11.99 4.5Z M12,7A5,5 0,1 1,11.99 7Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,9.5A2.5,2.5 0,1 1,11.99 9.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M20,2.5A1.6,1.6 0,1 1,19.99 2.5Z" />
+</vector>

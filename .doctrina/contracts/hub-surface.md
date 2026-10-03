@@ -120,6 +120,7 @@ machine that runs Orbis; none is injected by CI.
 
 - REST, OpenAI-compatible: header `Authorization: Bearer <token>`.
 - Stream: query `?token=<token>` (browsers cannot set WebSocket headers).
+- Pairing: `POST /api/v1/pairing/claim` takes no token (a phone trades a pairing code for it); every other `/api` route needs it.
 - MCP: header `Authorization: Bearer <run-token>`; a run token is valid for one run and one bot and is revoked when the run ends.
 - Webhooks: `X-Orbis-Signature: sha256=<hex>` or `X-Hub-Signature-256: sha256=<hex>`, HMAC-SHA256 of the raw body under the routine secret.
 - Errors use one shape: `{ "error": { "code": "<slug>", "message": "<text>", "fields"?: { "<path>": "<why>" } } }` with status 400, 401, 404, 409, 422 or 500.
@@ -156,6 +157,7 @@ machine that runs Orbis; none is injected by CI.
 ### REST routes (prefix `/api/v1`)
 
 - `GET /health` (no prefix, no auth) → `{ ok: true, version }`.
+- `POST /pairing` → `PairingCode` `{ code (6 digits), expiresAt, listening (the hub takes network connections), addresses (http://<IPv4>:<port>/ of each network card) }`, a new code replacing the last; `DELETE /pairing` → 204, cancels it · `POST /pairing/claim` `{ code }` (no auth; spaces and dashes ignored) → `{ token }`; 401 `invalid_code` (wrong, used, expired, or the code's fifth wrong try kills it); 429 `too_many_tries` past 20 claims a minute. A code lives 5 minutes and works once.
 - `GET /bots?includeHidden=true` → `Bot[]` · `POST /bots` → 201 `Bot` · `GET|PATCH|DELETE /bots/:idOrHandle` · `POST /bots/:id/duplicate` → 201 `Bot`.
 - `GET /bots/:id/conversation` → the direct `Conversation`, created on first request.
 - `GET /bots/:id/export` → `text/yaml` (`Content-Disposition: attachment; filename="<handle>.orbis.yaml"`) — a `BotTemplate`; 422 `secrets_found` with `fields` `{ "line <n>": "<kind>" }` when the document looks like it holds a credential · `POST /bots/import` `{ yaml }` → 201 `Bot` (a fresh handle when the name is taken; routines start disabled); 400 naming `apiVersion`, `kind` or the first invalid field.

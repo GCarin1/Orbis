@@ -72,6 +72,23 @@ final class Hub {
         }
     }
 
+    /** A link to a hub that signs in (…#token=…) inside shared text, as the hub's launcher prints it; else null. */
+    static Target signInLink(String text) {
+        if (text == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("https?://\\S+#token=\\S+", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(text);
+        if (!m.find()) return null;
+        Target t = parse(m.group());
+        return t.error == null ? t : null;
+    }
+
+    /** The hubs to offer on the connect screen: this one first, then the others, at most `max`. */
+    static java.util.List<String> recent(java.util.List<String> before, String hub, int max) {
+        java.util.List<String> list = new java.util.ArrayList<>();
+        list.add(hub);
+        for (String h : before) if (!h.equals(hub) && list.size() < max) list.add(h);
+        return list;
+    }
+
     /** A file name safe for Downloads: no folders, no control characters, never empty. */
     static String safeFileName(String name) {
         String clean = name == null ? "" : name.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", "-").trim();

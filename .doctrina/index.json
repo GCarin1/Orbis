@@ -439,17 +439,41 @@
         "id": "0012",
         "path": ".doctrina/decisions/0012-the-android-app-is-a-webview-shell-that-shows-the-hub-s-web-app.md",
         "title": "The Android app is a WebView shell that shows the hub's web app",
-        "status": "accepted",
+        "status": "superseded by 0013",
         "date": "2026-10-03",
         "scope": [
           "android-app",
           "web-app"
         ],
         "summary": "The Android app is a small native shell in Java (`packages/android`): one",
-        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`"
+        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `.github/workflows/android.yml`",
+        "superseded_by": "0013"
+      },
+      {
+        "id": "0013",
+        "path": ".doctrina/decisions/0013-the-android-app-is-a-webview-shell-with-a-native-bridge-for-notifications-voice-and-pairing.md",
+        "title": "The Android app is a WebView shell with a native bridge for notifications, voice and pairing",
+        "status": "accepted",
+        "date": "2026-10-03",
+        "supersedes": "0012",
+        "scope": [
+          "android-app",
+          "web-app",
+          "hub-api"
+        ],
+        "summary": "The app stays a WebView shell showing the hub's web app (ADR 0012's core)."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0044-android-notifications-pairing-voice-and-sharing",
+        "title": "android notifications pairing voice and sharing",
+        "path": ".doctrina/changes/0044-android-notifications-pairing-voice-and-sharing",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "runtime (confident; signals: secret) — opened anyway (--force)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

@@ -4,7 +4,8 @@ import { Api, captureTokenFromUrl, loadToken, openStream, saveToken } from "./ap
 import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
-import { saveTextFile, setBackHandler } from "./native.js";
+import { saveTextFile, setBackHandler, setOpenConversationHandler, setShareHandler } from "./native.js";
+import { notifyPhone } from "./phone.js";
 import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
 import { NewBotScreen } from "./components/NewBotScreen.js";
@@ -55,6 +56,8 @@ export function App() {
   const [focus, setFocus] = useState<{ itemId: string; at: number } | null>(null);
   /** How many bots a group holds (the hub's ORBIS_MAX_GROUP_SIZE). */
   const [maxGroupSize, setMaxGroupSize] = useState(MAX_GROUP_SIZE);
+  /** Text shared into the Android app, until a conversation's message box takes it. */
+  const [shared, setShared] = useState<string | null>(null);
   // One side panel at a time beside a direct conversation.
   const [panel, setPanelState] = useState<Panel>(initialPanel);
   const setPanel = (next: Panel) => {
@@ -104,7 +107,12 @@ export function App() {
       }
     });
     const stop = openStream(token, {
-      onEvent: (e) => useStore.getState().apply(e),
+      onEvent: (e) => {
+        const s = useStore.getState();
+        s.apply(e);
+        // The Android app off screen: a bot's reply or request becomes a notification.
+        notifyPhone(e, { bots: s.bots, conversations: s.conversations });
+      },
       onStatus: (c) => useStore.getState().setConnected(c),
       onReconnect: () => {
         const s = useStore.getState();
@@ -120,13 +128,21 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // In the desktop app, a notification click opens its conversation.
+  // In the desktop app and the Android app, a notification click opens its conversation.
   useEffect(() => {
-    const desktop = (window as unknown as { orbisDesktop?: { onOpenConversation?(cb: (id: string) => void): void } }).orbisDesktop;
-    desktop?.onOpenConversation?.((conversationId) => {
+    const open = (conversationId: string) => {
       setView("chat");
       void useStore.getState().openConversation(conversationId);
-    });
+    };
+    const desktop = (window as unknown as { orbisDesktop?: { onOpenConversation?(cb: (id: string) => void): void } }).orbisDesktop;
+    desktop?.onOpenConversation?.(open);
+    setOpenConversationHandler(open);
+    // Text shared into the Android app from another app waits for a message box.
+    setShareHandler((text) => setShared(text));
+    return () => {
+      setOpenConversationHandler(null);
+      setShareHandler(null);
+    };
   }, []);
 
   const bots = useMemo(() => Object.values(store.bots), [store.bots]);
@@ -323,7 +339,15 @@ export function App() {
                 focus={focus}
               />
             )}
-            <Composer name={group.title} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(group.id, text)} />
+            <Composer
+              name={group.title}
+              mentions={mentions}
+              skills={skillOptions}
+              transcribe={transcribe}
+              prefill={shared}
+              onPrefilled={() => setShared(null)}
+              onSend={(text) => store.send(group.id, text)}
+            />
           </>
         ) : selected && conversationId ? (
           <>
@@ -384,7 +408,15 @@ export function App() {
                 onLoadEarlier={conversationId ? () => store.loadEarlier(conversationId) : undefined}
               />
             )}
-            <Composer name={selected.name} mentions={mentions} skills={skillOptions} transcribe={transcribe} onSend={(text) => store.send(conversationId, text)} />
+            <Composer
+              name={selected.name}
+              mentions={mentions}
+              skills={skillOptions}
+              transcribe={transcribe}
+              prefill={shared}
+              onPrefilled={() => setShared(null)}
+              onSend={(text) => store.send(conversationId, text)}
+            />
           </>
         ) : (
           <div className="empty conv-empty">
@@ -494,6 +526,16 @@ export function App() {
             setAddingMembers(false);
           }}
         />
+      )}
+      {shared && !(view === "chat" && (group || (selected && conversationId))) && (
+        <div className="share-banner" role="status" data-testid="share-banner">
+          <span>
+            {t("phone.shared")} <q>{shared.length > 80 ? `${shared.slice(0, 79)}…` : shared}</q>
+          </span>
+          <button type="button" className="icon-btn" aria-label={t("phone.sharedDismiss")} title={t("phone.sharedDismiss")} onClick={() => setShared(null)}>
+            ✕
+          </button>
+        </div>
       )}
       {creatingGroup && (
         <NewGroupDialog

@@ -9,6 +9,16 @@ change that delivered it.
 
 ### Added
 
+- The Android app's audit (change 0044-android-notifications-pairing-voice-and-sharing):
+  **notifications** while the app is off screen (a bot's reply, an approval or a
+  secret it asks for, a report; one per conversation; a tap opens it; muted
+  groups only notify requests) with an optional **stay connected** service;
+  **pairing with a code** — ⚙ Settings → Phone on the computer makes a six-digit
+  code (once, five minutes) that the app trades for the token
+  (`POST /api/v1/pairing`, `POST /api/v1/pairing/claim`); the phone's
+  **dictation and voice**; **share to Orbis** from other apps (a sign-in link
+  connects); the first screen offers recent hubs, **Paste** and tries again by
+  itself.
 - An Android app (change 0043-android-app-and-apk-workflow): `packages/android`, a
   small Java shell that shows the web app your hub serves on the phone (a first
   screen for the hub's address; a link with `#token=…` signs in), with the file
@@ -35,6 +45,10 @@ change that delivered it.
 
 ### Fixed
 
+- The Android app: an `https` hub with a certificate the phone does not trust
+  left a blank screen (now the first screen says why); the hub's page could
+  point the app at another site through the bridge (now only the first screen
+  can); `hidden` boxes on the first screen stayed visible.
 - OpenAI-compatible company gateways (change 0041-openai-compatible-gateways): a
   key pasted in the bot's settings landed where the **name** of its secret goes,
   so the brain failed with "secret <the key> is not set" — repeating the key.
