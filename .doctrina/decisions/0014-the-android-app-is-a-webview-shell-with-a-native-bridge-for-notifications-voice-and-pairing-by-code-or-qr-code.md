@@ -7,7 +7,7 @@
 - **Supersedes:** 0013
 - **Superseded by:** —
 - **Evidence:** `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/android/app/src/main/java/app/orbis/android/Hub.java`, `packages/web/src/components/QrCode.tsx`, `packages/web/src/components/TokenGate.tsx`
-- **Landed:** —
+- **Landed:** 2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/web/src/components/QrCode.tsx`
 
 ## Context
 

@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.27.1
+**Version:** 0.28.0
 
 ## Purpose
 
@@ -54,6 +54,7 @@ run's steps.
 - The web app shall show a group's joins, leaves and info changes in its timeline (joins, leaves and a new lead with the bot's face), and offer in the group's ⋮ menu adding members, its info, its links, search, muting, and under More exporting the conversation as text, clearing it and deleting the group, each destructive one after a confirmation, and follow a deleted bot out of its groups.
 - The web app shall offer a Phone tab in Settings: in a browser, a pairing code with this computer's addresses, how long the code works and a warning when the hub listens on this computer only; inside the Android app, the hub, the app's version, changing the hub, the notification permission, staying connected in the background and the battery settings.
 - The web app shall show each MCP server's logo on a white tile on its catalog card, its connected card and the bot's tool switches, and the server's emoji in its place when the server has no logo or the logo does not load.
+- The web app shall show in Settings → Phone, beside a pairing code, a QR code that holds the link `<address>#pair=<code>`, for an address the phone can reach: the page's own address when it is not this computer's, or the hub's network card the user picks.
 
 ### Event-driven
 
@@ -78,6 +79,7 @@ run's steps.
 - When the user clicks a group's photo or name, the web app shall open the group's info beside the conversation (full screen on a phone) with its photo, name and description to change, buttons to add, search, mute and export, its links, its members with their role, state and lead badge (each offering a direct conversation, making it lead and removing it), its notifications, and clearing and deleting it.
 - When the user opens Add members, the web app shall list the visible bots outside the group with a search field, allow picking bots up to the room the group's limit leaves, and say when every bot is already in the group (offering a new bot) or the group holds its limit (naming ORBIS_MAX_GROUP_SIZE).
 - When the user picks a search result or a link's line in the group's info, the web app shall load the conversation back to that message, scroll to it and mark it for a moment.
+- When the web app opens with `#pair=<code>` in its address, or the user types six digits where the token goes, the web app shall trade the code for the hub's token, save the token and remove the code from the address bar, or say that the code is wrong, used or expired.
 
 ### State-driven
 
@@ -147,6 +149,8 @@ run's steps.
 46. [verified] The catalog and a connected server show the service's logo; with no logo, or when the logo fails to load, the catalog and a bot's tool switches show the emoji on the same tile; the search box is "Search MCPs" — verified by `packages/web/test/marketplace.test.tsx`.
 47. [verified] In a real browser the sidebar names the screen MCP and the GitHub card's logo loads from `/logos/mcp/github.svg` — verified by `tests/e2e/marketplace.test.ts`.
 48. [verified] In a real browser 390 px wide, no screen, panel or dialog scrolls sideways. The sweep covers the list, a conversation, its details, the bot settings with each brain, routines, computer, the new-bot screen, the new-group dialog, a group with its info, search, menu and add-members dialog, every Settings tab, MCP, Skills and Usage — verified by `tests/e2e/phone-layout.test.ts`.
+49. [verified] The QR code holds the address picked and the code, and decoding its image gives back exactly that link; the page's own address comes first when it is not this computer's; the sign-in screen trades a QR code's code once and six typed digits, and says when a code is refused — verified by `packages/web/test/android.test.tsx`.
+50. [verified] In a real browser, Settings → Phone shows the QR code, its link opens the web app on a phone signed in with the code gone from the address bar, the same link again is refused, and six digits typed on the sign-in screen sign in — verified by `tests/e2e/phone-pairing.test.ts`.
 
 ## Maturity
 
