@@ -36,6 +36,7 @@ const catalog = [
   entry({
     id: "github",
     name: "GitHub",
+    logo: "/logos/mcp/github.svg",
     category: "dev",
     auth: "token",
     fields: [
@@ -46,6 +47,7 @@ const catalog = [
 
 const server = (s: Partial<McpServer> & { id: string; name: string }): McpServer => ({
   icon: "🔌",
+  logo: null,
   catalogId: s.id,
   transport: "http",
   url: null,
@@ -79,10 +81,16 @@ describe("the marketplace", () => {
     expect(within(screen.getByTestId("catalog-deepwiki")).getByText("No account")).toBeTruthy();
     expect(within(screen.getByTestId("catalog-notion")).getByText("Sign in")).toBeTruthy();
     expect(within(screen.getByTestId("catalog-github")).getByText("Needs a key")).toBeTruthy();
+    // The service's logo on a tile, or its emoji on the same tile when it has none or the image fails.
+    const logo = screen.getByTestId("catalog-github").querySelector(".mcp-logo img")!;
+    expect(logo.getAttribute("src")).toBe("/logos/mcp/github.svg");
+    expect(screen.getByTestId("catalog-deepwiki").querySelector(".mcp-logo.emoji")!.textContent).toBe("🔌");
+    fireEvent.error(logo);
+    expect(screen.getByTestId("catalog-github").querySelector(".mcp-logo.emoji")!.textContent).toBe("🔌");
 
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search tools" }), { target: { value: "notion" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search MCPs" }), { target: { value: "notion" } });
     expect(screen.queryByTestId("catalog-deepwiki")).toBeNull();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search tools" }), { target: { value: "" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search MCPs" }), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Work" }));
     expect(screen.getAllByTestId(/^catalog-/).map((c) => c.dataset.testid)).toEqual(["catalog-notion"]);
     fireEvent.click(screen.getByRole("button", { name: "All" }));
@@ -126,6 +134,7 @@ describe("the marketplace", () => {
         server={server({
           id: "notion",
           name: "Notion",
+          logo: "/logos/mcp/notion.svg",
           tools: [
             { name: "mcp.notion.search", remoteName: "search", description: "Search pages", readOnly: true },
             { name: "mcp.notion.create_page", remoteName: "create_page", description: "Create a page", readOnly: false },
@@ -134,6 +143,7 @@ describe("the marketplace", () => {
       />,
     );
     expect(screen.getByTestId("server-notion").textContent).toContain("Connected · 2 tools");
+    expect(screen.getByTestId("server-notion").querySelector(".mcp-logo img")!.getAttribute("src")).toBe("/logos/mcp/notion.svg");
     fireEvent.click(screen.getByRole("button", { name: "See the 2 tools" }));
     expect(screen.getByText("reads only")).toBeTruthy();
     expect(screen.getByText("asks first")).toBeTruthy();
@@ -158,7 +168,9 @@ describe("a bot's tools", () => {
     const browser = (await screen.findByTestId("tool-group-browser")).querySelector("input")!;
     expect(browser.checked).toBe(true);
     const notion = screen.getByTestId("tool-group-mcp.notion");
-    expect(notion.textContent).toContain("📝 Notion");
+    expect(notion.textContent).toContain("Notion");
+    // With no logo for the server, its emoji stands in, on the same tile a logo has.
+    expect(notion.querySelector(".mcp-logo")!.textContent).toBe("📝");
     expect(notion.querySelector("input")!.checked).toBe(false);
 
     fireEvent.click(browser);

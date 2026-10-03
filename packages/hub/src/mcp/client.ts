@@ -195,6 +195,8 @@ export class HttpTransport implements McpTransport {
     /** Extra headers for every request, read each time (a refreshed token). */
     private readonly headers: () => Promise<Record<string, string>> = async () => ({}),
     private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
+    /** The address errors quote: without a key the address carries (`?apikey=…`). */
+    private readonly shown: string = url,
   ) {}
 
   setProtocolVersion(version: string): void {
@@ -227,15 +229,15 @@ export class HttpTransport implements McpTransport {
       res = await this.post({ jsonrpc: "2.0", id, method, params }, timeoutMs);
     } catch (err) {
       if (err instanceof McpAuthError) throw err;
-      throw new McpError(`${this.url} did not answer: ${err instanceof Error ? err.message : String(err)}`);
+      throw new McpError(`${this.shown} did not answer: ${err instanceof Error ? err.message : String(err)}`);
     }
     if (!res.ok) {
       const text = (await res.text().catch(() => "")).slice(0, 300);
-      throw new McpError(`${this.url} answered ${res.status}${text ? `: ${text}` : ""}`);
+      throw new McpError(`${this.shown} answered ${res.status}${text ? `: ${text}` : ""}`);
     }
     const type = res.headers.get("content-type") ?? "";
     const msg = type.includes("text/event-stream") ? await readEventStream(res, id) : ((await res.json()) as RpcMessage);
-    if (!msg) throw new McpError(`${this.url} closed the stream without answering ${method}`);
+    if (!msg) throw new McpError(`${this.shown} closed the stream without answering ${method}`);
     if (msg.error) throw new McpError(`${msg.error.message} (${msg.error.code})`);
     return msg.result;
   }

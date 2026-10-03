@@ -9,6 +9,22 @@ change that delivered it.
 
 ### Added
 
+- More free MCP servers, each with its own logo (change 0045-mcp-catalog-free-servers-and-logos).
+  The sidebar's **🧩 Tools** is now **🧩 MCP**, and its catalog lists 37 servers.
+  All of them are free: no account, a free plan or a free key. Each one was
+  checked before it went in.
+  - New with no account: Microsoft Learn, AWS Knowledge, Cloudflare Docs, GitMCP,
+    CoinGecko, Jina AI Reader, Chrome DevTools, YouTube Transcript and Excel.
+  - New with a sign-in: Todoist, monday.com, Vercel, Cloudflare Workers, Neon,
+    Prisma Postgres, Postman, Semgrep and Stripe.
+  - New with a free key: Alpha Vantage and Airtable. Alpha Vantage's key goes in
+    the address the hub calls. The hub adds it from the vault on each call, and
+    the API and errors never show it.
+  - A new Finance category.
+  - Each service's logo replaces the emoji on the catalog, on the connected
+    servers and in a bot's tool switches. The sources are listed in
+    `packages/web/public/logos/mcp/SOURCES.md`.
+
 - The Android app's audit (change 0044-android-notifications-pairing-voice-and-sharing):
   **notifications** while the app is off screen (a bot's reply, an approval or a
   secret it asks for, a report; one per conversation; a tap opens it; muted
@@ -44,6 +60,17 @@ change that delivered it.
   back" desktop notification and shows a gray unread dot.
 
 ### Fixed
+
+- On a phone, no screen scrolls sideways any more (change 0046-phone-layout-no-sideways-scroll).
+  The bot settings were 600 px wide on a 390 px phone. The cause: the brain
+  select took the width of its longest option, and its fieldset never shrank
+  below its content. The same check found two more screens that overflowed:
+  - the new-bot form (509 px);
+  - the brains and usage tables, which moved the whole screen sideways.
+    Each table now scrolls on its own.
+  A new end-to-end check (`tests/e2e/phone-layout.test.ts`) opens every screen,
+  panel and dialog at 390 px. The Doctrina skill
+  `phone-layout-no-sideways-scroll` records how to avoid this.
 
 - The Android app: an `https` hub with a certificate the phone does not trust
   left a blank screen (now the first screen says why); the hub's page could

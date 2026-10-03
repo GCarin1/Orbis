@@ -24,7 +24,7 @@ vista de todos e o chefe volta até você sozinho quando tudo termina.
   <img src="docs/screenshots/phone-pt.jpg" alt="Orbis no celular: os rostos da equipe e a lista de conversas" width="200">
 </p>
 <p align="center">
-  <img src="docs/screenshots/tools-pt.jpg" alt="A tela Ferramentas no tema escuro: servidores MCP para conectar com um clique, sem conta, entrando com a conta ou com uma chave" width="900">
+  <img src="docs/screenshots/tools-pt.jpg" alt="A tela MCP no tema escuro: servidores MCP para conectar com um clique, sem conta, entrando com a conta ou com uma chave" width="900">
 </p>
 
 O cérebro de cada bot é escolha sua, bot a bot:
@@ -74,7 +74,7 @@ fecha quando os critérios de aceite são provados por testes.
 | O visual do Orbis: rostos dos bots (8 formas, 10 cores, olhos que seguem o estado), uma lista de conversas com bolinha de não lida, o painel do bot (tela, rotinas, equipe), a tela de novo bot, modo escuro e celular | ✅ verificado |
 | Três tipos de computador por bot: uma pasta isolada, **o seu computador** (uma pasta que você escolhe, seus programas, navegador visível; com consentimento explícito, gravações pedem aprovação) ou um contêiner Docker com área de trabalho ao vivo, com preparo da imagem em um clique | ✅ verificado |
 | ChatGPT com o seu plano pago e sem API: as Configurações instalam o Codex CLI e entram com a sua conta do ChatGPT (navegador ou código em qualquer aparelho) | ✅ verificado |
-| Marketplace de ferramentas: conecte servidores MCP com um clique — sem conta (DeepWiki, Exa, Context7, Hugging Face…), entrando com a sua conta (Notion, Linear, Jira e Confluence, Sentry, Supabase, Canva) ou com uma chave (GitHub, Brave, Tavily, Firecrawl) — ou o seu próprio; escolha as ferramentas e os servidores de cada bot com chaves | ✅ verificado |
+| Marketplace de MCP: 37 servidores MCP gratuitos, cada um com a sua logo, conectados com um clique. Sem conta: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel e outros. Entrando com a sua conta: Notion, Linear, Jira e Confluence, Todoist, Vercel, Neon, Stripe e outros. Com uma chave grátis: GitHub, Brave, Tavily, Alpha Vantage, Airtable e outros. Ou o seu próprio. Chaves escolhem as ferramentas e os servidores de cada bot. | ✅ verificado |
 | Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 
 O estado de cada capacidade está sempre atualizado em `npx doctrina status` e

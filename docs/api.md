@@ -182,8 +182,11 @@ connections alive while the bot works). An unknown model answers 404
 
 ## MCP servers
 
-`GET /api/v1/mcp/catalog` lists the marketplace (how each entry connects and
-whether it is connected). `POST /api/v1/mcp/servers` connects one —
+`GET /api/v1/mcp/catalog` lists the marketplace (how each entry connects,
+its `logo` path, whether it is connected). A field whose `target` is `query`
+is a key that goes in the address the hub calls (Alpha Vantage's `apikey`).
+The hub adds it from the vault on each call, and the server's `url` and
+errors never show it. `POST /api/v1/mcp/servers` connects one —
 `{ "catalogId": "github", "values": { "token": "github_pat_…" } }`, or a
 custom `{ "name": "Docs", "transport": "http", "url": "https://…/mcp" }` /
 `{ "name": "Notes", "transport": "stdio", "command": "npx", "args": ["-y", "pkg"], "env": { "KEY": "…" } }`
@@ -193,7 +196,7 @@ follow (`connected`, `needs_auth` with an `authUrl` to open, or `error`).
 gives a bot the server's tools; `POST …/reconnect`, `DELETE …` disconnects.
 `GET /api/v1/tools` lists every tool a bot can be given, with its server.
 Sign-ins come back to `GET /oauth/mcp/callback` (no API token; a one-time
-state). Details in [`mcp.md`](mcp.md#connecting-other-mcp-servers-the-tools-screen).
+state). Details in [`mcp.md`](mcp.md#connecting-other-mcp-servers-the-mcp-screen).
 
 ## Voice
 

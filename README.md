@@ -23,7 +23,7 @@ comes back to you on its own when everything is done.
   <img src="docs/screenshots/phone-en.jpg" alt="Orbis on a phone: the team's faces and the conversation list" width="200">
 </p>
 <p align="center">
-  <img src="docs/screenshots/tools-en.jpg" alt="The Tools screen in the dark theme: MCP servers to connect in one click, with no account, by signing in, or with a key" width="900">
+  <img src="docs/screenshots/tools-en.jpg" alt="The MCP screen in the dark theme: MCP servers to connect in one click, with no account, by signing in, or with a key" width="900">
 </p>
 
 A bot's brain is your choice, per bot:
@@ -74,7 +74,7 @@ are proven by tests.
 | The Orbis look: bot faces (8 shapes, 10 colors, eyes that follow the bot's state), one conversation list with unread dots, the bot panel (screen, routines, team), the new-bot screen, dark mode and phones | ✅ verified |
 | Three kinds of computer per bot: a private folder, **your own computer** (a folder you choose, your programs, a visible browser; by explicit consent, writes ask first) or a Docker container with a desktop you watch live, with one-click image preparation | ✅ verified |
 | ChatGPT with your paid plan and no API key: Settings installs the Codex CLI and signs in with your ChatGPT account (browser or a code on any device) | ✅ verified |
-| Tools marketplace: connect MCP servers in one click — no account (DeepWiki, Exa, Context7, Hugging Face…), signing in with your account (Notion, Linear, Jira & Confluence, Sentry, Supabase, Canva) or with a key (GitHub, Brave, Tavily, Firecrawl) — or your own; choose each bot's tools and servers with switches | ✅ verified |
+| MCP marketplace: 37 free MCP servers, each with its own logo, connected in one click. With no account: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel and more. Signing in with your account: Notion, Linear, Jira & Confluence, Todoist, Vercel, Neon, Stripe and more. With a free key: GitHub, Brave, Tavily, Alpha Vantage, Airtable and more. Or add your own. Switches choose each bot's tools and servers. | ✅ verified |
 | Voice and theme: talk to a bot with the microphone (browser dictation, or any OpenAI-compatible transcription service — OpenAI, Groq, a local Whisper — for the desktop app), replies read aloud, and a System/Light/Dark theme switch | ✅ verified |
 
 The status of each capability is always current in

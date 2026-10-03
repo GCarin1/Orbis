@@ -644,8 +644,11 @@ export interface McpField {
   key: string;
   label: Localized;
   secret: boolean;
-  /** Where it goes: an environment variable of a stdio server, an argument, or the Authorization header. */
-  target: "env" | "arg" | "bearer";
+  /**
+   * Where it goes: an environment variable of a stdio server, an argument, the Authorization header, or a
+   * query parameter of an http server's address named by `key` (kept in the vault, never in the address shown).
+   */
+  target: "env" | "arg" | "bearer" | "query";
   placeholder?: string;
   help?: Localized;
   /** Where to get it. */
@@ -658,7 +661,9 @@ export interface McpCatalogEntry {
   id: string;
   name: string;
   icon: string;
-  category: "research" | "dev" | "work" | "browser" | "files" | "reasoning";
+  /** The service's own logo, a path under the web app (`/logos/mcp/<id>.svg`); `icon` is the fallback. */
+  logo?: string;
+  category: "research" | "dev" | "work" | "finance" | "browser" | "files" | "reasoning";
   description: Localized;
   transport: McpTransportKind;
   /** stdio: the command and arguments (e.g. npx -y <package>). */
@@ -687,6 +692,8 @@ export interface McpServer {
   id: string;
   name: string;
   icon: string;
+  /** The logo of its marketplace entry, when it has one. */
+  logo: string | null;
   catalogId: string | null;
   transport: McpTransportKind;
   url: string | null;

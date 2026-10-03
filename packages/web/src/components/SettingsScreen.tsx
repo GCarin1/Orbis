@@ -191,43 +191,45 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
       {visible.length === 0 ? (
         <p className="muted">{t("brains.noBots")}</p>
       ) : (
-        <table className="usage-table brains-table">
-          <thead>
-            <tr>
-              <th scope="col">{t("brains.bot")}</th>
-              <th scope="col">{t("brains.brain")}</th>
-              <th scope="col">{t("brains.model")}</th>
-              <th scope="col" />
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((bot) => {
-              const key = `bot:${bot.id}`;
-              return (
-                <tr key={bot.id} data-testid={`brain-bot-${bot.handle}`}>
-                  <td>
-                    <span className="usage-bot">
-                      <Avatar bot={bot} size={24} /> {bot.name} <span className="muted">@{bot.handle}</span>
-                    </span>
-                  </td>
-                  <td title={brainLabel(t, bot.brain.kind)}>{brainShort(t, bot.brain.kind)}</td>
-                  <td>{bot.brain.model ?? <span className="muted">{t("brains.defaultModel")}</span>}</td>
-                  <td>
-                    <div className="card-actions">
-                      <button className="btn" disabled={busy(key)} onClick={() => void runTest(key, { botId: bot.id })}>
-                        {t("brains.test")}
-                      </button>
-                      <button className="btn" onClick={() => onConfigureBot(bot.id)}>
-                        ⚙ {t("brains.configure")}
-                      </button>
-                    </div>
-                    <TestResultView state={tests[key]} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="usage-table brains-table">
+            <thead>
+              <tr>
+                <th scope="col">{t("brains.bot")}</th>
+                <th scope="col">{t("brains.brain")}</th>
+                <th scope="col">{t("brains.model")}</th>
+                <th scope="col" />
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((bot) => {
+                const key = `bot:${bot.id}`;
+                return (
+                  <tr key={bot.id} data-testid={`brain-bot-${bot.handle}`}>
+                    <td>
+                      <span className="usage-bot">
+                        <Avatar bot={bot} size={24} /> {bot.name} <span className="muted">@{bot.handle}</span>
+                      </span>
+                    </td>
+                    <td title={brainLabel(t, bot.brain.kind)}>{brainShort(t, bot.brain.kind)}</td>
+                    <td>{bot.brain.model ?? <span className="muted">{t("brains.defaultModel")}</span>}</td>
+                    <td>
+                      <div className="card-actions">
+                        <button className="btn" disabled={busy(key)} onClick={() => void runTest(key, { botId: bot.id })}>
+                          {t("brains.test")}
+                        </button>
+                        <button className="btn" onClick={() => onConfigureBot(bot.id)}>
+                          ⚙ {t("brains.configure")}
+                        </button>
+                      </div>
+                      <TestResultView state={tests[key]} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   );

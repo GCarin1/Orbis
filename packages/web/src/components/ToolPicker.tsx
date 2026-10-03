@@ -6,6 +6,7 @@ import { toolAllowed, type ToolInfo } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
 import { useStore } from "../store.js";
+import { McpLogo } from "./McpLogo.js";
 
 interface Group {
   key: string;
@@ -13,6 +14,9 @@ interface Group {
   label: string;
   external: boolean;
   names: string[];
+  /** An MCP server's logo and emoji. */
+  logo?: string | null;
+  icon?: string;
 }
 
 /** Turn a group on or off in an allowlist, keeping every other pattern. */
@@ -56,7 +60,8 @@ export function ToolPicker({ api, patterns, onChange }: { api: Api | null | unde
       prefix: `${key}.`,
       external,
       names: [],
-      label: external ? `${servers[tool.server!]?.icon ?? "🧩"} ${servers[tool.server!]?.name ?? tool.server}` : t(`tools.group.${key}` as TextKey),
+      label: external ? (servers[tool.server!]?.name ?? tool.server!) : t(`tools.group.${key}` as TextKey),
+      ...(external ? { logo: servers[tool.server!]?.logo ?? null, icon: servers[tool.server!]?.icon ?? "🧩" } : {}),
     };
     group.names.push(tool.name);
     groups.set(key, group);
@@ -77,7 +82,8 @@ export function ToolPicker({ api, patterns, onChange }: { api: Api | null | unde
           }}
           onChange={(e) => onChange(setGroup(effective, group, e.target.checked))}
         />
-        <span>
+        <span className="tool-group-name">
+          {group.external && <McpLogo logo={group.logo} icon={group.icon ?? "🧩"} size={22} />}
           {group.label} <span className="muted small">({group.names.length})</span>
         </span>
       </label>

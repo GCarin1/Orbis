@@ -6,10 +6,11 @@ import type { Bot, McpCatalogEntry, McpServer } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useLang, useT, type TextKey } from "../i18n.js";
 import { Avatar } from "./Avatar.js";
+import { McpLogo } from "./McpLogo.js";
 
 type CatalogItem = McpCatalogEntry & { connected: string | null };
 type Tab = "catalog" | "connected";
-const CATEGORIES = ["all", "research", "dev", "work", "browser", "files", "reasoning"] as const;
+const CATEGORIES = ["all", "research", "dev", "work", "finance", "browser", "files", "reasoning"] as const;
 
 function statusText(t: ReturnType<typeof useT>, server: McpServer): string {
   switch (server.status) {
@@ -49,8 +50,8 @@ export function ServerCard({ api, server, bots }: { api: Api; server: McpServer;
   return (
     <article className="brain-card server-card" data-testid={`server-${server.id}`}>
       <header>
-        <strong>
-          <span aria-hidden="true">{server.icon}</span> {server.name}
+        <strong className="market-name">
+          <McpLogo logo={server.logo} icon={server.icon} size={28} /> {server.name}
         </strong>
         <span className={`badge ${server.status === "connected" ? "ok" : server.status === "connecting" ? "" : "off"}`}>{statusText(t, server)}</span>
       </header>
@@ -155,11 +156,8 @@ function CatalogCard({ api, entry, server, onConnected }: { api: Api; entry: Cat
   return (
     <article className="brain-card market-card" data-testid={`catalog-${entry.id}`}>
       <header>
-        <strong>
-          <span className="market-icon" aria-hidden="true">
-            {entry.icon}
-          </span>{" "}
-          {entry.name}
+        <strong className="market-name">
+          <McpLogo logo={entry.logo} icon={entry.icon} size={36} /> {entry.name}
         </strong>
         <span className={`badge auth-${entry.auth}`}>{t(`market.auth.${entry.auth}` as TextKey)}</span>
       </header>

@@ -29,24 +29,46 @@ underscores on the wire: Claude sees `mcp__orbis__team_list_bots`,
 `mcp__orbis__draft_create`, and so on.
 
 
-## Connecting other MCP servers (the Tools screen)
+## Connecting other MCP servers (the MCP screen)
 
 Orbis is also an MCP **client**: it connects to MCP servers of other
 services and hands their tools to the bots you choose (ADR 0010). Open
-**🧩 Tools** in the sidebar:
+**🧩 MCP** in the sidebar. Each card shows the service's own logo.
 
-- **Catalog** — checked servers, each saying how it connects:
-  - *No account* — **Connect** and it is ready: DeepWiki (docs of any GitHub
-    repository), Exa Search, Context7 (library docs), Hugging Face, Sequential
-    Thinking, Playwright Browser, Filesystem (asks for the folder).
-  - *Sign in* — **Connect with your account**, then **Sign in to …** opens the
-    service's page where you authorize Orbis: Notion, Linear, Jira &
-    Confluence (Atlassian), Sentry, Supabase, Canva. Orbis registers itself
-    with the service on the fly and keeps the sign-in encrypted; it refreshes
-    it when it expires.
-  - *Needs a key* — paste it (the card links to where you get it): GitHub
-    (personal access token), Brave Search, Tavily, Firecrawl.
+- **Catalog**: 37 checked servers, all free to use. Each one needs no
+  account, has a free plan, or takes a free key. Every entry was checked
+  before it went in: its npm package exists and starts and lists its tools,
+  or its address answers `initialize`. For a sign-in, the service also lets
+  Orbis register itself. Each card says how it connects:
+  - *No account*: **Connect** and it is ready.
+    - Docs and code: DeepWiki (docs of any GitHub repository), Context7
+      (library docs), Microsoft Learn, AWS Knowledge, Cloudflare Docs, GitMCP.
+    - Research: Exa Search, Hugging Face, Jina AI Reader (an optional free
+      key raises its limits), YouTube Transcript.
+    - Finance: CoinGecko (crypto prices and markets).
+    - On this computer: Sequential Thinking, Playwright Browser, Chrome
+      DevTools, Filesystem (asks for the folder), Excel (reads and writes
+      `.xlsx` files).
+  - *Sign in*: **Connect with your account**, then **Sign in to …** opens
+    the service's page, where you authorize Orbis.
+    - Work: Notion, Linear, Jira & Confluence (Atlassian), Canva, Todoist,
+      monday.com.
+    - Development: Sentry, Supabase, Vercel, Cloudflare Workers, Neon
+      Postgres, Prisma Postgres, Postman, Semgrep.
+    - Finance: Stripe (its test mode is free).
+    - Orbis registers itself with the service on the fly. It keeps the
+      sign-in encrypted and refreshes it when it expires.
+  - *Needs a key*: paste it. The card links to where you get it.
+    - GitHub (personal access token), Brave Search, Tavily, Firecrawl,
+      Airtable.
+    - Alpha Vantage: stocks, ETFs, forex and crypto, fundamentals and
+      technical indicators. Its free key goes in the address the hub calls
+      (`?apikey=`). The hub adds it from the vault on each call, so the key
+      never shows: not on the card, not in the API, not in an error.
   - Servers started with `npx` need Node.js on the machine that runs Orbis.
+  - Left out, because they did not pass these checks: Asana (no
+    self-registration for sign-in), and DuckDuckGo and Wikipedia (their
+    packages are no longer maintained).
 - **Connected** — each server's state, its tools (which only read and which
   ask first), **the bots that may use it** (tick them), Reconnect and
   Disconnect. **Add your own MCP server** takes an address (streamable HTTP,

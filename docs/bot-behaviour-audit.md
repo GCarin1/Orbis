@@ -43,7 +43,7 @@ may run and how it fails. Every finding below is a regression test in
 - The Windows fixes were tested with the exact shim texts npm, Node 24 and
   Claude Code 2 install, not on a Windows machine.
 - Bots have no built-in web search: connect a search server from
-  **🧩 Tools** (Exa needs no account) and tick the bots that may use it.
+  **🧩 MCP** (Exa needs no account) and tick the bots that may use it.
 
 ## Second round: the chat and the bots in depth
 

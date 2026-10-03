@@ -3,8 +3,8 @@
 // that asks the user to sign in (OAuth discovery, dynamic registration, PKCE,
 // the callback) and answers over server-sent events, tools offered only to the
 // bots given the server, writes that ask first, and a clean disconnect.
-import { afterEach, describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
@@ -220,7 +220,57 @@ describe("an HTTP MCP server that asks the user to sign in", () => {
   });
 });
 
+describe("an HTTP MCP server whose key goes in its address", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("adds the key from the vault to the address it calls, and shows it nowhere", async () => {
+    const KEY = "AV-FAKE-KEY-123";
+    const called: string[] = [];
+    let failCalls = false;
+    const real = globalThis.fetch;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (!url.startsWith("https://mcp.alphavantage.co/")) return real(input, init);
+      called.push(url);
+      const msg = JSON.parse(String(init?.body));
+      const answer = (result: unknown) =>
+        new Response(JSON.stringify({ jsonrpc: "2.0", id: msg.id, result }), { headers: { "content-type": "application/json" } });
+      if (msg.id === undefined) return new Response(null, { status: 202 });
+      if (msg.method === "initialize") return answer({ protocolVersion: "2025-06-18", capabilities: {}, serverInfo: { name: "av", version: "1" } });
+      if (msg.method === "tools/list") return answer({ tools: [{ name: "GLOBAL_QUOTE", description: "A quote", inputSchema: { type: "object" } }] });
+      if (failCalls) return new Response("busy", { status: 503 });
+      return answer({ content: [{ type: "text", text: `quote for ${msg.params.arguments.symbol}` }] });
+    });
+    t = await testHub();
+    const added = await t.api("POST", "/api/v1/mcp/servers", { catalogId: "alphavantage", values: { apikey: KEY } });
+    expect(added.status).toBe(202);
+    const server = await t.hub.mcp.ready("alphavantage");
+    expect(server).toMatchObject({ status: "connected", url: "https://mcp.alphavantage.co/mcp", logo: "/logos/mcp/alphavantage.png" });
+    expect(called[0]).toBe(`https://mcp.alphavantage.co/mcp?apikey=${KEY}`);
+    expect(JSON.stringify((await t.api("GET", "/api/v1/mcp/servers")).body)).not.toContain(KEY);
+
+    const bot = await createBot(t, { name: "Fin", tools: ["*", "mcp.alphavantage.*"] });
+    const ok = await chat(t, bot.id, `/tool mcp.alphavantage.GLOBAL_QUOTE {"symbol":"PETR4.SA"}`);
+    expect(results(ok.runs[0]!)[0]!.output).toContain("quote for PETR4.SA");
+
+    // An error quotes the address the user knows, without the key.
+    failCalls = true;
+    const failed = await chat(t, bot.id, `/tool mcp.alphavantage.GLOBAL_QUOTE {"symbol":"VALE3.SA"}`);
+    const output = JSON.stringify(failed.runs[0]!.steps);
+    expect(output).toContain("https://mcp.alphavantage.co/mcp answered 503");
+    expect(output).not.toContain(KEY);
+  });
+});
+
 describe("the marketplace", () => {
+  it("has a logo file for every entry", () => {
+    const logos = path.resolve(import.meta.dirname, "../../web/public");
+    for (const entry of MCP_CATALOG) {
+      expect(entry.logo, entry.id).toMatch(/^\/logos\/mcp\/[a-z0-9-]+\.(svg|png)$/);
+      expect(existsSync(path.join(logos, entry.logo!)), entry.logo).toBe(true);
+    }
+  });
+
   it("lists every entry with how it connects, and which are connected", async () => {
     t = await testHub();
     const catalog = (await t.api("GET", "/api/v1/mcp/catalog")).body as Array<{

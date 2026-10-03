@@ -189,6 +189,7 @@ export class McpConnections {
       id: row.id,
       name: row.name,
       icon: row.icon,
+      logo: (row.catalogId ? catalogEntry(row.catalogId)?.logo : undefined) ?? null,
       catalogId: row.catalogId,
       transport: row.transport,
       url: row.url,
@@ -301,7 +302,14 @@ export class McpConnections {
       }
       return new StdioTransport(launch.command, launch.args, env, homedir());
     }
-    return new HttpTransport(row.url!, () => this.authHeaders(row), this.fetchImpl);
+    // A key the service takes in its address (Alpha Vantage's ?apikey=) is added here, from the vault, and
+    // left out of the address the errors quote.
+    const url = new URL(row.url!);
+    for (const field of (row.catalogId ? catalogEntry(row.catalogId)?.fields : undefined) ?? []) {
+      const value = field.target === "query" ? this.secrets.get(this.secret(row.id, `query.${field.key}`)) : null;
+      if (value) url.searchParams.set(field.key, value);
+    }
+    return new HttpTransport(url.href, () => this.authHeaders(row), this.fetchImpl, row.url!);
   }
 
   private async authHeaders(row: Row): Promise<Record<string, string>> {
@@ -457,7 +465,8 @@ export class McpConnections {
         else if (field.target === "env") {
           envKeys.push(field.key);
           secretValues.push([`env.${field.key}`, value]);
-        } else secretValues.push(["token", value]);
+        } else if (field.target === "query") secretValues.push([`query.${field.key}`, value]);
+        else secretValues.push(["token", value]);
       }
       row = {
         id: entry.id,

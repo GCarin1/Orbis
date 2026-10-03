@@ -43,11 +43,19 @@ describe("the tools marketplace in a browser", () => {
     const page = await (await browser.newContext({ locale: "en-US", viewport: { width: 1400, height: 900 } })).newPage();
     await page.goto(`${url}/#token=${TOKEN}`);
 
-    await page.getByRole("button", { name: /Tools/ }).first().click();
+    await page.getByRole("button", { name: /MCP/ }).first().click();
     const market = page.getByTestId("marketplace");
     await market.getByTestId("catalog-deepwiki").waitFor();
     expect(await market.getByTestId("catalog-notion").textContent()).toContain("Sign in");
-    await market.getByRole("searchbox", { name: "Search tools" }).fill("linear");
+    // Each service shows its own logo, not an emoji (change 0045).
+    expect(await market.getByTestId("catalog-github").locator("img").getAttribute("src")).toBe("/logos/mcp/github.svg");
+    expect(
+      await market
+        .getByTestId("catalog-github")
+        .locator("img")
+        .evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
+    ).toBe(true);
+    await market.getByRole("searchbox", { name: "Search MCPs" }).fill("linear");
     await market.getByTestId("catalog-linear").waitFor();
     expect(await market.getByTestId("catalog-deepwiki").count()).toBe(0);
 

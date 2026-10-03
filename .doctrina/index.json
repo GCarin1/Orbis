@@ -456,16 +456,33 @@
         "status": "accepted",
         "date": "2026-10-03",
         "supersedes": "0012",
+        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/hub/src/api/pairing-routes.ts`",
         "scope": [
           "android-app",
           "web-app",
           "hub-api"
         ],
-        "summary": "The app stays a WebView shell showing the hub's web app (ADR 0012's core).",
-        "landed": "2026-10-03 — `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`, `packages/hub/src/api/pairing-routes.ts`"
+        "summary": "The app stays a WebView shell showing the hub's web app (ADR 0012's core)."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0045-mcp-catalog-free-servers-and-logos",
+        "title": "mcp catalog free servers and logos",
+        "path": ".doctrina/changes/0045-mcp-catalog-free-servers-and-logos",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      },
+      {
+        "id": "0046-phone-layout-no-sideways-scroll",
+        "title": "phone layout no sideways scroll",
+        "path": ".doctrina/changes/0046-phone-layout-no-sideways-scroll",
+        "status": "proposed",
+        "opened": "2026-10-03",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1418,6 +1435,12 @@
         "path": ".doctrina/skills/close-after-a-failed-gate.md",
         "description": "Resume a `doctrina close` that stopped at a gate after its apply step, without applying the deltas twice",
         "last_updated": "2026-09-27"
+      },
+      {
+        "id": "phone-layout-no-sideways-scroll",
+        "path": ".doctrina/skills/phone-layout-no-sideways-scroll.md",
+        "description": "Keep every web app screen, panel and dialog inside a 390 px phone, and prove it with the phone-layout sweep",
+        "last_updated": "2026-10-03"
       }
     ],
     "contracts": [

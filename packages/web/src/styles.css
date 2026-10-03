@@ -74,6 +74,24 @@ textarea {
   font: inherit;
   color: inherit;
 }
+/*
+ * Nothing may push a screen sideways on a phone (skill: phone-layout-no-sideways-scroll). A fieldset is
+ * never narrower than its content by default (min-inline-size: min-content), and a select is as wide as
+ * its longest option: the brain select of the bot settings made the panel 600 px wide on a 390 px phone.
+ */
+fieldset {
+  min-width: 0;
+  min-inline-size: 0;
+}
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+select {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
 .muted {
   color: var(--muted);
 }
@@ -653,8 +671,10 @@ iframe.computer-screen {
 .cap-reached {
   color: var(--danger);
 }
-.screen-body:has(.usage-table) {
+/* A wide table scrolls sideways inside its own box; the screen around it never does. */
+.table-scroll {
   overflow-x: auto;
+  max-width: 100%;
 }
 
 /* bot settings */
@@ -1905,7 +1925,8 @@ body.resizing-panel {
 .newbot-fields {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …): a column may be narrower than its widest select (1fr alone is at least min-content). */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .newbot-fields label {
@@ -2371,8 +2392,30 @@ label.check {
 .market-card p {
   margin: 4px 0;
 }
-.market-icon {
-  font-size: 18px;
+/* An MCP server's logo on a light tile, so dark logos read in the dark theme too (change 0045). */
+.mcp-logo {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--border);
+  vertical-align: middle;
+  line-height: 1;
+}
+.mcp-logo img {
+  display: block;
+  object-fit: contain;
+}
+.mcp-logo.emoji {
+  background: var(--panel-2);
+}
+.market-name,
+.tool-group-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 .badge.auth-none {
   color: #15803d;
@@ -3043,4 +3086,11 @@ label.check {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Phones: the new-bot fields in one column. */
+@media (max-width: 760px) {
+  .newbot-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

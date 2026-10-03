@@ -50,73 +50,75 @@ export function UsageScreen({ api, bots }: { api: Api; bots: Record<string, Bot>
       <div className="screen-body">
         {error && <p className="error">{error}</p>}
         {report && (
-          <table className="usage-table">
-            <thead>
-              <tr>
-                <th scope="col">{t("usage.bot")}</th>
-                <th scope="col">{t("usage.runs")}</th>
-                <th scope="col">{t("usage.tokens")}</th>
-                <th scope="col">{t("usage.cost")}</th>
-                <th scope="col">{t("usage.subscription")}</th>
-                <th scope="col">{t("usage.cap")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.bots.map((row) => {
-                const bot = bots[row.botId];
-                const share = row.spendCapUsd ? Math.min(1, row.cappedCostUsd / row.spendCapUsd) : 0;
-                const reached = row.spendCapUsd !== null && row.cappedCostUsd >= row.spendCapUsd;
-                return (
-                  <tr key={row.botId} data-testid={`usage-${bot?.handle ?? row.botId}`}>
-                    <th scope="row">
-                      <span className="usage-bot">
-                        {bot && <Avatar bot={bot} size={24} />}
-                        {bot ? bot.name : row.botId}
-                      </span>
-                    </th>
-                    <td>{row.usage.runs}</td>
-                    <td>
-                      {tokens(row.usage.inputTokens)} / {tokens(row.usage.outputTokens)}
-                    </td>
-                    <td>{usd(row.usage.costUsd)}</td>
-                    <td>{row.usage.subscriptionCostUsd > 0 ? usd(row.usage.subscriptionCostUsd) : "—"}</td>
-                    <td>
-                      {row.spendCapUsd === null ? (
-                        <span className="muted">{t("usage.noCap")}</span>
-                      ) : (
-                        <span className="cap">
-                          <span
-                            className={`cap-bar${reached ? " reached" : ""}`}
-                            role="meter"
-                            aria-valuemin={0}
-                            aria-valuemax={row.spendCapUsd}
-                            aria-valuenow={row.cappedCostUsd}
-                            aria-label={t("usage.cap")}
-                          >
-                            <span style={{ width: `${share * 100}%` }} />
-                          </span>
-                          {usd(row.cappedCostUsd)} / {usd(row.spendCapUsd)}
-                          {reached && <strong className="cap-reached"> {t("usage.reached")}</strong>}
+          <div className="table-scroll">
+            <table className="usage-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t("usage.bot")}</th>
+                  <th scope="col">{t("usage.runs")}</th>
+                  <th scope="col">{t("usage.tokens")}</th>
+                  <th scope="col">{t("usage.cost")}</th>
+                  <th scope="col">{t("usage.subscription")}</th>
+                  <th scope="col">{t("usage.cap")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.bots.map((row) => {
+                  const bot = bots[row.botId];
+                  const share = row.spendCapUsd ? Math.min(1, row.cappedCostUsd / row.spendCapUsd) : 0;
+                  const reached = row.spendCapUsd !== null && row.cappedCostUsd >= row.spendCapUsd;
+                  return (
+                    <tr key={row.botId} data-testid={`usage-${bot?.handle ?? row.botId}`}>
+                      <th scope="row">
+                        <span className="usage-bot">
+                          {bot && <Avatar bot={bot} size={24} />}
+                          {bot ? bot.name : row.botId}
                         </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row">{t("usage.total")}</th>
-                <td>{report.total.runs}</td>
-                <td>
-                  {tokens(report.total.inputTokens)} / {tokens(report.total.outputTokens)}
-                </td>
-                <td>{usd(report.total.costUsd)}</td>
-                <td>{report.total.subscriptionCostUsd > 0 ? usd(report.total.subscriptionCostUsd) : "—"}</td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
+                      </th>
+                      <td>{row.usage.runs}</td>
+                      <td>
+                        {tokens(row.usage.inputTokens)} / {tokens(row.usage.outputTokens)}
+                      </td>
+                      <td>{usd(row.usage.costUsd)}</td>
+                      <td>{row.usage.subscriptionCostUsd > 0 ? usd(row.usage.subscriptionCostUsd) : "—"}</td>
+                      <td>
+                        {row.spendCapUsd === null ? (
+                          <span className="muted">{t("usage.noCap")}</span>
+                        ) : (
+                          <span className="cap">
+                            <span
+                              className={`cap-bar${reached ? " reached" : ""}`}
+                              role="meter"
+                              aria-valuemin={0}
+                              aria-valuemax={row.spendCapUsd}
+                              aria-valuenow={row.cappedCostUsd}
+                              aria-label={t("usage.cap")}
+                            >
+                              <span style={{ width: `${share * 100}%` }} />
+                            </span>
+                            {usd(row.cappedCostUsd)} / {usd(row.spendCapUsd)}
+                            {reached && <strong className="cap-reached"> {t("usage.reached")}</strong>}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">{t("usage.total")}</th>
+                  <td>{report.total.runs}</td>
+                  <td>
+                    {tokens(report.total.inputTokens)} / {tokens(report.total.outputTokens)}
+                  </td>
+                  <td>{usd(report.total.costUsd)}</td>
+                  <td>{report.total.subscriptionCostUsd > 0 ? usd(report.total.subscriptionCostUsd) : "—"}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </div>
     </section>
