@@ -5,7 +5,7 @@
 // stops it, and says when Orbis is not installed. (The real install ran in Debian under Termux's proot.)
 import { afterEach, describe, expect, it } from "vitest";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -24,11 +24,12 @@ require("node:http").createServer((req, res) => {
 }).listen(Number(value("ORBIS_PORT")), "127.0.0.1");
 `;
 
-/** proot-distro: logs each call; inside Debian, bash -s keeps the script, node runs the stand-in hub. */
+/** proot-distro 5 (a distro is containers/<name>/rootfs): logs each call; inside Debian, bash -s keeps the script, node runs the stand-in hub. */
 const PROOT_DISTRO = `#!/bin/bash
 echo "$*" >> "$LOG/proot-distro"
 case "$1" in
-  install) mkdir -p "$PREFIX/var/lib/proot-distro/installed-rootfs/$2/root" ;;
+  install) mkdir -p "$PREFIX/var/lib/proot-distro/containers/$2/rootfs/root" ;;
+  remove) rm -rf "$PREFIX/var/lib/proot-distro/containers/$2" ;;
   login)
     while [ "$1" != "--" ]; do shift; done; shift
     printf '%s\\n' "$@" > "$LOG/login-args"
@@ -166,14 +167,58 @@ describe.skipIf(process.platform === "win32")("Orbis installed on the phone", ()
     expect(login).toContain("REPO=https://github.com/GCarin1/Orbis.git");
     expect(login.some((a) => a.startsWith("PREFIX=") || a.startsWith("LD_PRELOAD=") || a.startsWith("TMPDIR="))).toBe(false);
 
-    // orbis-phone runs the script of the checkout inside Debian, so `update` brings the script too.
+    // orbis-phone runs the script of the checkout inside Debian, so `update` brings the script too. It looks for
+    // Debian where proot-distro 5 keeps it, and where older ones did.
     const wrapper = readFileSync(path.join(p.env.PREFIX!, "bin", "orbis-phone"), "utf8");
-    expect(wrapper).toContain(`exec bash "${p.rootfs}/root/orbis/scripts/android/orbis-termux.sh" "$@"`);
+    expect(wrapper).toContain(`${p.env.PREFIX}/var/lib/proot-distro/containers/debian/rootfs`);
+    expect(wrapper).toContain(`${p.env.PREFIX}/var/lib/proot-distro/installed-rootfs/debian`);
+    expect(wrapper).toContain('[ -f "$script" ] && exec bash "$script" "$@"');
     expect(readFileSync(path.join(p.env.HOME!, ".orbis-phone", "config"), "utf8")).toMatch(/ORBIS_REPO=/);
 
     // Again: Debian is there already.
     expect(run(p, ["install"]).status).toBe(0);
     expect(p.log("proot-distro").match(/^install debian$/gm)).toHaveLength(1);
+  });
+});
+
+describe.skipIf(process.platform === "win32")("Debian under proot-distro 5", () => {
+  const containerRoot = (p: Phone) => path.join(p.env.PREFIX!, "var", "lib", "proot-distro", "containers", "debian", "rootfs");
+
+  it("finds Debian in containers/<name>/rootfs, does not install it again, and orbis-phone reaches the script there", async () => {
+    const p = await phone();
+    const root = containerRoot(p);
+    mkdirSync(path.join(root, "root", "orbis", "packages", "cli", "dist"), { recursive: true });
+    writeFileSync(path.join(root, "root", "orbis", "packages", "cli", "dist", "index.js"), "");
+    mkdirSync(path.join(root, "root", "orbis", "scripts", "android"), { recursive: true });
+    copyFileSync(SCRIPT, path.join(root, "root", "orbis", "scripts", "android", "orbis-termux.sh"));
+
+    const install = run(p, ["install"]);
+    expect(install.status, install.stderr).toBe(0);
+    expect(p.log("proot-distro")).not.toMatch(/^install debian$/m);
+    expect(p.log("proot-distro")).not.toMatch(/^remove debian$/m);
+
+    const wrapper = spawnSync("bash", [path.join(p.env.PREFIX!, "bin", "orbis-phone"), "status"], { env: p.env, encoding: "utf8", timeout: 30_000 });
+    expect(wrapper.stdout).toMatch(/Orbis is stopped[\s\S]*Claude Code: 9\.9\.9/);
+
+    serve(p, "token-one");
+    await until(async () => (await status(p, "token-one")) === 200);
+  });
+
+  it("installs Debian again over a copy that never finished, instead of stopping at 'already exists'", async () => {
+    const p = await phone();
+    mkdirSync(containerRoot(p), { recursive: true });
+    const install = run(p, ["install"]);
+    expect(install.status, install.stderr).toBe(0);
+    expect(p.log("proot-distro")).toMatch(/^remove debian$/m);
+    expect(p.log("proot-distro")).toMatch(/^install debian$/m);
+  });
+
+  it("says Orbis is not installed (exit 127, what the app reads) when the wrapper finds no Debian", async () => {
+    const p = await phone();
+    expect(run(p, ["install"]).status).toBe(0);
+    const wrapper = spawnSync("bash", [path.join(p.env.PREFIX!, "bin", "orbis-phone"), "serve"], { env: p.env, encoding: "utf8", timeout: 30_000 });
+    expect(wrapper.status).toBe(127);
+    expect(wrapper.stderr).toMatch(/Orbis is not installed on this phone/);
   });
 });
 

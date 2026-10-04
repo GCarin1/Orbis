@@ -56,3 +56,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-03 — 0051-claude-subscription-anywhere — Orbis from anywhere, on the Claude plan (specs: agent-runtimes MODIFIED, hub-api MODIFIED, secrets MODIFIED, web-app MODIFIED)
 - 2026-10-04 — 0052-hub-on-the-phone — Orbis on the phone, with no computer (specs: android-app MODIFIED)
 - 2026-10-04 — 0053-android-termux-run-command — Android: when Termux's RUN_COMMAND permission cannot be granted (it never shows), the app shows why, and Orbis still opens with no permission: 'orbis-phone open' starts the hub in Termux and hands the app its sign-in link (specs: android-app MODIFIED)
+- 2026-10-04 — 0054-proot-distro-5-layout — proot-distro 5 layout (specs: android-app MODIFIED)

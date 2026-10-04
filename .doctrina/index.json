@@ -32,7 +32,7 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.5.1",
         "last_updated": "2026-10-03",
         "implementation": "verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`",
         "realizes": [
@@ -1671,6 +1671,20 @@
         "id": "0053-android-termux-run-command",
         "title": "Android: when Termux's RUN_COMMAND permission cannot be granted (it never shows), the app shows why, and Orbis still opens with no permission: 'orbis-phone open' starts the hub in Termux and hands the app its sign-in link",
         "path": ".doctrina/changes/archive/2026-10-04-0053-android-termux-run-command",
+        "status": "applied",
+        "applied": "2026-10-04",
+        "specs_affected": [
+          {
+            "capability": "android-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0054-proot-distro-5-layout",
+        "title": "proot-distro 5 layout",
+        "path": ".doctrina/changes/archive/2026-10-04-0054-proot-distro-5-layout",
         "status": "applied",
         "applied": "2026-10-04",
         "specs_affected": [

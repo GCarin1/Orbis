@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC14
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.5.0
+**Version:** 0.5.1
 
 ## Purpose
 
@@ -47,6 +47,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When Termux's permission to run commands is refused or never shown, the app shall say what the system reports (Termux's version and source, whether Termux declares the permission, whether the app asks for it, whether it is granted) and point to `orbis-phone open`, which needs no Android permission.
 - When `orbis-phone open` runs in Termux, the system shall start the hub if it is stopped and open the app with a sign-in link to it, and the app shall keep that link's token as its own.
 - When the app opens on the hub on this phone without Termux's permission and the hub already answers with its token, the app shall open it without asking for the permission.
+- When the install script runs where proot-distro keeps Debian in containers/<name>/rootfs (version 5) or in installed-rootfs/<name> (older), the system shall find it there, install Debian only when it is missing or a broken copy, and have orbis-phone look for Debian each time it runs.
 
 ### State-driven
 
@@ -81,6 +82,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 16. [verified] The token of a sign-in link to the hub on this phone is the app's own (a link to another hub or without a token gives none), and the diagnosis states Termux's version and source, whether it declares the permission, whether the app asks for it and whether it is granted — verified by `packages/android/app/src/test/java/app/orbis/android/LocalHubTest.java`
 17. [verified] With stand-ins for Termux, `orbis-phone open` starts the stopped hub, hands the app a sign-in link with the hub's token through `am start`, and only opens the app again when the hub already runs — verified by `packages/hub/test/phone-script.test.ts`
 18. [verified] In a real browser, a refused permission shows the system's facts, the `orbis-phone open` way and a button to open Termux — verified by `tests/e2e/android-connect.test.ts`
+19. [verified] Where proot-distro 5 keeps Debian (containers/<name>/rootfs), the script finds it and does not install it again, orbis-phone reaches the script there, a copy that never finished is removed and installed again, and orbis-phone says Orbis is not installed (exit 127) when it finds no Debian — verified by `packages/hub/test/phone-script.test.ts`
 
 ## Maturity
 

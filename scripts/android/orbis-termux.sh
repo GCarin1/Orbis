@@ -30,11 +30,23 @@ PORT="${ORBIS_PORT:-7420}"
 NODE_MAJOR="${ORBIS_NODE_MAJOR:-22}"
 # The last Claude Code written in plain JavaScript: it runs on Node.js where the native build cannot.
 CLAUDE_JS_VERSION="2.1.112"
-ROOTFS="${ORBIS_ROOTFS:-$PREFIX/var/lib/proot-distro/installed-rootfs/$DISTRO}"
 APP=/root/orbis
 # The command line of the hub inside Debian (never another Orbis); the brackets keep a pkill from
 # matching the command that runs it.
 SERVE_MATCH="$APP/[p]ackages/cli/dist/index.js serve"
+
+# Where proot-distro keeps the distro: version 5 in containers/<name>/rootfs, older ones in installed-rootfs/<name>.
+# Asked each time, since the first login of version 5 moves an old one.
+rootfs() {
+  local base="$PREFIX/var/lib/proot-distro"
+  if [ -n "${ORBIS_ROOTFS:-}" ]; then
+    echo "$ORBIS_ROOTFS"
+  elif [ ! -d "$base/containers/$DISTRO/rootfs" ] && [ -d "$base/installed-rootfs/$DISTRO" ]; then
+    echo "$base/installed-rootfs/$DISTRO"
+  else
+    echo "$base/containers/$DISTRO/rootfs"
+  fi
+}
 
 say() { printf '\033[1;34m▸\033[0m %s\n' "$*"; }
 die() {
@@ -126,10 +138,15 @@ echo "  $(claude --version)"
 
 install_wrapper() {
   local bin="$PREFIX/bin/orbis-phone"
+  # The script lives in the Orbis checkout inside Debian, updated with it. Where Debian is, is looked up each run.
   cat >"$bin" <<EOF
 #!$PREFIX/bin/bash
-# Orbis on this phone: the script lives in the Orbis checkout inside Debian, updated with it.
-exec bash "$ROOTFS$APP/scripts/android/orbis-termux.sh" "\$@"
+for base in "$PREFIX/var/lib/proot-distro/containers/$DISTRO/rootfs" "$PREFIX/var/lib/proot-distro/installed-rootfs/$DISTRO"; do
+  script="\$base$APP/scripts/android/orbis-termux.sh"
+  [ -f "\$script" ] && exec bash "\$script" "\$@"
+done
+echo "orbis-phone: Orbis is not installed on this phone: run bash orbis-termux.sh (docs/android.md)" >&2
+exit 127
 EOF
   chmod 755 "$bin"
 }
@@ -145,7 +162,12 @@ cmd_install() {
   DEBIAN_FRONTEND=noninteractive apt-get -y -q "${confold[@]}" full-upgrade >/dev/null
   DEBIAN_FRONTEND=noninteractive apt-get -y -q "${confold[@]}" install proot-distro curl procps >/dev/null
   allow_external_apps
-  if [ ! -d "$ROOTFS/root" ]; then
+  # A copy that never finished (no /root) is removed: proot-distro will not install over it.
+  if [ -d "$(rootfs)" ] && [ ! -d "$(rootfs)/root" ]; then
+    say "Debian: a broken copy is there, installing it again"
+    proot-distro remove "$DISTRO"
+  fi
+  if [ ! -d "$(rootfs)/root" ]; then
     say "Debian (proot-distro)"
     proot-distro install "$DISTRO"
   fi
@@ -194,7 +216,7 @@ cmd_serve() {
     say "Orbis runs with another token: starting it again with the app's"
     stop_hub
   fi
-  [ -f "$ROOTFS$APP/packages/cli/dist/index.js" ] || die "Orbis is not installed on this phone: run bash orbis-termux.sh (docs/android.md)"
+  [ -f "$(rootfs)$APP/packages/cli/dist/index.js" ] || die "Orbis is not installed on this phone: run bash orbis-termux.sh (docs/android.md)"
   if [ -n "$awake" ] || [ "${ORBIS_AWAKE:-}" = 1 ]; then
     termux-wake-lock 2>/dev/null || true
     trap 'termux-wake-unlock 2>/dev/null || true' EXIT
@@ -219,7 +241,7 @@ cmd_status() {
   else
     say "Orbis is stopped"
   fi
-  if [ -f "$ROOTFS$APP/packages/cli/dist/index.js" ]; then
+  if [ -f "$(rootfs)$APP/packages/cli/dist/index.js" ]; then
     echo "  Claude Code: $(distro claude --version 2>/dev/null || echo "not installed")"
   else
     echo "  Not installed: bash orbis-termux.sh"
@@ -228,7 +250,7 @@ cmd_status() {
 
 cmd_token() {
   local token=""
-  if [ -f "$STATE/token" ]; then token="$(cat "$STATE/token")"; elif [ -f "$ROOTFS/root/.orbis/token" ]; then token="$(cat "$ROOTFS/root/.orbis/token")"; fi
+  if [ -f "$STATE/token" ]; then token="$(cat "$STATE/token")"; elif [ -f "$(rootfs)/root/.orbis/token" ]; then token="$(cat "$(rootfs)/root/.orbis/token")"; fi
   [ -n "$token" ] || die "no token yet: start the hub first (open the Orbis app, or orbis-phone serve)"
   echo "$token"
   echo "http://127.0.0.1:$PORT/#token=$token"

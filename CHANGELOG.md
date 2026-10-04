@@ -184,6 +184,14 @@ change that delivered it.
 
 ### Fixed
 
+- **The phone install no longer stops at "container 'debian' already exists"** (change 0054-proot-distro-5-layout).
+  - proot-distro 5 keeps a distro in `containers/<name>/rootfs`. The install
+    script looked in the old `installed-rootfs`, so it never found Debian and
+    tried to install it again.
+  - The script now finds Debian in either place, removes a copy that never
+    finished, and `orbis-phone` looks for Debian each time it runs.
+  - A phone that ran the old script: paste the install command again.
+
 - On a phone, no screen scrolls sideways any more (change 0046-phone-layout-no-sideways-scroll).
   The bot settings were 600 px wide on a 390 px phone. The cause: the brain
   select took the width of its longest option, and its fieldset never shrank

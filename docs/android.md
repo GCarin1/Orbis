@@ -97,6 +97,7 @@ under **Settings → Brains → Claude Code**, either way:
 | Termux refused the app | paste the command again |
 | The Termux permission is missing | **App permissions**, then allow it. If it never shows, open Termux and run `orbis-phone open`: it starts Orbis and opens the app signed in, with no permission. The line under the message (`declares=no`, `from=…`) says why it never showed |
 | Orbis did not answer | in Termux, run `orbis-phone serve` to see the error |
+| The install stops at `container 'debian' already exists` | an old copy of the script. Download it again and run it: the new one finds Debian wherever proot-distro keeps it, and `orbis-phone` finds it too |
 
 To uninstall everything, run `proot-distro remove debian`, then remove
 Termux.
