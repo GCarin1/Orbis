@@ -32,11 +32,12 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-10-03",
-        "implementation": "verified — Java WebView shell in `packages/android` (connect screen with pairing by code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); APK built by `.github/workflows/android.yml`",
+        "implementation": "verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`",
         "realizes": [
-          "SC7"
+          "SC7",
+          "SC14"
         ],
         "depends_on": [
           "web-app",
@@ -572,19 +573,11 @@
           "hub-api",
           "agent-runtimes"
         ],
-        "summary": "The hub runs on the phone, inside Termux, in a Debian made by"
+        "summary": "The hub runs on the phone, inside Termux, in a Debian made by",
+        "landed": "2026-10-04 — `scripts/android/orbis-termux.sh`, `packages/android/app/src/main/java/app/orbis/android/LocalHub.java`"
       }
     ],
-    "changes": [
-      {
-        "id": "0052-hub-on-the-phone",
-        "title": "Orbis on the phone, with no computer",
-        "path": ".doctrina/changes/0052-hub-on-the-phone",
-        "status": "proposed",
-        "opened": "2026-10-04",
-        "lane": "product"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -1655,6 +1648,20 @@
           },
           {
             "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0052-hub-on-the-phone",
+        "title": "Orbis on the phone, with no computer",
+        "path": ".doctrina/changes/archive/2026-10-04-0052-hub-on-the-phone",
+        "status": "applied",
+        "applied": "2026-10-04",
+        "specs_affected": [
+          {
+            "capability": "android-app",
             "operation": "MODIFIED"
           }
         ],

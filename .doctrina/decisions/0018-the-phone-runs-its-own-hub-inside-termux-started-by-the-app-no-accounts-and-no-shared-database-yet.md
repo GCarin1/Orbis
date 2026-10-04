@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** `scripts/android/orbis-termux.sh`, `packages/android/app/src/main/java/app/orbis/android/LocalHub.java`, `packages/android/app/src/main/java/app/orbis/android/MainActivity.java`
-- **Landed:** —
+- **Landed:** 2026-10-04 — `scripts/android/orbis-termux.sh`, `packages/android/app/src/main/java/app/orbis/android/LocalHub.java`
 
 ## Context
 

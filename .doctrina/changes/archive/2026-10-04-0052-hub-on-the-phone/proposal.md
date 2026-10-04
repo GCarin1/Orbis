@@ -1,6 +1,7 @@
 # Change 0052-hub-on-the-phone — Orbis on the phone, with no computer
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-04
 - **Date:** 2026-10-04
 - **Owner:** Claude Code
 - **Lane:** product

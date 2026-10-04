@@ -2,11 +2,11 @@
 
 **Capability:** android-app
 **Status:** active
-**Implementation:** verified — Java WebView shell in `packages/android` (connect screen with pairing by code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); APK built by `.github/workflows/android.yml`
-**Realizes:** SC7
+**Implementation:** verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`
+**Realizes:** SC7, SC14
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 ## Purpose
 
@@ -21,9 +21,10 @@ GitHub Actions workflow builds the APK of the current version on demand.
 ### Ubiquitous
 
 - The Android app shall show in a WebView the web app served by the hub at the address the user gave, with JavaScript and the page's storage on and file access off.
-- The Android app shall expose to the page only connecting to a hub (from its connect screen alone), reading the clipboard (from its connect screen alone), reading a QR code with Google Play's code scanner (from its connect screen alone), the hub's address, the app's version, changing the hub, saving a text file to Downloads, showing a notification, the notification permission, keeping connected in the background, the battery settings, the phone's dictation and the phone's voice.
+- The Android app shall expose to the page only starting the hub on this phone, its state, its install command, Termux and the app's permission settings (from its connect screen alone), starting the hub on this phone again (when it is the saved hub), connecting to a hub (from its connect screen alone), reading the clipboard (from its connect screen alone), reading a QR code with Google Play's code scanner (from its connect screen alone), the hub's address, the app's version, changing the hub, saving a text file to Downloads, showing a notification, the notification permission, keeping connected in the background, the battery settings, the phone's dictation and the phone's voice.
 - The Android app shall take its version name from Orbis's version (the root `package.json`) and its version code from the build number.
 - The web app shall, inside the Android app, save the files it exports (a conversation, a bot template) through the app, show the hub and the app's version in Settings with a button to change the hub, and tell the app what the phone's Back button closes first.
+- The system shall provide `scripts/android/orbis-termux.sh`, which installs in Termux a Debian made by proot-distro with Node.js 22, Orbis built from the repository and Claude Code (its native build, else its last JavaScript release), lets other apps start Termux commands, and installs `orbis-phone` with `serve`, `stop`, `status`, `logs`, `update`, `token` and `setup-token`.
 
 ### Event-driven
 
@@ -39,6 +40,14 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When another app shares text with Orbis, the Android app shall connect if the text holds a sign-in link (`…#token=…`) or a pairing link (`…#pair=…`), and otherwise hand the text to the web app, which puts it in the message box of the next conversation opened.
 - When the page asks for dictation or to read a reply aloud, the Android app shall use the phone's speech recognizer and voice.
 - When a hub's saved address does not answer, the connect screen shall try it again every 10 seconds until the user stops it, and offer the last five hubs and a link from the clipboard.
+- When the user taps Open Orbis, or the app opens on the hub on this phone, the Android app shall find the hub on 127.0.0.1:7420 taking its own token, or ask Termux to run `orbis-phone serve` with that token on its standard input, wait up to three minutes saying for how long so far, and open the web app signed in, with no pairing and no sign-in.
+- When Termux is missing, its permission is refused, Orbis is not installed in it, Termux refuses commands from other apps, or the hub on this phone does not answer or stops, the connect screen shall say which, and show the one-time setup (get Termux, copy the install command, open Termux) or the app's permission settings.
+- When the web app inside the Android app loses the hub on this phone, it shall ask the app to start it again after 4 seconds and every 30 seconds until the hub answers.
+- When `orbis-phone serve` is given a token and a hub already answers, it shall leave a hub that takes that token running, and start again a hub that takes another one.
+
+### State-driven
+
+- While the hub on this phone runs, the system shall keep it on 127.0.0.1 only, its data (the database, the secrets, the bots' workspaces) inside Termux on the phone, and its token known only to the app and Termux.
 
 ### Unwanted-behavior (must-not)
 
@@ -47,6 +56,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - The APK workflow shall not need a signing key to build: without the `ANDROID_KEYSTORE_*` secrets it signs with a debug key and says so.
 - The Android app shall not load an https hub whose certificate the phone does not trust; its connect screen shall say why.
 - The Android app shall not ask for the camera permission: the QR code is read on Google Play's own scanner screen, and a phone without it is told to type the address and the code.
+- The install script shall not pass Termux's environment (PREFIX, LD_PRELOAD, TMPDIR) into Debian, and `orbis-phone stop` shall not stop a hub other than the one inside Debian.
 
 ## Acceptance criteria
 
@@ -61,6 +71,10 @@ GitHub Actions workflow builds the APK of the current version on demand.
 9. [verified] The web app maps a bot's reply, an approval, a secret request and a report to one notification per conversation, keeps a muted group's messages quiet but not its requests, hands notifications to the app only off screen, uses the phone's recognizer and voice, shows the phone tab's notifications and keep-connected controls (or asks an older app to be updated), and puts shared text after what is typed — verified by `packages/web/test/android.test.tsx`.
 10. [verified] A pairing link gives its hub and its six-digit code, inside shared text too, and a link with no code, a short code or another scheme is no pairing link — verified by `packages/android/app/src/test/java/app/orbis/android/HubTest.java`.
 11. [verified] In a real browser, the connect screen's Scan QR code connects with the address and the code of the computer's QR code, says when a QR code is not Orbis's or the phone has no scanner, and does nothing when the scan is cancelled — verified by `tests/e2e/android-connect.test.ts`.
+12. [verified] The hub on this phone is known by its address, the app's token is 64 random hex characters, the install command comes from the app's repository, Termux runs orbis-phone serve --token-stdin through bash, the probe tells a hub that takes the token from one with another token and from none, and Termux's answer tells a hub already running from one not installed, refused external apps and a stopped hub — verified by `packages/android/app/src/test/java/app/orbis/android/LocalHubTest.java`.
+13. [verified] With stand-ins for Termux and proot-distro, the script updates Termux, turns on allow-external-apps, installs Debian once, hands Debian the install from a clean environment (no PREFIX, LD_PRELOAD or TMPDIR) and installs orbis-phone; serve keeps the app's token private (0600), passes it to the hub on 127.0.0.1, is found running with the same token, starts again with a new one, stops, and says when Orbis is not installed — verified by `packages/hub/test/phone-script.test.ts`.
+14. [verified] In a real browser, the first screen puts Orbis on this phone first, starts it with one button or by itself when the app opens on it, shows how long the start takes and lets the user stop waiting, shows the one-time setup with the command to copy, Termux to get and open, the permission settings, and says why a start failed, while another Orbis stays below — verified by `tests/e2e/android-connect.test.ts`.
+15. [verified] Inside the app, the web app asks to start the hub on this phone again 4 s after the connection drops and every 30 s, and stops once it answers; in a browser it does nothing — verified by `packages/web/test/android.test.tsx`.
 
 ## Maturity
 

@@ -54,3 +54,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-03 — 0049-hiring — hiring (specs: hiring ADDED)
 - 2026-10-03 — 0050-squads — squads (specs: handoff MODIFIED, routines MODIFIED, squads ADDED)
 - 2026-10-03 — 0051-claude-subscription-anywhere — Orbis from anywhere, on the Claude plan (specs: agent-runtimes MODIFIED, hub-api MODIFIED, secrets MODIFIED, web-app MODIFIED)
+- 2026-10-04 — 0052-hub-on-the-phone — Orbis on the phone, with no computer (specs: android-app MODIFIED)
