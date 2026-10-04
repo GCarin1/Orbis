@@ -3495,7 +3495,8 @@ label.check {
   color: #15803d;
   background: rgb(22 163 74 / 10%);
 }
-.mcp-tag.auth-oauth {
+.mcp-tag.auth-oauth,
+.mcp-tag.auth-device {
   color: var(--link);
   background: rgb(37 99 235 / 10%);
 }

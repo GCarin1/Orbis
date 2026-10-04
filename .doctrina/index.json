@@ -278,9 +278,9 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "last_updated": "2026-09-27",
-        "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets, 41 free servers with their logos, marketing among them)",
+        "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in — for a remote server, or for a program with the user's own client — keys as hub secrets, 43 free servers with their logos)",
         "realizes": [
           "SC2",
           "SC3"
@@ -1733,6 +1733,20 @@
         "id": "0056-marketing-mcp-catalog",
         "title": "marketing-mcp-catalog",
         "path": ".doctrina/changes/archive/2026-10-04-0056-marketing-mcp-catalog",
+        "status": "applied",
+        "applied": "2026-10-04",
+        "specs_affected": [
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0057-google-drive-onedrive-mcp",
+        "title": "google-drive-onedrive-mcp",
+        "path": ".doctrina/changes/archive/2026-10-04-0057-google-drive-onedrive-mcp",
         "status": "applied",
         "applied": "2026-10-04",
         "specs_affected": [

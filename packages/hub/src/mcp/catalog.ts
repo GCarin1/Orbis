@@ -857,6 +857,80 @@ export const MCP_CATALOG: CatalogEntry[] = [
     homepage: "https://github.com/mcpware/instagram-mcp",
     needs: NODE,
   },
+
+  // --- your files in the cloud ---------------------------------------------------------------
+  {
+    id: "google-drive",
+    name: "Google Drive",
+    icon: "🗂️",
+    logo: "/logos/mcp/google-drive.svg",
+    category: "files",
+    description: {
+      en: "Your Google Drive, with a personal or Workspace account: search and read files, Docs, Sheets and Slides, and create files and folders. You sign in through Orbis with your own Google OAuth client (free, in Google Cloud). A community server (piotr-agier), pinned to a checked version.",
+      "pt-BR": "Seu Google Drive, com conta pessoal ou Workspace: buscar e ler arquivos, Docs, Planilhas e Apresentações, e criar arquivos e pastas. Você entra pelo Orbis com o seu próprio cliente OAuth do Google (grátis, no Google Cloud). Servidor da comunidade (piotr-agier), fixado numa versão verificada.",
+    },
+    transport: "stdio",
+    command: "npx",
+    // A community package that receives a Google sign-in: pinned to the version that was read.
+    args: ["-y", "@piotr-agier/google-drive-mcp@2.12.0"],
+    auth: "oauth",
+    fields: [
+      {
+        key: "client_id",
+        label: { en: "Google OAuth client ID", "pt-BR": "ID do cliente OAuth do Google" },
+        secret: false,
+        target: "client_id",
+        placeholder: "123456789-abc.apps.googleusercontent.com",
+        help: {
+          en: "In Google Cloud: enable the Google Drive API, set up the OAuth consent screen (add yourself as a test user) and create an OAuth client of type Desktop app.",
+          "pt-BR": "No Google Cloud: ative a Google Drive API, configure a tela de consentimento OAuth (adicione você como usuário de teste) e crie um cliente OAuth do tipo App para computador.",
+        },
+        link: "https://github.com/piotr-agier/google-drive-mcp/blob/main/docs/setup.md",
+      },
+      {
+        key: "client_secret",
+        label: { en: "Google OAuth client secret", "pt-BR": "Chave secreta do cliente OAuth do Google" },
+        secret: true,
+        target: "client_secret",
+        placeholder: "GOCSPX-…",
+      },
+    ],
+    oauth: {
+      authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+      tokenEndpoint: "https://oauth2.googleapis.com/token",
+      // Read all of Drive; write only the files it creates (Google's own Drive MCP asks for the same two).
+      scope: "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file",
+      // A refresh token, so the sign-in lasts beyond the hour.
+      params: { access_type: "offline", prompt: "consent" },
+      env: {
+        accessToken: "GOOGLE_DRIVE_MCP_ACCESS_TOKEN",
+        refreshToken: "GOOGLE_DRIVE_MCP_REFRESH_TOKEN",
+        clientId: "GOOGLE_DRIVE_MCP_CLIENT_ID",
+        clientSecret: "GOOGLE_DRIVE_MCP_CLIENT_SECRET",
+      },
+    },
+    homepage: "https://github.com/piotr-agier/google-drive-mcp",
+    needs: NODE,
+  },
+  {
+    id: "onedrive",
+    name: "OneDrive",
+    icon: "☁️",
+    logo: "/logos/mcp/onedrive.svg",
+    category: "files",
+    description: {
+      en: "Your OneDrive, with a personal Microsoft account (Outlook, Hotmail) or a work one: search, read, upload, move and share files and folders. To sign in, ask a bot to log in to OneDrive and type the code it gives you on Microsoft's page. A community server (Softeria), OneDrive tools only, pinned to a checked version.",
+      "pt-BR": "Seu OneDrive, com conta Microsoft pessoal (Outlook, Hotmail) ou de trabalho: buscar, ler, enviar, mover e compartilhar arquivos e pastas. Para entrar, peça a um bot para fazer login no OneDrive e digite na página da Microsoft o código que ele te der. Servidor da comunidade (Softeria), só as ferramentas do OneDrive, fixado numa versão verificada.",
+    },
+    transport: "stdio",
+    command: "npx",
+    // Microsoft 365 for one app only (the onedrive preset); pinned to the version that was read.
+    args: ["-y", "@softeria/ms-365-mcp-server@0.158.0", "--preset", "onedrive"],
+    auth: "device",
+    fields: [],
+    homepage: "https://github.com/Softeria/ms-365-mcp-server",
+    needs: NODE,
+  },
 ];
 
 export function catalogEntry(id: string): CatalogEntry | undefined {

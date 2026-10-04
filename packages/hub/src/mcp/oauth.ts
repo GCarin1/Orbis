@@ -127,7 +127,7 @@ export function pkce(): { verifier: string; challenge: string } {
 export function authorizationUrl(
   metadata: AuthServerMetadata,
   client: OAuthClient,
-  opts: { redirectUri: string; state: string; challenge: string; resource: string; scope: string | null },
+  opts: { redirectUri: string; state: string; challenge: string; resource: string; scope: string | null; params?: Record<string, string> },
 ): string {
   const url = new URL(metadata.authorization_endpoint);
   url.searchParams.set("response_type", "code");
@@ -136,13 +136,16 @@ export function authorizationUrl(
   url.searchParams.set("state", opts.state);
   url.searchParams.set("code_challenge", opts.challenge);
   url.searchParams.set("code_challenge_method", "S256");
-  url.searchParams.set("resource", opts.resource);
+  // An MCP server's own resource (RFC 8707); a provider's plain OAuth (Google's) has none.
+  if (opts.resource) url.searchParams.set("resource", opts.resource);
   if (opts.scope) url.searchParams.set("scope", opts.scope);
+  for (const [key, value] of Object.entries(opts.params ?? {})) url.searchParams.set(key, value);
   return url.href;
 }
 
 async function tokenRequest(metadata: AuthServerMetadata, client: OAuthClient, form: Record<string, string>, fetchImpl: Fetch): Promise<OAuthTokens> {
-  const body = new URLSearchParams({ ...form, client_id: client.client_id, ...(client.client_secret ? { client_secret: client.client_secret } : {}) });
+  const fields = Object.fromEntries(Object.entries(form).filter(([key, value]) => key !== "resource" || value));
+  const body = new URLSearchParams({ ...fields, client_id: client.client_id, ...(client.client_secret ? { client_secret: client.client_secret } : {}) });
   const res = await fetchImpl(metadata.token_endpoint, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },

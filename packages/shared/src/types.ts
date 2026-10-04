@@ -635,7 +635,8 @@ export interface ImageBuild {
 
 export type McpTransportKind = "stdio" | "http";
 /** How a server proves who is calling: nothing, a key or token the user pastes, or signing in with their account. */
-export type McpAuthKind = "none" | "token" | "oauth";
+/** `device`: the program signs in by itself with a code the user types on the service's page (OneDrive). */
+export type McpAuthKind = "none" | "token" | "oauth" | "device";
 export type McpServerStatus = "connecting" | "connected" | "needs_auth" | "error";
 
 export interface Localized {
@@ -650,9 +651,11 @@ export interface McpField {
   secret: boolean;
   /**
    * Where it goes: an environment variable of a stdio server, an argument, the Authorization header, or a
-   * query parameter of an http server's address named by `key` (kept in the vault, never in the address shown).
+   * query parameter of an http server's address named by `key` (kept in the vault, never in the address shown);
+   * or the user's own OAuth client (`client_id`, `client_secret`) that Orbis signs in with, for a service that
+   * lets no app register itself (Google).
    */
-  target: "env" | "arg" | "bearer" | "query";
+  target: "env" | "arg" | "bearer" | "query" | "client_id" | "client_secret";
   placeholder?: string;
   help?: Localized;
   /** Where to get it. */
@@ -682,6 +685,24 @@ export interface McpCatalogEntry {
   needs?: string;
   /** Every tool of this server only reads: they run without asking, unless a rule says otherwise. */
   readOnly?: boolean;
+  /** A program that cannot sign in by itself: Orbis signs in for it and hands it the sign-in. */
+  oauth?: McpCatalogOAuth;
+}
+
+/**
+ * Orbis's sign-in for a stdio server (auth `oauth`): the user signs in through Orbis with their own OAuth client
+ * (the entry's `client_id` and `client_secret` fields), Orbis keeps the tokens encrypted and starts the program
+ * with them in its environment.
+ */
+export interface McpCatalogOAuth {
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  /** The scopes asked for, space-separated. */
+  scope: string;
+  /** More sign-in parameters, e.g. Google's `access_type=offline` that brings a refresh token. */
+  params?: Record<string, string>;
+  /** The program's environment variables that receive the sign-in. */
+  env: { accessToken: string; refreshToken?: string; clientId?: string; clientSecret?: string };
 }
 
 export interface McpServerTool {

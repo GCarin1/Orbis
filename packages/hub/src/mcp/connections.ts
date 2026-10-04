@@ -5,7 +5,7 @@
 // approvals, secrets, result cap). Keys, tokens and sign-ins are hub secrets.
 import { randomBytes } from "node:crypto";
 import { homedir } from "node:os";
-import type { Bot, McpCatalogEntry, McpServer, McpServerTool, McpTransportKind, ToolInfo } from "@orbis/shared";
+import type { Bot, McpCatalogEntry, McpCatalogOAuth, McpServer, McpServerTool, McpTransportKind, ToolInfo } from "@orbis/shared";
 import { all, get, run } from "../db/index.js";
 import type { HubContext } from "../context.js";
 import { badRequest, notFound } from "../errors.js";
@@ -300,6 +300,7 @@ export class McpConnections {
         const value = this.secrets.get(this.secret(row.id, `env.${key}`));
         if (value !== null) env[key] = value;
       }
+      Object.assign(env, await this.signInEnv(row));
       return new StdioTransport(launch.command, launch.args, env, homedir());
     }
     // A key the service takes in its address (Alpha Vantage's ?apikey=) is added here, from the vault, and
@@ -329,6 +330,39 @@ export class McpConnections {
     return { authorization: `Bearer ${saved.tokens.access_token}` };
   }
 
+  /** The sign-in of a server Orbis signs in for (a catalog entry with `oauth`), or undefined. */
+  private signInOf(row: Row): McpCatalogOAuth | undefined {
+    return row.auth === "oauth" && row.catalogId ? catalogEntry(row.catalogId)?.oauth : undefined;
+  }
+
+  /** The user's own OAuth client, from the entry's client fields. */
+  private ownClient(row: Row): OAuthClient | null {
+    const clientId = this.secrets.get(this.secret(row.id, "client_id"));
+    if (!clientId) return null;
+    const clientSecret = this.secrets.get(this.secret(row.id, "client_secret"));
+    return { client_id: clientId, ...(clientSecret ? { client_secret: clientSecret } : {}) };
+  }
+
+  /** A program Orbis signs in for: its tokens and client as the environment variables the entry names. */
+  private async signInEnv(row: Row): Promise<Record<string, string>> {
+    const oauth = this.signInOf(row);
+    const saved = oauth ? this.readOAuth(row.id) : null;
+    if (!oauth || !saved?.tokens) return {};
+    if (expiring(saved.tokens) && saved.tokens.refresh_token) {
+      try {
+        saved.tokens = await refreshTokens(saved.metadata, saved.client, saved.tokens, saved.resource, this.fetchImpl);
+        this.writeOAuth(row.id, saved);
+      } catch {
+        /* the program refreshes it itself, or the user signs in again */
+      }
+    }
+    const env: Record<string, string> = { [oauth.env.accessToken]: saved.tokens.access_token };
+    if (oauth.env.refreshToken && saved.tokens.refresh_token) env[oauth.env.refreshToken] = saved.tokens.refresh_token;
+    if (oauth.env.clientId) env[oauth.env.clientId] = saved.client.client_id;
+    if (oauth.env.clientSecret && saved.client.client_secret) env[oauth.env.clientSecret] = saved.client.client_secret;
+    return env;
+  }
+
   /** Connect once at a time per server: initialize, list tools, register them. */
   private attach(id: string): Promise<void> {
     let pending = this.attaching.get(id);
@@ -346,6 +380,8 @@ export class McpConnections {
     this.live.delete(id);
     await old?.close().catch(() => undefined);
     let client: McpClient | null = null;
+    // A program that cannot sign in by itself starts only once the user signed in through Orbis.
+    if (this.signInOf(row) && !this.readOAuth(row.id)?.tokens) return this.beginAuth(row, null);
     try {
       client = new McpClient(await this.transport(row));
       await client.connect();
@@ -388,16 +424,22 @@ export class McpConnections {
           /* sign in again below */
         }
       }
-      const { metadata, resource, scope } = await discover(row.url!, wwwAuthenticate, this.fetchImpl);
+      const signIn = this.signInOf(row);
+      const own = this.ownClient(row);
+      const { metadata, resource, scope } = signIn
+        ? { metadata: { authorization_endpoint: signIn.authorizationEndpoint, token_endpoint: signIn.tokenEndpoint }, resource: "", scope: signIn.scope }
+        : await discover(row.url!, wwwAuthenticate, this.fetchImpl);
+      if (signIn && !own) throw new Error(`${row.name} needs your own OAuth client: disconnect it and connect again with its client ID and secret`);
       const client =
-        saved && saved.redirectUri === redirectUri && saved.metadata.token_endpoint === metadata.token_endpoint
+        own ??
+        (saved && saved.redirectUri === redirectUri && saved.metadata.token_endpoint === metadata.token_endpoint
           ? saved.client
-          : await register(metadata, redirectUri, this.fetchImpl);
+          : await register(metadata, redirectUri, this.fetchImpl));
       this.writeOAuth(row.id, { metadata, client, resource, redirectUri });
       const { verifier, challenge } = pkce();
       const state = randomBytes(24).toString("base64url");
       this.authStates.set(state, { serverId: row.id, verifier, expires: Date.now() + AUTH_STATE_MS });
-      this.authUrls.set(row.id, authorizationUrl(metadata, client, { redirectUri, state, challenge, resource, scope }));
+      this.authUrls.set(row.id, authorizationUrl(metadata, client, { redirectUri, state, challenge, resource, scope, params: signIn?.params }));
       row.status = "needs_auth";
       row.error = null;
       this.save(row);
@@ -466,6 +508,7 @@ export class McpConnections {
           envKeys.push(field.key);
           secretValues.push([`env.${field.key}`, value]);
         } else if (field.target === "query") secretValues.push([`query.${field.key}`, value]);
+        else if (field.target === "client_id" || field.target === "client_secret") secretValues.push([field.target, value]);
         else secretValues.push(["token", value]);
       }
       row = {
@@ -560,8 +603,10 @@ export class McpConnections {
     this.live.delete(id);
     this.unregisterTools(id);
     for (const key of row.envKeys) this.secrets.delete(this.secret(id, `env.${key}`));
-    this.secrets.delete(this.secret(id, "token"));
-    this.secrets.delete(this.secret(id, "oauth"));
+    for (const field of (row.catalogId ? catalogEntry(row.catalogId)?.fields : undefined) ?? []) {
+      if (field.target === "query") this.secrets.delete(this.secret(id, `query.${field.key}`));
+    }
+    for (const what of ["token", "oauth", "client_id", "client_secret"]) this.secrets.delete(this.secret(id, what));
     this.authUrls.delete(id);
     run(this.hub.db, "DELETE FROM mcp_servers WHERE id = ?", id);
     const prefix = `mcp.${id}.`;

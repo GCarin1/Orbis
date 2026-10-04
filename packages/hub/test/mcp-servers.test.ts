@@ -281,7 +281,7 @@ describe("the marketplace", () => {
     }>;
     expect(catalog.map((e) => e.id)).toEqual(MCP_CATALOG.map((e) => e.id));
     expect(catalog.every((e) => e.description.en && e.description["pt-BR"] && e.connected === null)).toBe(true);
-    expect(new Set(catalog.map((e) => e.auth))).toEqual(new Set(["none", "oauth", "token"]));
+    expect(new Set(catalog.map((e) => e.auth))).toEqual(new Set(["none", "oauth", "token", "device"]));
     // Whether a server only reads, for the web app to say before connecting it.
     expect(catalog.find((e) => e.id === "deepwiki")).toMatchObject({ readOnly: true });
     expect(catalog.find((e) => e.id === "github")).not.toHaveProperty("readOnly");

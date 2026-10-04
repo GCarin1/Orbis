@@ -17,6 +17,8 @@ type T = ReturnType<typeof useT>;
 const CATEGORIES = ["all", "research", "dev", "work", "finance", "marketing", "browser", "files", "reasoning"] as const;
 type Category = (typeof CATEGORIES)[number];
 const AUTHS = ["any", "none", "oauth", "token"] as const;
+/** The "Sign in" filter holds both ways of signing in: through Orbis, or with a code. */
+const authMatches = (entryAuth: McpAuthKind, filter: AuthFilter) => filter === "any" || entryAuth === filter || (filter === "oauth" && entryAuth === "device");
 type AuthFilter = (typeof AUTHS)[number];
 /** Where to start: the most asked-for, most with no account to make. */
 export const FEATURED = ["deepwiki", "context7", "playwright", "github", "notion", "exa"];
@@ -551,7 +553,7 @@ export function Marketplace({ api, bots, servers, onLoad }: { api: Api; bots: Bo
   const list = Object.values(servers);
   const q = query.trim().toLowerCase();
   const all = catalog ?? [];
-  const searched = all.filter((e) => matches(e, q, lang) && (auth === "any" || e.auth === (auth as McpAuthKind)));
+  const searched = all.filter((e) => matches(e, q, lang) && authMatches(e.auth, auth));
   const shown = searched.filter((e) => category === "all" || e.category === category);
   const count = (c: Category) => (c === "all" ? searched.length : searched.filter((e) => e.category === c).length);
   const filtering = q !== "" || category !== "all" || auth !== "any";

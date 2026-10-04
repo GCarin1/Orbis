@@ -136,6 +136,21 @@ describe("the marketplace", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("says a server that signs in with a code does so, and lists it under Sign-in (change 0057)", async () => {
+    const onedrive = entry({ id: "onedrive", name: "OneDrive", category: "files", transport: "stdio", url: undefined, command: "npx", args: ["-y", "@softeria/ms-365-mcp-server"], auth: "device" });
+    const api = { get: vi.fn(async () => [...catalog, onedrive]), post: vi.fn(), delete: vi.fn() } as unknown as Api;
+    render(<Marketplace api={api} bots={[]} servers={{}} onLoad={async () => undefined} />);
+    const card = await screen.findByTestId("catalog-onedrive");
+    expect(within(card).getByText("Sign in with a code")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Sign-in" }));
+    expect(screen.getAllByTestId(/^catalog-/).map((c) => c.dataset.testid)).toEqual(["catalog-notion", "catalog-onedrive"]);
+    fireEvent.click(screen.getByTestId("catalog-onedrive"));
+    const sheet = screen.getByRole("dialog", { name: "OneDrive" });
+    expect(within(sheet).getByText(/ask a bot to sign in\. It gets a code for you to type on the service's page/)).toBeTruthy();
+    // Connecting starts the program; the sign-in happens afterwards, through a bot.
+    expect(within(sheet).getByRole("button", { name: "Connect" })).toBeTruthy();
+  });
+
   it("asks for the key of a server that needs one in its details, with where to get it", async () => {
     const { api, post } = fakeApi();
     render(<Marketplace api={api} bots={[]} servers={{}} onLoad={async () => undefined} />);

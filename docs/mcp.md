@@ -51,7 +51,7 @@ Cursor and VS Code, and has two tabs:
 - **Your own server** (top right, **+** on a phone) takes an address or a
   program to start.
 
-- **The catalog**: 41 checked servers, all free to use. Each one needs no
+- **The catalog**: 43 checked servers, all free to use. Each one needs no
   account, has a free plan, or takes a free key. Every entry was checked
   before it went in: its npm package exists and starts and lists its tools,
   or its address answers `initialize`. For a sign-in, the service also lets
@@ -78,6 +78,21 @@ Cursor and VS Code, and has two tabs:
       and can change campaigns, so their changing tools ask first.
     - Orbis registers itself with the service on the fly. It keeps the
       sign-in encrypted and refreshes it when it expires.
+    - Google Drive: Google lets no app register itself, so you bring your
+      own Google OAuth client (free): in Google Cloud, enable the Google
+      Drive API, set up the consent screen with yourself as a test user, and
+      create an OAuth client of type *Desktop app*. Paste its ID and secret,
+      then **Sign in to Google Drive**. Orbis signs in before it starts the
+      program (a community server, pinned to the version that was read) and
+      hands it the sign-in in its environment, refreshed when it expires.
+      It reads all of Drive (Docs, Sheets and Slides too) and writes only the
+      files it creates. While the consent screen is in *Testing*, Google ends
+      the sign-in after 7 days; publishing it keeps it.
+  - *Sign in with a code*: **Connect**, then ask a bot to sign in. It gets a
+    code to type on the service's page, from any device.
+    - OneDrive: a personal Microsoft account (Outlook, Hotmail) or a work
+      one. Microsoft 365's server, with only its OneDrive tools (a community
+      server, pinned). The sign-in stays on the computer that runs Orbis.
   - *Needs a key*: paste it. The card links to where you get it.
     - GitHub (personal access token), Brave Search, Tavily, Firecrawl,
       Airtable.
@@ -99,8 +114,10 @@ Cursor and VS Code, and has two tabs:
     self-registration for sign-in), DuckDuckGo and Wikipedia (their
     packages are no longer maintained), LinkedIn (no official server; the
     popular one drives your logged-in session, which LinkedIn's terms
-    forbid), and Google Analytics' hosted address (Google lets no app
-    register itself for sign-in).
+    forbid), Google Analytics' and Google Drive's hosted addresses (Google
+    lets no app register itself for sign-in, and its Drive server is in a
+    preview for Workspace accounts), and Microsoft's own OneDrive server
+    (Microsoft 365 business plans only).
 - **Your own server** takes one of two things:
   - an address: streamable HTTP, with an optional token (without one, Orbis
     tries signing in);

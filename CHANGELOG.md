@@ -9,6 +9,22 @@ change that delivered it.
 
 ### Added
 
+- **Google Drive and OneDrive in the MCP catalog** (change 0057-google-drive-onedrive-mcp).
+  - **Google Drive**, with a personal or Workspace account: read all of
+    Drive (Docs, Sheets and Slides too) and create files and folders. Google
+    lets no app register itself, so you bring your own Google OAuth client
+    (free, a *Desktop app* client in Google Cloud), paste its ID and secret,
+    and **Sign in to Google Drive**.
+  - Orbis now signs in **for** a program that cannot do it by itself: before
+    starting it, with your own OAuth client, keeping the tokens encrypted and
+    handing them to the program in its environment, refreshed when they
+    expire.
+  - **OneDrive**, with a personal Microsoft account (Outlook, Hotmail) or a
+    work one: Microsoft 365's server with only its OneDrive tools. A new
+    "Sign in with a code" kind: connect, then ask a bot to sign in, and type
+    its code on Microsoft's page from any device.
+  - Both are community servers, pinned to the version whose code was read.
+
 - **Marketing in the MCP catalog** (change 0056-marketing-mcp-catalog). A new
   **Marketing** category with four servers, each checked live:
   - **Meta Ads**: Meta's official server, for Facebook and Instagram ad
