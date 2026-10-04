@@ -122,10 +122,15 @@ describe("Orbis on this phone, on the first screen", () => {
   it("asks for the Termux permission, and opens the app's settings where it is granted by hand", async () => {
     const tab = await open("pt-BR", "", "no-permission");
     await tab.getByText(/Permissões adicionais/).waitFor();
-    await onLocal(tab, "no-permission");
+    // The system never showed the permission: the screen says what it found, and Orbis still opens from Termux.
+    await onLocal(tab, "no-permission", "termux=0.118.3 from=org.fdroid.fdroid declares=no requested=yes granted=no android=34 device=x");
     await tab.getByText(/O Orbis precisa da permissão “Executar comandos no ambiente do Termux”/).waitFor();
+    await tab.getByText(/declares=no requested=yes/).waitFor();
+    await tab.getByText(/Sem ela também funciona: abra o Termux e rode/).waitFor();
+    await tab.locator("#local-permission code", { hasText: "orbis-phone open" }).waitFor();
     await tab.getByRole("button", { name: "Permissões do app" }).click();
-    expect(await asked(tab)).toEqual(["openAppSettings"]);
+    await tab.locator("#local-permission").getByRole("button", { name: "Abrir o Termux" }).click();
+    expect(await asked(tab)).toEqual(["openAppSettings", "openTermux"]);
   });
 
   it("keeps the address of another Orbis open when one was used", async () => {

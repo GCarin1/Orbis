@@ -32,7 +32,7 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-10-03",
         "implementation": "verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`",
         "realizes": [
@@ -568,13 +568,13 @@
         "title": "The phone runs its own hub inside Termux, started by the app; no accounts and no shared database yet",
         "status": "accepted",
         "date": "2026-10-04",
+        "landed": "2026-10-04 — `scripts/android/orbis-termux.sh`, `packages/android/app/src/main/java/app/orbis/android/LocalHub.java`",
         "scope": [
           "android-app",
           "hub-api",
           "agent-runtimes"
         ],
-        "summary": "The hub runs on the phone, inside Termux, in a Debian made by",
-        "landed": "2026-10-04 — `scripts/android/orbis-termux.sh`, `packages/android/app/src/main/java/app/orbis/android/LocalHub.java`"
+        "summary": "The hub runs on the phone, inside Termux, in a Debian made by"
       }
     ],
     "changes": [],
@@ -1666,6 +1666,20 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0053-android-termux-run-command",
+        "title": "Android: when Termux's RUN_COMMAND permission cannot be granted (it never shows), the app shows why, and Orbis still opens with no permission: 'orbis-phone open' starts the hub in Termux and hands the app its sign-in link",
+        "path": ".doctrina/changes/archive/2026-10-04-0053-android-termux-run-command",
+        "status": "applied",
+        "applied": "2026-10-04",
+        "specs_affected": [
+          {
+            "capability": "android-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
       }
     ],
     "skills": [

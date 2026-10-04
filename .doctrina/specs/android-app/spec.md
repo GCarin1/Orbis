@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC14
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -44,6 +44,9 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When Termux is missing, its permission is refused, Orbis is not installed in it, Termux refuses commands from other apps, or the hub on this phone does not answer or stops, the connect screen shall say which, and show the one-time setup (get Termux, copy the install command, open Termux) or the app's permission settings.
 - When the web app inside the Android app loses the hub on this phone, it shall ask the app to start it again after 4 seconds and every 30 seconds until the hub answers.
 - When `orbis-phone serve` is given a token and a hub already answers, it shall leave a hub that takes that token running, and start again a hub that takes another one.
+- When Termux's permission to run commands is refused or never shown, the app shall say what the system reports (Termux's version and source, whether Termux declares the permission, whether the app asks for it, whether it is granted) and point to `orbis-phone open`, which needs no Android permission.
+- When `orbis-phone open` runs in Termux, the system shall start the hub if it is stopped and open the app with a sign-in link to it, and the app shall keep that link's token as its own.
+- When the app opens on the hub on this phone without Termux's permission and the hub already answers with its token, the app shall open it without asking for the permission.
 
 ### State-driven
 
@@ -75,6 +78,9 @@ GitHub Actions workflow builds the APK of the current version on demand.
 13. [verified] With stand-ins for Termux and proot-distro, the script updates Termux, turns on allow-external-apps, installs Debian once, hands Debian the install from a clean environment (no PREFIX, LD_PRELOAD or TMPDIR) and installs orbis-phone; serve keeps the app's token private (0600), passes it to the hub on 127.0.0.1, is found running with the same token, starts again with a new one, stops, and says when Orbis is not installed — verified by `packages/hub/test/phone-script.test.ts`.
 14. [verified] In a real browser, the first screen puts Orbis on this phone first, starts it with one button or by itself when the app opens on it, shows how long the start takes and lets the user stop waiting, shows the one-time setup with the command to copy, Termux to get and open, the permission settings, and says why a start failed, while another Orbis stays below — verified by `tests/e2e/android-connect.test.ts`.
 15. [verified] Inside the app, the web app asks to start the hub on this phone again 4 s after the connection drops and every 30 s, and stops once it answers; in a browser it does nothing — verified by `packages/web/test/android.test.tsx`.
+16. [verified] The token of a sign-in link to the hub on this phone is the app's own (a link to another hub or without a token gives none), and the diagnosis states Termux's version and source, whether it declares the permission, whether the app asks for it and whether it is granted — verified by `packages/android/app/src/test/java/app/orbis/android/LocalHubTest.java`
+17. [verified] With stand-ins for Termux, `orbis-phone open` starts the stopped hub, hands the app a sign-in link with the hub's token through `am start`, and only opens the app again when the hub already runs — verified by `packages/hub/test/phone-script.test.ts`
+18. [verified] In a real browser, a refused permission shows the system's facts, the `orbis-phone open` way and a button to open Termux — verified by `tests/e2e/android-connect.test.ts`
 
 ## Maturity
 

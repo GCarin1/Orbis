@@ -255,6 +255,35 @@ public class MainActivity extends Activity {
         return checkSelfPermission(LocalHub.PERMISSION) == PackageManager.PERMISSION_GRANTED;
     }
 
+    /** What the system says about Termux and its permission, for the screen that cannot get it granted. */
+    @SuppressWarnings("deprecation")
+    private String diagnosis() {
+        String version = null;
+        String installer = null;
+        boolean declared = true;
+        boolean requested = false;
+        try {
+            version = getPackageManager().getPackageInfo(LocalHub.TERMUX, 0).versionName;
+            installer = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                    ? getPackageManager().getInstallSourceInfo(LocalHub.TERMUX).getInstallingPackageName()
+                    : getPackageManager().getInstallerPackageName(LocalHub.TERMUX);
+        } catch (PackageManager.NameNotFoundException ignored) {
+            // not installed: the screen says so
+        }
+        try {
+            getPackageManager().getPermissionInfo(LocalHub.PERMISSION, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            declared = false;
+        }
+        try {
+            String[] asked = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_PERMISSIONS).requestedPermissions;
+            if (asked != null) for (String name : asked) if (LocalHub.PERMISSION.equals(name)) requested = true;
+        } catch (PackageManager.NameNotFoundException ignored) {
+            // cannot happen: this app is installed
+        }
+        return LocalHub.diagnosis(version, installer, declared, requested, termuxAllowed(), Build.VERSION.SDK_INT, Build.MANUFACTURER + " " + Build.MODEL);
+    }
+
     /** "no-termux", "no-permission" or "ready": what the first screen shows before anything is tried. */
     private String localState() {
         if (!termuxInstalled()) return "no-termux";
@@ -292,11 +321,18 @@ public class MainActivity extends Activity {
             toLocal("no-termux", null);
             return;
         }
+        String token = localToken();
         if (!termuxAllowed()) {
-            requestPermissions(new String[] {LocalHub.PERMISSION}, TERMUX_PERMISSION);
+            // Started from Termux (`orbis-phone open`) it needs no permission: straight in. Otherwise ask for it.
+            new Thread(() -> {
+                boolean up = "up".equals(LocalHub.probe(LocalHub.BASE, token, 1500));
+                runOnUiThread(() -> {
+                    if (up) connectTo(Hub.parse(LocalHub.BASE), LocalHub.signedIn(token));
+                    else requestPermissions(new String[] {LocalHub.PERMISSION}, TERMUX_PERMISSION);
+                });
+            }, "orbis-local-probe").start();
             return;
         }
-        String token = localToken();
         toLocal("starting", "0");
         new Thread(() -> {
             // Already running with this token (the app was only closed): straight in.
@@ -351,7 +387,7 @@ public class MainActivity extends Activity {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode != TERMUX_PERMISSION) return;
         if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) startLocal();
-        else toLocal("no-permission", null);
+        else toLocal("no-permission", diagnosis());
     }
 
     private void openAppSettings() {
@@ -388,8 +424,12 @@ public class MainActivity extends Activity {
             // connects; any other text goes to a message box.
             Hub.Target link = Hub.signInLink(text);
             Hub.Target pairing = link == null ? Hub.pairLink(text) : null;
-            if (link != null) connectTo(link, link.load);
-            else if (pairing != null) pair(pairing, Hub.pairCode(pairing.load));
+            if (link != null) {
+                // The hub on this phone, opened from Termux: its token becomes the app's, so the next start finds it.
+                String local = LocalHub.tokenOf(text);
+                if (local != null) prefs().edit().putString(KEY_LOCAL_TOKEN, local).apply();
+                connectTo(link, link.load);
+            } else if (pairing != null) pair(pairing, Hub.pairCode(pairing.load));
             else toPage(callHook("__orbisShare", JSONObject.quote(text)));
         }
     }

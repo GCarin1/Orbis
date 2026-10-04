@@ -51,6 +51,25 @@ public class LocalHubTest {
         assertEquals("/data/data/com.termux/files/usr/bin/bash", LocalHub.BASH);
     }
 
+    @Test
+    public void theTokenOfTheLinkTermuxHandsOverIsTheAppsOwn() {
+        assertEquals("abc123", LocalHub.tokenOf("http://127.0.0.1:7420/#token=abc123"));
+        assertEquals("abc123", LocalHub.tokenOf("Orbis: http://127.0.0.1:7420/#token=abc123&x=1"));
+        assertNull(LocalHub.tokenOf("http://192.168.0.10:7420/#token=abc123"));
+        assertNull(LocalHub.tokenOf("http://127.0.0.1:7420/"));
+        assertNull(LocalHub.tokenOf(null));
+    }
+
+    @Test
+    public void theDiagnosisStatesTheFactsThatKeepThePermissionAway() {
+        assertEquals(
+                "termux=0.118.3 from=org.fdroid.fdroid declares=no requested=yes granted=no android=34 device=Google Pixel 8",
+                LocalHub.diagnosis("0.118.3", "org.fdroid.fdroid", false, true, false, 34, "Google Pixel 8"));
+        assertEquals(
+                "termux=? from=? declares=yes requested=no granted=yes android=24 device=x",
+                LocalHub.diagnosis(null, null, true, false, true, 24, "x"));
+    }
+
     /** A stand-in hub on a free port: 200 to `Bearer good`, 401 to any other token. */
     private static ServerSocket standInHub() throws Exception {
         ServerSocket server = new ServerSocket(0, 10, InetAddress.getByName("127.0.0.1"));

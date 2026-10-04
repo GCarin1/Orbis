@@ -107,6 +107,8 @@
         <div id="local-permission" hidden>
           <p class="help" data-t="permissionHelp"></p>
           <button type="button" id="app-settings" class="secondary" data-t="appSettings"></button>
+          <p class="help"><span data-t="permissionAlt"></span> <code>orbis-phone open</code></p>
+          <div class="row"><button type="button" id="open-termux-alt" class="secondary" data-t="openTermux"></button></div>
         </div>
         <div id="local-setup" class="setup help" hidden>
           <strong data-t="setupTitle"></strong>
@@ -162,6 +164,7 @@
         noPermission: "O Orbis precisa da permissão “Executar comandos no ambiente do Termux”.",
         permissionHelp: "Toque em Permissões do app → Permissões adicionais (ou Outras permissões) → permita “Executar comandos no ambiente do Termux”. Depois, volte e toque em Abrir o Orbis.",
         appSettings: "Permissões do app",
+        permissionAlt: "Não aparece a permissão? Sem ela também funciona: abra o Termux e rode",
         notInstalled: "O Orbis ainda não está instalado no Termux: faça o passo 2.",
         externalApps: "O Termux recusou o pedido do app: rode o comando do passo 2 de novo (ele libera o app).",
         timeout: "O Orbis não respondeu. Abra o Termux e rode orbis-phone serve para ver o que aconteceu.",
@@ -216,6 +219,7 @@
         noPermission: "Orbis needs the permission “Run commands in Termux environment”.",
         permissionHelp: "Tap App permissions → Additional (or Other) permissions → allow “Run commands in Termux environment”. Then come back and tap Open Orbis.",
         appSettings: "App permissions",
+        permissionAlt: "No permission to tap? It works without it: open Termux and run",
         notInstalled: "Orbis is not installed in Termux yet: do step 2.",
         externalApps: "Termux refused the app's request: run the command of step 2 again (it lets the app in).",
         timeout: "Orbis did not answer. Open Termux and run orbis-phone serve to see what happened.",
@@ -336,6 +340,7 @@
         el("copy-command").addEventListener("click", () => bridge.copyInstallCommand && bridge.copyInstallCommand());
         el("open-termux").addEventListener("click", () => bridge.openTermux && bridge.openTermux());
         el("get-termux").addEventListener("click", () => bridge.getTermux && bridge.getTermux());
+        el("open-termux-alt").addEventListener("click", () => bridge.openTermux && bridge.openTermux());
         el("app-settings").addEventListener("click", () => bridge.openAppSettings && bridge.openAppSettings());
       }
       window.onLocal = (state, detail) => {
@@ -351,7 +356,7 @@
         }
         panels(state);
         const text = { "no-termux": t.noTermux, "no-permission": t.noPermission, "not-installed": t.notInstalled, "external-apps": t.externalApps, timeout: t.timeout, stopped: t.stopped }[state] || state;
-        fail(text, state === "stopped" || state === "timeout" ? detail : "");
+        fail(text, ["stopped", "timeout", "no-permission"].includes(state) ? detail : "");
       };
 
       // A link copied on the computer (as Orbis-Celular.bat prints it), from the phone's clipboard.

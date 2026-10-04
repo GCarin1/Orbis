@@ -7,6 +7,7 @@
 #
 # Afterwards, `orbis-phone <command>`:
 #   install   Termux's packages, Debian, Node.js, Orbis and Claude Code (run again to bring them up to date)
+#   open      start the hub if needed and open the Orbis app signed in: no Android permission needed
 #   serve     run the hub on 127.0.0.1:7420 until it is stopped — the Orbis app starts it this way
 #             (--token-stdin: the app's token on the first line of stdin; --awake: keep the CPU awake)
 #   stop      stop the hub
@@ -233,6 +234,31 @@ cmd_token() {
   echo "http://127.0.0.1:$PORT/#token=$token"
 }
 
+# Without the app's RUN_COMMAND permission: start the hub from here, then hand the app its sign-in link
+# (the app takes the token from a shared link, as it does from the computer's launcher).
+cmd_open() {
+  if ! healthy; then
+    say "Starting Orbis (the first time takes a minute or two)"
+    nohup bash "${BASH_SOURCE[0]}" serve --awake >/dev/null 2>&1 &
+    local up=""
+    for _ in $(seq 1 180); do
+      healthy && up=1 && break
+      sleep 1
+    done
+    [ -n "$up" ] || die "the hub did not answer in 3 minutes: orbis-phone logs"
+  fi
+  local link
+  link="$(cmd_token | sed -n 2p)"
+  [ -n "$link" ] || die "the hub has no token yet: orbis-phone logs"
+  if command -v am >/dev/null 2>&1 &&
+    am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT "$link" -n app.orbis.android/.MainActivity >/dev/null 2>&1; then
+    say "Orbis is open on the phone."
+  else
+    say "Open this link on the phone to sign in:"
+    echo "  $link"
+  fi
+}
+
 cmd_update() {
   local running=""
   healthy && running=1
@@ -251,7 +277,8 @@ case "${1:-install}" in
   logs) tail -n 200 "$STATE/hub.log" 2>/dev/null || echo "no log yet" ;;
   update) cmd_update ;;
   token) cmd_token ;;
+  open) cmd_open ;;
   setup-token) distro claude setup-token ;;
-  -h | --help | help) sed -n '2,20p' "${BASH_SOURCE[0]}" ;;
+  -h | --help | help) sed -n '2,18p' "${BASH_SOURCE[0]}" ;;
   *) die "unknown command: $1 (orbis-phone help)" ;;
 esac

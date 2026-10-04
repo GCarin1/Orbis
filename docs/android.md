@@ -72,6 +72,7 @@ under **Settings → Brains → Claude Code**, either way:
 | Command | What it does |
 |---|---|
 | `orbis-phone status` | whether Orbis runs, and which Claude Code it has |
+| `orbis-phone open` | starts Orbis if it is stopped and opens the app signed in: the way in when the app cannot get Termux's permission |
 | `orbis-phone serve` | runs Orbis in the terminal (Ctrl+C stops it) |
 | `orbis-phone stop` | stops it |
 | `orbis-phone logs` | the end of its log |
@@ -94,7 +95,7 @@ under **Settings → Brains → Claude Code**, either way:
 |---|---|
 | Termux is missing | follow the one-time setup |
 | Termux refused the app | paste the command again |
-| The Termux permission is missing | **App permissions**, then allow it |
+| The Termux permission is missing | **App permissions**, then allow it. If it never shows, open Termux and run `orbis-phone open`: it starts Orbis and opens the app signed in, with no permission. The line under the message (`declares=no`, `from=…`) says why it never showed |
 | Orbis did not answer | in Termux, run `orbis-phone serve` to see the error |
 
 To uninstall everything, run `proot-distro remove debian`, then remove

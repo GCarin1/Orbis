@@ -82,6 +82,7 @@ async function phone(): Promise<Phone> {
   };
   tool("proot-distro", PROOT_DISTRO);
   tool("apt-get", '#!/bin/bash\necho "$*" >> "$LOG/apt-get"\n');
+  tool("am", '#!/bin/bash\necho "$*" >> "$LOG/am"\n');
   tool("termux-reload-settings", '#!/bin/bash\necho reloaded >> "$LOG/reloaded"\n');
   writeFileSync(path.join(dir, "fake-hub.cjs"), FAKE_HUB);
   const env: NodeJS.ProcessEnv = {
@@ -218,6 +219,26 @@ describe.skipIf(process.platform === "win32")("the hub on the phone", () => {
     const stopped = run(p, ["stop"]);
     expect(stopped.status, stopped.stderr).toBe(0);
     expect(await status(p, "token-two")).toBe(0);
+  });
+
+  it("opens the app signed in from Termux, with no Android permission, starting the hub when it is stopped", async () => {
+    const p = await phone();
+    installed(p);
+    mkdirSync(path.join(p.rootfs, "root", ".orbis"), { recursive: true });
+    writeFileSync(path.join(p.rootfs, "root", ".orbis", "token"), "hub-token");
+    const opened = run(p, ["open"]);
+    expect(opened.status, opened.stderr).toBe(0);
+    const health = await fetch(`http://127.0.0.1:${p.env.ORBIS_PORT}/health`);
+    expect(health.status).toBe(200);
+    const am = p.log("am");
+    expect(am).toMatch(/start -a android\.intent\.action\.SEND -t text\/plain/);
+    expect(am).toContain(`--es android.intent.extra.TEXT http://127.0.0.1:${p.env.ORBIS_PORT}/#token=hub-token`);
+    expect(am).toContain("-n app.orbis.android/.MainActivity");
+
+    // Running already: it only opens the app again, with the same link.
+    expect(run(p, ["open"]).status).toBe(0);
+    expect(p.log("am").trim().split("\n")).toHaveLength(2);
+    expect(p.log("proot-distro").match(/ node /g)).toHaveLength(1);
   });
 
   it("says Orbis is not installed, and keeps it in the log", async () => {

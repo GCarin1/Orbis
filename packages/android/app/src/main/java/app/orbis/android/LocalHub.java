@@ -7,8 +7,10 @@ package app.orbis.android;
 import android.annotation.SuppressLint;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.security.SecureRandom;
 
 // Termux's own paths: fixed by Termux, not this app's files.
@@ -60,6 +62,36 @@ final class LocalHub {
     /** The page the app loads once the hub answers: the web app, signed in with the app's token. */
     static String signedIn(String token) {
         return BASE + "#token=" + token;
+    }
+
+    /**
+     * The token of a sign-in link to the hub on this phone (what `orbis-phone open` hands the app when Termux's
+     * permission is missing), or null for a link to another hub or without a token.
+     */
+    static String tokenOf(String link) {
+        Hub.Target target = Hub.signInLink(link);
+        if (target == null || !isLocal(target.base)) return null;
+        int at = target.load.indexOf("#token=");
+        if (at < 0) return null;
+        String raw = target.load.substring(at + "#token=".length());
+        int end = raw.indexOf('&');
+        if (end >= 0) raw = raw.substring(0, end);
+        try {
+            String token = URLDecoder.decode(raw, "UTF-8");
+            return token.isEmpty() ? null : token;
+        } catch (UnsupportedEncodingException | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Why the Termux permission may never show, as plain facts for the connect screen: which Termux (and where it
+     * came from), whether it declares the permission, whether this app asks for it, whether it is granted.
+     */
+    static String diagnosis(String termuxVersion, String installer, boolean declared, boolean requested, boolean granted, int android, String device) {
+        return "termux=" + (termuxVersion == null ? "?" : termuxVersion) + " from=" + (installer == null ? "?" : installer)
+                + " declares=" + (declared ? "yes" : "no") + " requested=" + (requested ? "yes" : "no")
+                + " granted=" + (granted ? "yes" : "no") + " android=" + android + " device=" + device;
     }
 
     /** "up" (answers and takes the token), "other" (answers, another token), or "down". */

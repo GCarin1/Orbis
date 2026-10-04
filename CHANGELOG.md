@@ -9,6 +9,15 @@ change that delivered it.
 
 ### Added
 
+- **Orbis opens on the phone without Termux's permission** (change 0053-android-termux-run-command).
+  - `orbis-phone open`, run in Termux, starts the hub if it is stopped and
+    opens the Orbis app signed in. It needs no Android permission.
+  - The app keeps the token of that link as its own, and opens the hub at
+    once when it already answers.
+  - When the permission never shows, the first screen says what the system
+    reports (Termux's version and source, whether Termux declares the
+    permission, whether the app asks for it) and points to `orbis-phone open`.
+
 - **Orbis on the phone, with no computer** (change 0052-hub-on-the-phone).
   - The Android app starts the hub on the phone itself, inside Termux, and
     opens it signed in: no computer, no server, no pairing and no sign-in.
