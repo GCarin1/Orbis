@@ -20,6 +20,8 @@ export interface AndroidApp {
   dictate?(lang: string): void;
   speak?(text: string, lang: string): void;
   stopSpeaking?(): void;
+  /** Start the hub on this phone again (inside Termux); the app does nothing when the hub is elsewhere. */
+  ensureLocalHub?(): void;
 }
 
 export function androidApp(): AndroidApp | null {
@@ -29,6 +31,26 @@ export function androidApp(): AndroidApp | null {
 /** An optional function of the Android app, when this app has it. */
 export function androidCan<K extends keyof AndroidApp>(name: K): boolean {
   return typeof androidApp()?.[name] === "function";
+}
+
+let revive: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * The stream to the hub dropped or came back (specs/android-app). In the Android app, a hub on this phone
+ * that stays down — Android may stop Termux to save battery — is started again: a few seconds after the
+ * drop, then every 30 s until it answers. Elsewhere nothing happens.
+ */
+export function keepLocalHubUp(connected: boolean, firstMs = 4_000, everyMs = 30_000): void {
+  if (revive) clearTimeout(revive);
+  revive = null;
+  if (connected || !androidCan("ensureLocalHub")) return;
+  const later = (ms: number) => {
+    revive = setTimeout(() => {
+      androidApp()?.ensureLocalHub?.();
+      later(everyMs);
+    }, ms);
+  };
+  later(firstMs);
 }
 
 /** Save a text file the user asked for: to Downloads in the Android app, as a download in a browser. */

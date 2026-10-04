@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Orbis</string>
     <string name="saved_to">Salvo em %1$s</string>
     <string name="save_failed">Não deu para salvar o arquivo: %1$s</string>
@@ -12,4 +12,7 @@
     <string name="channel_connection_help">A notificação fixa enquanto o Orbis fica conectado com o app fechado.</string>
     <string name="connection_title">Orbis conectado</string>
     <string name="connection_text">Os avisos dos seus bots continuam chegando. Desligue em Configurações → Celular.</string>
+    <string name="local_running">O Orbis deste celular: os seus bots, o banco de dados e o Claude Code.</string>
+    <string name="local_stopped">O Orbis no Termux parou: %1$s</string>
+    <string name="command_copied" tools:ignore="Typos">Comando copiado: cole no Termux.</string>
 </resources>

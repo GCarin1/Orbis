@@ -68,13 +68,15 @@ GitHub Actions workflow builds the APK of the current version on demand.
 
 - WebView shell with a connect screen, hub-only navigation, file picker, Downloads, Back; adaptive icon; APK workflow with optional signing; launcher's phone mode.
 - Pairing by code or QR code (change 0047).
+- The hub on this phone, inside Termux, started and opened by the app (change 0052).
 
 **Future (aspirational, not committed):**
 
 - Native push notifications for approvals and reports.
 - Publishing in an app store.
+- User accounts with sign-in, and a database shared by the app and the web across devices (ADR 0018).
 
 ## Out of scope for this spec
 
 - Everything the web app renders (see `specs/web-app`).
-- Running a hub or a bot on the phone.
+- The hub itself and its brains (see `specs/hub-api`, `specs/agent-runtimes`): on the phone they are the same programs, inside Termux.

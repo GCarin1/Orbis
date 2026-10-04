@@ -4,7 +4,7 @@ import { Api, capturePairingFromUrl, captureTokenFromUrl, loadToken, openStream,
 import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
-import { closeBackLayer, saveTextFile, setBackHandler, setOpenConversationHandler, setShareHandler } from "./native.js";
+import { closeBackLayer, keepLocalHubUp, saveTextFile, setBackHandler, setOpenConversationHandler, setShareHandler } from "./native.js";
 import { notifyPhone } from "./phone.js";
 import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
@@ -118,7 +118,11 @@ export function App() {
         // The Android app off screen: a bot's reply or request becomes a notification.
         notifyPhone(e, { bots: s.bots, conversations: s.conversations });
       },
-      onStatus: (c) => useStore.getState().setConnected(c),
+      onStatus: (c) => {
+        useStore.getState().setConnected(c);
+        // The hub on this phone that Android stopped: the app starts it again.
+        keepLocalHubUp(c);
+      },
       onReconnect: () => {
         const s = useStore.getState();
         void s.loadBots();
@@ -130,7 +134,10 @@ export function App() {
         if (conv) void s.loadTimeline(conv);
       },
     });
-    return stop;
+    return () => {
+      stop();
+      keepLocalHubUp(true);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

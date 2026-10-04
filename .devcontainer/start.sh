@@ -5,7 +5,7 @@
 #   bash .devcontainer/start.sh --quiet    start if needed
 #   bash .devcontainer/start.sh --public   also make port 7420 public (the Android app needs it)
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 PORT="${ORBIS_PORT:-7420}"
 DATA="${ORBIS_DATA_DIR:-/workspaces/.orbis-data}"
 mkdir -p "$DATA"

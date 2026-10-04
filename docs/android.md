@@ -1,9 +1,104 @@
 # Orbis on Android: the APK
 
-The Android app shows Orbis on your phone. Your bots, their computers, brains
-and secrets stay on your computer, with the hub: the app opens the web app the
-hub serves over the network, so the phone always runs the hub's own version and
-needs no new APK when Orbis changes. (Why: ADR 0012.)
+The Android app shows Orbis on your phone. Orbis can run in two places:
+
+- **On the phone itself** ([below](#orbis-on-this-phone-no-computer)). The
+  hub, its database and Claude Code run inside Termux. Nothing else is needed:
+  no computer, no server, no sign-in, and your data stays on the phone.
+- **On another machine**: your computer on the same Wi-Fi, or a server
+  ([cloud.md](cloud.md)). The app opens the web app that hub serves. (Why:
+  ADR 0012.)
+
+## Orbis on this phone (no computer)
+
+The app can't run Orbis's programs itself, because Android forbids an app from
+running programs it downloads. Two programs are needed: Node.js, and Claude
+Code, which is built only for Linux. So Orbis runs inside
+[Termux](https://termux.dev), a Linux terminal for Android. It runs in a Debian
+that `proot-distro` makes there, and the Orbis app starts and opens it.
+(Why: ADR 0018.)
+
+**Once, to set it up** (about 10 minutes, online):
+
+1. Install **Termux** from
+   [F-Droid](https://f-droid.org/packages/com.termux/). The Play Store version
+   can't take commands from other apps.
+2. Open Termux, paste this and wait for it to finish:
+
+   ```
+   curl -fsSLo orbis-termux.sh https://raw.githubusercontent.com/GCarin1/Orbis/HEAD/scripts/android/orbis-termux.sh && bash orbis-termux.sh
+   ```
+
+   It installs these, and lets the Orbis app start commands in Termux
+   (`allow-external-apps`):
+   - Termux's packages;
+   - Debian;
+   - Node.js 22;
+   - Orbis, built from this repository;
+   - Claude Code (its native build, or its last JavaScript release, 2.1.112,
+     when the phone can't run the native one).
+
+   The app's first screen shows the same command, with a **Copy command**
+   button.
+3. Open the Orbis app and tap **Open Orbis**. When Android asks, let Orbis
+   use Termux ("Run commands in Termux environment").
+
+**Every day:** open the app.
+
+- It starts Orbis in Termux, or finds it running, and opens it already signed
+  in. There's no token to type and no pairing.
+- Termux shows a notification ("1 task") while Orbis runs.
+- If Android stops Termux, the app starts it again on its own.
+
+The data stays on the phone, in Debian inside Termux (`/root/.orbis`): the
+bots, the conversations, the SQLite database and the secrets vault. Nothing
+goes to a cloud.
+
+The app makes its own token for this hub and hands it over on each start, so
+other apps on the phone can't drive your bots. The token never shows. Orbis
+for now has no user accounts and no database outside the phone. Both are
+planned for a later version of the app and the web.
+
+**Claude Code** uses your Claude plan (Pro or Max) and never the API. Sign in
+under **Settings → Brains → Claude Code**, either way:
+
+- **Sign in with your Claude account**: the sign-in page opens in the phone's
+  browser, then paste the code it shows.
+- **🔑 Subscription token**: paste the token from
+  `orbis-phone setup-token`, run in Termux.
+
+**In Termux:**
+
+| Command | What it does |
+|---|---|
+| `orbis-phone status` | whether Orbis runs, and which Claude Code it has |
+| `orbis-phone serve` | runs Orbis in the terminal (Ctrl+C stops it) |
+| `orbis-phone stop` | stops it |
+| `orbis-phone logs` | the end of its log |
+| `orbis-phone update` | takes the newest Orbis, builds it and stops the old one (the app starts the new one) |
+| `orbis-phone token` | the token, and a link that signs the phone's browser in |
+| `orbis-phone setup-token` | `claude setup-token`: a token for your Claude plan |
+
+**Keep it running:**
+
+- In Android's settings, let **Termux** run without battery limits.
+- Android 12 and 13 may stop Termux's child processes. On Android 14 and
+  later, *Developer options → Disable child process restrictions* lifts that.
+- With the screen off, Android may pause Orbis. Routines then run when the
+  phone wakes. `orbis-phone serve --awake` keeps the CPU awake while Orbis
+  runs, at a cost in battery.
+
+**Not working?** The app's first screen says why, and has a fix for each:
+
+| The screen says | What to do |
+|---|---|
+| Termux is missing | follow the one-time setup |
+| Termux refused the app | paste the command again |
+| The Termux permission is missing | **App permissions**, then allow it |
+| Orbis did not answer | in Termux, run `orbis-phone serve` to see the error |
+
+To uninstall everything, run `proot-distro remove debian`, then remove
+Termux.
 
 ## Get the APK
 
@@ -30,7 +125,7 @@ npm run android:apk        # gradle -p packages/android assembleRelease
 
 Android Studio opens `packages/android` too (it adds the Gradle wrapper).
 
-## Connect the phone to your computer
+## Connect the phone to your computer (another Orbis)
 
 1. **Let the hub take connections from the network.** On Windows double-click
    `scripts\windows\Orbis-Celular.bat` (it is `Orbis.bat --celular`): it starts

@@ -10,7 +10,7 @@ import { pairingLink, phoneAddresses, PhoneSettings } from "../src/components/Ph
 import { qrPath } from "../src/components/QrCode.js";
 import { pairingDigits, TokenGate } from "../src/components/TokenGate.js";
 import { Composer } from "../src/components/Composer.js";
-import { androidApp, saveTextFile, setBackHandler } from "../src/native.js";
+import { androidApp, keepLocalHubUp, saveTextFile, setBackHandler } from "../src/native.js";
 import { notifyPhone, phoneNote } from "../src/phone.js";
 import { AndroidRecognition, canSpeak, dictationCtor, speak, stopSpeaking } from "../src/voice.js";
 import type { Api } from "../src/api.js";
@@ -304,5 +304,34 @@ describe("text shared into the app", () => {
     await act(async () => undefined);
     expect(box.value).toBe("Olha isto:\nhttps://example.com/artigo");
     expect(done).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the hub on this phone, when the connection drops (change 0052)", () => {
+  it("asks the app to start it again a few seconds after the drop, then every 30 s, and stops once it answers", () => {
+    vi.useFakeTimers();
+    const ensureLocalHub = vi.fn();
+    install({ ensureLocalHub });
+    keepLocalHubUp(false);
+    vi.advanceTimersByTime(3_999);
+    expect(ensureLocalHub).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(ensureLocalHub).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(30_000);
+    expect(ensureLocalHub).toHaveBeenCalledTimes(2);
+    keepLocalHubUp(true);
+    vi.advanceTimersByTime(120_000);
+    expect(ensureLocalHub).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it("does nothing in a browser, or in an older app", () => {
+    vi.useFakeTimers();
+    keepLocalHubUp(false);
+    install({});
+    keepLocalHubUp(false);
+    expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
+    keepLocalHubUp(true);
+    vi.useRealTimers();
   });
 });

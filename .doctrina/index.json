@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-03",
+  "last_updated": "2026-10-04",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -552,17 +552,39 @@
         "title": "Claude Code reaches the Claude plan through the setup-token and the hub runs in the cloud from the repository's own kit",
         "status": "accepted",
         "date": "2026-10-03",
+        "landed": "2026-10-03 — `packages/hub/src/secrets/claude-token.ts`, `packages/hub/src/brains/claude-code.ts`, `Dockerfile`",
         "scope": [
           "agent-runtimes",
           "secrets",
           "hub-api",
           "web-app"
         ],
-        "summary": "The plan through Claude Code, by its token.",
-        "landed": "2026-10-03 — `packages/hub/src/secrets/claude-token.ts`, `packages/hub/src/brains/claude-code.ts`, `Dockerfile`"
+        "summary": "The plan through Claude Code, by its token."
+      },
+      {
+        "id": "0018",
+        "path": ".doctrina/decisions/0018-the-phone-runs-its-own-hub-inside-termux-started-by-the-app-no-accounts-and-no-shared-database-yet.md",
+        "title": "The phone runs its own hub inside Termux, started by the app; no accounts and no shared database yet",
+        "status": "proposed",
+        "date": "2026-10-04",
+        "scope": [
+          "android-app",
+          "hub-api",
+          "agent-runtimes"
+        ],
+        "summary": "The hub runs on the phone, inside Termux, in a Debian made by"
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0052-hub-on-the-phone",
+        "title": "Orbis on the phone, with no computer",
+        "path": ".doctrina/changes/0052-hub-on-the-phone",
+        "status": "proposed",
+        "opened": "2026-10-04",
+        "lane": "product"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

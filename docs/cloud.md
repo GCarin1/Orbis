@@ -7,6 +7,7 @@ computer off, run the hub somewhere else:
 
 | Where | Cost | Good for |
 |---|---|---|
+| **The phone itself**, inside Termux ([android.md](android.md#orbis-on-this-phone-no-computer)) | free | using it on the phone alone: no computer, no server |
 | **A GitHub Codespace** ([below](#a-github-codespace)) | free monthly hours | trying it: it stops when idle |
 | **A server with Docker** ([below](#a-server-that-stays-on)): a free cloud VM, a small VPS, a home server | free to a few dollars a month | every day: routines keep running |
 

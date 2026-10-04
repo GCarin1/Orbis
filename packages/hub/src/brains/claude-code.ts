@@ -121,7 +121,7 @@ const MISSING_SESSION = /no conversation found|session .*not found/i;
 export function withSignInHint(error: string, viaToken = false): string {
   if (!CLAUDE_AUTH_FAILURE.test(error) || /sign in|setup-token/i.test(error)) return error;
   if (viaToken)
-    return `${error} — the Claude subscription token was refused (wrong, expired or revoked): run "claude setup-token" on a computer signed in to Claude and paste the new token in Orbis (Settings → Brains → Claude Code)`;
+    return `${error} — the Claude subscription token was refused (wrong, expired or revoked): make a new one with "claude setup-token" (on the phone: orbis-phone setup-token) and paste it in Orbis (Settings → Brains → Claude Code), or sign in there instead`;
   return `${error} — Claude Code's login needs renewing: sign in again in Orbis (Settings → Brains → Claude Code → Sign in), or run "claude auth login" in a terminal`;
 }
 

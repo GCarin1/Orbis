@@ -8,6 +8,8 @@ plugins {
 def orbisVersion = new JsonSlurper().parse(rootProject.file("../../package.json")).version
 def buildNumber = (findProperty("orbisBuildNumber") ?: "1").toString().toInteger()
 def versionSuffix = (findProperty("orbisVersionSuffix") ?: "").toString()
+// The repository the install command for Termux downloads from (CI passes its own, a fork's included).
+def orbisRepo = (findProperty("orbisRepo") ?: System.getenv("GITHUB_REPOSITORY") ?: "GCarin1/Orbis").toString()
 
 // A release key from the environment (CI secrets); without one the APK is signed with the debug key,
 // which installs fine but cannot update an install signed by another machine's key.
@@ -24,6 +26,7 @@ android {
         targetSdk 35
         versionCode buildNumber
         versionName "${orbisVersion}${versionSuffix}"
+        buildConfigField "String", "ORBIS_REPO", "\"${orbisRepo}\""
     }
 
     signingConfigs {

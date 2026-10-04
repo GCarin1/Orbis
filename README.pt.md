@@ -77,6 +77,7 @@ fecha quando os critérios de aceite são provados por testes.
 | Marketplace de MCP: 37 servidores MCP gratuitos, cada um com a sua logo, conectados com um clique. Sem conta: DeepWiki, Exa, Context7, Microsoft Learn, AWS, CoinGecko, Chrome DevTools, Excel e outros. Entrando com a sua conta: Notion, Linear, Jira e Confluence, Todoist, Vercel, Neon, Stripe e outros. Com uma chave grátis: GitHub, Brave, Tavily, Alpha Vantage, Airtable e outros. Ou o seu próprio. Chaves escolhem as ferramentas e os servidores de cada bot. | ✅ verificado |
 | Contratação: um bot recrutador escreve currículos curtos de colegas de IA para um projeto ou um dos seus times, até 30 gastando poucos tokens. Você contrata só quem quiser. A contratação escreve o perfil completo (instruções, o que vai fazer e do que precisa, ferramentas, skills) e vira um bot que entra no time e se apresenta. | ✅ verificado |
 | Squads: bots organizados em squads com nome. Cada squad tem um representante, a quem os membros reportam, e um gerente (um gerente pode cuidar de todas). Cada squad tem uma conversa, representantes e gerentes dividem uma sala, `@squad` chama o representante, e qualquer bot chama as rotinas de outro (`routine.call`). | ✅ verificado |
+| Orbis no celular, sem computador: o app Android liga o hub dentro do Termux (um Debian sob proot, com Node.js e Claude Code) e abre já conectado — sem servidor, sem login, os dados no celular | ✅ verificado |
 | Orbis de qualquer lugar: o Claude Code na sua assinatura Claude (Pro ou Max) com o token do `claude setup-token`, nunca a API; o hub num Codespace do GitHub ou com Docker num servidor sempre ligado, alcançado por um túnel da Cloudflare ou pelo Tailscale | ✅ verificado |
 | Voz e tema: fale com o bot pelo microfone (ditado do navegador, ou qualquer serviço de transcrição compatível com a OpenAI — OpenAI, Groq, um Whisper local — no app de desktop), respostas lidas em voz alta e o tema Sistema/Claro/Escuro | ✅ verificado |
 
@@ -112,6 +113,11 @@ orbis open                 # abre o app web já autenticado
 ```
 
 Ou o **app desktop**, que inicia o hub para você: `npm run desktop`.
+
+**No celular**, o app Android: gere o APK em **Actions → Android APK → Run
+workflow**. O Orbis roda no próprio celular, dentro do Termux, sem computador:
+prepare o Termux uma vez e o app liga o Orbis e abre — veja
+[docs/android.md](docs/android.md).
 
 **Fora de casa, com o computador desligado?** Rode o hub num Codespace do
 GitHub (horas grátis, para testar) ou com Docker num servidor sempre ligado, e

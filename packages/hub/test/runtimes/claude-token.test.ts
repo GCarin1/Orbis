@@ -127,7 +127,7 @@ describe("the token reaches Claude Code alone", () => {
 
   it("says how to get a new token when the token is refused, and how to sign in otherwise", () => {
     const refused = "Failed to authenticate. API Error: 401 OAuth token has expired";
-    expect(withSignInHint(refused, true)).toContain('run "claude setup-token"');
+    expect(withSignInHint(refused, true)).toContain('make a new one with "claude setup-token" (on the phone: orbis-phone setup-token)');
     expect(withSignInHint(refused, false)).toContain("claude auth login");
     expect(withSignInHint(withSignInHint(refused, true), true)).toBe(withSignInHint(refused, true));
   });

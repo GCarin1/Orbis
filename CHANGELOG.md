@@ -9,6 +9,27 @@ change that delivered it.
 
 ### Added
 
+- **Orbis on the phone, with no computer** (change 0052-hub-on-the-phone).
+  - The Android app starts the hub on the phone itself, inside Termux, and
+    opens it signed in: no computer, no server, no pairing and no sign-in.
+  - `scripts/android/orbis-termux.sh`, pasted once in Termux, installs:
+    - a Debian with proot-distro;
+    - Node.js 22;
+    - Orbis, built from the repository;
+    - Claude Code (native, or its last JavaScript release when the native one
+      can't run).
+  - It also lets the app start commands, and adds `orbis-phone`:
+    `serve`, `stop`, `status`, `logs`, `update`, `token` and `setup-token`.
+  - The app makes its own token and hands it over on each start (on stdin,
+    never shown).
+  - The app's first screen puts **Orbis on this phone** first, with the
+    one-time setup when Termux or its permission is missing. Another Orbis (a
+    computer or a server) moved into its own section.
+  - The web app asks the app to start the hub again when Android stopped it.
+  - The data, SQLite included, stays on the phone. Accounts and a database
+    shared by the app and the web are planned for later.
+  - ADR 0018, guide `docs/android.md`.
+
 - **Orbis from anywhere, on your Claude plan** (change
   0051-claude-subscription-anywhere).
   - Claude Code can run on the token `claude setup-token` prints. That token

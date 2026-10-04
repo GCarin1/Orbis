@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- The Android app's first screen (specs/android-app): the address of the hub on the user's computer. -->
+<!-- The Android app's first screen (specs/android-app, ADR 0018): Orbis on this phone (started inside Termux,
+     no computer, no sign-in), or the address of another Orbis (a computer, a server). -->
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -72,6 +73,20 @@
       .scan { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 17px; padding: 15px; }
       .scan svg { width: 22px; height: 22px; }
       .or { margin: 2px 0 -2px; text-align: center; color: var(--muted); font-size: 13px; }
+      .card { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 18px; }
+      .card h2 { margin: 0; font-size: 19px; }
+      .card p { margin: 0; }
+      .status { color: var(--muted); font-size: 14px; }
+      .setup { border-top: 1px solid var(--border); padding-top: 10px; }
+      .setup ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
+      .setup code { display: block; margin: 6px 0; padding: 8px 10px; white-space: pre-wrap; word-break: break-all; user-select: all; }
+      .setup .row { flex-wrap: wrap; }
+      .detail { margin: 0; padding: 8px 10px; background: var(--bg); border-radius: 10px; font-size: 12px; color: var(--muted); white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; }
+      details.remote { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 14px 18px; }
+      details.remote > summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+      details.remote[open] > summary { margin-bottom: 12px; }
+      details.remote form { padding: 0; border: 0; background: none; }
+      .link { background: none; color: var(--blue); padding: 0; font-weight: 500; font-size: 14px; }
     </style>
   </head>
   <body>
@@ -81,6 +96,29 @@
         <h1>Orbis</h1>
         <p class="tagline" data-t="tagline"></p>
       </header>
+      <section id="local" class="card" aria-labelledby="local-title" hidden>
+        <h2 id="local-title" data-t="localTitle"></h2>
+        <p class="help" data-t="localHelp"></p>
+        <button type="button" id="local-start" data-t="localStart"></button>
+        <p id="local-status" class="status" role="status" hidden></p>
+        <p id="local-error" class="error" role="alert" hidden></p>
+        <pre id="local-detail" class="detail" hidden></pre>
+        <button type="button" id="local-stop" class="link" data-t="stopWaiting" hidden></button>
+        <div id="local-permission" hidden>
+          <p class="help" data-t="permissionHelp"></p>
+          <button type="button" id="app-settings" class="secondary" data-t="appSettings"></button>
+        </div>
+        <div id="local-setup" class="setup help" hidden>
+          <strong data-t="setupTitle"></strong>
+          <ol>
+            <li><span data-t="setup1"></span><div class="row"><button type="button" id="get-termux" class="secondary" data-t="getTermux"></button></div></li>
+            <li><span data-t="setup2"></span><code id="install-command"></code><div class="row"><button type="button" id="copy-command" class="secondary" data-t="copyCommand"></button><button type="button" id="open-termux" class="secondary" data-t="openTermux"></button></div></li>
+            <li data-t="setup3"></li>
+          </ol>
+        </div>
+      </section>
+      <details id="remote" class="remote">
+      <summary data-t="remoteTitle"></summary>
       <form id="form" novalidate>
         <button type="button" id="scan" class="scan" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
@@ -107,17 +145,41 @@
           <li data-t="step3"></li>
         </ol>
       </div>
+      </details>
       <p class="version" id="version"></p>
     </main>
     <script>
       const pt = {
         tagline: "Seus bots, no celular.",
-        label: "Endereço do Orbis no seu computador",
+        localTitle: "📱 Orbis neste celular",
+        localHelp: "Seus bots rodam aqui mesmo, com o Claude Code: sem computador, sem servidor e sem login. Tudo fica guardado só neste celular.",
+        localStart: "Abrir o Orbis",
+        localStarting: "Ligando o Orbis…",
+        localWaiting: "Ligando o Orbis no Termux… {n} s",
+        localFirstTime: "A primeira vez depois de ligar o celular leva mais (até 2 minutos).",
+        stopWaiting: "Parar de esperar",
+        noTermux: "Falta o Termux, o programa onde o Orbis roda no celular.",
+        noPermission: "O Orbis precisa da permissão “Executar comandos no ambiente do Termux”.",
+        permissionHelp: "Toque em Permissões do app → Permissões adicionais (ou Outras permissões) → permita “Executar comandos no ambiente do Termux”. Depois, volte e toque em Abrir o Orbis.",
+        appSettings: "Permissões do app",
+        notInstalled: "O Orbis ainda não está instalado no Termux: faça o passo 2.",
+        externalApps: "O Termux recusou o pedido do app: rode o comando do passo 2 de novo (ele libera o app).",
+        timeout: "O Orbis não respondeu. Abra o Termux e rode orbis-phone serve para ver o que aconteceu.",
+        stopped: "O Orbis no Termux parou:",
+        setupTitle: "Primeira vez? Prepare o celular, uma vez só:",
+        setup1: "Instale o Termux pelo F-Droid (a versão da Play Store não serve).",
+        getTermux: "Baixar o Termux",
+        setup2: "Abra o Termux, cole este comando e espere terminar (uns 10 minutos, com internet):",
+        copyCommand: "Copiar comando",
+        openTermux: "Abrir o Termux",
+        setup3: "Volte aqui e toque em Abrir o Orbis. Quando o Android perguntar, permita que o Orbis use o Termux.",
+        remoteTitle: "Conectar a outro Orbis (computador ou servidor)",
+        label: "Endereço do outro Orbis",
         connect: "Conectar",
         howTitle: "Como conectar:",
         step1: "No computador, abra o Orbis pelo <code>Orbis-Celular.bat</code> (ou rode <code>orbis serve --host 0.0.0.0</code>): ele passa a aceitar conexões da rede. Se o Windows perguntar, permita o Node nas redes privadas.",
         step2: "No Orbis do computador, abra <b>Configurações → Celular</b>, gere um código e toque em <b>Ler QR code</b> aqui. Ou digite o endereço que ele mostra, como <code>192.168.0.10</code> (a porta 7420 entra sozinha), e o código: o app entra sem você digitar o token. Um link com <code>#token=…</code> (cole ou compartilhe com o app) também entra direto.",
-        step3: "O celular precisa estar na mesma rede Wi-Fi do computador, ou numa VPN até ele.",
+        step3: "O celular precisa estar na mesma rede Wi-Fi do computador, numa VPN até ele, ou o Orbis num servidor na internet (veja docs/cloud.md).",
         empty: "Digite o endereço do Orbis.",
         scheme: "Use um endereço http:// ou https://.",
         host: "Falta o computador no endereço.",
@@ -143,12 +205,35 @@
       };
       const en = {
         tagline: "Your bots, on your phone.",
-        label: "Address of Orbis on your computer",
+        localTitle: "📱 Orbis on this phone",
+        localHelp: "Your bots run right here, with Claude Code: no computer, no server and no sign-in. Everything is kept on this phone only.",
+        localStart: "Open Orbis",
+        localStarting: "Starting Orbis…",
+        localWaiting: "Starting Orbis in Termux… {n} s",
+        localFirstTime: "The first time after the phone starts takes longer (up to 2 minutes).",
+        stopWaiting: "Stop waiting",
+        noTermux: "Termux is missing: the program Orbis runs in on the phone.",
+        noPermission: "Orbis needs the permission “Run commands in Termux environment”.",
+        permissionHelp: "Tap App permissions → Additional (or Other) permissions → allow “Run commands in Termux environment”. Then come back and tap Open Orbis.",
+        appSettings: "App permissions",
+        notInstalled: "Orbis is not installed in Termux yet: do step 2.",
+        externalApps: "Termux refused the app's request: run the command of step 2 again (it lets the app in).",
+        timeout: "Orbis did not answer. Open Termux and run orbis-phone serve to see what happened.",
+        stopped: "Orbis in Termux stopped:",
+        setupTitle: "First time? Set the phone up, once:",
+        setup1: "Install Termux from F-Droid (the Play Store version does not work).",
+        getTermux: "Get Termux",
+        setup2: "Open Termux, paste this command and wait for it to finish (about 10 minutes, online):",
+        copyCommand: "Copy command",
+        openTermux: "Open Termux",
+        setup3: "Come back and tap Open Orbis. When Android asks, let Orbis use Termux.",
+        remoteTitle: "Connect to another Orbis (computer or server)",
+        label: "Address of the other Orbis",
         connect: "Connect",
         howTitle: "How to connect:",
         step1: "On the computer, open Orbis with <code>Orbis-Celular.bat</code> (or run <code>orbis serve --host 0.0.0.0</code>): it then takes connections from the network. If Windows asks, allow Node on private networks.",
         step2: "In Orbis on the computer, open <b>Settings → Phone</b>, make a code and tap <b>Scan QR code</b> here. Or type the address it shows, like <code>192.168.0.10</code> (port 7420 is added for you), and the code: the app signs in without you typing the token. A link with <code>#token=…</code> (paste it, or share it to the app) signs in directly too.",
-        step3: "The phone must be on the computer's Wi-Fi, or on a VPN to it.",
+        step3: "The phone must be on the computer's Wi-Fi, on a VPN to it, or Orbis on a server on the internet (see docs/cloud.md).",
         empty: "Type the address of Orbis.",
         scheme: "Use an http:// or https:// address.",
         host: "The address names no computer.",
@@ -207,6 +292,67 @@
         recentBox.appendChild(chip);
       }
       recentBox.hidden = recent.length === 0;
+
+      // Orbis on this phone: the app starts it inside Termux and opens it, with no sign-in.
+      const bridge = window.orbisAndroid;
+      const hasLocal = !!(bridge && bridge.startLocal);
+      const remote = document.getElementById("remote");
+      remote.open = !hasLocal || !!hub || recent.length > 0 || !!params.get("error");
+      const el = (id) => document.getElementById(id);
+      const localStart = el("local-start");
+      const localStatus = el("local-status");
+      const localError = el("local-error");
+      const localDetail = el("local-detail");
+      const localStop = el("local-stop");
+      const panels = (state) => {
+        el("local-setup").hidden = !["no-termux", "not-installed", "external-apps"].includes(state);
+        el("local-permission").hidden = state !== "no-permission";
+      };
+      const idle = () => {
+        localStart.disabled = false;
+        localStart.textContent = t.localStart;
+        localStatus.hidden = true;
+        localStop.hidden = true;
+      };
+      const fail = (text, detail) => {
+        idle();
+        localError.textContent = text;
+        localError.hidden = !text;
+        localDetail.textContent = detail || "";
+        localDetail.hidden = !detail;
+      };
+      if (hasLocal) {
+        el("local").hidden = false;
+        el("install-command").textContent = bridge.installCommand ? bridge.installCommand() : "";
+        panels(bridge.localState ? bridge.localState() : "ready");
+        localStart.addEventListener("click", () => {
+          fail("", "");
+          bridge.startLocal();
+        });
+        localStop.addEventListener("click", () => {
+          if (bridge.stopWaiting) bridge.stopWaiting();
+          idle();
+        });
+        el("copy-command").addEventListener("click", () => bridge.copyInstallCommand && bridge.copyInstallCommand());
+        el("open-termux").addEventListener("click", () => bridge.openTermux && bridge.openTermux());
+        el("get-termux").addEventListener("click", () => bridge.getTermux && bridge.getTermux());
+        el("app-settings").addEventListener("click", () => bridge.openAppSettings && bridge.openAppSettings());
+      }
+      window.onLocal = (state, detail) => {
+        if (state === "starting") {
+          const seconds = Number(detail || 0);
+          localStart.disabled = true;
+          localStart.textContent = t.localStarting;
+          localStatus.hidden = false;
+          localStatus.textContent = t.localWaiting.replace("{n}", seconds) + (seconds >= 15 ? ` ${t.localFirstTime}` : "");
+          localStop.hidden = false;
+          localError.hidden = true;
+          return;
+        }
+        panels(state);
+        const text = { "no-termux": t.noTermux, "no-permission": t.noPermission, "not-installed": t.notInstalled, "external-apps": t.externalApps, timeout: t.timeout, stopped: t.stopped }[state] || state;
+        fail(text, state === "stopped" || state === "timeout" ? detail : "");
+      };
 
       // A link copied on the computer (as Orbis-Celular.bat prints it), from the phone's clipboard.
       document.getElementById("paste").addEventListener("click", () => {
@@ -281,7 +427,9 @@
           if (input.value === hub && !codeInput.value) connect();
         }, 1000);
       }
-      if (!input.value) input.focus();
+      // The app opened on the hub on this phone (or lost it): start it right away.
+      if (hasLocal && params.get("local") === "start") bridge.startLocal();
+      else if (remote.open && !input.value) input.focus();
     </script>
   </body>
 </html>

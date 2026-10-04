@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The hub on the user's computer, reached over the network (Wi-Fi, a VPN). -->
+    <!-- The hub: on this phone (127.0.0.1, inside Termux), or another Orbis over the network. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Starting the hub on this phone: Termux runs `orbis-phone serve` when the app asks (RUN_COMMAND). -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
     <!-- A bot's reply, approval or secret request while the app is off screen. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- "Stay connected with the app closed": a foreground service keeps the page's connection alive. -->
@@ -11,6 +13,8 @@
 
     <!-- The phone's speech recognizer and voice (Android 11+ hides other apps unless they are named here). -->
     <queries>
+        <!-- Whether Termux is installed, and its RunCommandService. -->
+        <package android:name="com.termux" />
         <intent>
             <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
         </intent>
@@ -52,6 +56,11 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- Termux's answer when the hub's command ends (a start that failed, a hub that stopped). -->
+        <receiver
+            android:name=".TermuxResult"
+            android:exported="false" />
 
         <service
             android:name=".KeepAliveService"

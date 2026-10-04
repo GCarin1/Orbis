@@ -834,8 +834,8 @@ const pt = {
   "routines.calledBy": "chamada por {name}",
   "routines.callable": "Outros bots chamam com",
   "routines.callableHelp": "Qualquer bot pode chamar esta rotina com a ferramenta routine.call e recebe a resposta de volta.",
-  "claude.tokenTitle": "🔑 Token da assinatura (servidor, nuvem, celular)",
-  "claude.tokenHelp": "Para o Orbis usar a sua assinatura Claude (Pro ou Max) num servidor ou na nuvem, sem a API: no seu computador, rode claude setup-token, entre com a sua conta e cole aqui o token que ele mostra (começa com sk-ant-oat). Ele vale 1 ano e gasta os limites do seu plano — os mesmos do claude.ai —, nunca créditos da API. Só para você: não compartilhe.",
+  "claude.tokenTitle": "🔑 Token da assinatura",
+  "claude.tokenHelp": "Para o Orbis usar a sua assinatura Claude (Pro ou Max) sem a API, num servidor, na nuvem ou no celular: rode claude setup-token num terminal com o Claude Code (no celular, no Termux: orbis-phone setup-token), entre com a sua conta e cole aqui o token que ele mostra (começa com sk-ant-oat). Ou use Entrar com a conta Claude, acima. Ele vale 1 ano e gasta os limites do seu plano — os mesmos do claude.ai —, nunca créditos da API. Só para você: não compartilhe.",
   "claude.tokenLabel": "Token do claude setup-token",
   "claude.tokenSave": "Salvar token",
   "claude.tokenReplace": "Trocar token",
@@ -845,7 +845,7 @@ const pt = {
   "claude.tokenNone": "Nenhum token: o Claude Code usa o login deste computador.",
   "claude.tokenWins": "Com o token, o Claude Code usa ele em vez do login.",
   "claude.tokenExpiredHint": "O token da assinatura foi recusado (errado, vencido ou revogado). Rode claude setup-token de novo e troque o token abaixo.",
-  "phone.anywhere": "Fora de casa, ou com o computador desligado? Rode o Orbis na nuvem — um Codespace do GitHub para testar, ou uma VM gratuita com Docker — e use a sua assinatura Claude com o token do claude setup-token (veja docs/cloud.md).",
+  "phone.anywhere": "Fora de casa, ou com o computador desligado? Rode o Orbis no próprio celular, no Termux, sem computador nem login (no app: Orbis neste celular; veja docs/android.md), ou na nuvem — um Codespace do GitHub ou uma VM gratuita com Docker — e use a sua assinatura Claude com o token do claude setup-token (veja docs/cloud.md).",
 };
 
 export type TextKey = keyof typeof pt;
@@ -1681,8 +1681,8 @@ const en: Record<TextKey, string> = {
   "routines.calledBy": "called by {name}",
   "routines.callable": "Other bots call it with",
   "routines.callableHelp": "Any bot can call this routine with the routine.call tool and gets the answer back.",
-  "claude.tokenTitle": "🔑 Subscription token (server, cloud, phone)",
-  "claude.tokenHelp": "To have Orbis use your Claude subscription (Pro or Max) on a server or in the cloud, without the API: on your computer, run claude setup-token, sign in with your account and paste here the token it shows (it starts with sk-ant-oat). It lasts a year and spends your plan's limits — the same as claude.ai — never API credits. Just for you: do not share it.",
+  "claude.tokenTitle": "🔑 Subscription token",
+  "claude.tokenHelp": "To have Orbis use your Claude subscription (Pro or Max) without the API, on a server, in the cloud or on the phone: run claude setup-token in a terminal with Claude Code (on the phone, in Termux: orbis-phone setup-token), sign in with your account and paste here the token it shows (it starts with sk-ant-oat). Or use Sign in with your Claude account, above. It lasts a year and spends your plan's limits — the same as claude.ai — never API credits. Just for you: do not share it.",
   "claude.tokenLabel": "Token from claude setup-token",
   "claude.tokenSave": "Save token",
   "claude.tokenReplace": "Replace token",
@@ -1692,7 +1692,7 @@ const en: Record<TextKey, string> = {
   "claude.tokenNone": "No token: Claude Code uses this computer's sign-in.",
   "claude.tokenWins": "With the token, Claude Code uses it instead of the sign-in.",
   "claude.tokenExpiredHint": "The subscription token was refused (wrong, expired or revoked). Run claude setup-token again and replace the token below.",
-  "phone.anywhere": "Away from home, or with the computer off? Run Orbis in the cloud — a GitHub Codespace to try it, or a free VM with Docker — and use your Claude subscription with the token of claude setup-token (see docs/cloud.md).",
+  "phone.anywhere": "Away from home, or with the computer off? Run Orbis on the phone itself, in Termux, with no computer and no sign-in (in the app: Orbis on this phone; see docs/android.md), or in the cloud — a GitHub Codespace or a free VM with Docker — and use your Claude subscription with the token of claude setup-token (see docs/cloud.md).",
 };
 
 const TEXTS: Record<Lang, Record<TextKey, string>> = { "pt-BR": pt, en };

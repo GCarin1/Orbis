@@ -1,12 +1,14 @@
-// The Orbis Android app (specs/android-app, ADR 0012): a WebView that shows the web app the user's hub
-// serves, so the phone always runs the hub's own version. The first screen asks for the hub's address (and
-// a pairing code, traded for the token); the app adds what a browser tab lacks: notifications while it is
-// off screen, the phone's dictation and voice, files, Back, and text shared from other apps.
+// The Orbis Android app (specs/android-app, ADR 0012, ADR 0018): a WebView that shows the web app the hub
+// serves, so the phone always runs the hub's own version. The hub runs on this phone, inside Termux: the app
+// starts it, with a token of its own, and opens it signed in — no computer, no pairing (LocalHub). Another
+// Orbis (a computer, a server) stays a choice on the first screen. The app adds what a browser tab lacks:
+// notifications while it is off screen, the phone's dictation and voice, files, Back, and shared text.
 package app.orbis.android;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -46,9 +48,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainActivity extends Activity {
     static final String CONNECT_PAGE = "file:///android_asset/connect.html";
@@ -57,9 +61,14 @@ public class MainActivity extends Activity {
     private static final String KEY_RECENT = "recentHubs";
     private static final String KEY_KEEP = "keepConnected";
     private static final String KEY_ASKED = "askedNotifications";
+    /** The token of the hub on this phone, made by the app and handed to it on each start. */
+    private static final String KEY_LOCAL_TOKEN = "localToken";
     private static final int PICK_FILES = 1;
     private static final int DICTATE = 2;
     private static final int NOTIFICATIONS = 3;
+    private static final int TERMUX_PERMISSION = 4;
+    /** How long a start may take: the first one, under proot on a slow phone, takes a while. */
+    private static final int LOCAL_START_SECONDS = 180;
 
     private WebView web;
     /** The hub's origin (scheme://host:port): pages there stay in the app, any other link opens outside. */
@@ -75,6 +84,8 @@ public class MainActivity extends Activity {
     private TextToSpeech tts;
     private boolean ttsReady;
     private String[] pendingSpeech;
+    /** Each start of the hub on this phone; a newer one (or Termux saying it failed) ends the wait of the older. */
+    private final AtomicInteger localAttempt = new AtomicInteger();
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -100,8 +111,11 @@ public class MainActivity extends Activity {
         String hub = savedHub();
         hubOrigin = hub == null ? null : Hub.origin(hub);
         if (prefs().getBoolean(KEY_KEEP, false)) KeepAliveService.start(this);
+        TermuxResult.listener = this::onTermuxResult;
         if (state == null || web.restoreState(state) == null) {
-            if (hub == null) showConnect(null, false);
+            if (hub == null) showConnect(null, false, false);
+            // The hub on this phone: the first screen starts it (or finds it running) and opens it.
+            else if (LocalHub.isLocal(hub)) showConnect(null, false, true);
             else open(hub);
         }
         handle(getIntent());
@@ -128,6 +142,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (TermuxResult.listener != null) TermuxResult.listener = null;
+        localAttempt.incrementAndGet();
         if (tts != null) tts.shutdown();
         // Without its page there is nothing left to keep connected.
         if (isFinishing()) KeepAliveService.stop(this);
@@ -198,15 +214,152 @@ public class MainActivity extends Activity {
         web.loadUrl(url);
     }
 
-    /** The first screen: the hub's address, the recent ones, and why the last try failed. */
-    private void showConnect(String error, boolean certificate) {
+    /**
+     * The first screen: Orbis on this phone (started at once when `startLocal`), or another Orbis's address,
+     * the recent ones, and why the last try failed.
+     */
+    private void showConnect(String error, boolean certificate, boolean startLocal) {
         StringBuilder page = new StringBuilder(CONNECT_PAGE).append("?v=").append(Uri.encode(BuildConfig.VERSION_NAME));
         String hub = savedHub();
-        if (hub != null) page.append("&hub=").append(Uri.encode(hub));
-        page.append("&recent=").append(Uri.encode(new JSONArray(recentHubs()).toString()));
+        if (hub != null && !LocalHub.isLocal(hub)) page.append("&hub=").append(Uri.encode(hub));
+        List<String> others = new ArrayList<>();
+        for (String h : recentHubs()) if (!LocalHub.isLocal(h)) others.add(h);
+        page.append("&recent=").append(Uri.encode(new JSONArray(others).toString()));
         if (error != null) page.append("&error=").append(Uri.encode(error));
         if (certificate) page.append("&cert=1");
+        if (startLocal) page.append("&local=start");
         web.loadUrl(page.toString());
+    }
+
+    // ---- The hub on this phone (Termux) ----
+
+    private String localToken() {
+        String token = prefs().getString(KEY_LOCAL_TOKEN, null);
+        if (token == null) {
+            token = LocalHub.newToken(new SecureRandom());
+            prefs().edit().putString(KEY_LOCAL_TOKEN, token).apply();
+        }
+        return token;
+    }
+
+    private boolean termuxInstalled() {
+        try {
+            getPackageManager().getPackageInfo(LocalHub.TERMUX, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    private boolean termuxAllowed() {
+        return checkSelfPermission(LocalHub.PERMISSION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** "no-termux", "no-permission" or "ready": what the first screen shows before anything is tried. */
+    private String localState() {
+        if (!termuxInstalled()) return "no-termux";
+        return termuxAllowed() ? "ready" : "no-permission";
+    }
+
+    /** Tell the first screen how the start goes: "starting" (seconds so far), a failure, or why not. */
+    private void toLocal(String state, String detail) {
+        if (!onConnectPage) return;
+        web.evaluateJavascript("window.onLocal&&window.onLocal(" + JSONObject.quote(state) + "," + (detail == null ? "null" : JSONObject.quote(detail)) + ")", null);
+    }
+
+    /** Ask Termux to run the hub (`orbis-phone serve`), handing it the app's token on stdin. */
+    private void runServe(String token, int attempt) {
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0);
+        PendingIntent result = PendingIntent.getBroadcast(this, attempt, new Intent(this, TermuxResult.class).putExtra(TermuxResult.EXTRA_ATTEMPT, attempt), flags);
+        Intent intent = new Intent(LocalHub.RUN_COMMAND)
+                .setClassName(LocalHub.TERMUX, LocalHub.RUN_COMMAND_SERVICE)
+                .putExtra("com.termux.RUN_COMMAND_PATH", LocalHub.BASH)
+                .putExtra("com.termux.RUN_COMMAND_ARGUMENTS", LocalHub.serveArguments())
+                .putExtra("com.termux.RUN_COMMAND_STDIN", token + "\n")
+                .putExtra("com.termux.RUN_COMMAND_WORKDIR", LocalHub.TERMUX_HOME)
+                .putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
+                .putExtra("com.termux.RUN_COMMAND_COMMAND_LABEL", "Orbis")
+                .putExtra("com.termux.RUN_COMMAND_COMMAND_DESCRIPTION", getString(R.string.local_running))
+                .putExtra("com.termux.RUN_COMMAND_PENDING_INTENT", result);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent);
+        else startService(intent);
+    }
+
+    /** Start the hub on this phone (or find it running), wait until it answers, then open it signed in. */
+    private void startLocal() {
+        int attempt = localAttempt.incrementAndGet();
+        if (!termuxInstalled()) {
+            toLocal("no-termux", null);
+            return;
+        }
+        if (!termuxAllowed()) {
+            requestPermissions(new String[] {LocalHub.PERMISSION}, TERMUX_PERMISSION);
+            return;
+        }
+        String token = localToken();
+        toLocal("starting", "0");
+        new Thread(() -> {
+            // Already running with this token (the app was only closed): straight in.
+            String state = LocalHub.probe(LocalHub.BASE, token, 1500);
+            if (!"up".equals(state)) {
+                runOnUiThread(() -> {
+                    try {
+                        runServe(token, attempt);
+                    } catch (SecurityException e) {
+                        localAttempt.incrementAndGet();
+                        toLocal("no-permission", null);
+                    } catch (RuntimeException e) {
+                        localAttempt.incrementAndGet();
+                        toLocal("stopped", String.valueOf(e.getMessage()));
+                    }
+                });
+                for (int seconds = 1; seconds <= LOCAL_START_SECONDS && localAttempt.get() == attempt; seconds++) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                    state = LocalHub.probe(LocalHub.BASE, token, 1500);
+                    if ("up".equals(state)) break;
+                    String shown = String.valueOf(seconds);
+                    runOnUiThread(() -> {
+                        if (localAttempt.get() == attempt) toLocal("starting", shown);
+                    });
+                }
+            }
+            if (localAttempt.get() != attempt) return;
+            if ("up".equals(state)) runOnUiThread(() -> connectTo(Hub.parse(LocalHub.BASE), LocalHub.signedIn(token)));
+            else runOnUiThread(() -> toLocal("timeout", null));
+        }, "orbis-local-hub").start();
+    }
+
+    /** Termux's answer when the command ended: a start that failed, or a hub that stopped. */
+    private void onTermuxResult(int attempt, int exitCode, String stderr, String errmsg) {
+        String why = LocalHub.failure(exitCode, stderr, errmsg);
+        // Nothing went wrong (it was already running), or an older run ended (a restart with a new token).
+        if (why == null || attempt != localAttempt.get()) return;
+        String detail = LocalHub.tail((stderr + "\n" + errmsg).trim(), 600);
+        runOnUiThread(() -> {
+            localAttempt.incrementAndGet();
+            if (onConnectPage) toLocal(why, detail);
+            else if (LocalHub.isLocal(savedHub())) Toast.makeText(this, getString(R.string.local_stopped, detail), Toast.LENGTH_LONG).show();
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode != TERMUX_PERMISSION) return;
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) startLocal();
+        else toLocal("no-permission", null);
+    }
+
+    private void openAppSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())));
+        } catch (ActivityNotFoundException ignored) {
+            // no settings screen to open
+        }
     }
 
     /** Hand a script to the hub's page once it is loaded (a notification's conversation, shared text). */
@@ -246,8 +399,9 @@ public class MainActivity extends Activity {
         String current = web.getUrl();
         if (current != null && current.startsWith(CONNECT_PAGE)) {
             // Back from the connect screen returns to the hub when there is one.
+            localAttempt.incrementAndGet();
             String hub = savedHub();
-            if (hub != null) open(hub);
+            if (hub != null && !LocalHub.isLocal(hub)) open(hub);
             else finish();
             return;
         }
@@ -400,7 +554,80 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void changeHub() {
-            runOnUiThread(() -> showConnect(null, false));
+            runOnUiThread(() -> showConnect(null, false, false));
+        }
+
+        /** "no-termux", "no-permission" or "ready" — from the connect screen only. */
+        @JavascriptInterface
+        public String localState() {
+            return onConnectPage ? MainActivity.this.localState() : "";
+        }
+
+        /** Start Orbis on this phone and open it; the screen hears how it goes on window.onLocal. */
+        @JavascriptInterface
+        public void startLocal() {
+            if (onConnectPage) runOnUiThread(MainActivity.this::startLocal);
+        }
+
+        /** Stop waiting for the hub on this phone. */
+        @JavascriptInterface
+        public void stopWaiting() {
+            localAttempt.incrementAndGet();
+        }
+
+        /** What to paste in Termux once, to install Orbis there. */
+        @JavascriptInterface
+        public String installCommand() {
+            return LocalHub.installCommand(BuildConfig.ORBIS_REPO);
+        }
+
+        @JavascriptInterface
+        public void copyInstallCommand() {
+            if (!onConnectPage) return;
+            runOnUiThread(() -> {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                if (clipboard == null) return;
+                clipboard.setPrimaryClip(ClipData.newPlainText("Orbis", LocalHub.installCommand(BuildConfig.ORBIS_REPO)));
+                Toast.makeText(MainActivity.this, R.string.command_copied, Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        /** Termux itself, to paste the command (or its download page when it is missing). */
+        @JavascriptInterface
+        public void openTermux() {
+            if (!onConnectPage) return;
+            runOnUiThread(() -> {
+                Intent launch = getPackageManager().getLaunchIntentForPackage(LocalHub.TERMUX);
+                if (launch != null) startActivity(launch);
+                else openOutside(Uri.parse(LocalHub.TERMUX_DOWNLOAD));
+            });
+        }
+
+        @JavascriptInterface
+        public void getTermux() {
+            if (onConnectPage) runOnUiThread(() -> openOutside(Uri.parse(LocalHub.TERMUX_DOWNLOAD)));
+        }
+
+        /** The app's settings, where the Termux permission is granted by hand once refused. */
+        @JavascriptInterface
+        public void openAppSettings() {
+            if (onConnectPage) runOnUiThread(MainActivity.this::openAppSettings);
+        }
+
+        /**
+         * The web app lost the hub on this phone (Android stopped Termux): start it again, quietly. Only for
+         * the hub on this phone; the web app waits for it to answer as after any lost connection.
+         */
+        @JavascriptInterface
+        public void ensureLocalHub() {
+            runOnUiThread(() -> {
+                if (!LocalHub.isLocal(savedHub()) || !termuxInstalled() || !termuxAllowed()) return;
+                try {
+                    runServe(localToken(), localAttempt.incrementAndGet());
+                } catch (RuntimeException ignored) {
+                    // the web app keeps saying it is reconnecting
+                }
+            });
         }
 
         @JavascriptInterface
@@ -520,9 +747,11 @@ public class MainActivity extends Activity {
 
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-            // The hub did not answer (wrong address, computer off, another network): back to the connect screen.
+            // The hub did not answer: on this phone, start it again; elsewhere (a computer off, another
+            // network), back to the connect screen, which says why.
             if (request.isForMainFrame() && !request.getUrl().toString().startsWith("file:")) {
-                showConnect(request.getUrl().getHost() + ": " + error.getDescription(), false);
+                if (LocalHub.isLocal(request.getUrl().toString())) showConnect(null, false, true);
+                else showConnect(request.getUrl().getHost() + ": " + error.getDescription(), false, false);
             }
         }
 
@@ -531,7 +760,7 @@ public class MainActivity extends Activity {
             // An https hub whose certificate the phone does not trust: never load it anyway.
             handler.cancel();
             String host = Uri.parse(error.getUrl()).getHost();
-            if (hubOrigin != null && hubOrigin.equals(Hub.origin(error.getUrl()))) showConnect(host, true);
+            if (hubOrigin != null && hubOrigin.equals(Hub.origin(error.getUrl()))) showConnect(host, true, false);
         }
     }
 

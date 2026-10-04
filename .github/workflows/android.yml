@@ -85,6 +85,7 @@ jobs:
           testReleaseUnitTest lintRelease assembleRelease
           -PorbisBuildNumber=${{ steps.version.outputs.build }}
           -PorbisVersionSuffix=${{ steps.version.outputs.suffix }}
+          -PorbisRepo=${{ github.repository }}
 
       - name: Name the APK
         run: |
@@ -112,9 +113,11 @@ jobs:
           notes="Orbis Android $VERSION, build $BUILD ($SHORT), signed with $KEY.
 
           Instalar: abra este link no celular, baixe o .apk e toque nele (permita instalar apps desta origem).
-          Depois, no computador, abra o Orbis pelo Orbis-Celular.bat e digite no app o endereço que ele mostra.
-          Install: open this page on the phone, download the .apk and tap it; then start Orbis on the computer
-          with Orbis-Celular.bat (or orbis serve --host 0.0.0.0) and type the address it shows in the app."
+          O Orbis roda no próprio celular, sem computador: o app mostra como preparar o Termux uma vez só
+          (docs/android.md). Ou conecte a outro Orbis (computador ou servidor) pelo endereço.
+          Install: open this page on the phone, download the .apk and tap it. Orbis runs on the phone itself,
+          with no computer: the app shows how to set Termux up once (docs/android.md). Or connect to another
+          Orbis (a computer or a server) by its address."
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             tag="$GITHUB_REF_NAME"
             gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Orbis $tag" --notes "$notes" --verify-tag
