@@ -155,6 +155,9 @@ export function BotFace({
 }
 
 /** A bot's face, with its state in its accessible name. */
+/** A bot as a choice in a list: its name, then its role (who it is, not just what it is called). */
+export const botLabel = (bot: Pick<Bot, "name" | "role">): string => (bot.role ? `${bot.name} · ${bot.role}` : bot.name);
+
 export function Avatar({ bot, size = 40 }: { bot: Pick<Bot, "avatar" | "state" | "name">; size?: number }) {
   const t = useT();
   const state = t(`state.${bot.state}`);

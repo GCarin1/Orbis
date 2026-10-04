@@ -57,7 +57,8 @@ describe("a bot's computer in the web app", () => {
     await composer.press("Enter");
     await page.getByRole("log").getByText(/All systems green/).first().waitFor({ timeout: 20_000 });
 
-    await page.getByRole("button", { name: /Computer/ }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: /Computer/ }).click();
     const panel = page.getByTestId("computer-panel");
     await panel.getByText("Running").waitFor();
     const shot = panel.getByTestId("computer-screenshot");

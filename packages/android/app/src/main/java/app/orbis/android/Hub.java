@@ -9,6 +9,12 @@ final class Hub {
     /** The hub's port when the address names none (orbis serve's default). */
     static final int DEFAULT_PORT = 7420;
 
+    /**
+     * Whether the app stays connected in the background until the user turns it off: without it Android
+     * freezes the app within minutes, and the bots' notifications stop.
+     */
+    static final boolean KEEP_CONNECTED_DEFAULT = true;
+
     private Hub() {}
 
     /** What an address becomes: the hub to remember, the page to load (with its #token=...), or why not. */

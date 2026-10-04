@@ -11,9 +11,10 @@ import type { ToolDefinition } from "../tools/registry.js";
 const TERMINAL = new Set(["done", "failed"]);
 const COLLEAGUES_SHOWN = 30;
 /**
- * A reply naming more bots than this is a list of the team (a roster, a
- * status), not a call: it wakes nobody. Calling one or two colleagues by
- * @handle still brings them in.
+ * A reply naming more bots than this from outside its conversation is a list
+ * of the team (a roster, a status), not a call: it wakes nobody. Calling one
+ * or two colleagues by @handle still brings them in, and in a group the
+ * members it names are always called: they are in the room.
  */
 export const MAX_MENTION_WAKES = 2;
 
@@ -189,8 +190,13 @@ export class Collaboration {
         ? "- You lead your reports: split the user's request, delegate each part to the report whose role fits with team.handoff (several in one turn when they are independent), and do the rest yourself."
         : "- Delegate a part to a colleague with team.handoff when their role fits it better than yours.",
       "- Everything you delegate in one turn comes back to you together as a new task once all of it has ended; then tell the user the outcome. Do not wait for it or ask again.",
-      "- Writing @handle or @role in your reply wakes that colleague and it answers here. Do it only to ask one or two colleagues for something; to talk about bots without waking them (a list of the team, who is busy), write their names without @. A bot woken by a mention answers but does not wake others.",
+      "- Writing @handle or @role in your reply wakes that colleague and it answers here. In a group, the members you name with @ are all called; elsewhere call one or two colleagues this way at most. To talk about bots without waking them (a list of the team, who is busy), write their names without @. A bot woken by a mention answers but does not wake others.",
     );
+    if (reports.length) {
+      lines.push(
+        "- To give a report work on a schedule (every day, each Monday…), create the routine for it with routine.create (bot: its handle); a routine for yourself needs no bot. Schedule only with Orbis routines, never with another scheduler.",
+      );
+    }
     if (manager) lines.push(`- When @${manager.handle} hands you work, do it and answer with the result: it reaches @${manager.handle}.`);
     return lines.join("\n");
   }
@@ -280,7 +286,8 @@ export class Collaboration {
    * A bot reply that calls colleagues (by handle or role) starts their runs in
    * the same conversation, within the limits that keep bots from waking each
    * other forever: a reply woken by a mention or a report wakes nobody; a
-   * reply naming more than MAX_MENTION_WAKES bots is a list, not a call; a bot
+   * reply naming more than MAX_MENTION_WAKES bots from outside a group is a
+   * list, not a call (a group's own members named in it are called); a bot
    * already in this chain (it ran, or will) is not woken again, nor the bot
    * that handed this run its task or the bots this run handed work to; and the
    * chain stops at ORBIS_MAX_CHAIN_RUNS.
@@ -295,11 +302,13 @@ export class Collaboration {
     const mentions = extractMentions(run.reply).filter((h) => h !== "everyone" && h !== author.handle && h !== roleSlug(author.role));
     const named = resolveMentions(mentions, this.team(), this.hub.mentionAliases.all()).filter((b) => b.id !== author.id);
     if (named.length === 0) return;
-    if (new Set(named.map((b) => b.id)).size > MAX_MENTION_WAKES) {
+    const inRoom = new Set(conv.kind === "group" ? conv.members : []);
+    const outside = new Set(named.filter((b) => !inRoom.has(b.id)).map((b) => b.id));
+    if (outside.size > MAX_MENTION_WAKES) {
       this.hub.timeline.event(
         conv.id,
         "mention.list",
-        `@${author.handle} named ${named.length} bots; that reads as a list, so none was woken. To ask colleagues for something, mention one or two of them, or hand the work off.`,
+        `@${author.handle} named ${outside.size} bots from outside this conversation; that reads as a list, so none was woken. To ask colleagues for something, mention one or two of them, add them to a group, or hand the work off.`,
         { botId: author.id, named: named.map((b) => b.id) },
       );
       return;

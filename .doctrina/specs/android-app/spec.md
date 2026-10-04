@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC14
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.5.1
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -35,7 +35,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When the Android APK workflow runs by hand, on a `v*` tag or on a push that changes the app, it shall run the app's unit tests and lint, build a release APK named with the version and build number, attach it to the run, and publish it in a GitHub release when run by hand with release on or on a tag.
 - When the Windows launcher is started with `--celular` (or `Orbis-Celular.bat`), it shall start the hub listening on the network and print the address and sign-in link of each network card for the phone.
 - When the web app reports, while the app is off screen, a bot's message, an approval or a secret request, or a manager's report, the Android app shall show a notification — one per conversation, the latest replacing the one before — whose tap opens that conversation, and shall show none for a muted group's messages and reports.
-- When the user turns on staying connected, the Android app shall run a foreground service with a lasting notification that keeps the page's connection alive in the background, until the user turns it off or removes the app from the recent apps.
+- When the app starts with staying connected on (it is on until the user turns it off) or the user turns it on, the Android app shall run a foreground service with a lasting notification that keeps the page's connection alive in the background, so the bots' notifications keep coming, until the user turns it off or removes the app from the recent apps.
 - When the user gives a pairing code with the address, or scans the computer's QR code (a link `<address>#pair=<code>`), the Android app shall trade the code for the hub's token through `POST /api/v1/pairing/claim` and sign in with it, or say why it was refused.
 - When another app shares text with Orbis, the Android app shall connect if the text holds a sign-in link (`…#token=…`) or a pairing link (`…#pair=…`), and otherwise hand the text to the web app, which puts it in the message box of the next conversation opened.
 - When the page asks for dictation or to read a reply aloud, the Android app shall use the phone's speech recognizer and voice.
@@ -48,6 +48,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When `orbis-phone open` runs in Termux, the system shall start the hub if it is stopped and open the app with a sign-in link to it, and the app shall keep that link's token as its own.
 - When the app opens on the hub on this phone without Termux's permission and the hub already answers with its token, the app shall open it without asking for the permission.
 - When the install script runs where proot-distro keeps Debian in containers/<name>/rootfs (version 5) or in installed-rootfs/<name> (older), the system shall find it there, install Debian only when it is missing or a broken copy, and have orbis-phone look for Debian each time it runs.
+- When `orbis-phone serve` runs the hub on the phone (started by the app or by hand), the system shall hold Termux's wake lock while the hub runs, so bots answer and routines fire with the screen off, unless `ORBIS_AWAKE=0`.
 
 ### State-driven
 
@@ -83,6 +84,8 @@ GitHub Actions workflow builds the APK of the current version on demand.
 17. [verified] With stand-ins for Termux, `orbis-phone open` starts the stopped hub, hands the app a sign-in link with the hub's token through `am start`, and only opens the app again when the hub already runs — verified by `packages/hub/test/phone-script.test.ts`
 18. [verified] In a real browser, a refused permission shows the system's facts, the `orbis-phone open` way and a button to open Termux — verified by `tests/e2e/android-connect.test.ts`
 19. [verified] Where proot-distro 5 keeps Debian (containers/<name>/rootfs), the script finds it and does not install it again, orbis-phone reaches the script there, a copy that never finished is removed and installed again, and orbis-phone says Orbis is not installed (exit 127) when it finds no Debian — verified by `packages/hub/test/phone-script.test.ts`
+20. [verified] The app stays connected in the background unless the user turns it off — verified by `packages/android/app/src/test/java/app/orbis/android/HubTest.java`
+21. [verified] With stand-ins for Termux, the hub started the way the app starts it takes Termux's wake lock — verified by `packages/hub/test/phone-script.test.ts`
 
 ## Maturity
 

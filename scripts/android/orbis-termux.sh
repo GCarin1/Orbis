@@ -9,7 +9,8 @@
 #   install   Termux's packages, Debian, Node.js, Orbis and Claude Code (run again to bring them up to date)
 #   open      start the hub if needed and open the Orbis app signed in: no Android permission needed
 #   serve     run the hub on 127.0.0.1:7420 until it is stopped — the Orbis app starts it this way
-#             (--token-stdin: the app's token on the first line of stdin; --awake: keep the CPU awake)
+#             (--token-stdin: the app's token on the first line of stdin; it keeps the CPU awake while it
+#             runs, unless ORBIS_AWAKE=0)
 #   stop      stop the hub
 #   status    whether the hub runs, and which Claude Code it has
 #   logs      the end of the hub's log
@@ -217,7 +218,9 @@ cmd_serve() {
     stop_hub
   fi
   [ -f "$(rootfs)$APP/packages/cli/dist/index.js" ] || die "Orbis is not installed on this phone: run bash orbis-termux.sh (docs/android.md)"
-  if [ -n "$awake" ] || [ "${ORBIS_AWAKE:-}" = 1 ]; then
+  # Bots answer and routines fire with the screen off only while the CPU stays awake: the hub holds Termux's
+  # wake lock while it runs (ORBIS_AWAKE=0 to let the phone sleep; --awake is the default and kept for old apps).
+  if [ -n "$awake" ] || [ "${ORBIS_AWAKE:-1}" != 0 ]; then
     termux-wake-lock 2>/dev/null || true
     trap 'termux-wake-unlock 2>/dev/null || true' EXIT
   fi

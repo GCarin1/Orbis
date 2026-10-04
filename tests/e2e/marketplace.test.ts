@@ -75,7 +75,8 @@ describe("the tools marketplace in a browser", () => {
 
     // Ana's settings show the server among her tools.
     await page.getByTestId("bot-ana").click();
-    await page.getByRole("button", { name: "Bot settings", exact: true }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: "Bot settings" }).click();
     const group = page.getByTestId("settings-panel").getByTestId("tool-group-mcp.fake-notes");
     await group.waitFor();
     expect(await group.locator("input").isChecked()).toBe(true);

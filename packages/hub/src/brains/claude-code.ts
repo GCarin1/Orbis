@@ -15,8 +15,16 @@ export interface ClaudeArgsOptions {
   mcp: McpWiring | null;
 }
 
+/**
+ * Claude Code's own schedulers: routines and loops in Claude's cloud or the CLI session, out of the user's
+ * sight in Orbis. A bot schedules work with Orbis routines (routine.create) instead.
+ */
+export const CLAUDE_DISALLOWED_TOOLS = ["RemoteTrigger", "CronCreate", "CronDelete", "CronList", "ScheduleWakeup"];
+
 export function claudeArgs(o: ClaudeArgsOptions): string[] {
-  const args = ["-p", ...(o.prompt === null ? [] : [o.prompt]), "--output-format", "stream-json", "--verbose", "--append-system-prompt", o.system];
+  const args = ["-p", ...(o.prompt === null ? [] : [o.prompt]), "--output-format", "stream-json", "--verbose"];
+  // A variadic flag: a flag must follow it, never the prompt.
+  args.push("--disallowedTools", CLAUDE_DISALLOWED_TOOLS.join(","), "--append-system-prompt", o.system);
   if (o.model) args.push("--model", o.model);
   if (o.mcp) {
     args.push("--mcp-config", JSON.stringify({ mcpServers: { orbis: { type: "stdio", ...o.mcp.server } } }));

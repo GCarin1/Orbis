@@ -62,16 +62,20 @@ describe("skills and routines in a browser", () => {
     expect(hub.repos.runs.list({ botId: ana.id })[0]).toMatchObject({ skill: "smoke" });
 
     // Routines panel: create, test, enable.
-    await page.getByRole("button", { name: /Routines/ }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: "Routines" }).click();
     const panel = page.getByTestId("routines-panel");
     await panel.getByLabel("Name").fill("Nightly smoke");
-    await panel.getByLabel("Schedule (cron)", { exact: true }).last().fill("0 2 * * *");
+    await panel.getByLabel("What to do").fill("/reply smoke passed");
+    await panel.getByLabel("When").selectOption("daily");
+    await panel.getByLabel("Time", { exact: true }).fill("02:00");
     await panel.getByLabel("Timezone").fill("America/Sao_Paulo");
-    await panel.getByLabel("Instruction").fill("/reply smoke passed");
+    await panel.getByTestId("routine-preview").getByText(/Every day at 02:00/).waitFor();
     await panel.getByRole("button", { name: "Create routine" }).click();
     const routine = panel.locator("li.routine").first();
     await routine.getByText("Nightly smoke").waitFor();
     await routine.getByText("Disabled").waitFor();
+    expect(hub.routines.list("ana")[0]!.trigger).toEqual({ type: "cron", cron: "0 2 * * *", timezone: "America/Sao_Paulo" });
     await routine.getByRole("button", { name: "Test" }).click();
     await routine.getByText(/Last: done \(test\)/).waitFor({ timeout: 15_000 });
     await routine.getByRole("button", { name: "Enable" }).click();

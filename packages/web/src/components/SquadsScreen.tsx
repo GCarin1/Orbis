@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Bot, Squad, SquadsView } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT } from "../i18n.js";
-import { Avatar } from "./Avatar.js";
+import { Avatar, botLabel } from "./Avatar.js";
 import { ChatIcon, PlusIcon } from "./Icons.js";
 
 type T = ReturnType<typeof useT>;
@@ -150,8 +150,7 @@ function SquadCard({
           <option value="">{t("squads.noManager")}</option>
           {outside.map((b) => (
             <option key={b.id} value={b.id}>
-              {b.name}
-              {b.role ? ` · ${b.role}` : ""}
+              {botLabel(b)}
             </option>
           ))}
         </select>
@@ -252,18 +251,28 @@ function NewSquad({ api, bots, squads, onDone }: { api: Api; bots: Bot[]; squads
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} rows={2} name="new-squad-description" />
       </label>
       <fieldset className="squad-pick">
-        <legend>{t("squads.members")}</legend>
-        {bots.map((b) => (
-          <label key={b.id} className={`bot-toggle${members.includes(b.id) ? " on" : ""}`}>
-            <input
-              type="checkbox"
-              checked={members.includes(b.id)}
-              onChange={(e) => setMembers((all) => (e.target.checked ? [...all, b.id] : all.filter((id) => id !== b.id)))}
-            />
-            <Avatar bot={b} size={20} /> {b.name}
-            {squadOf(b) && <span className="muted small"> ({squadOf(b)!.name})</span>}
-          </label>
-        ))}
+        <legend>
+          {t("squads.members")}
+          {members.length > 0 && <span className="muted small"> · {members.length}</span>}
+        </legend>
+        {bots.map((b) => {
+          const other = squadOf(b);
+          const about = [b.role, other && t("squads.inSquad", { squad: other.name })].filter(Boolean).join(" · ");
+          return (
+            <label key={b.id} className={`pick-row${members.includes(b.id) ? " on" : ""}`}>
+              <input
+                type="checkbox"
+                checked={members.includes(b.id)}
+                onChange={(e) => setMembers((all) => (e.target.checked ? [...all, b.id] : all.filter((id) => id !== b.id)))}
+              />
+              <Avatar bot={b} size={30} />
+              <span className="pick-text">
+                <strong>{b.name}</strong>
+                {about && <span className="muted small">{about}</span>}
+              </span>
+            </label>
+          );
+        })}
       </fieldset>
       <p className="muted small">{t("squads.newHelp")}</p>
       <div className="card-actions">
@@ -330,7 +339,7 @@ export function SquadsScreen({ api, bots, view, onOpenGroup }: { api: Api; bots:
                     <option value="">{t("squads.noManager")}</option>
                     {visible.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.name}
+                        {botLabel(b)}
                       </option>
                     ))}
                   </select>

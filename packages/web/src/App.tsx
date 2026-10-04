@@ -6,7 +6,7 @@ import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
 import { closeBackLayer, keepLocalHubUp, saveTextFile, setBackHandler, setOpenConversationHandler, setShareHandler } from "./native.js";
 import { notifyPhone } from "./phone.js";
-import { Avatar, Mascot, StateLabel } from "./components/Avatar.js";
+import { Avatar, Mascot } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
 import { NewBotScreen } from "./components/NewBotScreen.js";
 import { Timeline } from "./components/Timeline.js";
@@ -25,8 +25,7 @@ import { HiringScreen } from "./components/HiringScreen.js";
 import { Marketplace } from "./components/Marketplace.js";
 import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
-import { brainLabel, brainShort } from "./components/brains.js";
-import { BackIcon, ClockIcon, EraseIcon, GearIcon, MonitorIcon, PanelIcon } from "./components/Icons.js";
+import { BotHeader } from "./components/BotHeader.js";
 
 type Panel = "details" | "computer" | "routines" | "settings" | null;
 
@@ -271,13 +270,6 @@ export function App() {
       }
     : null;
 
-  const iconButton = (target: Exclude<Panel, null>, label: string, icon: React.ReactNode, extra?: React.ReactNode) => (
-    <button className="icon-btn" aria-label={label} title={label} aria-pressed={panel === target} onClick={() => setPanel(panel === target ? null : target)}>
-      {icon}
-      {extra}
-    </button>
-  );
-
   return (
     <div className={`app${sidePanel ? " with-panel" : ""}${chatOpen ? " chat-open" : ""}`} style={{ "--panel-width": `${panelWidth}px` } as CSSProperties}>
       {sidePanel && !(computerOpen && computerFull) && <PanelResizer width={panelWidth} onWidth={setPanelWidth} />}
@@ -388,47 +380,20 @@ export function App() {
           </>
         ) : selected && conversationId ? (
           <>
-            <header className="conv-head">
-              <button className="icon-btn back" aria-label={t("nav.back")} onClick={() => void store.selectBot(null)}>
-                <BackIcon />
-              </button>
-              <Avatar bot={selected} size={32} />
-              <div className="conv-title">
-                <h1>
-                  {selected.name} <span className="muted">@{selected.handle}</span>
-                </h1>
-                <div className="conv-meta">
-                  {selected.role && <span>{selected.role}</span>}
-                  <span className="badge" title={brainLabel(t, selected.brain.kind)} data-testid="brain-badge">
-                    🧠 {brainShort(t, selected.brain.kind)}
-                    {selected.brain.model ? ` · ${selected.brain.model}` : ""}
-                  </span>
-                  <StateLabel state={selected.state} />
-                </div>
-              </div>
-              <div className="conv-actions">
-                <button
-                  type="button"
-                  className="icon-btn"
-                  aria-label={t("conv.clear")}
-                  title={t("conv.clear")}
-                  onClick={() => {
-                    if (window.confirm(t("conv.confirmClear", { name: selected.name }))) void act(() => store.clearConversation(conversationId));
-                  }}
-                >
-                  <EraseIcon />
-                </button>
-                {iconButton("routines", t("routines.open"), <ClockIcon />)}
-                {iconButton("settings", t("settings.open"), <GearIcon />)}
-                {iconButton(
-                  "computer",
-                  t("computer.open"),
-                  <MonitorIcon />,
-                  store.computers[selected.id]?.status === "running" ? <span className="dot-running" aria-hidden="true" /> : null,
-                )}
-                {iconButton("details", t("panel.details"), <PanelIcon />)}
-              </div>
-            </header>
+            <BotHeader
+              bot={selected}
+              computerRunning={store.computers[selected.id]?.status === "running"}
+              onBack={() => void store.selectBot(null)}
+              onPanel={(next) => setPanel(next === "details" && panel === "details" ? null : next)}
+              onClear={() => {
+                if (window.confirm(t("conv.confirmClear", { name: selected.name }))) void act(() => store.clearConversation(conversationId));
+              }}
+            />
+            {actionError && (
+              <p className="error banner-error" role="alert">
+                {actionError}
+              </p>
+            )}
             {items.length === 0 && activeRuns.length === 0 ? (
               <div className="empty conv-empty">
                 <Avatar bot={selected} size={72} />

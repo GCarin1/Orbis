@@ -45,7 +45,8 @@ describe("computer modes in a browser", () => {
     await page.goto(`${url}/#token=${TOKEN}`);
     await page.getByTestId("bot-hana").click();
 
-    await page.getByRole("button", { name: "Bot settings", exact: true }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: "Bot settings" }).click();
     const panel = page.getByTestId("settings-panel");
     await panel.getByTestId("mode-host").click();
     await panel.getByLabel("Folder it works in").fill(folder);

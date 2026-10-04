@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { colorFor, initialsOf, shapeFor, type Bot, type Candidate, type Conversation, type HiringRound, type HiringTool } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useLang, useT } from "../i18n.js";
-import { Avatar } from "./Avatar.js";
+import { Avatar, botLabel } from "./Avatar.js";
 import { brainLabel } from "./brains.js";
 import { McpLogo } from "./McpLogo.js";
 import { Sheet } from "./Sheet.js";
@@ -344,7 +344,7 @@ function HireSheet({
             <option value="">{t("hiring.nobody")}</option>
             {bots.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name}
+                {botLabel(b)}
               </option>
             ))}
           </select>

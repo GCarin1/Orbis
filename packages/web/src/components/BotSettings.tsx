@@ -19,7 +19,7 @@ import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "
 import { ApiKeyFields, keySecretName, type KeyHeader } from "./ApiKeyFields.js";
 import type { Api } from "../api.js";
 import { useT, type TextKey } from "../i18n.js";
-import { BotFace } from "./Avatar.js";
+import { BotFace, botLabel } from "./Avatar.js";
 import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 import { ComputerChoice } from "./ComputerModes.js";
 import { ToolPicker } from "./ToolPicker.js";
@@ -273,8 +273,7 @@ export function BotSettings({
                 .filter((b) => b.id !== bot.id && !b.hidden)
                 .map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
-                    {b.role ? ` — ${b.role}` : ""}
+                    {botLabel(b)}
                   </option>
                 ))}
             </select>

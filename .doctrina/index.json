@@ -15,7 +15,7 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.19.0",
+        "version": "0.20.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims, Claude Code on the plan's token from `claude setup-token`",
         "realizes": [
@@ -32,7 +32,7 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.5.1",
+        "version": "0.6.0",
         "last_updated": "2026-10-03",
         "implementation": "verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`",
         "realizes": [
@@ -104,7 +104,7 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -134,7 +134,7 @@
         "id": "handoff",
         "path": ".doctrina/specs/handoff/spec.md",
         "status": "active",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — handoff tool (to a handle, or a role one bot holds), cards, threaded replies, one report back per delegating run, bot.report events, bot-to-bot mentions in any conversation, depth limit",
         "realizes": [
@@ -199,7 +199,7 @@
         "id": "routines",
         "path": ".doctrina/specs/routines/spec.md",
         "status": "active",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — routines service, scheduler and webhooks (`packages/hub/src/routines/`)",
         "realizes": [
@@ -309,7 +309,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.30.0",
+        "version": "0.31.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -1694,6 +1694,40 @@
           }
         ],
         "lane": "product (uncertain)"
+      },
+      {
+        "id": "0055-phone-feedback-round-routines",
+        "title": "Phone feedback round: routines stay in Orbis (Claude Code's own schedulers off, managers create routines for their reports), a representative calling its group's members wakes them, squad member picker and 'reports to' selects with the role, a readable routines panel, notifications while the app is in the background, no stall after returning to the app, and a ⋮ menu in the 1:1 chat header",
+        "path": ".doctrina/changes/archive/2026-10-04-0055-phone-feedback-round-routines",
+        "status": "applied",
+        "applied": "2026-10-04",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "android-app",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "handoff",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "routines",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
       }
     ],
     "skills": [
@@ -1715,7 +1749,7 @@
         "id": "cli-harnesses",
         "path": ".doctrina/contracts/cli-harnesses.md",
         "status": "active",
-        "last_updated": "2026-10-03"
+        "last_updated": "2026-10-04"
       },
       {
         "id": "hub-surface",

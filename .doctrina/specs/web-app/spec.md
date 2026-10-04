@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.30.0
+**Version:** 0.31.0
 
 ## Purpose
 
@@ -55,12 +55,16 @@ run's steps.
 - The web app shall offer a Phone tab in Settings: in a browser, a pairing code with this computer's addresses, how long the code works and a warning when the hub listens on this computer only; inside the Android app, the hub, the app's version, changing the hub, the notification permission, staying connected in the background and the battery settings.
 - The web app shall show each MCP server's logo on a white tile on its catalog card, its connected card and the bot's tool switches, and the server's emoji in its place when the server has no logo or the logo does not load.
 - The web app shall show in Settings → Phone, beside a pairing code, a QR code that holds the link `<address>#pair=<code>`, for an address the phone can reach: the page's own address when it is not this computer's, or the hub's network card the user picks.
+- The web app shall show in a bot's conversation header its face, name, handle, role, brain and state, open the bot's details from them, and keep its other options (details, routines, computer, settings, clearing the conversation) in a ⋮ menu, as a group's header does.
+- The web app shall say a routine's schedule in words in the user's language (every day, weekdays, chosen weekdays, a day of the month or every hour, at a time; any other cron as a cron), with its timezone when it is not the device's, in the routines panel and in routine cards, and say in a routine card whose routine it is.
+- The web app shall let a routine's schedule be picked as every day, weekdays, chosen weekdays or a day of the month at a time, every hour at a minute, a cron, or a webhook, and read the pick back in words before the routine is created.
+- The web app shall offer a bot in a list of bots to pick (who a bot reports to, a squad's manager, a new squad's members) with its role, and a new squad's members one per row with their face, role and current squad.
 
 ### Event-driven
 
 - When the stream delivers an event, the web app shall update the conversation list, the open timeline and the approvals inbox without a page reload.
 - When the user answers an approval card or sends or discards a draft card, the web app shall call the API and show the card's new state.
-- When the stream connection drops, the web app shall reconnect with backoff and reload the open timeline.
+- When the stream connection drops, the web app shall reconnect with backoff and reload the open timeline; when the page comes back on screen, gets the focus or goes back online, it shall open a closed stream at once and replace an open one that does not answer within 4 seconds.
 - When the desktop app reports a notification click, the web app shall open that notification's conversation — the group, or the bot of a direct conversation.
 - When the user presses Test on a brain or a bot in the settings screen, the web app shall call the brain test and show the reply and its duration, a warning when no model answered, or the error.
 - When the user picks the `ollama` or `lmstudio` brain for a bot, the web app shall suggest the models that server has and say when it is not running.
@@ -84,6 +88,7 @@ run's steps.
 - When the user opens Claude Code's card in Settings → Brains, the system shall show whether a subscription token is saved, since when and until about when, or set on the server, say how to get one with `claude setup-token`, and let the user save it in a masked field, replace it or remove it, showing the hub's reason when it is refused.
 - When a test of Claude Code fails because its saved subscription token was refused, the system shall say to make a new token with `claude setup-token` and replace it.
 - When the user opens Settings → Phone, the system shall point to running Orbis in the cloud with the Claude subscription token, in `docs/cloud.md`.
+- When the user enables a routine that was never tested, the web app shall say so in the user's language and offer to test it or to enable it anyway.
 
 ### State-driven
 
@@ -158,6 +163,10 @@ run's steps.
 51. [verified] Explore shows where to start until a search or a filter, filters by search, by how a server connects and by category, says when nothing matches and clears the filters; a card or its name opens the details with how it connects, the address, whether it only reads and who uses it, and Esc or Close shuts them; a key is asked in the details; Connected says when nothing is connected and sums up what is; a connected server's card says so; Reconnect waits in the ⋮ menu — verified by `packages/web/test/marketplace.test.tsx`.
 52. [verified] Claude Code's card saves the token from a masked field and clears it, shows the hub's refusal of an API key, says since when and until about when the token lasts, replaces and removes it, names a token set on the server, and asks for a new token when a saved one was refused — verified by `packages/web/test/claude-sign-in.test.tsx`.
 53. [verified] The phone pairing card points to the cloud guide and the claude setup-token token — verified by `packages/web/test/android.test.tsx`.
+54. [verified] A bot's header shows its name and role and keeps details, routines, computer, settings and clearing in a ⋮ menu; a routine reads "Weekdays (Mon to Fri) at 07:23"; enabling an untested routine offers to test or enable anyway in the user's language; Monday and Friday at 18:00 is sent as `0 18 * * 1,5` with its timezone; a routine card says whose routine it is and when it runs; a bot is offered with its role — verified by `packages/web/test/phone-feedback.test.tsx`
+55. [verified] The usual repeats turn into their cron and back, any other cron stays custom, and a schedule is said in Portuguese or English with the timezone only when it is not the device's — verified by `packages/web/test/schedule.test.tsx`
+56. [verified] Back on screen, a closed stream opens at once instead of waiting out its backoff, an open one that does not answer within 4 seconds is replaced, and a connection that never opens is tried again — verified by `packages/web/test/audit-cycle2.test.tsx`
+57. [verified] In a real browser, the ⋮ menu opens a bot's routines, a routine picked as every day at 02:00 in America/Sao_Paulo is saved as `0 2 * * *` in that timezone, tested and enabled — verified by `tests/e2e/skills-routines.test.ts`
 
 ## Maturity
 

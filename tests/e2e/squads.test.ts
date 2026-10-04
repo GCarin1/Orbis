@@ -68,7 +68,7 @@ describe("squads in a browser", () => {
     await expect.poll(() => hub.squads.get("growth").representativeId).toBe(id("Bob"));
 
     // One manager for both squads: the org chart shows them under Max.
-    await screen.getByLabel("One manager for every squad").selectOption({ label: "Max" });
+    await screen.getByLabel("One manager for every squad").selectOption({ label: "Max · Diretor" });
     await screen.getByRole("button", { name: "Apply to all" }).click();
     const chart = screen.getByRole("region", { name: "Org chart" });
     await chart.getByText("★ Bob · bots: 2").waitFor();

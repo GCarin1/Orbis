@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC13
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.19.0
+**Version:** 0.20.0
 
 ## Purpose
 
@@ -106,6 +106,7 @@ brain are owned by `contracts/cli-harnesses`.
 - A template shall not carry or set a `chat-http` brain's curl program or proxy, and the system shall not accept a curl program whose file is not named curl or curl.exe.
 - The system shall not repeat in a brain check, a run error or a log a value set where a key's secret name goes that is not a secret's name.
 - The system shall not give the Claude subscription token to a brain other than `claude-code`, to Claude Code's sign-in or to a bot's commands, shall not accept an Anthropic API key (`sk-ant-api…`) as that token, and shall not pass `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` to Claude Code.
+- The system shall not let Claude Code schedule work with its own schedulers (`RemoteTrigger`, `CronCreate`, `CronDelete`, `CronList`, `ScheduleWakeup`): every `claude-code` run denies them with `--disallowedTools`, so a bot schedules work as Orbis routines the user sees, tests and stops.
 
 ### Optional
 
@@ -149,6 +150,7 @@ brain are owned by `contracts/cli-harnesses`.
 30. [verified] A gateway with the model in its path and the key in an `api-key` header answers non-streamed JSON with a tool call and the run calls the tool and answers, with usage; the key is a Bearer token by default; a gateway that refuses the stream is asked again without it; a check of a bot whose secret name is a key says so without the key — verified by `packages/hub/test/runtimes/openai.test.ts`.
 31. [verified] A pasted token is taken bare, from an export line, quoted or wrapped, and an API key is refused; the saved token wins over the server's; a fake Claude Code gets it as CLAUDE_CODE_OAUTH_TOKEN in runs and the brain test with no ANTHROPIC_API_KEY even when the hub has one, a bot's own token secret comes first, a refused token says to run claude setup-token again, and neither the other brains nor host commands get it — verified by `packages/hub/test/runtimes/claude-token.test.ts`.
 32. [verified] A fake Claude Code reports the account with the saved token, and its sign-in runs without the token — verified by `packages/hub/test/runtimes/claude-account.test.ts`.
+33. [verified] The claude-code argv denies Claude Code's own schedulers with `--disallowedTools`, and a flag, never the prompt, follows that list — verified by `packages/hub/test/runtimes/claude-code.test.ts`
 
 ## Maturity
 

@@ -6,7 +6,7 @@
 **Realizes:** SC4
 **Depends on:** conversations, agent-runtimes, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -27,7 +27,7 @@ themselves forever.
 - The system shall let a group name one lead bot, and treat the group's first member as lead when none is named.
 - The system shall limit each chain of bot-triggered runs (handoffs, reports back and bot-to-bot mentions) to a depth of 6, set by ORBIS_MAX_HANDOFF_DEPTH.
 - The system shall limit the runs of one chain to 12, set by ORBIS_MAX_CHAIN_RUNS, and always start the report back to a delegating bot.
-- The system shall tell each bot that writing `@handle` or `@role` in a reply wakes that colleague, to do it only to ask one or two colleagues for something, and to write a colleague's name without `@` otherwise.
+- The system shall tell each bot that writing `@handle` or `@role` in a reply wakes that colleague, that in a group the members it names are all called while elsewhere it calls one or two colleagues this way at most, and to write a colleague's name without `@` otherwise.
 
 ### Event-driven
 
@@ -59,6 +59,7 @@ themselves forever.
 7. [verified] With ORBIS_MAX_CHAIN_RUNS at 3, a bot handing off to four reports gets two acknowledgments and two refusals, three runs exist and a `chain.limit` event is posted — verified by `packages/hub/test/bot-behaviour.test.ts`.
 8. [verified] A handoff card left running by a stopped hub reads failed after the restart — verified by `packages/hub/test/chat-audit.test.ts`.
 9. [verified] A handoff to `@growth` reaches Growth's representative — verified by `packages/hub/test/squads.test.ts`.
+10. [verified] A bot's team context says that in a group the members it names with @ are all called, and elsewhere one or two colleagues at most — verified by `packages/hub/test/routines.test.ts`
 
 ## Maturity
 

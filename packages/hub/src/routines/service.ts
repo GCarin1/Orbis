@@ -125,22 +125,37 @@ export class RoutineService {
 
   // --- cards ---------------------------------------------------------------------
 
-  /** A routine card in the bot's direct conversation (created, enabled, disabled, paused). */
-  private card(row: RoutineRow, event: "created" | "enabled" | "disabled" | "paused", text: string): void {
-    const conversation = this.hub.conversationService.directFor(row.botId);
-    this.hub.timeline.post({
-      conversationId: conversation.id,
-      kind: "card",
-      author: { type: "system", id: null },
-      text,
-      runId: null,
-      card: { type: "routine", state: event, data: { routineId: row.id, name: row.name, trigger: row.trigger, approval: row.approval, event } },
-    });
+  /**
+   * A routine card in the bot's direct conversation (created, enabled, disabled, paused), and in `alsoIn`
+   * too: the conversation where a manager made the routine for its report.
+   */
+  private card(row: RoutineRow, event: "created" | "enabled" | "disabled" | "paused", text: string, alsoIn?: string): void {
+    const direct = this.hub.conversationService.directFor(row.botId).id;
+    for (const conversationId of new Set([direct, ...(alsoIn ? [alsoIn] : [])])) {
+      this.hub.timeline.post({
+        conversationId,
+        kind: "card",
+        author: { type: "system", id: null },
+        text,
+        runId: null,
+        card: { type: "routine", state: event, data: { routineId: row.id, botId: row.botId, name: row.name, trigger: row.trigger, approval: row.approval, event } },
+      });
+    }
+  }
+
+  /** Whether `bot` sits below `manager` in the team: it reports to it, directly or through others. */
+  private below(bot: Bot, manager: Bot): boolean {
+    const seen = new Set<string>();
+    for (let up = bot.reportsTo; up && !seen.has(up); up = this.hub.repos.bots.get(up)?.reportsTo ?? null) {
+      if (up === manager.id) return true;
+      seen.add(up);
+    }
+    return false;
   }
 
   // --- writing -------------------------------------------------------------------
 
-  create(botRef: string, input: RoutineInput): Routine & { secret: string } {
+  create(botRef: string, input: RoutineInput, alsoIn?: string): Routine & { secret: string } {
     const bot = this.hub.botService.get(botRef);
     const name = input.name.trim();
     if (!name) throw badRequest("invalid routine", { name: "must not be empty" });
@@ -163,7 +178,7 @@ export class RoutineService {
       updatedAt: at,
     };
     this.repo.insert(row);
-    this.card(row, "created", `Routine "${row.name}" created (${describeTrigger(row.trigger)}). Test it, then enable it.`);
+    this.card(row, "created", `Routine "${row.name}" of @${bot.handle} created (${describeTrigger(row.trigger)}). Test it, then enable it.`, alsoIn);
     return this.view(row, true) as Routine & { secret: string };
   }
 
@@ -363,7 +378,8 @@ export class RoutineService {
       {
         name: "routine.create",
         description:
-          "Create a routine for yourself: an instruction you run on a cron schedule (with an IANA timezone) or when a signed webhook arrives. It starts disabled; the user tests and enables it.",
+          "Create an Orbis routine: an instruction run on a cron schedule (with an IANA timezone) or when a signed webhook arrives, for yourself or, with bot, for one of your reports. " +
+          "This is the only way to schedule work: the user sees, tests and stops routines in Orbis, so never use another scheduler, cron or remote trigger. It starts disabled; the user tests and enables it.",
         input: Type.Object({
           name: Type.String({ minLength: 1, maxLength: 120 }),
           instruction: Type.String({ minLength: 1, maxLength: 20_000 }),
@@ -371,15 +387,29 @@ export class RoutineService {
           timezone: Type.Optional(Type.String({ description: "IANA timezone, e.g. America/Sao_Paulo (default UTC)" })),
           webhook: Type.Optional(Type.Boolean({ description: "trigger on a signed webhook instead of a schedule" })),
           approval: Type.Optional(Type.Union([Type.Literal("normal"), Type.Literal("draft_only")])),
+          bot: Type.Optional(
+            Type.String({ maxLength: 40, description: "the handle of a bot that reports to you (directly or through others), to create the routine for it; default: yourself" }),
+          ),
         }),
         risk: "write",
         defaultDecision: "ask",
-        handler: async (input: { name: string; instruction: string; cron?: string; timezone?: string; webhook?: boolean; approval?: RoutineApproval }, ctx) => {
+        handler: async (
+          input: { name: string; instruction: string; cron?: string; timezone?: string; webhook?: boolean; approval?: RoutineApproval; bot?: string },
+          ctx,
+        ) => {
           if (!input.webhook && !input.cron) return { output: "give a cron schedule, or webhook: true", isError: true };
+          const ref = input.bot?.replace(/^@/, "").trim().toLowerCase();
+          const owner = ref ? this.hub.repos.bots.get(ref) : ctx.bot;
+          if (!owner) return { output: `no bot @${ref}`, isError: true };
+          if (owner.id !== ctx.bot.id && !this.below(owner, ctx.bot)) {
+            return { output: `@${owner.handle} does not report to you: you create routines for yourself and for your reports only`, isError: true };
+          }
           try {
             const trigger: RoutineTrigger = input.webhook ? { type: "webhook" } : { type: "cron", cron: input.cron!, timezone: input.timezone ?? "UTC" };
-            const routine = this.create(ctx.bot.id, { name: input.name, instruction: input.instruction, trigger, approval: input.approval });
-            return `created routine ${routine.id} "${routine.name}" (${describeTrigger(routine.trigger)}), disabled: the user tests it and enables it in Orbis`;
+            const shownIn = owner.id === ctx.bot.id ? undefined : (ctx.run.conversationId ?? undefined);
+            const routine = this.create(owner.id, { name: input.name, instruction: input.instruction, trigger, approval: input.approval }, shownIn);
+            const whose = owner.id === ctx.bot.id ? "" : ` for @${owner.handle}`;
+            return `created routine ${routine.id} "${routine.name}"${whose} (${describeTrigger(routine.trigger)}), disabled: the user tests it and enables it in Orbis (${owner.name}'s Routines)`;
           } catch (err) {
             if (err instanceof HttpError) return { output: `${err.message}${err.fields ? `: ${JSON.stringify(err.fields)}` : ""}`, isError: true };
             throw err;

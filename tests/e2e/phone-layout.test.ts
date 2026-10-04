@@ -93,7 +93,8 @@ describe("the web app on a phone", () => {
     // On a phone each panel covers the conversation: start again from the list for the next one.
     await home();
     await page.getByTestId("bot-ana").click();
-    await page.getByRole("button", { name: "Bot settings", exact: true }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: "Bot settings" }).click();
     const panel = page.getByTestId("settings-panel");
     await panel.waitFor();
     for (const kind of ["claude-code", "mock", "openai", "anthropic", "ollama", "chat-http", "custom-cli", "codex"]) {
@@ -102,11 +103,13 @@ describe("the web app on a phone", () => {
     }
     await home();
     await page.getByTestId("bot-ana").click();
-    await page.getByRole("button", { name: "Routines" }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: "Routines" }).click();
     await check("the routines");
     await home();
     await page.getByTestId("bot-ana").click();
-    await page.getByRole("button", { name: "Computer" }).click();
+    await page.getByRole("button", { name: "Bot options" }).click();
+    await page.getByRole("menuitem", { name: "Computer" }).click();
     await check("the computer");
 
     await home();

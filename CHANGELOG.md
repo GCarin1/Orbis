@@ -184,6 +184,35 @@ change that delivered it.
 
 ### Fixed
 
+- **What the owner found using Orbis on the phone** (change 0055-phone-feedback-round-routines).
+  - **Routines stay in Orbis.** Asked to make routines for its reports, a
+    Claude Code manager made them in Claude's cloud (claude.ai routines),
+    where Orbis cannot show, test or stop them. Claude Code's own schedulers
+    are now off in every run, and `routine.create` takes `bot`: a manager
+    makes a routine for a bot below it, shown in that bot's chat and where it
+    was asked. Routines made on claude.ai before this are deleted there.
+  - **A representative calls its whole squad.** Naming three members in a
+    group read as "a list" and woke none. In a group, the members a bot
+    names are now all called; three or more bots from outside the
+    conversation still read as a list.
+  - **Routines read like people talk.** "Weekdays (Mon to Fri) at 18:00"
+    instead of `0 18 * * 1-5`; a new routine is picked as every day,
+    weekdays, chosen days, a day of the month or every hour, with a time
+    (cron stays a choice). An untested routine offers *Test* or *Enable
+    anyway* instead of an English error. Routine cards say whose routine it
+    is and when it runs. The timezone field no longer runs off the screen.
+  - **The chat header** has the bot's face, name, role and state, and a ⋮
+    menu (details, routines, computer, settings, clear) like a group's.
+  - **Picking bots:** a new squad lists one bot per row with its role and
+    squad; every "reports to" and manager list shows "Name · Role".
+  - **Notifications and coming back.** The Android app now stays connected
+    in the background by default (Android froze it within minutes, so no
+    bot's message became a notification); turn it off in Settings → Phone.
+    Back in the app, the connection comes back at once instead of waiting up
+    to 15 s. The hub on the phone keeps the CPU awake while it runs, so bots
+    answer and routines fire with the screen off (`ORBIS_AWAKE=0` to let the
+    phone sleep).
+
 - **The phone install no longer stops at "container 'debian' already exists"** (change 0054-proot-distro-5-layout).
   - proot-distro 5 keeps a distro in `containers/<name>/rootfs`. The install
     script looked in the old `installed-rootfs`, so it never found Debian and

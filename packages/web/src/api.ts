@@ -140,13 +140,23 @@ export class Api {
 /** How often the stream checks the hub still answers, and how long an answer may take. */
 export const STREAM_PING_MS = 25_000;
 export const STREAM_PONG_MS = 10_000;
+/** Back on screen: how long the hub may take to answer before the connection is replaced. */
+export const STREAM_WAKE_PONG_MS = 4_000;
+/** How long a connection may stay half-open before it is given up and tried again. */
+export const STREAM_CONNECT_MS = 10_000;
+
+// WebSocket.readyState values.
+const CONNECTING = 0;
+const OPEN = 1;
 
 /**
  * The event stream with reconnection: exponential backoff up to 15 s, and
  * `onReconnect` so the app reloads what it may have missed. A connection that
  * stopped answering without closing (a laptop that slept, a dropped Wi-Fi) is
  * found by a ping and replaced, so the app never shows "connected" while
- * missing events.
+ * missing events. Back on screen (a phone app reopened) or back online, the
+ * stream does not wait out its backoff: a closed connection is opened again
+ * at once and an open one must answer within STREAM_WAKE_PONG_MS.
  */
 export function openStream(
   token: string,
@@ -156,11 +166,12 @@ export function openStream(
   let stopped = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let connectTimer: ReturnType<typeof setTimeout> | null = null;
   let pingTimer: ReturnType<typeof setInterval> | null = null;
   let pongTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const check = () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || pongTimer) return;
+  const check = (within = STREAM_PONG_MS) => {
+    if (!ws || ws.readyState !== OPEN || pongTimer) return;
     try {
       ws.send(JSON.stringify({ type: "ping" }));
     } catch {
@@ -170,23 +181,45 @@ export function openStream(
     pongTimer = setTimeout(() => {
       pongTimer = null;
       current.close();
-    }, STREAM_PONG_MS);
+    }, within);
   };
   const onWake = () => {
-    if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
-    check();
+    if (stopped || (typeof document !== "undefined" && document.visibilityState === "hidden")) return;
+    if (!ws || ws.readyState > OPEN) {
+      // Closed and waiting out the backoff: try now.
+      if (timer) clearTimeout(timer);
+      timer = null;
+      connect();
+      return;
+    }
+    if (ws.readyState === OPEN) {
+      // An answer already awaited may be on a dead connection: ask again, with the shorter wait.
+      if (pongTimer) clearTimeout(pongTimer);
+      pongTimer = null;
+      check(STREAM_WAKE_PONG_MS);
+    }
   };
 
   const connect = () => {
+    if (connectTimer) clearTimeout(connectTimer);
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
-    ws = new WebSocket(`${proto}://${window.location.host}/api/v1/stream?token=${encodeURIComponent(token)}`);
-    ws.onopen = () => {
-      ws!.send(JSON.stringify({ type: "subscribe" }));
+    const current = new WebSocket(`${proto}://${window.location.host}/api/v1/stream?token=${encodeURIComponent(token)}`);
+    ws = current;
+    connectTimer = setTimeout(() => {
+      connectTimer = null;
+      if (current.readyState === CONNECTING) current.close();
+    }, STREAM_CONNECT_MS);
+    current.onopen = () => {
+      if (ws !== current) return;
+      if (connectTimer) clearTimeout(connectTimer);
+      connectTimer = null;
+      current.send(JSON.stringify({ type: "subscribe" }));
       handlers.onStatus(true);
       if (attempt > 0) handlers.onReconnect();
       attempt = 0;
     };
-    ws.onmessage = (msg) => {
+    current.onmessage = (msg) => {
+      if (ws !== current) return;
       // Anything from the hub proves the connection lives.
       if (pongTimer) clearTimeout(pongTimer);
       pongTimer = null;
@@ -199,9 +232,13 @@ export function openStream(
       if (event.type === "pong" || (event.type as string) === "subscribed") return;
       handlers.onEvent(event);
     };
-    ws.onclose = () => {
+    current.onclose = () => {
+      // A connection already replaced says nothing about the new one.
+      if (ws !== current) return;
       if (pongTimer) clearTimeout(pongTimer);
       pongTimer = null;
+      if (connectTimer) clearTimeout(connectTimer);
+      connectTimer = null;
       handlers.onStatus(false);
       if (stopped) return;
       attempt++;
@@ -211,13 +248,16 @@ export function openStream(
   connect();
   pingTimer = setInterval(check, STREAM_PING_MS);
   globalThis.addEventListener?.("online", onWake);
+  globalThis.addEventListener?.("focus", onWake);
   globalThis.document?.addEventListener?.("visibilitychange", onWake);
   return () => {
     stopped = true;
     if (timer) clearTimeout(timer);
+    if (connectTimer) clearTimeout(connectTimer);
     if (pingTimer) clearInterval(pingTimer);
     if (pongTimer) clearTimeout(pongTimer);
     globalThis.removeEventListener?.("online", onWake);
+    globalThis.removeEventListener?.("focus", onWake);
     globalThis.document?.removeEventListener?.("visibilitychange", onWake);
     ws?.close();
   };

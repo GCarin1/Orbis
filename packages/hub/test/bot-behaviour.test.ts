@@ -43,12 +43,26 @@ describe("bots talking to each other", () => {
 
   it("does not loop when a bot answers with a list of the team (the 'who is available?' loop)", async () => {
     t = await testHub();
-    const { group } = await team(t);
-    leadReplies(t, group, "Disponíveis agora: @anl, @pesquisa e @dev. Como posso ajudar?");
+    const { gte } = await team(t);
+    // Outside a group, three colleagues named at once are a list: nobody is woken.
+    const direct = (await t.api("GET", `/api/v1/bots/${gte.id}/conversation`)).body;
+    leadReplies(t, { id: direct.id, leadBotId: gte.id }, "Disponíveis agora: @anl, @pesquisa e @dev. Como posso ajudar?");
     await settles(t);
     expect(allRuns(t)).toHaveLength(1);
-    const events = (await timeline(t, group.id)).filter((i) => i.kind === "event").map((i) => i.event?.type);
-    expect(events).toContain("mention.list");
+    const events = (await timeline(t, direct.id)).filter((i) => i.kind === "event");
+    expect(events.map((i) => i.event?.type)).toContain("mention.list");
+    expect(events.find((i) => i.event?.type === "mention.list")!.text).toMatch(/named 3 bots from outside this conversation/);
+  });
+
+  it("calls every group member a representative names, each once, and they wake nobody back", async () => {
+    t = await testHub();
+    const { group, anl, pesquisa, dev } = await team(t);
+    leadReplies(t, group, "@anl, você se apresenta para o pessoal? E @pesquisa, @dev — vocês também vêm!");
+    await settles(t);
+    const runs = allRuns(t).reverse();
+    expect(runs.map((r) => r.trigger.type)).toEqual(["message", "mention", "mention", "mention"]);
+    expect(new Set(runs.slice(1).map((r) => r.botId))).toEqual(new Set([anl.id, pesquisa.id, dev.id]));
+    expect((await timeline(t, group.id)).some((i) => i.event?.type === "mention.list")).toBe(false);
   });
 
   it("wakes one colleague called by a reply, once, and that colleague wakes nobody back", async () => {

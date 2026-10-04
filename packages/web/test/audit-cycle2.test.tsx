@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { Approval, TimelineItem } from "@orbis/shared";
-import { openStream, STREAM_PING_MS, STREAM_PONG_MS } from "../src/api.js";
+import { openStream, STREAM_CONNECT_MS, STREAM_PING_MS, STREAM_PONG_MS, STREAM_WAKE_PONG_MS } from "../src/api.js";
 import { ApprovalsInbox, approvalSummary } from "../src/components/ApprovalsInbox.js";
 import { ApprovalCard } from "../src/components/Cards.js";
 import { plainText } from "../src/components/Markdown.js";
@@ -71,6 +71,42 @@ describe("the event stream", () => {
     expect(FakeSocket.all).toHaveLength(2);
     FakeSocket.all[1]!.open();
     expect(onReconnect).toHaveBeenCalledOnce();
+    stop();
+  });
+
+  it("back on screen, opens a closed stream at once and replaces an open one that no longer answers (change 0055)", () => {
+    vi.useFakeTimers();
+    FakeSocket.all = [];
+    vi.stubGlobal("WebSocket", FakeSocket);
+    const status: boolean[] = [];
+    const onReconnect = vi.fn();
+    const stop = openStream("t", { onEvent: () => undefined, onStatus: (c) => status.push(c), onReconnect });
+    FakeSocket.all[0]!.open();
+    // The phone froze the app: the connection dropped, and the backoff grew while nobody looked.
+    for (let i = 0; i < 4; i++) {
+      FakeSocket.all.at(-1)!.close();
+      vi.advanceTimersByTime(500 * 2 ** (i + 1));
+    }
+    FakeSocket.all.at(-1)!.close();
+    const before = FakeSocket.all.length;
+    // Back on screen: no waiting out the 15 s backoff.
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(FakeSocket.all).toHaveLength(before + 1);
+    FakeSocket.all.at(-1)!.open();
+    expect(onReconnect).toHaveBeenCalledOnce();
+    expect(status.at(-1)).toBe(true);
+
+    // An open connection that went dead while away must answer within STREAM_WAKE_PONG_MS.
+    globalThis.dispatchEvent(new Event("focus"));
+    expect(FakeSocket.all.at(-1)!.sent.at(-1)).toBe('{"type":"ping"}');
+    vi.advanceTimersByTime(STREAM_WAKE_PONG_MS);
+    expect(status.at(-1)).toBe(false);
+    vi.advanceTimersByTime(1_000);
+    expect(FakeSocket.all).toHaveLength(before + 2);
+
+    // A connection that never opens is given up and tried again.
+    vi.advanceTimersByTime(STREAM_CONNECT_MS);
+    expect(FakeSocket.all.at(-2)!.readyState).toBe(3);
     stop();
   });
 });

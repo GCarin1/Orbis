@@ -77,7 +77,7 @@ export function conversationText(group: Conversation, items: TimelineItem[], bot
 }
 
 /** Close a popup on a click outside it or on Escape. */
-function useDismiss(open: boolean, ref: React.RefObject<HTMLElement | null>, close: () => void) {
+export function useDismiss(open: boolean, ref: React.RefObject<HTMLElement | null>, close: () => void) {
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {

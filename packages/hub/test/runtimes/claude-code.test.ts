@@ -18,9 +18,14 @@ describe("claude-code brain", () => {
   it("builds the headless argv with stream-json, the identity, and a new session id", () => {
     const args = claudeArgs({ prompt: "do it", system: "You are Ana", model: "sonnet", sessionId: "s-1", resume: false, mcp: null });
     expect(args).toEqual([
-      "-p", "do it", "--output-format", "stream-json", "--verbose", "--append-system-prompt", "You are Ana",
+      "-p", "do it", "--output-format", "stream-json", "--verbose",
+      "--disallowedTools", "RemoteTrigger,CronCreate,CronDelete,CronList,ScheduleWakeup",
+      "--append-system-prompt", "You are Ana",
       "--model", "sonnet", "--session-id", "s-1",
     ]);
+    // Claude Code's own schedulers stay off, and its variadic list never swallows the prompt.
+    const long = claudeArgs({ prompt: null, system: "y", sessionId: "s-1", resume: false, mcp: null });
+    expect(long[long.indexOf("--disallowedTools") + 2]).toBe("--append-system-prompt");
     expect(claudeArgs({ prompt: "x", system: "y", sessionId: "s-1", resume: true, mcp: null }).slice(-2)).toEqual(["--resume", "s-1"]);
   });
 

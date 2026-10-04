@@ -3,10 +3,17 @@ package app.orbis.android;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 public class HubTest {
+    @Test
+    public void theAppStaysConnectedInTheBackgroundUntilTheUserTurnsItOff() {
+        // Off, Android freezes the app within minutes and the bots' notifications stop coming.
+        assertTrue(Hub.KEEP_CONNECTED_DEFAULT);
+    }
+
     @Test
     public void aBareAddressIsTheHubOnItsDefaultPort() {
         Hub.Target t = Hub.parse("  192.168.0.10 ");

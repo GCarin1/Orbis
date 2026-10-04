@@ -1,8 +1,9 @@
 // Structured cards inside the timeline: approvals, drafts and handoffs
 // (specs/approvals, specs/handoff, specs/web-app).
 import { useState } from "react";
-import type { Bot, DraftFields, HandoffCardData, TimelineItem } from "@orbis/shared";
-import { useT, type TextKey } from "../i18n.js";
+import type { Bot, DraftFields, HandoffCardData, RoutineTrigger, TimelineItem } from "@orbis/shared";
+import { useLang, useT, type TextKey } from "../i18n.js";
+import { describeSchedule } from "../schedule.js";
 import { useStore } from "../store.js";
 import { Avatar } from "./Avatar.js";
 
@@ -230,15 +231,27 @@ export function SecretRequestCard({ item, bot }: { item: TimelineItem; bot?: Bot
   );
 }
 
-export function RoutineCard({ item }: { item: TimelineItem }) {
+const ROUTINE_EVENTS = new Set(["created", "enabled", "disabled", "paused"]);
+
+/** A routine created, enabled, disabled or paused, told in the user's language (older cards keep the hub's text). */
+export function RoutineCard({ item, bots = {} }: { item: TimelineItem; bots?: Record<string, Bot> }) {
   const t = useT();
+  const lang = useLang((s) => s.lang);
   const state = item.card!.state;
+  const data = item.card!.data as { name?: string; botId?: string; trigger?: RoutineTrigger };
+  const owner = data.botId ? bots[data.botId] : undefined;
+  const told = owner && data.name && data.trigger && ROUTINE_EVENTS.has(state);
   return (
     <div className={`card card-routine card-${state}`} data-testid="routine-card">
       <div className="card-head">
-        <strong>⏰ {item.text}</strong>
+        <strong>⏰ {told ? t("routine.card.title", { name: data.name!, bot: owner.name }) : item.text}</strong>
         <span className={`pill pill-routine-${state}`}>{t(`routine.card.${state}` as TextKey)}</span>
       </div>
+      {told && (
+        <p className="muted routine-card-when">
+          {describeSchedule(data.trigger!, lang, (key, vars) => t(key as TextKey, vars))} · {t(`routine.card.${state}Text` as TextKey)}
+        </p>
+      )}
     </div>
   );
 }
@@ -252,7 +265,7 @@ export function CardView({ item, bot, bots = {} }: { item: TimelineItem; bot?: B
     case "handoff":
       return <HandoffCard item={item} bots={bots} />;
     case "routine":
-      return <RoutineCard item={item} />;
+      return <RoutineCard item={item} bots={bots} />;
     case "secret-request":
       return <SecretRequestCard item={item} bot={bot} />;
     default:

@@ -2,7 +2,7 @@
 
 **Contract:** cli-harnesses
 **Status:** active
-**Last updated:** 2026-10-03
+**Last updated:** 2026-10-04
 
 ## Purpose
 
@@ -65,7 +65,10 @@ Orbis tools appear to the CLI with dots replaced by underscores
 
 ### claude-code (Claude Code, subscription login)
 
-- argv: `claude -p <prompt> --output-format stream-json --verbose --append-system-prompt <identity> [--model <model>] --mcp-config '{"mcpServers":{"orbis":{"type":"stdio",...entry}}}' --strict-mcp-config --permission-prompt-tool mcp__orbis__approval_prompt (--session-id <uuid> | --resume <uuid>)`.
+- argv: `claude -p <prompt> --output-format stream-json --verbose --disallowedTools RemoteTrigger,CronCreate,CronDelete,CronList,ScheduleWakeup --append-system-prompt <identity> [--model <model>] --mcp-config '{"mcpServers":{"orbis":{"type":"stdio",...entry}}}' --strict-mcp-config --permission-prompt-tool mcp__orbis__approval_prompt (--session-id <uuid> | --resume <uuid>)`.
+- `--disallowedTools` denies Claude Code's own schedulers (routines on claude.ai, session crons and loops): a bot
+  schedules work as Orbis routines (`routine.create`). The list is variadic, so a flag always follows it, never the
+  prompt.
 - `approval_prompt` receives `{ tool_name, input, tool_use_id? }` and answers the text `{"behavior":"allow","updatedInput":<input>}` or `{"behavior":"deny","message":"..."}` after the Orbis policy (and the user, on `ask`) decided.
 - The first run of a bot in a conversation passes a new `--session-id`; later runs pass `--resume` with the stored id.
 - stdout: one JSON object per line. Mapping: `{"type":"system","subtype":"init"}` → `run.started` (session id kept); `{"type":"assistant"}` content blocks `text` → `step.text`, `thinking` → `step.thinking`, `tool_use` → `step.tool_call`; `{"type":"user"}` content blocks `tool_result` → `step.tool_result`; `{"type":"result"}` → `run.usage` from `usage` and `total_cost_usd` (subscription-covered), then `run.finished` with `result` as the reply, or `run.failed` when `is_error` is true. Every other `type` is ignored.

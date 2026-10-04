@@ -70,8 +70,16 @@ other task.
 - **Absence.** After `ORBIS_ABSENCE_PAUSE_DAYS` (default 14) days with no
   action from you through the API, scheduled routines pause and a routine
   card says so; enabling one resumes it.
+- **In the web app** (⋮ → Routines), pick when it runs — every day, weekdays,
+  chosen days, a day of the month or every hour, at a time — or write a cron;
+  the panel reads it back in words ("Weekdays (Mon to Fri) at 09:00").
 - **Bots can propose routines** with `routine.create`, which asks you first
   by default; the routine still needs your test and enable.
+  - A manager makes one for a bot below it with `bot: "<handle>"`; its card
+    shows in that bot's chat and where the manager was asked.
+  - Routines live in Orbis only: a `claude-code` bot cannot use Claude Code's
+    own schedulers (routines on claude.ai, session crons), which run where
+    you cannot see, test or stop them.
 - **Bots call each other's routines** with `routine.call`.
   - Name the routine as `@handle/name`, or by its id, and add a note.
   - The routine's bot runs the instruction and the note in the caller's

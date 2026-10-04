@@ -552,35 +552,142 @@ iframe.computer-screen {
 }
 .routine {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--panel-2);
+}
+.routine p {
+  margin: 0;
+}
+.routine-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.routine-top strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.routine-top .pill {
+  flex-shrink: 0;
+}
+.routine-when {
+  font-size: 14px;
+}
+.routine-instruction {
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .routine-meta {
-  font-size: 0.8em;
+  font-size: 12.5px;
+}
+.routine-meta code {
+  overflow-wrap: anywhere;
+}
+.routine-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.routine-untested {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.routine-card-when {
+  margin: 4px 0 0;
+  font-size: 13px;
 }
 .routine-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   border-top: 1px solid var(--border);
-  padding-top: 12px;
+  padding-top: 14px;
+  min-width: 0;
+}
+.routine-form h3 {
+  margin: 0;
+  font-size: 15px;
 }
 .routine-form label {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   font-size: 0.85em;
   font-weight: 600;
+  min-width: 0;
+}
+.routine-form input:not([type="checkbox"]),
+.routine-form select,
+.routine-form textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .routine-form label.checkbox {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-weight: 400;
 }
+.routine-form label.checkbox > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.field-help {
+  font-weight: 400;
+}
+.routine-preview {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.day-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0;
+}
+.day-picks legend {
+  font-size: 0.85em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.day-pick {
+  min-width: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.day-pick.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
 .card-routine {
@@ -2653,7 +2760,8 @@ label.check {
 }
 
 /* ── a group like a chat app's (change 0042): header, ⋮ menu, info flyout ─── */
-.group-head .group-face-btn {
+.group-head .group-face-btn,
+.bot-head .group-face-btn {
   border: 0;
   padding: 0;
   background: none;
@@ -2693,6 +2801,31 @@ label.check {
 }
 .group-menu .menu {
   min-width: 240px;
+}
+/* A bot's header (change 0055): face and name open its details; one line of what it does, never wrapped. */
+.bot-head .conv-title {
+  cursor: pointer;
+}
+.bot-head .conv-meta {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.bot-head .conv-role {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.bot-head .conv-meta > :not(.conv-role) {
+  flex-shrink: 0;
+}
+.group-menu > .icon-btn {
+  position: relative;
+}
+.menu-note {
+  flex: 0 0 auto !important;
+  font-size: 12px;
+  color: #16a34a;
 }
 .menu button {
   display: flex;
@@ -3960,16 +4093,52 @@ label.check {
   font-size: 17px;
 }
 .squad-pick {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
   gap: 6px;
   border: 0;
   padding: 0;
   margin: 0;
+  min-inline-size: 0;
 }
 .squad-pick legend {
   font-weight: 600;
   margin-bottom: 6px;
+}
+/* One bot per row: checkbox, face, name over role — every row the same height. */
+.prefs-form label.pick-row,
+label.pick-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-width: 0;
+}
+label.pick-row.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.prefs-form label.pick-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.pick-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pick-text strong,
+.pick-text .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .org-chart {
   display: flex;

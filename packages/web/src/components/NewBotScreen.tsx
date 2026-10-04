@@ -7,7 +7,7 @@ import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "
 import { ApiKeyFields, type KeyHeader } from "./ApiKeyFields.js";
 import type { Api } from "../api.js";
 import { useLang, useT, type TextKey } from "../i18n.js";
-import { BotFace } from "./Avatar.js";
+import { BotFace, botLabel } from "./Avatar.js";
 import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 
 export interface NewBotInput {
@@ -181,8 +181,7 @@ export function NewBotScreen({
                 <option value="">{t("newbot.noManager")}</option>
                 {visible.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
-                    {b.role ? ` — ${b.role}` : ""}
+                    {botLabel(b)}
                   </option>
                 ))}
               </select>

@@ -85,9 +85,13 @@ under **Settings → Brains → Claude Code**, either way:
 - In Android's settings, let **Termux** run without battery limits.
 - Android 12 and 13 may stop Termux's child processes. On Android 14 and
   later, *Developer options → Disable child process restrictions* lifts that.
-- With the screen off, Android may pause Orbis. Routines then run when the
-  phone wakes. `orbis-phone serve --awake` keeps the CPU awake while Orbis
-  runs, at a cost in battery.
+- Orbis keeps the phone's CPU awake while it runs, so bots answer and
+  routines fire with the screen off. To let the phone sleep instead (routines
+  then run when it wakes), start it with `ORBIS_AWAKE=0 orbis-phone serve`.
+- The app stays connected in the background (a lasting "Orbis connected"
+  notification), so the bots' messages arrive as notifications. Turn it off
+  in **Settings → Phone → Stay connected with the app closed**; Android then
+  stops the app within minutes and the notifications stop with it.
 
 **Not working?** The app's first screen says why, and has a fix for each:
 

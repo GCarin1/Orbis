@@ -110,7 +110,7 @@ public class MainActivity extends Activity {
 
         String hub = savedHub();
         hubOrigin = hub == null ? null : Hub.origin(hub);
-        if (prefs().getBoolean(KEY_KEEP, false)) KeepAliveService.start(this);
+        if (keepConnected()) KeepAliveService.start(this);
         TermuxResult.listener = this::onTermuxResult;
         if (state == null || web.restoreState(state) == null) {
             if (hub == null) showConnect(null, false, false);
@@ -153,6 +153,11 @@ public class MainActivity extends Activity {
 
     private SharedPreferences prefs() {
         return getSharedPreferences(PREFS, MODE_PRIVATE);
+    }
+
+    /** Whether the page stays connected with the app in the background (a foreground service). */
+    private boolean keepConnected() {
+        return prefs().getBoolean(KEY_KEEP, Hub.KEEP_CONNECTED_DEFAULT);
     }
 
     private String savedHub() {
@@ -698,7 +703,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public boolean keepConnected() {
-            return prefs().getBoolean(KEY_KEEP, false);
+            return MainActivity.this.keepConnected();
         }
 
         @JavascriptInterface

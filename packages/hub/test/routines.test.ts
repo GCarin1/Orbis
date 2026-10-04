@@ -2,6 +2,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { Run, TimelineItem } from "@orbis/shared";
 import { sign } from "../src/routines/service.js";
+import { Collaboration } from "../src/collab/handoff.js";
+import type { HubContext } from "../src/context.js";
 import { chat, createBot, TOKEN, testHub, type TestHub } from "./helpers.js";
 
 let t: TestHub | null = null;
@@ -192,5 +194,42 @@ describe("routines", () => {
     await t.api("POST", `/api/v1/conversations/${conv.id}/messages`, { text: '/tool routine.create {"name":"x","instruction":"y","webhook":true}' });
     for (let i = 0; i < 100 && (await t.api("GET", "/api/v1/approvals?status=pending")).body.length === 0; i++) await new Promise((r) => setTimeout(r, 20));
     expect((await t.api("GET", "/api/v1/approvals?status=pending")).body[0]).toMatchObject({ tool: "routine.create", botId: asking.id });
+  });
+
+  it("lets a manager create routines for the bots below it, shown where it was asked, and for no one else (criterion 9)", async () => {
+    t = await testHub();
+    const allow = { policy: { rules: [{ tool: "routine.create", decision: "allow" }], grants: [] } };
+    const camila = await createBot(t, { name: "Camila", role: "Gerente", ...allow });
+    const rafael = await createBot(t, { name: "Rafael", role: "Analista", reportsTo: camila.id, ...allow });
+    const lia = await createBot(t, { name: "Lia", role: "Estagiária", reportsTo: rafael.id });
+    const peer = await createBot(t, { name: "Jorge", role: "Diretor" });
+    const make = (bot: string, name: string) => `/tool routine.create {"name":"${name}","instruction":"Resumo do mercado","cron":"23 7 * * 1-5","timezone":"America/Sao_Paulo","bot":"${bot}"}`;
+    const { runs, conversation } = await chat(t, camila.id, [make("@rafael", "Abertura"), make("lia", "Estudo"), make("jorge", "Nada"), make("camila", "Minha")].join("\n"));
+    const [forReport, forGrandReport, forPeer, forSelf] = runs[0].steps.filter((s: { type: string }) => s.type === "tool_result");
+    expect(forReport.output).toMatch(/^created routine rtn_\w+ "Abertura" for @rafael \(cron "23 7 \* \* 1-5" in America\/Sao_Paulo\), disabled/);
+    expect(forGrandReport.output).toMatch(/"Estudo" for @lia/);
+    expect(forPeer).toMatchObject({ isError: true });
+    expect(forPeer.output).toMatch(/@jorge does not report to you/);
+    expect(forSelf.output).toMatch(/^created routine rtn_\w+ "Minha" \(/);
+
+    // The routine is the report's, its card in the report's chat and where the manager was asked.
+    expect((await t.api("GET", `/api/v1/bots/${rafael.id}/routines`)).body).toMatchObject([{ name: "Abertura", botId: rafael.id, enabled: false }]);
+    expect((await t.api("GET", `/api/v1/bots/${peer.id}/routines`)).body).toEqual([]);
+    const rafaelChat = (await t.api("GET", `/api/v1/bots/${rafael.id}/conversation`)).body;
+    const cards = (list: TimelineItem[]) => list.filter((i) => i.card?.type === "routine").map((i) => i.card!.data as { name: string; botId: string });
+    expect(cards(await items(t, rafaelChat.id))).toEqual([expect.objectContaining({ name: "Abertura", botId: rafael.id })]);
+    expect(cards(await items(t, conversation.id)).map((c) => c.name)).toEqual(["Abertura", "Estudo", "Minha"]);
+    void lia;
+  });
+
+  it("tells a manager to schedule its reports' work with Orbis routines", async () => {
+    t = await testHub();
+    const camila = await createBot(t, { name: "Camila" });
+    await createBot(t, { name: "Rafael", reportsTo: camila.id });
+    const section = new Collaboration({ repos: t.hub.repos } as unknown as HubContext).contextSection(t.hub.repos.bots.get(camila.id)!)!;
+    expect(section).toMatch(/routine\.create \(bot: its handle\)/);
+    expect(section).toMatch(/never with another scheduler/);
+    // And how mentions call colleagues: all the members named in a group, one or two elsewhere.
+    expect(section).toMatch(/In a group, the members you name with @ are all called; elsewhere call one or two colleagues this way at most/);
   });
 });

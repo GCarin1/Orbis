@@ -85,6 +85,8 @@ async function phone(): Promise<Phone> {
   tool("apt-get", '#!/bin/bash\necho "$*" >> "$LOG/apt-get"\n');
   tool("am", '#!/bin/bash\necho "$*" >> "$LOG/am"\n');
   tool("termux-reload-settings", '#!/bin/bash\necho reloaded >> "$LOG/reloaded"\n');
+  tool("termux-wake-lock", '#!/bin/bash\necho lock >> "$LOG/wake"\n');
+  tool("termux-wake-unlock", '#!/bin/bash\necho unlock >> "$LOG/wake"\n');
   writeFileSync(path.join(dir, "fake-hub.cjs"), FAKE_HUB);
   const env: NodeJS.ProcessEnv = {
     PATH: `${bin}:${process.env.PATH}`,
@@ -229,6 +231,8 @@ describe.skipIf(process.platform === "win32")("the hub on the phone", () => {
     serve(p, "token-one");
     await until(async () => (await status(p, "token-one")) === 200);
     expect(await status(p, "another")).toBe(401);
+    // Started by the app, it keeps the phone's CPU awake: bots answer and routines fire with the screen off.
+    expect(p.log("wake")).toBe("lock\n");
     const tokenFile = path.join(p.env.HOME!, ".orbis-phone", "token");
     expect(readFileSync(tokenFile, "utf8")).toBe("token-one");
     expect(statSync(tokenFile).mode & 0o777).toBe(0o600);
