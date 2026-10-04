@@ -9,6 +9,24 @@ change that delivered it.
 
 ### Added
 
+- **Marketing in the MCP catalog** (change 0056-marketing-mcp-catalog). A new
+  **Marketing** category with four servers, each checked live:
+  - **Meta Ads**: Meta's official server, for Facebook and Instagram ad
+    accounts (campaigns, ad sets, ads, audiences, insights, leads, comments).
+    Sign in with your Meta Business account.
+  - **TikTok Ads**: TikTok's official server, its endpoint with about 40
+    tools that find the rest on demand. Sign in with your TikTok for
+    Business account, again every 30 days.
+  - **Google Analytics**: Google's official server, read-only (GA4 reports,
+    real-time, funnels, conversions). It takes a Google credentials file and
+    a project ID, and needs Python's `pipx`.
+  - **Instagram**: organic metrics of a Business or Creator account (posts and
+    their insights, account insights, comments, mentions, hashtags). A
+    community server, pinned to the version that was read; posting, replying
+    and DMs ask first.
+  - LinkedIn stays out: it has no official server, and the popular one drives
+    your logged-in session, which LinkedIn's terms forbid.
+
 - **Orbis opens on the phone without Termux's permission** (change 0053-android-termux-run-command).
   - `orbis-phone open`, run in Termux, starts the hub if it is stopped and
     opens the Orbis app signed in. It needs no Android permission.

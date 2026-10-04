@@ -51,7 +51,7 @@ Cursor and VS Code, and has two tabs:
 - **Your own server** (top right, **+** on a phone) takes an address or a
   program to start.
 
-- **The catalog**: 37 checked servers, all free to use. Each one needs no
+- **The catalog**: 41 checked servers, all free to use. Each one needs no
   account, has a free plan, or takes a free key. Every entry was checked
   before it went in: its npm package exists and starts and lists its tools,
   or its address answers `initialize`. For a sign-in, the service also lets
@@ -72,19 +72,35 @@ Cursor and VS Code, and has two tabs:
     - Development: Sentry, Supabase, Vercel, Cloudflare Workers, Neon
       Postgres, Prisma Postgres, Postman, Semgrep.
     - Finance: Stripe (its test mode is free).
+    - Marketing: Meta Ads (Facebook and Instagram ad accounts, with your Meta
+      Business account) and TikTok Ads (your TikTok for Business account;
+      sign in again every 30 days). Both are the platforms' official servers
+      and can change campaigns, so their changing tools ask first.
     - Orbis registers itself with the service on the fly. It keeps the
       sign-in encrypted and refreshes it when it expires.
   - *Needs a key*: paste it. The card links to where you get it.
     - GitHub (personal access token), Brave Search, Tavily, Firecrawl,
       Airtable.
+    - Google Analytics: Google's official server, read-only (GA4 reports,
+      real-time, funnels, conversions). It takes the path of a Google
+      credentials file with the Analytics read-only scope and a Google Cloud
+      project ID, and needs Python's `pipx` on the machine that runs Orbis.
+    - Instagram: a Business or Creator account linked to a Facebook Page,
+      with a long-lived token from a Meta developer app (60 days) and the
+      account's ID. A community server (mcpware), pinned to the version that
+      was read: it only calls Meta's Graph API. Posting, replying and DMs
+      ask first.
     - Alpha Vantage: stocks, ETFs, forex and crypto, fundamentals and
       technical indicators. Its free key goes in the address the hub calls
       (`?apikey=`). The hub adds it from the vault on each call, so the key
       never shows: not on the card, not in the API, not in an error.
   - Servers started with `npx` need Node.js on the machine that runs Orbis.
   - Left out, because they did not pass these checks: Asana (no
-    self-registration for sign-in), and DuckDuckGo and Wikipedia (their
-    packages are no longer maintained).
+    self-registration for sign-in), DuckDuckGo and Wikipedia (their
+    packages are no longer maintained), LinkedIn (no official server; the
+    popular one drives your logged-in session, which LinkedIn's terms
+    forbid), and Google Analytics' hosted address (Google lets no app
+    register itself for sign-in).
 - **Your own server** takes one of two things:
   - an address: streamable HTTP, with an optional token (without one, Orbis
     tries signing in);

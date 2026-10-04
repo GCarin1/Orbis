@@ -667,7 +667,7 @@ export interface McpCatalogEntry {
   icon: string;
   /** The service's own logo, a path under the web app (`/logos/mcp/<id>.svg`); `icon` is the fallback. */
   logo?: string;
-  category: "research" | "dev" | "work" | "finance" | "browser" | "files" | "reasoning";
+  category: "research" | "dev" | "work" | "finance" | "marketing" | "browser" | "files" | "reasoning";
   description: Localized;
   transport: McpTransportKind;
   /** stdio: the command and arguments (e.g. npx -y <package>). */

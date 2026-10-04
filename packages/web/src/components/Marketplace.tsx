@@ -14,7 +14,7 @@ import { Sheet } from "./Sheet.js";
 type CatalogItem = McpCatalogEntry & { connected: string | null };
 type Tab = "catalog" | "connected";
 type T = ReturnType<typeof useT>;
-const CATEGORIES = ["all", "research", "dev", "work", "finance", "browser", "files", "reasoning"] as const;
+const CATEGORIES = ["all", "research", "dev", "work", "finance", "marketing", "browser", "files", "reasoning"] as const;
 type Category = (typeof CATEGORIES)[number];
 const AUTHS = ["any", "none", "oauth", "token"] as const;
 type AuthFilter = (typeof AUTHS)[number];

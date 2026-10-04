@@ -735,6 +735,128 @@ export const MCP_CATALOG: CatalogEntry[] = [
     homepage: "https://github.com/domdomegg/airtable-mcp-server",
     needs: NODE,
   },
+
+  // --- marketing: ads, analytics and social accounts ----------------------------------------
+  {
+    id: "meta-ads",
+    name: "Meta Ads",
+    icon: "📣",
+    logo: "/logos/mcp/meta-ads.svg",
+    category: "marketing",
+    description: {
+      en: "Meta's official server: your Facebook and Instagram ad accounts — campaigns, ad sets, ads, audiences, results (insights), leads and comments. Sign in with your Meta Business account.",
+      "pt-BR": "Servidor oficial da Meta: suas contas de anúncio do Facebook e do Instagram — campanhas, conjuntos, anúncios, públicos, resultados (insights), leads e comentários. Entre com a sua conta Meta Business.",
+    },
+    transport: "http",
+    url: "https://mcp.facebook.com/ads",
+    auth: "oauth",
+    fields: [],
+    homepage: "https://developers.facebook.com/documentation/ads-commerce/ads-ai-connectors/ads-mcp-server/ads-mcp-server-overview",
+  },
+  {
+    id: "tiktok-ads",
+    name: "TikTok Ads",
+    icon: "🎵",
+    logo: "/logos/mcp/tiktok-ads.svg",
+    category: "marketing",
+    description: {
+      en: "TikTok's official server: campaigns, ad groups, ads, reports, audiences and catalogs of your TikTok for Business account, about 40 tools that find the rest when needed. Sign in again every 30 days.",
+      "pt-BR": "Servidor oficial do TikTok: campanhas, grupos de anúncios, anúncios, relatórios, públicos e catálogos da sua conta TikTok for Business, cerca de 40 ferramentas que acham as demais quando precisa. Entre de novo a cada 30 dias.",
+    },
+    transport: "http",
+    // The progressive endpoint: ~40 tools up front instead of ~400 in every bot's context.
+    url: "https://business-api.tiktok.com/open_mcp/tt-ads-mcp-layer",
+    auth: "oauth",
+    fields: [],
+    homepage: "https://business-api.tiktok.com/portal/docs/tiktok-ads-mcp-server/v1.3",
+  },
+  {
+    id: "google-analytics",
+    name: "Google Analytics",
+    icon: "📊",
+    logo: "/logos/mcp/google-analytics.svg",
+    category: "marketing",
+    description: {
+      en: "Google's official server, read-only: your GA4 accounts and properties, reports, real-time, funnels and conversions. Needs a Google credentials file with the Analytics read-only scope.",
+      "pt-BR": "Servidor oficial do Google, só leitura: suas contas e propriedades do GA4, relatórios, tempo real, funis e conversões. Precisa de um arquivo de credenciais do Google com o escopo de leitura do Analytics.",
+    },
+    transport: "stdio",
+    command: "pipx",
+    args: ["run", "analytics-mcp"],
+    auth: "token",
+    fields: [
+      {
+        key: "GOOGLE_APPLICATION_CREDENTIALS",
+        label: { en: "Google credentials file (path to the JSON)", "pt-BR": "Arquivo de credenciais do Google (caminho do JSON)" },
+        secret: false,
+        target: "env",
+        placeholder: "/root/.config/gcloud/application_default_credentials.json",
+        help: {
+          en: "The file `gcloud auth application-default login --scopes https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/cloud-platform` saves, or a service account's key added as a Viewer of your GA4 property.",
+          "pt-BR": "O arquivo que `gcloud auth application-default login --scopes https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/cloud-platform` salva, ou a chave de uma conta de serviço adicionada como Leitor da sua propriedade do GA4.",
+        },
+        link: "https://github.com/googleanalytics/google-analytics-mcp#configure-credentials-",
+      },
+      {
+        key: "GOOGLE_PROJECT_ID",
+        label: { en: "Google Cloud project ID", "pt-BR": "ID do projeto no Google Cloud" },
+        secret: false,
+        target: "env",
+        placeholder: "my-project-123",
+        help: {
+          en: "The project where the Analytics Admin and Data APIs are enabled.",
+          "pt-BR": "O projeto onde as APIs Analytics Admin e Analytics Data estão ativadas.",
+        },
+        link: "https://support.google.com/googleapi/answer/7014113",
+      },
+    ],
+    homepage: "https://github.com/googleanalytics/google-analytics-mcp",
+    needs: "Python (pipx)",
+    readOnly: true,
+  },
+  {
+    id: "instagram",
+    name: "Instagram",
+    icon: "📸",
+    logo: "/logos/mcp/instagram.svg",
+    category: "marketing",
+    description: {
+      en: "Your Instagram Business or Creator account through Meta's Graph API: profile, posts and their insights, account insights, comments, mentions, hashtags and stories. It can also publish, reply and send DMs, each asking you first. A community server (mcpware), pinned to a checked version.",
+      "pt-BR": "Sua conta Comercial ou de Criador do Instagram pela Graph API da Meta: perfil, posts e os insights de cada um, insights da conta, comentários, menções, hashtags e stories. Também pode publicar, responder e mandar DM, sempre pedindo sua aprovação antes. Servidor da comunidade (mcpware), fixado numa versão verificada.",
+    },
+    transport: "stdio",
+    command: "npx",
+    // A community package holding a token that can post and send DMs: pinned to the version that was read.
+    args: ["-y", "@mcpware/instagram-mcp@1.0.4"],
+    auth: "token",
+    fields: [
+      {
+        key: "INSTAGRAM_ACCESS_TOKEN",
+        label: { en: "Meta long-lived access token", "pt-BR": "Token de acesso de longa duração da Meta" },
+        secret: true,
+        target: "env",
+        help: {
+          en: "From a Meta developer app, with instagram_basic, instagram_manage_insights, pages_show_list and pages_read_engagement (add instagram_content_publish, instagram_manage_comments or instagram_manage_messages only if the bot may post, answer comments or DMs). It lasts 60 days.",
+          "pt-BR": "De um app de desenvolvedor da Meta, com instagram_basic, instagram_manage_insights, pages_show_list e pages_read_engagement (adicione instagram_content_publish, instagram_manage_comments ou instagram_manage_messages só se o bot puder postar, responder comentários ou DMs). Vale por 60 dias.",
+        },
+        link: "https://github.com/mcpware/instagram-mcp#setup-guide--getting-your-access-token",
+      },
+      {
+        key: "INSTAGRAM_ACCOUNT_ID",
+        label: { en: "Instagram Business account ID", "pt-BR": "ID da conta comercial do Instagram" },
+        secret: false,
+        target: "env",
+        placeholder: "17841400000000000",
+        help: {
+          en: "The account must be Business or Creator and linked to a Facebook Page; the setup page shows how to find its ID.",
+          "pt-BR": "A conta precisa ser Comercial ou de Criador e estar ligada a uma Página do Facebook; a página de configuração mostra como achar o ID.",
+        },
+        link: "https://github.com/mcpware/instagram-mcp#step-5-get-your-instagram-business-account-id",
+      },
+    ],
+    homepage: "https://github.com/mcpware/instagram-mcp",
+    needs: NODE,
+  },
 ];
 
 export function catalogEntry(id: string): CatalogEntry | undefined {

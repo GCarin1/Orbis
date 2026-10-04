@@ -171,6 +171,11 @@ describe("the web app on a phone", () => {
     await page.getByTestId("details-github").waitFor();
     await check("an MCP's details");
     await page.getByRole("button", { name: "Close" }).click();
+    // A key's help with a long command (Google Analytics' gcloud line) wraps instead of widening the sheet.
+    await page.getByTestId("catalog-google-analytics").click();
+    await page.getByTestId("details-google-analytics").waitFor();
+    await check("Google Analytics' details");
+    await page.getByRole("button", { name: "Close" }).click();
     await page.getByRole("button", { name: "Your own server" }).click();
     await page.getByTestId("custom-server").waitFor();
     await check("your own MCP server");

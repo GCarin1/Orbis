@@ -4310,3 +4310,18 @@ label.pick-row.on {
 .squads-loose select {
   max-width: 45%;
 }
+
+/* A connect form's fields never run past a phone's edge: a long command in the help wraps, the inputs follow
+   the sheet's width (change 0056). */
+.mcp-connect label {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+.mcp-connect input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.mcp-connect label > .muted {
+  overflow-wrap: anywhere;
+}

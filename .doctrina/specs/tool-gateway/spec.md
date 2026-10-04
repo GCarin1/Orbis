@@ -2,11 +2,11 @@
 
 **Capability:** tool-gateway
 **Status:** active
-**Implementation:** verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets, 37 free servers with their logos)
+**Implementation:** verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in, keys as hub secrets, 41 free servers with their logos, marketing among them)
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.8.1
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -34,6 +34,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall forward each `tools/call` of the stdio MCP bridge as it arrives, without waiting for earlier calls, and wait for the hub's answer without a time limit.
 - The system shall give every tool a wire name of at most 52 characters of `[A-Za-z0-9_-]` — a longer name keeps its start and gets a short hash of the whole name — and resolve a call by that name.
 - The system shall list in its MCP marketplace only servers that are free to use (no account, a free plan or a free key), each checked before it is listed (its program starts and lists its tools, or its address answers `initialize`, and a sign-in lets Orbis register itself), each with its service's logo.
+- The system shall list marketing servers in their own Marketplace category: the platforms' official ad servers signed in with the user's business account (Meta Ads, TikTok Ads), Google's official read-only Analytics server, and an Instagram server for a Business or Creator account, pinned to the version that was checked because it holds a token that can post.
 
 ### Event-driven
 
@@ -59,6 +60,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall not run a tool call identical (same tool, same input) to two earlier calls of the same run, except the tools that read changing state (browser snapshot, screenshot, press and close, the team list, the skill and routine lists); it shall return an error result telling the bot to use the results it has.
 - The system shall not count a tool call the user denied toward the identical-call limit.
 - The system shall not show a key that goes in a server's address: the address the API returns and every error quote the address without it.
+- The system shall not list a server that works by driving the user's logged-in session against the service's terms (such as LinkedIn's unofficial servers).
 
 ## Acceptance criteria
 
@@ -73,6 +75,8 @@ call through the approvals policy and marks outside content as untrusted.
 9. [verified] A tool named after a long server and a long remote name gets a wire name of at most 52 characters that resolves back; it runs, and runs again after the server ended its session, with one new `initialize` — verified by `packages/hub/test/audit-cycle4.test.ts`.
 10. [verified] A key that goes in the address reaches the server from the vault on every call and appears neither in the API nor in an error, and every marketplace entry has a logo file — verified by `packages/hub/test/mcp-servers.test.ts`.
 11. [verified] The marketplace says that DeepWiki only reads and says nothing of the kind for GitHub — verified by `packages/hub/test/mcp-servers.test.ts`.
+12. [verified] The Marketing category holds Meta Ads and TikTok Ads (hosted, sign-in), Google Analytics (pipx, read-only, its credentials file and project) and Instagram (pinned version, secret token), and no LinkedIn; Orbis's sign-in finds Meta's and TikTok's authorization servers from the metadata they publish and registers itself with each — verified by `packages/hub/test/mcp-marketing.test.ts`
+13. [verified] On a phone, a connect sheet whose help holds a long command (Google Analytics') wraps it instead of scrolling sideways — verified by `tests/e2e/phone-layout.test.ts`
 
 ## Maturity
 

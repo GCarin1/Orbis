@@ -8,6 +8,7 @@ Orbis's MIT license.
 | File | Source |
 |---|---|
 | `airtable.svg`, `atlassian.svg`, `brave-search.svg`, `chrome-devtools.svg` (Google Chrome), `cloudflare.svg`, `github.svg`, `huggingface.svg`, `linear.svg`, `mcp.svg` (Model Context Protocol), `neon.svg`, `notion.svg`, `postman.svg`, `prisma.svg`, `sentry.svg`, `stripe.svg`, `supabase.svg`, `todoist.svg`, `vercel.svg`, `youtube-transcript.svg` (YouTube) | [Simple Icons](https://simpleicons.org) 16.33.0 (CC0-1.0 icon data), each path drawn in the brand's color |
+| `meta-ads.svg` (Meta), `tiktok-ads.svg` (TikTok), `google-analytics.svg`, `instagram.svg` | [Simple Icons](https://simpleicons.org) 16.33.0 (CC0-1.0 icon data), each path drawn in the brand's color |
 | `tavily.svg` | tavily.com — the site's icon |
 | `semgrep.svg` | semgrep.dev — the site's icon |
 | `playwright.svg` | playwright.dev/img/playwright-logo.svg |
