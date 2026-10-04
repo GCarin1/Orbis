@@ -565,7 +565,7 @@
         "id": "0018",
         "path": ".doctrina/decisions/0018-the-phone-runs-its-own-hub-inside-termux-started-by-the-app-no-accounts-and-no-shared-database-yet.md",
         "title": "The phone runs its own hub inside Termux, started by the app; no accounts and no shared database yet",
-        "status": "proposed",
+        "status": "accepted",
         "date": "2026-10-04",
         "scope": [
           "android-app",

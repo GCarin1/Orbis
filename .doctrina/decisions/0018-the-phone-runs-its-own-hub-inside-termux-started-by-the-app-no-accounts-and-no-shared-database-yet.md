@@ -1,6 +1,6 @@
 # ADR 0018 — The phone runs its own hub inside Termux, started by the app; no accounts and no shared database yet
 
-- **Status:** proposed
+- **Status:** accepted
 - **Scope:** android-app, hub-api, agent-runtimes
 - **Date:** 2026-10-04
 - **Deciders:** project owner (requirements: "quando eu abra no aplicativo eu não precise do computador… se for para rodar no telefone, eu não quero só a interface, eu quero que as chamadas também sejam ligadas… não quero um intermediador"; "remova essa etapa de gerar o token pelo computador… o usuário só baixe e acesse… não quero uma barreira de autenticação… um banco de dados guardado no meu telefone… futuramente vamos ter autenticação e um banco de dados para o aplicativo e para a web"), Claude Code
