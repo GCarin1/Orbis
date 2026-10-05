@@ -29,6 +29,7 @@ import {
 } from "./oauth.js";
 
 const AUTH_STATE_MS = 15 * 60_000;
+const outdatedError = (name: string) => `${name} now runs another program in the catalog: disconnect it and connect it again`;
 const ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 interface Row {
@@ -166,7 +167,16 @@ export class McpConnections {
   private toolName = (id: string, remote: string) => `mcp.${id}.${safeName(remote)}`;
 
   private isReadOnly(row: Row, tool: McpRemoteTool): boolean {
-    return row.readOnly || tool.annotations?.readOnlyHint === true;
+    if (row.readOnly || tool.annotations?.readOnlyHint === true) return true;
+    return Boolean(row.catalogId && catalogEntry(row.catalogId)?.readOnlyTools?.includes(tool.name));
+  }
+
+  /** A program connected from a catalog entry that now starts another one (a server replaced, a new pinned version). */
+  private outdated(row: Row): boolean {
+    const entry = row.catalogId ? catalogEntry(row.catalogId) : undefined;
+    if (!entry || entry.transport !== "stdio" || row.transport !== "stdio") return false;
+    const args = entry.args ?? [];
+    return row.command !== entry.command || args.some((arg, i) => row.args[i] !== arg);
   }
 
   private botsOf(row: Row): string[] {
@@ -270,6 +280,13 @@ export class McpConnections {
   /** At hub start: the tools of every server are known from the last connection; servers start on first use. */
   start(): void {
     for (const row of this.rows()) {
+      if (this.outdated(row)) {
+        row.status = "error";
+        row.error = outdatedError(row.name);
+        row.tools = [];
+        this.save(row);
+        continue;
+      }
       if (row.status === "connecting") {
         row.status = row.tools.length ? "connected" : "error";
         row.error = row.tools.length ? null : "the hub stopped while connecting; press Reconnect";
@@ -380,6 +397,12 @@ export class McpConnections {
     this.live.delete(id);
     await old?.close().catch(() => undefined);
     let client: McpClient | null = null;
+    if (this.outdated(row)) {
+      row.status = "error";
+      row.error = outdatedError(row.name);
+      this.save(row);
+      return;
+    }
     // A program that cannot sign in by itself starts only once the user signed in through Orbis.
     if (this.signInOf(row) && !this.readOAuth(row.id)?.tokens) return this.beginAuth(row, null);
     try {

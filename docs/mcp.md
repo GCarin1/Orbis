@@ -100,16 +100,27 @@ Cursor and VS Code, and has two tabs:
       real-time, funnels, conversions). It takes the path of a Google
       credentials file with the Analytics read-only scope and a Google Cloud
       project ID, and needs Python's `pipx` on the machine that runs Orbis.
-    - Instagram: a Business or Creator account linked to a Facebook Page,
-      with a long-lived token from a Meta developer app (60 days) and the
-      account's ID. A community server (mcpware), pinned to the version that
-      was read: it only calls Meta's Graph API. Posting, replying and DMs
-      ask first.
+    - Instagram: [adelaidasofia/instagram-mcp](https://github.com/adelaidasofia/instagram-mcp)
+      (MIT), started with `pipx`, pinned to the version whose code was read:
+      it calls only Meta's Graph API (`graph.facebook.com`), never echoes
+      the token and logs no content. It takes a Business or Creator account
+      linked to a Facebook Page, a long-lived token from a Meta developer app
+      (60 days; its card lists the permissions), the account's ID and,
+      optionally, the app secret, which signs every call. Its reads (profile,
+      posts, insights, audience, comments, mentions, hashtags, competitors)
+      run without asking; publishing, replying, hiding or deleting comments
+      and DMs ask first. DMs also need Meta's App Review. When the token
+      expires, disconnect and connect again with a new one.
     - Alpha Vantage: stocks, ETFs, forex and crypto, fundamentals and
       technical indicators. Its free key goes in the address the hub calls
       (`?apikey=`). The hub adds it from the vault on each call, so the key
       never shows: not on the card, not in the API, not in an error.
-  - Servers started with `npx` need Node.js on the machine that runs Orbis.
+  - Servers started with `npx` need Node.js on the machine that runs Orbis;
+    those started with `pipx` need Python's `pipx` (on the phone,
+    `orbis-phone update` installs it).
+  - A server the catalog now runs from another program (replaced, or a new
+    pinned version) stops with "disconnect it and connect it again": until
+    then it would still start the old one.
   - Left out, because they did not pass these checks: Asana (no
     self-registration for sign-in), DuckDuckGo and Wikipedia (their
     packages are no longer maintained), LinkedIn (no official server; the

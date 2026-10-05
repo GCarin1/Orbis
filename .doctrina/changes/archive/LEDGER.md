@@ -60,3 +60,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-04 — 0055-phone-feedback-round-routines — Phone feedback round: routines stay in Orbis (Claude Code's own schedulers off, managers create routines for their reports), a representative calling its group's members wakes them, squad member picker and 'reports to' selects with the role, a readable routines panel, notifications while the app is in the background, no stall after returning to the app, and a ⋮ menu in the 1:1 chat header (specs: agent-runtimes MODIFIED, android-app MODIFIED, conversations MODIFIED, handoff MODIFIED, routines MODIFIED, web-app MODIFIED)
 - 2026-10-04 — 0056-marketing-mcp-catalog — marketing-mcp-catalog (specs: tool-gateway MODIFIED)
 - 2026-10-04 — 0057-google-drive-onedrive-mcp — google-drive-onedrive-mcp (specs: tool-gateway MODIFIED)
+- 2026-10-05 — 0058-instagram-adelaidasofia — instagram-adelaidasofia (specs: tool-gateway MODIFIED)

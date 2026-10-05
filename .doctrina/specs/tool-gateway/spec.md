@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.10.0
+**Version:** 0.11.0
 
 ## Purpose
 
@@ -34,9 +34,10 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall forward each `tools/call` of the stdio MCP bridge as it arrives, without waiting for earlier calls, and wait for the hub's answer without a time limit.
 - The system shall give every tool a wire name of at most 52 characters of `[A-Za-z0-9_-]` — a longer name keeps its start and gets a short hash of the whole name — and resolve a call by that name.
 - The system shall list in its MCP marketplace only servers that are free to use (no account, a free plan or a free key), each checked before it is listed (its program starts and lists its tools, or its address answers `initialize`, and a sign-in lets Orbis register itself), each with its service's logo.
-- The system shall list marketing servers in their own Marketplace category: the platforms' official ad servers signed in with the user's business account (Meta Ads, TikTok Ads), Google's official read-only Analytics server, and an Instagram server for a Business or Creator account, pinned to the version that was checked because it holds a token that can post.
+- The system shall list marketing servers in their own Marketplace category: the platforms' official ad servers signed in with the user's business account (Meta Ads, TikTok Ads), Google's official read-only Analytics server, and an Instagram server over the official Instagram Graph API for a Business or Creator account (adelaidasofia/instagram-mcp), pinned to the version whose code was read because it holds a token that can post.
 - The system shall send the OAuth `resource` parameter only for a server that names its resource, and add an entry's own sign-in parameters (such as Google's `access_type=offline`).
 - The system shall mark a marketplace server that signs in by itself with a code the user types on the service's page (OneDrive) as "Sign in with a code", listed with the servers that sign in.
+- The system shall treat as read-only, without asking, the tools a marketplace entry names as reads for a server that does not mark them itself, and keep asking first for every other tool of that server.
 
 ### Event-driven
 
@@ -65,6 +66,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall not show a key that goes in a server's address: the address the API returns and every error quote the address without it.
 - The system shall not list a server that works by driving the user's logged-in session against the service's terms (such as LinkedIn's unofficial servers).
 - The system shall not start a program that Orbis signs in for before the user signed in, nor sign in for it without the user's own OAuth client.
+- The system shall not start a connected marketplace program whose entry now runs another program (another command or other pinned arguments); it shall report the connection as an error that says to disconnect it and connect it again, and offer none of its tools until then.
 
 ## Acceptance criteria
 
@@ -79,10 +81,12 @@ call through the approvals policy and marks outside content as untrusted.
 9. [verified] A tool named after a long server and a long remote name gets a wire name of at most 52 characters that resolves back; it runs, and runs again after the server ended its session, with one new `initialize` — verified by `packages/hub/test/audit-cycle4.test.ts`.
 10. [verified] A key that goes in the address reaches the server from the vault on every call and appears neither in the API nor in an error, and every marketplace entry has a logo file — verified by `packages/hub/test/mcp-servers.test.ts`.
 11. [verified] The marketplace says that DeepWiki only reads and says nothing of the kind for GitHub — verified by `packages/hub/test/mcp-servers.test.ts`.
-12. [verified] The Marketing category holds Meta Ads and TikTok Ads (hosted, sign-in), Google Analytics (pipx, read-only, its credentials file and project) and Instagram (pinned version, secret token), and no LinkedIn; Orbis's sign-in finds Meta's and TikTok's authorization servers from the metadata they publish and registers itself with each — verified by `packages/hub/test/mcp-marketing.test.ts`
+12. [verified] The Marketing category holds Meta Ads and TikTok Ads (hosted, sign-in), Google Analytics (pipx, read-only, its credentials file and project) and Instagram (adelaidasofia/instagram-mcp with pipx, pinned to 0.1.2, its token and app secret secret, its reads named and its writes not), with no mcpware server and no LinkedIn; Orbis's sign-in finds Meta's and TikTok's authorization servers from the metadata they publish and registers itself with each — verified by `packages/hub/test/mcp-marketing.test.ts`
 13. [verified] On a phone, a connect sheet whose help holds a long command (Google Analytics') wraps it instead of scrolling sideways — verified by `tests/e2e/phone-layout.test.ts`
 14. [verified] Google Drive signs in through Orbis with the user's client (Drive read and the files it creates, offline access) and hands the tokens to the program's environment; OneDrive is Microsoft 365's server with its OneDrive tools, signed in with a code; with a stand-in program and provider, the program waits for the sign-in, gets the token refreshed before it starts, the exchange carries the client secret and no resource, and disconnecting forgets the client and the sign-in — verified by `packages/hub/test/mcp-files.test.ts`
 15. [verified] A server that signs in with a code says so on its card and its details, and the Sign-in filter lists it — verified by `packages/web/test/marketplace.test.tsx`
+16. [verified] A tool a catalog entry names as a read is read-only and allowed without asking; a connection whose entry now starts another program is an error offering no tools, stays one on Reconnect, and starts the new program once connected again — verified by `packages/hub/test/mcp-marketing.test.ts`
+17. [verified] The phone's Debian installs `python3` and `pipx`, so the servers started with `pipx` run there — verified by `packages/hub/test/phone-script.test.ts`
 
 ## Maturity
 

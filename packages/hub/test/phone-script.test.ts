@@ -160,6 +160,8 @@ describe.skipIf(process.platform === "win32")("Orbis installed on the phone", ()
     // Debian gets the install script and a clean environment: Node's PATH, never Termux's PREFIX.
     const inner = p.log("inner.sh");
     expect(inner).toMatch(/latest-v\$NODE_MAJOR\.x/);
+    // Python's pipx, for the MCP servers written in Python (Instagram, Google Analytics).
+    expect(inner).toMatch(/apt-get install .*python3 pipx/);
     expect(inner).toMatch(/npm ci --ignore-scripts/);
     expect(inner).toMatch(/npm install -g .* @anthropic-ai\/claude-code /);
     expect(inner).toMatch(/@anthropic-ai\/claude-code@\$CLAUDE_JS_VERSION/);

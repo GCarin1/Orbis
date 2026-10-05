@@ -1,9 +1,23 @@
 // specs/tool-gateway — the marketing servers of the MCP catalog (change 0056-marketing-mcp-catalog): what each
 // entry connects to, and Orbis's sign-in finding Meta's and TikTok's authorization servers from the metadata
-// they published when the entries were checked (recorded on 2026-10-04).
-import { describe, expect, it } from "vitest";
+// they published when the entries were checked (recorded on 2026-10-04). Change 0058-instagram-adelaidasofia:
+// Instagram through adelaidasofia/instagram-mcp, the reads a catalog entry names running without asking, and a
+// connection that still starts the program an entry no longer runs.
+import { afterEach, describe, expect, it } from "vitest";
+import path from "node:path";
+import type { McpCatalogEntry } from "@orbis/shared";
 import { MCP_CATALOG } from "../src/mcp/catalog.js";
 import { authorizationUrl, discover, register } from "../src/mcp/oauth.js";
+import { defaultDecisionOf } from "../src/tools/registry.js";
+import { createBot, FIXTURES, testHub, type TestHub } from "./helpers.js";
+
+let t: TestHub | null = null;
+const added: string[] = [];
+afterEach(async () => {
+  await t?.cleanup();
+  t = null;
+  for (const id of added.splice(0)) MCP_CATALOG.splice(MCP_CATALOG.findIndex((e) => e.id === id), 1);
+});
 
 const entry = (id: string) => MCP_CATALOG.find((e) => e.id === id);
 
@@ -35,14 +49,27 @@ describe("the marketing servers of the catalog", () => {
       ["GOOGLE_APPLICATION_CREDENTIALS", "env"],
       ["GOOGLE_PROJECT_ID", "env"],
     ]);
-    // A community server that can post and send DMs: pinned to the version that was read, its token secret.
+    // adelaidasofia/instagram-mcp from PyPI, pinned to the version whose code was read; its token and app secret secret.
     const instagram = entry("instagram")!;
-    expect(instagram).toMatchObject({ transport: "stdio", command: "npx", args: ["-y", "@mcpware/instagram-mcp@1.0.4"] });
+    expect(instagram).toMatchObject({
+      transport: "stdio",
+      command: "pipx",
+      args: ["run", "--spec", "adelaidasofia-instagram-mcp==0.1.2", "instagram-mcp"],
+      homepage: "https://github.com/adelaidasofia/instagram-mcp",
+      needs: "Python (pipx)",
+    });
     expect(instagram).not.toHaveProperty("readOnly");
-    expect(instagram.fields.map((f) => [f.key, f.secret])).toEqual([
-      ["INSTAGRAM_ACCESS_TOKEN", true],
-      ["INSTAGRAM_ACCOUNT_ID", false],
+    expect(instagram.fields.map((f) => [f.key, f.secret, f.optional ?? false])).toEqual([
+      ["INSTAGRAM_MCP_ACCESS_TOKEN", true, false],
+      ["INSTAGRAM_MCP_IG_USER_ID", false, false],
+      ["INSTAGRAM_MCP_APP_SECRET", true, true],
     ]);
+    // Its reads run without asking; publishing, comments and DMs ask first.
+    expect(instagram.readOnlyTools).toEqual(expect.arrayContaining(["get_account_insights", "get_media_insights", "list_media", "get_comments", "business_discovery"]));
+    for (const writes of ["add_account", "publish_image", "publish_reel", "reply_to_comment", "delete_comment", "send_message", "get_messages"]) {
+      expect(instagram.readOnlyTools, writes).not.toContain(writes);
+    }
+    expect(JSON.stringify(MCP_CATALOG)).not.toContain("@mcpware/instagram-mcp");
     for (const e of MCP_CATALOG.filter((x) => x.category === "marketing")) {
       expect(e.description.en, e.id).toBeTruthy();
       expect(e.description["pt-BR"], e.id).toBeTruthy();
@@ -111,5 +138,66 @@ describe("the marketing servers of the catalog", () => {
     expect(found.metadata.authorization_endpoint).toBe("https://business-api.tiktok.com/portal/mcp-tt4b-authorize");
     await register(found.metadata, "http://127.0.0.1:7420/oauth/mcp/callback", fetchImpl);
     expect(registered.map((r) => r.url)).toEqual([`${issuer}/register`]);
+  });
+});
+
+describe("a catalog server that does not mark its reads", () => {
+  function fakeEntry(): McpCatalogEntry {
+    // The fake program marks `echo` read-only itself; `create_note` it does not, and the entry names it a read.
+    const test: McpCatalogEntry = {
+      id: "social-fake",
+      name: "Social Fake",
+      icon: "📸",
+      category: "marketing",
+      description: { en: "test", "pt-BR": "teste" },
+      transport: "stdio",
+      command: process.execPath,
+      args: [path.join(FIXTURES, "fake-mcp-server.mjs"), "v1"],
+      auth: "none",
+      fields: [],
+      readOnlyTools: ["create_note"],
+      homepage: "https://example.com",
+    };
+    MCP_CATALOG.push(test);
+    added.push(test.id);
+    return test;
+  }
+
+  it("runs the tools the entry names as reads without asking", async () => {
+    fakeEntry();
+    t = await testHub();
+    expect((await t.api("POST", "/api/v1/mcp/servers", { catalogId: "social-fake", values: {} })).status).toBe(202);
+    const ready = await t.hub.mcp.ready("social-fake");
+    expect(ready.tools.map((x) => [x.remoteName, x.readOnly])).toEqual([
+      ["echo", true],
+      ["create_note", true],
+    ]);
+    const bot = await createBot(t, { name: "Lia", tools: ["*", "mcp.social-fake.*"] });
+    const tool = t.hub.tools.get("mcp.social-fake.create_note")!;
+    expect(tool.risk).toBe("read");
+    expect(defaultDecisionOf(tool, t.hub.botService.get(bot.id))).toBe("allow");
+  });
+
+  it("stops a connection that still starts the program the entry no longer runs, until it is connected again", async () => {
+    const test = fakeEntry();
+    t = await testHub();
+    await t.api("POST", "/api/v1/mcp/servers", { catalogId: "social-fake", values: {} });
+    expect(await t.hub.mcp.ready("social-fake")).toMatchObject({ status: "connected" });
+    const dir = t.dataDir;
+    await t.hub.close();
+
+    // The catalog now runs another program (a server replaced, another pinned version).
+    test.args = [path.join(FIXTURES, "fake-mcp-server.mjs"), "v2"];
+    t = await testHub({}, dir);
+    const stale = t.hub.mcp.get("social-fake");
+    expect(stale).toMatchObject({ status: "error", error: expect.stringContaining("disconnect it and connect it again"), tools: [] });
+    expect(t.hub.tools.get("mcp.social-fake.echo")).toBeUndefined();
+    t.hub.mcp.reconnect("social-fake");
+    expect(await t.hub.mcp.ready("social-fake")).toMatchObject({ status: "error", args: [expect.any(String), "v1"] });
+
+    // Connected again, it starts what the catalog runs now.
+    await t.hub.mcp.remove("social-fake");
+    await t.api("POST", "/api/v1/mcp/servers", { catalogId: "social-fake", values: {} });
+    expect(await t.hub.mcp.ready("social-fake")).toMatchObject({ status: "connected", args: [expect.any(String), "v2"] });
   });
 });

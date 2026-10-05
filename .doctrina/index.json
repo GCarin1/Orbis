@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-04",
+  "last_updated": "2026-10-05",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -278,7 +278,7 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.10.0",
+        "version": "0.11.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in — for a remote server, or for a program with the user's own client — keys as hub secrets, 43 free servers with their logos)",
         "realizes": [
@@ -1756,6 +1756,20 @@
           }
         ],
         "lane": "product (uncertain)"
+      },
+      {
+        "id": "0058-instagram-adelaidasofia",
+        "title": "instagram-adelaidasofia",
+        "path": ".doctrina/changes/archive/2026-10-05-0058-instagram-adelaidasofia",
+        "status": "applied",
+        "applied": "2026-10-05",
+        "specs_affected": [
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [

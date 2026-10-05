@@ -685,6 +685,8 @@ export interface McpCatalogEntry {
   needs?: string;
   /** Every tool of this server only reads: they run without asking, unless a rule says otherwise. */
   readOnly?: boolean;
+  /** The tools that only read, for a server that does not mark them itself (they run without asking). */
+  readOnlyTools?: string[];
   /** A program that cannot sign in by itself: Orbis signs in for it and hands it the sign-in. */
   oauth?: McpCatalogOAuth;
 }

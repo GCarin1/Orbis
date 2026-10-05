@@ -7,6 +7,25 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Changed
+
+- **Instagram in the MCP catalog is now adelaidasofia/instagram-mcp** (change 0058-instagram-adelaidasofia).
+  - The official Instagram Graph API only, with 29 tools: profile, posts,
+    account, post and audience insights, comments, mentions, hashtags,
+    competitors (business discovery), publishing (photo, video, reel,
+    carousel, story) and DMs (after Meta's App Review).
+  - Started with `pipx` from PyPI, pinned to 0.1.2, whose code is the
+    GitHub code that was read. It takes the token, the account's ID and,
+    optionally, the app secret, which signs every call.
+  - Its reads run without asking; publishing, comments and DMs ask first. A
+    catalog entry can now name the tools that only read when the server
+    does not mark them itself.
+  - An Instagram connected before stops with "disconnect it and connect it
+    again", rather than starting the old server; so does any server whose
+    catalog entry now runs another program.
+  - On the phone, `orbis-phone update` installs `pipx` (Instagram, Google
+    Analytics).
+
 ### Added
 
 - **Google Drive and OneDrive in the MCP catalog** (change 0057-google-drive-onedrive-mcp).
