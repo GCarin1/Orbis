@@ -322,4 +322,20 @@ ALTER TABLE routine_runs ADD COLUMN called_by TEXT;`,
 );
 CREATE INDEX files_by_conversation ON files (conversation_id, created_at);`,
   },
+  {
+    // specs/bots: a bot writing to the user on its own, and each time it was given the chance
+    // (change 0060-bot-initiative).
+    version: 13,
+    sql: `ALTER TABLE bots ADD COLUMN initiative TEXT;
+CREATE TABLE initiatives (
+  id TEXT PRIMARY KEY,
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  run_id TEXT,
+  posted INTEGER NOT NULL DEFAULT 0,
+  posted_at TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX initiatives_by_bot ON initiatives (bot_id, created_at);`,
+  },
 ];

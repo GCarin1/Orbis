@@ -28,6 +28,18 @@ change that delivered it.
 
 ### Added
 
+- **A bot's initiative** (change 0060-bot-initiative).
+  - A bot you let write on its own does so now and then, as a colleague
+    would: it asks for a task when it has been idle, shares an insight,
+    reminds you of something pending or alerts you to what it noticed.
+  - Off by default. In a bot's settings → **Initiative**: the switch, how
+    often (rarely, sometimes, often) and **Try it now**.
+  - **Settings → Initiative** pauses every bot at once and sets quiet hours
+    in your timezone.
+  - A bot writes only when it has something useful (`[silent]` posts
+    nothing), never twice before you answer, at most its daily count. Its
+    message says it came on its own initiative.
+
 - **Files in conversations** (change 0059-files-conversations-sends-bots).
   - Send files to a bot or a group with the clip 📎, by pasting a
     screenshot or by dragging them onto the message box. A message carries

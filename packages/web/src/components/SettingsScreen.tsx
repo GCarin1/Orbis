@@ -13,9 +13,10 @@ import { ChatTokensCard } from "./ChatTokensCard.js";
 import { ComputersSettings } from "./ComputerModes.js";
 import { VoiceSettings } from "./VoiceSettings.js";
 import { PhoneSettings } from "./PhoneSettings.js";
+import { InitiativeSettingsTab } from "./InitiativeSettings.js";
 
-export type SettingsTab = "brains" | "computers" | "voice" | "phone";
-const TABS: SettingsTab[] = ["brains", "computers", "voice", "phone"];
+export type SettingsTab = "brains" | "computers" | "initiative" | "voice" | "phone";
+const TABS: SettingsTab[] = ["brains", "computers", "initiative", "voice", "phone"];
 
 export function SettingsScreen({
   api,
@@ -53,6 +54,7 @@ export function SettingsScreen({
       <div className="screen-body" role="tabpanel" id={`settings-panel-${tab}`} aria-labelledby={`settings-tab-${tab}`}>
         {tab === "brains" && <BrainsTab api={api} bots={bots} onConfigureBot={onConfigureBot} />}
         {tab === "computers" && <ComputersSettings api={api} />}
+        {tab === "initiative" && <InitiativeSettingsTab api={api} />}
         {tab === "voice" && <VoiceSettings api={api} />}
         {tab === "phone" && <PhoneSettings api={api} />}
       </div>

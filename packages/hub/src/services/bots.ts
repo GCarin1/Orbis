@@ -8,6 +8,7 @@ import {
   slugifyHandle,
   uniqueHandle,
   type Bot,
+  type BotInitiative,
   type Brain,
   type ComputerConfig,
   type Policy,
@@ -19,7 +20,7 @@ import { checkHostDir, HostFolderError } from "../computer/host.js";
 import { transaction, type Database } from "../db/index.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { newId, nowIso } from "../ids.js";
-import type { BotsRepo } from "../repos/bots.js";
+import { DEFAULT_INITIATIVE, type BotsRepo } from "../repos/bots.js";
 import type { RunEngine } from "../runs/engine.js";
 
 export interface BotInput {
@@ -40,6 +41,8 @@ export interface BotInput {
   capIncludesSubscription?: boolean;
   pinned?: boolean;
   hidden?: boolean;
+  /** Whether and how often the bot writes on its own (specs/bots: initiative). */
+  initiative?: Partial<BotInitiative>;
 }
 
 export type BotPatch = Partial<BotInput>;
@@ -154,6 +157,7 @@ export class BotService {
       updatedAt: at,
     };
     this.d.bots.insert(bot);
+    if (input.initiative) this.d.bots.setInitiative(bot.id, { ...DEFAULT_INITIATIVE, ...input.initiative });
     this.d.computer.ensureWorkspace(bot.id);
     const saved = this.get(bot.id);
     this.d.bus.publish("bot.updated", { bot: saved });
@@ -192,6 +196,7 @@ export class BotService {
     if (patch.hidden !== undefined) bot.hidden = patch.hidden;
     bot.updatedAt = nowIso();
     this.d.bots.save(bot);
+    if (patch.initiative !== undefined) this.d.bots.setInitiative(bot.id, { ...DEFAULT_INITIATIVE, ...bot.initiative, ...patch.initiative });
     const saved = this.get(bot.id);
     this.d.bus.publish("bot.updated", { bot: saved });
     return saved;

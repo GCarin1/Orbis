@@ -70,6 +70,7 @@ import { HiringService } from "./hiring/service.js";
 import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
 import { FilesService } from "./files/service.js";
+import { InitiativeService } from "./initiative/service.js";
 
 export interface HubOptions {
   env?: Env;
@@ -84,6 +85,8 @@ export interface HubOptions {
   logger?: boolean;
   /** The clock routines schedule by (tests drive time with it). */
   clock?: () => Date;
+  /** The dice a bot's initiative rolls (tests make it always or never write). */
+  random?: () => number;
 }
 
 export interface Hub extends HubContext {
@@ -97,6 +100,7 @@ export interface Hub extends HubContext {
   hiring: HiringService;
   squads: SquadService;
   files: FilesService;
+  initiative: InitiativeService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -351,6 +355,9 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   engine.addHooks(routines.hooks());
   gateway.onBeforeCall(routines.draftOnlyHook());
   routines.start();
+  const initiative = new InitiativeService(ctx, new SettingsRepo(db), opts.clock, opts.random);
+  engine.addHooks(initiative.hooks());
+  initiative.start();
   const templates = new TemplateService(ctx, skillService, routines);
   const hiring = new HiringService(ctx, { skills: skillService.store, vault: secrets.vault, mcp, usage });
   const squads = new SquadService(ctx);
@@ -394,6 +401,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await hiring.routes(app);
   await squads.routes(app);
   await files.routes(app);
+  await initiative.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -420,6 +428,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     hiring,
     squads,
     files,
+    initiative,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });
@@ -431,6 +440,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       closed = true;
       routines.stop();
       files.stop();
+      initiative.stop();
       await engine.shutdown();
       await mcp.shutdown();
       codexAccount.shutdown();

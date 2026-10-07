@@ -4541,3 +4541,23 @@ label.pick-row.on {
 .files-empty {
   padding: 0 16px;
 }
+
+/* ── a bot's initiative ─────────────────────────────────────────────────── */
+.initiative-tag {
+  margin: 0 0 3px 2px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.initiative-settings {
+  max-width: 640px;
+}
+.initiative-settings .quiet-hours {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.initiative-settings .quiet-hours p {
+  flex-basis: 100%;
+  margin: 0;
+}

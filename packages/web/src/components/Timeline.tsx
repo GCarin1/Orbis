@@ -355,6 +355,11 @@ export function Timeline({
                     {bot.name}
                   </div>
                 )}
+                {run?.trigger.type === "initiative" && (
+                  <div className="initiative-tag" data-testid="initiative-tag">
+                    {t(run.trigger.ref === "mcp" ? "initiative.tagMcp" : "initiative.tag")}
+                  </div>
+                )}
                 <div className="bubble" title={new Date(item.createdAt).toLocaleString(lang)}>
                   {parent && (
                     <div className="reply-to" data-testid="reply-to">

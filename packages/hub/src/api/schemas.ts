@@ -1,6 +1,6 @@
 // Request schemas (TypeBox): one declaration validates, types and documents a route.
 import Type from "typebox";
-import { AVATAR_SHAPES, BRAIN_KINDS, CHAT_HTTP_HEADER_NAMES } from "@orbis/shared";
+import { AVATAR_SHAPES, BRAIN_KINDS, CHAT_HTTP_HEADER_NAMES, INITIATIVE_FREQUENCIES } from "@orbis/shared";
 
 export const IdParams = Type.Object({ id: Type.String({ minLength: 1 }) });
 
@@ -93,6 +93,16 @@ const botFields = {
   capIncludesSubscription: Type.Optional(Type.Boolean()),
   pinned: Type.Optional(Type.Boolean()),
   hidden: Type.Optional(Type.Boolean()),
+  initiative: Type.Optional(
+    Type.Object(
+      {
+        enabled: Type.Optional(Type.Boolean()),
+        frequency: Type.Optional(Type.Union(INITIATIVE_FREQUENCIES.map((f) => Type.Literal(f)))),
+        mcpUpdates: Type.Optional(Type.Boolean()),
+      },
+      { additionalProperties: false },
+    ),
+  ),
 };
 
 export const CreateBotBody = Type.Object(

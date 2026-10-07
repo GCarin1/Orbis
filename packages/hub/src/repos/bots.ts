@@ -2,12 +2,16 @@ import {
   initialsOf,
   isAvatarShape,
   type Bot,
+  type BotInitiative,
   type BotState,
   type Brain,
   type ComputerConfig,
   type Policy,
 } from "@orbis/shared";
 import { all, get, json, run, type Database, type Row } from "../db/index.js";
+
+/** A bot writes on its own only once the user turns it on. */
+export const DEFAULT_INITIATIVE: BotInitiative = { enabled: false, frequency: "normal", mcpUpdates: true };
 
 function toBot(r: Row): Bot {
   const name = r.name as string;
@@ -29,6 +33,7 @@ function toBot(r: Row): Bot {
     capIncludesSubscription: r.cap_includes_subscription === 1,
     pinned: r.pinned === 1,
     hidden: r.hidden === 1,
+    initiative: { ...DEFAULT_INITIATIVE, ...json<Partial<BotInitiative>>(r.initiative, {}) },
     state: r.state as BotState,
     lastMessage:
       r.last_message_at === null ? null : { text: r.last_message_text as string, at: r.last_message_at as string },
@@ -52,6 +57,10 @@ export class BotsRepo {
   get(idOrHandle: string): Bot | undefined {
     const row = get(this.db, "SELECT * FROM bots WHERE id = ? OR handle = ?", idOrHandle, idOrHandle.replace(/^@/, ""));
     return row ? toBot(row) : undefined;
+  }
+
+  setInitiative(botId: string, initiative: BotInitiative): void {
+    run(this.db, "UPDATE bots SET initiative = ? WHERE id = ?", JSON.stringify(initiative), botId);
   }
 
   count(): number {

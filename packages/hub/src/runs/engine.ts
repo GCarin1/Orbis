@@ -38,7 +38,15 @@ export interface EnqueueRequest {
   replyParentId?: string | null;
   /** Put the conversation's recent history in the context (default true; handoffs pass false). */
   includeHistory?: boolean;
+  /**
+   * A run nobody asked for (a bot's initiative): a reply of `[silent]` posts nothing, and a failure is
+   * not said in the conversation.
+   */
+  silent?: boolean;
 }
+
+/** What a bot answers when it has nothing worth writing on its own. */
+export const SILENT_REPLY = /^\s*\[silent\]\s*\.?\s*$/i;
 
 /** What the tool gateway provides to a run (change 0002 replaces the default). */
 export interface RunToolHost {
@@ -330,7 +338,7 @@ export class RunEngine {
     for (const hook of this.hooks) {
       const refusal = hook.beforeStart?.(queued, bot);
       if (refusal) {
-        this.failRun(queued, bot, refusal);
+        this.failRun(queued, bot, refusal, req.silent === true);
         return;
       }
     }
@@ -341,7 +349,7 @@ export class RunEngine {
       ? adapter.check(bot, this.d.config, secret)
       : `brain "${bot.brain.kind}" is not available in this hub`;
     if (misconfigured) {
-      this.failRun(queued, bot, `${misconfigured} — open ${bot.name}'s settings (⚙) to fix its brain`);
+      this.failRun(queued, bot, `${misconfigured} — open ${bot.name}'s settings (⚙) to fix its brain`, req.silent === true);
       return;
     }
 
@@ -506,11 +514,11 @@ export class RunEngine {
     }
 
     if (failure) {
-      this.failRun(run, bot, failure);
+      this.failRun(run, bot, failure, req.silent === true);
       return;
     }
 
-    if (run.conversationId) {
+    if (run.conversationId && !(req.silent && SILENT_REPLY.test(reply!))) {
       this.d.timeline.post({
         conversationId: run.conversationId,
         kind: "message",
@@ -525,9 +533,9 @@ export class RunEngine {
     this.notifyFinished(runId, bot);
   }
 
-  private failRun(run: Run, bot: Bot, error: string): void {
+  private failRun(run: Run, bot: Bot, error: string, quiet = false): void {
     this.finish(run.id, "failed", { error });
-    if (run.conversationId) {
+    if (run.conversationId && !quiet) {
       this.d.timeline.event(run.conversationId, "run.failed", `${bot.name}: ${error}`, { runId: run.id, botId: bot.id, error }, run.id);
     }
     this.settleBotState(bot.id, "blocked");

@@ -14,6 +14,7 @@ import {
   type ComputerProviderKind,
   type PolicyDecision,
   type Squad,
+  type BotInitiative,
 } from "@orbis/shared";
 import { ChatHttpFields, chatHttpBrainFields, chatHttpValue, cleanToken } from "./ChatHttpFields.js";
 import { ApiKeyFields, keySecretName, type KeyHeader } from "./ApiKeyFields.js";
@@ -23,6 +24,7 @@ import { BotFace, botLabel } from "./Avatar.js";
 import { BRAINS, isLocalKind, ModelField, takesBaseUrl, takesModel, useLocalServers } from "./brains.js";
 import { ComputerChoice } from "./ComputerModes.js";
 import { ToolPicker } from "./ToolPicker.js";
+import { BotInitiativeFields } from "./InitiativeSettings.js";
 const DECISIONS: PolicyDecision[] = ["allow", "ask", "deny"];
 const list = (text: string) =>
   text
@@ -94,6 +96,7 @@ export function BotSettings({
   const [skills, setSkills] = useState(bot.skills.join(", "));
   const [cap, setCap] = useState(bot.spendCapUsd === null ? "" : String(bot.spendCapUsd));
   const [capSub, setCapSub] = useState(bot.capIncludesSubscription);
+  const [initiative, setInitiative] = useState<BotInitiative>(bot.initiative ?? { enabled: false, frequency: "normal", mcpUpdates: true });
   const [pinned, setPinned] = useState(bot.pinned);
   const [hidden, setHidden] = useState(bot.hidden);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -199,6 +202,7 @@ export function BotSettings({
           skills: list(skills),
           spendCapUsd: cap.trim() === "" ? null : Number(cap),
           capIncludesSubscription: capSub,
+          initiative,
           pinned,
           hidden,
         });
@@ -416,6 +420,8 @@ export function BotSettings({
             <input value={skills} onChange={(e) => setSkills(e.target.value)} name="settings-skills" />
           </label>
         </fieldset>
+
+        <BotInitiativeFields api={api} bot={bot} value={initiative} onChange={setInitiative} />
 
         <fieldset>
           <legend>{t("usage.cap")}</legend>

@@ -5,7 +5,7 @@
 **Implementation:** verified
 **Realizes:** SC1
 **Last updated:** 2026-09-27
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 ## Purpose
 
@@ -25,6 +25,7 @@ Everything else in Orbis hangs off a bot.
 - The system shall expose each bot's state as exactly one of `idle`, `thinking`, `working`, `waiting`, `blocked` or `done`.
 - The system shall persist bots in the hub database so that a bot and its settings survive a hub restart.
 - The system shall place in every prompt of a bot its team: the bot it reports to, the bots that report to it and its other colleagues with their roles, and how to delegate to them and bring them into a conversation.
+- The system shall keep for each bot its initiative — whether it may write to the user on its own (off until the user turns it on), how often (rarely: at most once a day after 12 hours of quiet; sometimes: twice a day after 4 hours; often: four times a day after 2 hours) and whether it answers its MCP servers' updates — and for every bot a switch and quiet hours in the user's timezone (22:00 to 08:00 until changed).
 
 ### Event-driven
 
@@ -35,6 +36,8 @@ Everything else in Orbis hangs off a bot.
 - When the user marks the bot's direct conversation as read while the bot is `done`, the system shall set the bot state to `idle`.
 - When a user deletes a bot that other bots report to, the system shall make them report to the deleted bot's own manager, or to no one.
 - When the hub starts, the system shall mark the runs a previous process left running or waiting as failed and those left queued as cancelled.
+- When a bot with initiative has been quiet for its rhythm's time, every bot's initiative is on, it is not in the quiet hours, the bot is not working, and its last message on its own was answered by the user, the system shall now and then start a run in the bot's conversation with the user that asks it to write on its own (a task to ask for, an insight, a reminder or an alert, in one to three sentences) or to answer `[silent]`.
+- When the user presses "Try it now" for a bot that is not working, the system shall start such a run at once.
 
 ### State-driven
 
@@ -45,6 +48,8 @@ Everything else in Orbis hangs off a bot.
 - The system shall not create a bot when the installation already holds the maximum number of bots (ORBIS_MAX_BOTS, default 50).
 - The system shall not accept a handle that another bot already uses, that equals `everyone`, or that falls outside `[a-z0-9-]{2,32}`.
 - The system shall not let a bot report to itself, to a bot that does not exist, or to a bot that already reports to it directly or through others.
+- The system shall not post a `[silent]` answer of a run of initiative, nor say its failure in the conversation, nor count either toward the bot's day.
+- The system shall not write on a bot's initiative more often than its rhythm allows in 24 hours, nor in the quiet hours, nor while every bot's initiative is off.
 
 ### Optional
 
@@ -61,6 +66,7 @@ Everything else in Orbis hangs off a bot.
 7. [verified] A bot records the manager it reports to; reporting to itself, to a bot that reports to it or to an unknown bot answers 400; a duplicate keeps the manager; deleting a manager moves its reports to its own manager; each bot's prompt names its manager, its reports and its colleagues — verified by `packages/hub/test/team.test.ts`.
 8. [verified] A bot keeps the avatar shape and color it is given, gets both derived when none is given, refuses an unknown shape with 400, and a duplicate keeps them — verified by `packages/hub/test/bots.test.ts`.
 9. [verified] A bot whose short run ends while its long run goes on stays `working`, then becomes `done`; runs left waiting and their handoff cards are failed after a restart — verified by `packages/hub/test/chat-audit.test.ts`.
+10. [verified] A new bot's initiative is off and it never writes on its own; turned on, it writes after its rhythm's quiet and not before, the run says how long it was quiet and offers [silent], the message is posted in its conversation, no other one comes before the user answers and one comes after; a rare bot writes once a day at most and an unlucky roll waits; quiet hours in the user's timezone and every bot's switch hold it back, times and timezones are checked; [silent] posts nothing, a failure says nothing and neither counts; Try it now starts a run at once and is refused while the bot works — verified by `packages/hub/test/initiative.test.ts`
 
 ## Maturity
 

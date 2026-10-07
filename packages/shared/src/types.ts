@@ -212,6 +212,31 @@ export interface LastMessage {
   at: string;
 }
 
+export const INITIATIVE_FREQUENCIES = ["rare", "normal", "often"] as const;
+export type InitiativeFrequency = (typeof INITIATIVE_FREQUENCIES)[number];
+
+/**
+ * A bot writing to the user on its own (specs/bots: initiative): asking for a task when it has been quiet
+ * for a while, sharing an insight, or alerting the user to what its MCP servers announce.
+ */
+export interface BotInitiative {
+  enabled: boolean;
+  /** rare: once a day at most, after 12 h of quiet; normal: twice, after 4 h; often: four times, after 2 h. */
+  frequency: InitiativeFrequency;
+  /** Also write when an MCP server the bot has announces an update (change 0061). */
+  mcpUpdates: boolean;
+}
+
+/** What the user set for every bot's initiative (Settings). */
+export interface InitiativeSettings {
+  /** Off: no bot writes on its own, whatever its own switch says. */
+  enabled: boolean;
+  /** Quiet hours, "HH:MM" in `timezone`, when no bot writes on its own. Equal times: none. */
+  quietStart: string;
+  quietEnd: string;
+  timezone: string;
+}
+
 export interface Bot {
   id: string;
   handle: string;
@@ -234,6 +259,8 @@ export interface Bot {
   capIncludesSubscription: boolean;
   pinned: boolean;
   hidden: boolean;
+  /** Whether the bot writes to the user on its own; off unless the user turns it on. */
+  initiative?: BotInitiative;
   state: BotState;
   lastMessage: LastMessage | null;
   createdAt: string;
@@ -335,7 +362,7 @@ export const RUN_STATUSES = ["queued", "running", "waiting", "done", "failed", "
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 /** `report`: a bot's follow-up once every task it handed off in one run has ended. */
-export type RunTriggerType = "message" | "handoff" | "mention" | "report" | "routine" | "webhook" | "api" | "hiring";
+export type RunTriggerType = "message" | "handoff" | "mention" | "report" | "routine" | "webhook" | "api" | "hiring" | "initiative";
 
 export interface RunTrigger {
   type: RunTriggerType;
