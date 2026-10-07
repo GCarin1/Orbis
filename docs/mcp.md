@@ -158,3 +158,40 @@ the bot's allowlist, still editable by hand:
 | `!*` | nothing |
 
 The API is in [`api.md`](api.md#mcp-servers).
+
+## Updates from a server
+
+An MCP server can also speak on its own: send a message (a stock alert, a
+failed payment, a build that broke), say a resource changed, or say its
+tools changed. Orbis listens and tells the bots that watch the server.
+
+**Which bots watch a server:** every bot that has the server's tools and its
+[initiative](initiative.md) on, with *Tell me about its MCP servers' updates*
+ticked. The server's card then says **🔔 Stays connected and tells … what it
+announces**.
+
+What Orbis does with each kind of update:
+
+| The server sends | Orbis |
+|------------------|-------|
+| `notifications/message` (a log line) | Passes it on, unless its level is `debug`. |
+| `notifications/resources/updated` | Reads the resource again and passes on what it holds now (the first 2,000 characters). It subscribes to the server's resources (its first 100) when the server allows it. |
+| `notifications/tools/list_changed` | Lists the tools again, so the bots get the new ones. This happens for every connected server, watched or not. |
+| `ping` | Answers it. |
+
+How the updates reach a bot:
+
+- A watched server **stays connected**: a program keeps running and an HTTP
+  server's stream (its `GET`) stays open. A program that stops is started
+  again after 15 s, then 1, 5 and 15 minutes. A server nobody watches still
+  starts only when a bot uses it.
+- Orbis gathers a server's updates for **30 seconds** (20 at most) and
+  wakes each watching bot once with all of them. The bot gets them as data
+  from outside Orbis, never as instructions.
+- The bot decides. If the update matters, it writes you a short message,
+  marked **🔔 About an MCP server's update**, and you get a notification.
+  If it is routine, it answers `[silent]` and nothing is posted.
+- In the **quiet hours**, and while the bot is working, the updates wait.
+  The bot hears of them afterwards. With **Settings → Initiative** off, they
+  reach nobody.
+- At most **12** updates a day wake one bot.

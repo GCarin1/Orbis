@@ -87,6 +87,8 @@ export interface HubOptions {
   clock?: () => Date;
   /** The dice a bot's initiative rolls (tests make it always or never write). */
   random?: () => number;
+  /** How long MCP updates are gathered, and how soon a watched server starts again (tests shorten them). */
+  mcp?: { updateBatchMs?: number; watchRetryMs?: number[] };
 }
 
 export interface Hub extends HubContext {
@@ -346,7 +348,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
   const voice = new VoiceService(config, new SettingsRepo(db), secrets.hubSecrets);
-  const mcp = new McpConnections(ctx, secrets.hubSecrets, { redirectUri: () => `${url()}/oauth/mcp/callback` });
+  const mcp = new McpConnections(ctx, secrets.hubSecrets, { redirectUri: () => `${url()}/oauth/mcp/callback`, ...opts.mcp });
   mcp.start();
   const usage = new UsageService(ctx, opts.clock);
   engine.addHooks(usage.hooks());
@@ -358,6 +360,9 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const initiative = new InitiativeService(ctx, new SettingsRepo(db), opts.clock, opts.random);
   engine.addHooks(initiative.hooks());
   initiative.start();
+  // A server's updates reach the bots that watch it (change 0061).
+  mcp.onUpdates((server, updates, watchers, dropped) => void initiative.mcpUpdates(server, updates, watchers, dropped));
+  mcp.startWatching();
   const templates = new TemplateService(ctx, skillService, routines);
   const hiring = new HiringService(ctx, { skills: skillService.store, vault: secrets.vault, mcp, usage });
   const squads = new SquadService(ctx);

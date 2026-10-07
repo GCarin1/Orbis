@@ -779,6 +779,8 @@ export interface McpServer {
   tools: McpServerTool[];
   /** The bots whose allowlist gives them this server's tools. */
   bots: string[];
+  /** The bots that answer its updates (change 0061): while there are any, it stays connected. */
+  watchers?: string[];
   createdAt: string;
   updatedAt: string;
 }

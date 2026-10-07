@@ -377,6 +377,13 @@ export function ServerCard({ api, server, bots }: { api: Api; server: McpServer;
       )}
       {server.status === "connected" && (
         <>
+          {(server.watchers?.length ?? 0) > 0 && (
+            <p className="mcp-watchers muted small" data-testid="mcp-watchers">
+              {t("market.watchers", {
+                names: server.watchers!.map((id) => bots.find((b) => b.id === id)?.name ?? "bot").join(", "),
+              })}
+            </p>
+          )}
           <fieldset className="mcp-section">
             <legend>{t("market.whichBots")}</legend>
             {visible.length === 0 && <p className="muted small">{t("brains.noBots")}</p>}

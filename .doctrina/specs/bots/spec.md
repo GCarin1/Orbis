@@ -5,7 +5,7 @@
 **Implementation:** verified
 **Realizes:** SC1
 **Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -38,6 +38,7 @@ Everything else in Orbis hangs off a bot.
 - When the hub starts, the system shall mark the runs a previous process left running or waiting as failed and those left queued as cancelled.
 - When a bot with initiative has been quiet for its rhythm's time, every bot's initiative is on, it is not in the quiet hours, the bot is not working, and its last message on its own was answered by the user, the system shall now and then start a run in the bot's conversation with the user that asks it to write on its own (a task to ask for, an insight, a reminder or an alert, in one to three sentences) or to answer `[silent]`.
 - When the user presses "Try it now" for a bot that is not working, the system shall start such a run at once.
+- When the updates of an MCP server a bot watches reach it, the system shall start a run of the bot's initiative (`mcp`) that hands them as untrusted data and asks the bot to tell the user what matters in one to three sentences or to answer `[silent]`, holding them through the quiet hours and while the bot works, and at most 12 times a day per bot.
 
 ### State-driven
 
@@ -50,6 +51,7 @@ Everything else in Orbis hangs off a bot.
 - The system shall not let a bot report to itself, to a bot that does not exist, or to a bot that already reports to it directly or through others.
 - The system shall not post a `[silent]` answer of a run of initiative, nor say its failure in the conversation, nor count either toward the bot's day.
 - The system shall not write on a bot's initiative more often than its rhythm allows in 24 hours, nor in the quiet hours, nor while every bot's initiative is off.
+- The system shall not wake a bot with MCP updates while every bot's initiative is off.
 
 ### Optional
 
@@ -67,6 +69,7 @@ Everything else in Orbis hangs off a bot.
 8. [verified] A bot keeps the avatar shape and color it is given, gets both derived when none is given, refuses an unknown shape with 400, and a duplicate keeps them — verified by `packages/hub/test/bots.test.ts`.
 9. [verified] A bot whose short run ends while its long run goes on stays `working`, then becomes `done`; runs left waiting and their handoff cards are failed after a restart — verified by `packages/hub/test/chat-audit.test.ts`.
 10. [verified] A new bot's initiative is off and it never writes on its own; turned on, it writes after its rhythm's quiet and not before, the run says how long it was quiet and offers [silent], the message is posted in its conversation, no other one comes before the user answers and one comes after; a rare bot writes once a day at most and an unlucky roll waits; quiet hours in the user's timezone and every bot's switch hold it back, times and timezones are checked; [silent] posts nothing, a failure says nothing and neither counts; Try it now starts a run at once and is refused while the bot works — verified by `packages/hub/test/initiative.test.ts`
+11. [verified] Updates sent in the quiet hours wait and reach the bot when they end; with every bot's initiative off they reach nobody, then or later — verified by `packages/hub/test/mcp-updates.test.ts`
 
 ## Maturity
 

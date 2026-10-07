@@ -63,7 +63,7 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -278,7 +278,7 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.11.0",
+        "version": "0.12.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in — for a remote server, or for a program with the user's own client — keys as hub secrets, 43 free servers with their logos)",
         "realizes": [
@@ -309,7 +309,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.33.0",
+        "version": "0.34.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -1802,6 +1802,28 @@
         "specs_affected": [
           {
             "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0061-mcp-server-updates",
+        "title": "mcp-server-updates",
+        "path": ".doctrina/changes/archive/2026-10-07-0061-mcp-server-updates",
+        "status": "applied",
+        "applied": "2026-10-07",
+        "specs_affected": [
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
             "operation": "MODIFIED"
           },
           {

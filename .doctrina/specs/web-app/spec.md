@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.33.0
+**Version:** 0.34.0
 
 ## Purpose
 
@@ -62,6 +62,7 @@ run's steps.
 - The web app shall let the user attach files to a message with the clip button, by pasting (a screenshot) or by dropping them on the message box, show each as a chip with its thumbnail or name and size that can be taken out, and send the files alone or with text.
 - The web app shall show a message's images in place (opened large on a tap), play its audio and video, show every other file as a card with its extension and size that downloads it, and list a conversation's files from the bot's ⋮ menu and from a group's info and menu.
 - The web app shall show in a bot's settings its initiative switch, how often it writes, whether it answers its MCP servers' updates and a "Try it now" button; in Settings → Initiative the switch for every bot and the quiet hours, saved with the device's timezone; and above a message a bot wrote on its own, that it did.
+- The web app shall say on a connected MCP server's card which bots it tells about its updates, while any do, and above a message a bot wrote about an MCP update, that it did.
 
 ### Event-driven
 
@@ -173,6 +174,7 @@ run's steps.
 57. [verified] In a real browser, the ⋮ menu opens a bot's routines, a routine picked as every day at 02:00 in America/Sao_Paulo is saved as `0 2 * * *` in that timezone, tested and enabled — verified by `tests/e2e/skills-routines.test.ts`
 58. [verified] The clip adds files shown as chips, one can be taken out, files alone are sent and the box empties; a pasted screenshot gets a name and a dropped file is added; a file over 25 MB is refused with its name and the limit; a message shows its image (opened large and closed with Escape), its audio player and a card for its PDF, the token in each address; the conversation's files list its documents with who sent them and its images in a grid — verified by `packages/web/test/files.test.tsx`
 59. [verified] A bot's initiative is off until ticked, how often waits until then, both and the MCP choice go with Save, Try it now gives the bot its chance; Settings → Initiative saves every bot's switch and the quiet hours with the device's timezone; a message of initiative says so — verified by `packages/web/test/initiative.test.tsx`
+60. [verified] A connected server's card says nothing of updates while no bot watches it and names the bots it tells once they do — verified by `packages/web/test/marketplace.test.tsx`
 
 ## Maturity
 

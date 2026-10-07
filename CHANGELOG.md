@@ -28,6 +28,17 @@ change that delivered it.
 
 ### Added
 
+- **MCP server updates reach your bots** (change 0061-mcp-server-updates).
+  - Orbis now listens to what an MCP server sends on its own: its messages,
+    the resources that changed (read again) and new tool lists. It answers
+    its pings.
+  - A server that a bot with initiative watches stays connected. A program
+    that stops is started again, and an HTTP server's stream stays open.
+  - Its updates reach the bot in batches, as data from outside Orbis. The
+    bot tells you what matters (**🔔 About an MCP server's update**) and
+    stays `[silent]` otherwise. Quiet hours and a day's limit hold.
+  - The server's card says which bots it tells.
+
 - **A bot's initiative** (change 0060-bot-initiative).
   - A bot you let write on its own does so now and then, as a colleague
     would: it asks for a task when it has been idle, shares an insight,

@@ -14,7 +14,17 @@ import { hostEnv } from "../computer/host.js";
 import type { HubSecrets } from "../secrets/hub-secrets.js";
 import { toolAllowed, untrusted, type ToolDefinition } from "../tools/registry.js";
 import { catalogEntry, MCP_CATALOG, type CatalogEntry } from "./catalog.js";
-import { HttpTransport, McpAuthError, McpClient, McpError, StdioTransport, type McpCallResult, type McpRemoteTool, type McpTransport } from "./client.js";
+import {
+  HttpTransport,
+  McpAuthError,
+  McpClient,
+  McpError,
+  StdioTransport,
+  type McpCallResult,
+  type McpNotification,
+  type McpRemoteTool,
+  type McpTransport,
+} from "./client.js";
 import {
   authorizationUrl,
   discover,
@@ -93,6 +103,29 @@ const toRow = (r: Record<string, unknown>): Row => ({
   updatedAt: r.updated_at as string,
 });
 
+/** An update a server sent on its own (a log line, a resource that changed), kept until its bots hear of it. */
+export interface McpUpdate {
+  at: string;
+  kind: "message" | "resource";
+  /** A message's level (info, notice, warning, error…). */
+  level?: string;
+  logger?: string;
+  /** The message, or the changed resource's address and what it holds now. */
+  text: string;
+  uri?: string;
+}
+
+/** Where a server's batch of updates goes, with the bots that watch it. */
+export type UpdateListener = (server: { id: string; name: string }, updates: McpUpdate[], watchers: Bot[], dropped: number) => void;
+
+/** How long the updates of a server are gathered before its bots hear of them. */
+export const UPDATE_BATCH_MS = 30_000;
+/** The most updates of one server kept for one batch; older ones are left out and counted. */
+export const UPDATE_BATCH_MAX = 20;
+/** How long the hub waits before starting again a watched server that stopped. */
+export const WATCH_RETRY_MS = [15_000, 60_000, 5 * 60_000, 15 * 60_000];
+const RESOURCE_TEXT = 2_000;
+
 /** A tool name the registry and every brain accept. */
 const safeName = (name: string) => name.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 64);
 
@@ -102,11 +135,20 @@ export class McpConnections {
   private readonly registered = new Map<string, string[]>();
   private readonly authStates = new Map<string, { serverId: string; verifier: string; expires: number }>();
   private readonly authUrls = new Map<string, string>();
+  /** The servers kept connected because a bot answers their updates (change 0061). */
+  private readonly watched = new Set<string>();
+  private readonly wired = new WeakSet<McpClient>();
+  private readonly listened = new WeakSet<McpClient>();
+  private readonly retries = new Map<string, { attempt: number; timer: NodeJS.Timeout | null }>();
+  private readonly updates = new Map<string, { list: McpUpdate[]; dropped: number; timer: NodeJS.Timeout | null }>();
+  private updateListener: UpdateListener | null = null;
+  private unsubscribe: (() => void) | null = null;
+  private watchTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly hub: HubContext,
     private readonly secrets: HubSecrets,
-    private readonly opts: { redirectUri(): string; fetchImpl?: typeof fetch },
+    private readonly opts: { redirectUri(): string; fetchImpl?: typeof fetch; updateBatchMs?: number; watchRetryMs?: number[] },
   ) {}
 
   private get fetchImpl(): typeof fetch {
@@ -211,6 +253,7 @@ export class McpConnections {
       authUrl: row.status === "needs_auth" ? (this.authUrls.get(row.id) ?? null) : null,
       tools,
       bots: this.botsOf(row),
+      watchers: this.watchersOf(row).map((b) => b.id),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -297,8 +340,192 @@ export class McpConnections {
   }
 
   async shutdown(): Promise<void> {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    if (this.watchTimer) clearTimeout(this.watchTimer);
+    for (const retry of this.retries.values()) if (retry.timer) clearTimeout(retry.timer);
+    for (const batch of this.updates.values()) if (batch.timer) clearTimeout(batch.timer);
+    this.retries.clear();
+    this.updates.clear();
+    this.watched.clear();
     await Promise.all([...this.live.values()].map((c) => c.close().catch(() => undefined)));
     this.live.clear();
+  }
+
+  // --- updates the servers send on their own (change 0061) ------------------------------------------
+
+  /** Where the batches of updates go (the bots' initiative). */
+  onUpdates(listener: UpdateListener): void {
+    this.updateListener = listener;
+  }
+
+  /** The bots that answer the updates of a server: given it, with initiative and its MCP updates on. */
+  watchersOf(row: Pick<Row, "id" | "tools">): Bot[] {
+    const names = row.tools.map((t) => this.toolName(row.id, t.name));
+    const probe = names.length ? names : [`mcp.${row.id}.any`];
+    return this.hub.repos.bots
+      .list({ includeHidden: true })
+      .filter((bot) => bot.initiative?.enabled && bot.initiative.mcpUpdates)
+      .filter((bot) => probe.some((name) => toolAllowed(name, bot.tools, true)));
+  }
+
+  /** Keep connected the servers some bot watches, now and whenever a bot changes. */
+  startWatching(): void {
+    this.refreshWatches();
+    this.unsubscribe = this.hub.bus.subscribe((event) => {
+      if (event.type !== "bot.updated" && event.type !== "bot.deleted") return;
+      if (this.watchTimer) return;
+      this.watchTimer = setTimeout(() => {
+        this.watchTimer = null;
+        this.refreshWatches();
+      }, 500);
+      this.watchTimer.unref();
+    });
+  }
+
+  /** Which servers are watched now; a newly watched one is connected and listened to. */
+  refreshWatches(): void {
+    for (const row of this.rows()) {
+      const watching = row.status === "connected" && this.watchersOf(row).length > 0;
+      if (watching && !this.watched.has(row.id)) {
+        this.watched.add(row.id);
+        const client = this.live.get(row.id);
+        if (client) this.wire(row.id, client);
+        else void this.attach(row.id);
+      } else if (!watching && this.watched.has(row.id)) {
+        this.watched.delete(row.id);
+        this.cancelRetry(row.id);
+      }
+    }
+  }
+
+  /** Whether a server is kept connected for its watchers. */
+  isWatched(id: string): boolean {
+    return this.watched.has(id);
+  }
+
+  /** Hear what a connected server sends; for a watched one, listen between requests and subscribe to its resources. */
+  private wire(id: string, client: McpClient): void {
+    if (!this.wired.has(client)) {
+      this.wired.add(client);
+      client.onNotification((n) => this.fromServer(id, client, n));
+      client.onClose((why) => this.lost(id, client, why));
+    }
+    if (this.watched.has(id) && !this.listened.has(client)) {
+      this.listened.add(client);
+      client.listen();
+      void this.subscribeAll(client);
+    }
+  }
+
+  private async subscribeAll(client: McpClient): Promise<void> {
+    if (!client.capabilities.resources?.subscribe) return;
+    try {
+      for (const resource of await client.listResources()) await client.subscribe(resource.uri).catch(() => undefined);
+    } catch {
+      /* a server whose resources cannot be listed still sends its messages */
+    }
+  }
+
+  /** A watched server that stopped is started again, later and later while it keeps stopping. */
+  private lost(id: string, client: McpClient, _why: string): void {
+    if (this.live.get(id) === client) this.live.delete(id);
+    if (!this.watched.has(id)) return;
+    const retry = this.retries.get(id) ?? { attempt: 0, timer: null };
+    if (retry.timer) return;
+    const delays = this.opts.watchRetryMs ?? WATCH_RETRY_MS;
+    const ms = delays[Math.min(retry.attempt, delays.length - 1)]!;
+    retry.timer = setTimeout(() => {
+      retry.timer = null;
+      retry.attempt++;
+      if (!this.watched.has(id)) return;
+      void this.attach(id).then(() => {
+        const again = this.live.get(id);
+        if (again) retry.attempt = 0;
+        else if (this.watched.has(id)) this.lost(id, client, "still not connected");
+      });
+    }, ms);
+    retry.timer.unref();
+    this.retries.set(id, retry);
+  }
+
+  private cancelRetry(id: string): void {
+    const retry = this.retries.get(id);
+    if (retry?.timer) clearTimeout(retry.timer);
+    this.retries.delete(id);
+  }
+
+  private fromServer(id: string, client: McpClient, n: McpNotification): void {
+    switch (n.method) {
+      case "notifications/tools/list_changed":
+        void this.refreshTools(id, client);
+        return;
+      case "notifications/resources/list_changed":
+        if (this.watched.has(id)) void this.subscribeAll(client);
+        return;
+      case "notifications/resources/updated": {
+        const uri = String(n.params.uri ?? "");
+        if (uri) this.queue(id, { at: new Date().toISOString(), kind: "resource", uri, text: uri });
+        return;
+      }
+      case "notifications/message": {
+        const level = String(n.params.level ?? "info");
+        if (level === "debug") return;
+        const data = n.params.data;
+        const text = typeof data === "string" ? data : JSON.stringify(data ?? "");
+        const logger = typeof n.params.logger === "string" ? n.params.logger : undefined;
+        this.queue(id, { at: new Date().toISOString(), kind: "message", level, ...(logger ? { logger } : {}), text: text.slice(0, 4_000) });
+        return;
+      }
+    }
+  }
+
+  /** A server's tools changed: list them again, so the bots get the new ones. */
+  private async refreshTools(id: string, client: McpClient): Promise<void> {
+    try {
+      const row = this.row(id);
+      if (!row || this.live.get(id) !== client) return;
+      row.tools = await client.listTools();
+      this.save(row);
+      this.registerTools(row);
+    } catch {
+      /* the old list stays */
+    }
+  }
+
+  /** Gather a watched server's updates for a while, so its bots hear of them together. */
+  private queue(id: string, update: McpUpdate): void {
+    if (!this.watched.has(id)) return;
+    const batch = this.updates.get(id) ?? { list: [], dropped: 0, timer: null };
+    batch.list.push(update);
+    if (batch.list.length > UPDATE_BATCH_MAX) {
+      batch.list.shift();
+      batch.dropped++;
+    }
+    if (!batch.timer) {
+      batch.timer = setTimeout(() => void this.flush(id), this.opts.updateBatchMs ?? UPDATE_BATCH_MS);
+      batch.timer.unref();
+    }
+    this.updates.set(id, batch);
+  }
+
+  private async flush(id: string): Promise<void> {
+    const batch = this.updates.get(id);
+    this.updates.delete(id);
+    const row = this.row(id);
+    if (!batch || !row) return;
+    const watchers = this.watchersOf(row);
+    if (!watchers.length) return;
+    // A changed resource is read once per batch, so the bot sees what it holds now.
+    const client = this.live.get(id);
+    const read = new Map<string, string>();
+    for (const update of batch.list) {
+      if (update.kind !== "resource" || !update.uri || !client) continue;
+      if (!read.has(update.uri)) read.set(update.uri, (await client.readResource(update.uri).catch(() => "")).slice(0, RESOURCE_TEXT));
+      const content = read.get(update.uri);
+      if (content) update.text = `${update.uri}\n${content}`;
+    }
+    this.updateListener?.({ id: row.id, name: row.name }, batch.list, watchers, batch.dropped);
   }
 
   // --- connecting ------------------------------------------------------------------------------------
@@ -415,6 +642,9 @@ export class McpConnections {
       this.authUrls.delete(id);
       this.save(row);
       this.registerTools(row);
+      // A server a bot watches is listened to from the moment it connects.
+      if (this.watchersOf(row).length) this.watched.add(id);
+      this.wire(id, client);
     } catch (err) {
       await client?.close().catch(() => undefined);
       if (err instanceof McpAuthError && row.auth === "oauth") return this.beginAuth(row, err.wwwAuthenticate);
@@ -619,6 +849,11 @@ export class McpConnections {
   async remove(id: string): Promise<void> {
     const row = this.row(id);
     if (!row) throw notFound(`MCP server ${id}`);
+    this.watched.delete(id);
+    this.cancelRetry(id);
+    const batch = this.updates.get(id);
+    if (batch?.timer) clearTimeout(batch.timer);
+    this.updates.delete(id);
     await this.live
       .get(id)
       ?.close()

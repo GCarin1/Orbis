@@ -234,6 +234,16 @@ describe("the marketplace", () => {
     await act(async () => fireEvent.click(screen.getByRole("menuitem", { name: /Reconnect/ })));
     expect(post).toHaveBeenCalledWith("/api/v1/mcp/servers/notion/reconnect");
   });
+
+  it("says which bots it tells about its updates, while any do (change 0061)", () => {
+    const { api } = fakeApi();
+    const ana = bot({ name: "Ana" });
+    const bia = bot({ name: "Bia" });
+    const { rerender } = render(<ServerCard api={api} bots={[ana, bia]} server={server({ id: "shop", name: "Shop", bots: [ana.id, bia.id], watchers: [] })} />);
+    expect(screen.queryByTestId("mcp-watchers")).toBeNull();
+    rerender(<ServerCard api={api} bots={[ana, bia]} server={server({ id: "shop", name: "Shop", bots: [ana.id, bia.id], watchers: [ana.id, bia.id] })} />);
+    expect(screen.getByTestId("mcp-watchers").textContent).toBe("🔔 Stays connected and tells Ana, Bia what it announces (initiative → MCP servers' updates).");
+  });
 });
 
 describe("a bot's tools", () => {

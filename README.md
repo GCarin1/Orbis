@@ -57,7 +57,7 @@ are proven by tests.
 | Bots (identity, rules, avatar, state, pin/hide/duplicate/delete) | ✅ verified |
 | Direct conversations, threads, reactions, run queue, live stream | ✅ |
 | Files in conversations: send files (clip, paste, drag) to a bot or a group, bots find them in their workspace and send back the files they make (`files.send`); images, audio and video in the chat, every file kept and listed per conversation — [`docs/files.md`](docs/files.md) | ✅ verified |
-| A bot's initiative: a bot you let write on its own asks for tasks when idle, shares insights and alerts you, now and then — off by default, per bot, with quiet hours and a daily limit — [`docs/initiative.md`](docs/initiative.md) | ✅ verified |
+| A bot's initiative: a bot you let write on its own asks for tasks when idle, shares insights and alerts you, now and then — off by default, per bot, with quiet hours and a daily limit — and hears what its MCP servers announce on their own (messages, changed resources, new tools) — [`docs/initiative.md`](docs/initiative.md), [`docs/mcp.md`](docs/mcp.md#updates-from-a-server) | ✅ verified |
 | Brains: `claude-code`, `codex`, `gemini-cli`, `cursor` (subscriptions, session resume), `ollama` and `lmstudio` (local models), `anthropic` (official SDK), `openai`-compatible (OpenAI, OpenRouter…), `custom-cli`, `mock`; the settings screen lists the brains on your machine and tests that a model answers | ✅ verified |
 | Context assembly (identity, memories, recent conversation within budget) | ✅ |
 | REST API + WebSocket stream + OpenAPI, bearer token | ✅ |

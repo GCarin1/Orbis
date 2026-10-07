@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.11.0
+**Version:** 0.12.0
 
 ## Purpose
 
@@ -38,6 +38,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall send the OAuth `resource` parameter only for a server that names its resource, and add an entry's own sign-in parameters (such as Google's `access_type=offline`).
 - The system shall mark a marketplace server that signs in by itself with a code the user types on the service's page (OneDrive) as "Sign in with a code", listed with the servers that sign in.
 - The system shall treat as read-only, without asking, the tools a marketplace entry names as reads for a server that does not mark them itself, and keep asking first for every other tool of that server.
+- The system shall keep connected every MCP server that a bot watches (a bot with its tools, initiative on and its MCP updates on): a program kept running and started again 15 seconds, then 1, 5 and 15 minutes after it stops; an HTTP server's GET stream kept open with its session and opened again when it ends; and subscribe to a watched server's resources (its first 100) when it allows it.
 
 ### Event-driven
 
@@ -54,6 +55,9 @@ call through the approvals policy and marks outside content as untrusted.
 - When a run is stopped while an external MCP tool call is in progress, the system shall stop waiting for the server's answer.
 - When the web app asks for the MCP marketplace, the system shall say for each entry whether every tool of it only reads, so the user knows before connecting it.
 - When the user connects a marketplace program that cannot sign in by itself (an entry with `oauth`), the system shall have the user sign in through Orbis with the user's own OAuth client (its ID and secret kept as hub secrets) before starting the program, keep the tokens encrypted, start the program with them in the environment variables the entry names, and refresh them before handing them over when they expire.
+- When a connected MCP server sends `notifications/tools/list_changed`, the system shall list its tools again and offer the new list to the bots.
+- When a watched MCP server sends `notifications/message` with a level other than `debug`, or `notifications/resources/updated` (the resource read again, up to 2,000 characters), the system shall gather its updates for 30 seconds, at most 20, and hand them with the server's watchers to the bots' initiative.
+- When an MCP server sends a `ping` request, the system shall answer it; any other request from a server is refused as not offered.
 
 ### Unwanted-behavior (must-not)
 
@@ -87,6 +91,7 @@ call through the approvals policy and marks outside content as untrusted.
 15. [verified] A server that signs in with a code says so on its card and its details, and the Sign-in filter lists it — verified by `packages/web/test/marketplace.test.tsx`
 16. [verified] A tool a catalog entry names as a read is read-only and allowed without asking; a connection whose entry now starts another program is an error offering no tools, stays one on Reconnect, and starts the new program once connected again — verified by `packages/hub/test/mcp-marketing.test.ts`
 17. [verified] The phone's Debian installs `python3` and `pipx`, so the servers started with `pipx` run there — verified by `packages/hub/test/phone-script.test.ts`
+18. [verified] A watched program's warning and changed resource (read again) reach its bot as untrusted data in a run of initiative whose message is posted, its debug line does not, its ping is answered and its new tool is offered; a server no bot watches is not listened to, and stops being watched when its bot turns updates off; a watched program that stops is started again; an HTTP server's GET stream is opened with its session, its ping answered and its error message reaches the bot — verified by `packages/hub/test/mcp-updates.test.ts`
 
 ## Maturity
 

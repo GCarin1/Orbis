@@ -7,7 +7,7 @@ does not wait for you to ask:
 - it **shares an insight** or an idea from what it knows of your work;
 - it **reminds** you of something pending;
 - it **alerts** you to something it noticed, including what its MCP servers
-  announce.
+  announce (see [Updates from a server](mcp.md#updates-from-a-server)).
 
 It writes only when it has something worth saying. When it has nothing, it
 answers `[silent]`, and nothing is posted.
