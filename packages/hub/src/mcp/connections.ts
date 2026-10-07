@@ -279,7 +279,7 @@ export class McpConnections {
     return this.hub.tools
       .list()
       .filter((t) => !t.ungated)
-      .map((t) => ({ name: t.name, description: t.description, risk: t.risk, server: t.external ?? null }));
+      .map((t) => ({ name: t.name, description: t.description, risk: t.risk, server: t.external ?? null, ...(t.explicitPrefix ? { explicit: t.explicitPrefix } : {}) }));
   }
 
   // --- tools in the registry ----------------------------------------------------------------------

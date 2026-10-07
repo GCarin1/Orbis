@@ -64,3 +64,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-07 — 0059-files-conversations-sends-bots — Files in conversations: the user sends files and bots receive them in their workspace; bots send files they generate; files kept and listed per conversation (specs: android-app MODIFIED, conversations MODIFIED, web-app MODIFIED)
 - 2026-10-07 — 0060-bot-initiative — bot-initiative (specs: bots MODIFIED, web-app MODIFIED)
 - 2026-10-07 — 0061-mcp-server-updates — mcp-server-updates (specs: bots MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
+- 2026-10-07 — 0062-health-connect — health-connect (specs: android-app MODIFIED, health ADDED, tool-gateway MODIFIED, web-app MODIFIED)

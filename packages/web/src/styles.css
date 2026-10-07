@@ -4561,3 +4561,23 @@ label.pick-row.on {
   flex-basis: 100%;
   margin: 0;
 }
+
+/* ── health ─────────────────────────────────────────────────────────────── */
+.health-settings {
+  max-width: 760px;
+}
+.health-card {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.health-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.health-table td,
+.health-table th {
+  white-space: nowrap;
+}

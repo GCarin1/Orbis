@@ -28,6 +28,19 @@ change that delivered it.
 
 ### Added
 
+- **Health data for a health bot** (change 0062-health-connect).
+  - The Android app reads Health Connect, only to read and only what you
+    allow. Zepp (Amazfit), Samsung Health, Google Fit and Fitbit write
+    there. It reads steps, distance, calories, heart rate, resting heart
+    rate, sleep and its stages, exercise, weight, body fat, blood oxygen and
+    the workouts.
+  - **Settings → Health**: allow, sync now or on its own while the app is
+    open, the last 7 days, which bots may read it, and deleting it.
+  - Bots read it with `health.summary` and `health.sessions`. Only a bot
+    with `health.*` in its tools gets them; `*` never does.
+  - The app needs Android 8.0 or newer. It is now built with the Android
+    Gradle plugin 8.9.1 against API 36.
+
 - **MCP server updates reach your bots** (change 0061-mcp-server-updates).
   - Orbis now listens to what an MCP server sends on its own: its messages,
     the resources that changed (read again) and new tool lists. It answers

@@ -67,6 +67,7 @@ public class MainActivity extends Activity {
     private static final int DICTATE = 2;
     private static final int NOTIFICATIONS = 3;
     private static final int TERMUX_PERMISSION = 4;
+    private static final int HEALTH_PERMISSIONS = 5;
     /** How long a start may take: the first one, under proot on a slow phone, takes a while. */
     private static final int LOCAL_START_SECONDS = 180;
 
@@ -465,6 +466,13 @@ public class MainActivity extends Activity {
             pendingFiles = null;
             return;
         }
+        if (requestCode == HEALTH_PERMISSIONS) {
+            // What the user allowed on Health Connect's screen goes back to the page.
+            java.util.Set<String> granted = HealthBridge.parseResult(resultCode, data);
+            String json = "{\"granted\":" + new org.json.JSONArray(granted) + ",\"status\":\"available\"}";
+            web.evaluateJavascript("window.__orbisHealth&&window.__orbisHealth(" + json + ")", null);
+            return;
+        }
         if (requestCode == DICTATE) {
             ArrayList<String> heard = data == null ? null : data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             String result = resultCode == RESULT_OK && heard != null && !heard.isEmpty() && !heard.get(0).trim().isEmpty()
@@ -562,7 +570,10 @@ public class MainActivity extends Activity {
         return target.getAbsolutePath();
     }
 
-    /** What the pages may ask of the app. Nothing reaches the phone's files, contacts or sensors. */
+    /**
+     * What the pages may ask of the app. Nothing reaches the phone's files, contacts or sensors; the health data
+     * of Health Connect only reaches the hub's page, read only and only what the user allowed.
+     */
     private final class Bridge {
         /**
          * Connect to the hub at this address — from the connect screen only. With a pairing code, trade it for
@@ -697,6 +708,59 @@ public class MainActivity extends Activity {
                     Toast.makeText(MainActivity.this, getString(R.string.saved_to, saveDownload(name, mime, text)), Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, getString(R.string.save_failed, String.valueOf(e.getMessage())), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        /** Whether this phone has Health Connect: "available", "update" (install or update it) or "unavailable". */
+        @JavascriptInterface
+        public String healthStatus() {
+            if (onConnectPage) return "unavailable";
+            try {
+                return HealthBridge.status(MainActivity.this);
+            } catch (RuntimeException e) {
+                return "unavailable";
+            }
+        }
+
+        /** The kinds of health data the user allowed; the answer comes to window.__orbisHealth. */
+        @JavascriptInterface
+        public void healthCheck() {
+            if (onConnectPage) return;
+            HealthBridge.granted(MainActivity.this, json -> web.evaluateJavascript("window.__orbisHealth&&window.__orbisHealth(" + json + ")", null));
+        }
+
+        /** Health Connect's screen where the user allows reading each kind of data. */
+        @JavascriptInterface
+        public void healthRequest() {
+            if (onConnectPage) return;
+            runOnUiThread(() -> {
+                try {
+                    startActivityForResult(HealthBridge.requestIntent(MainActivity.this), HEALTH_PERMISSIONS);
+                } catch (RuntimeException e) {
+                    Toast.makeText(MainActivity.this, R.string.health_unavailable, Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        /** Read the last days of health data; the answer comes to window.__orbisHealthData. */
+        @JavascriptInterface
+        public void healthRead(int days) {
+            if (onConnectPage) return;
+            HealthBridge.read(MainActivity.this, days, json -> web.evaluateJavascript("window.__orbisHealthData&&window.__orbisHealthData(" + json + ")", null));
+        }
+
+        /** Health Connect's own settings, or its page in the Play Store when it must be installed or updated. */
+        @JavascriptInterface
+        public void openHealthConnect() {
+            if (onConnectPage) return;
+            runOnUiThread(() -> {
+                String state = healthStatus();
+                try {
+                    if ("available".equals(state)) startActivity(new Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS"));
+                    else startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + HealthBridge.PROVIDER)));
+                } catch (ActivityNotFoundException e) {
+                    openOutside(Uri.parse("https://play.google.com/store/apps/details?id=" + HealthBridge.PROVIDER));
                 }
             });
         }

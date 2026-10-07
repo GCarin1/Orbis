@@ -13,6 +13,8 @@ interface Group {
   prefix: string;
   label: string;
   external: boolean;
+  /** A group `*` does not give (the health data): only its own pattern does. */
+  explicit?: string;
   names: string[];
   /** An MCP server's logo and emoji. */
   logo?: string | null;
@@ -20,13 +22,14 @@ interface Group {
 }
 
 /** Turn a group on or off in an allowlist, keeping every other pattern. */
-export function setGroup(patterns: string[], group: Pick<Group, "prefix" | "external" | "names">, on: boolean): string[] {
+export function setGroup(patterns: string[], group: Pick<Group, "prefix" | "external" | "names"> & { explicit?: string }, on: boolean): string[] {
   const all = `${group.prefix}*`;
   const inside = (p: string) => p.replace(/^!/, "").startsWith(group.prefix);
+  const needs = group.external || group.explicit || false;
   let next = patterns.filter((p) => !inside(p) && p !== "!*");
   if (on) {
-    if (!group.names.every((n) => toolAllowed(n, next.length ? next : ["!*"], group.external))) next.push(all);
-  } else if (group.names.some((n) => toolAllowed(n, next.length ? next : ["!*"], group.external))) {
+    if (!group.names.every((n) => toolAllowed(n, next.length ? next : ["!*"], needs))) next.push(all);
+  } else if (group.names.some((n) => toolAllowed(n, next.length ? next : ["!*"], needs))) {
     next.push(`!${all}`);
   }
   // An empty allowlist means every tool: "nothing" is spelled `!*`.
@@ -59,6 +62,7 @@ export function ToolPicker({ api, patterns, onChange }: { api: Api | null | unde
       key,
       prefix: `${key}.`,
       external,
+      ...(tool.explicit ? { explicit: tool.explicit } : {}),
       names: [],
       label: external ? (servers[tool.server!]?.name ?? tool.server!) : t(`tools.group.${key}` as TextKey),
       ...(external ? { logo: servers[tool.server!]?.logo ?? null, icon: servers[tool.server!]?.icon ?? "🧩" } : {}),
@@ -71,7 +75,7 @@ export function ToolPicker({ api, patterns, onChange }: { api: Api | null | unde
   const effective = patterns.length ? patterns : ["*"];
 
   const row = (group: Group) => {
-    const allowed = group.names.filter((n) => toolAllowed(n, effective, group.external)).length;
+    const allowed = group.names.filter((n) => toolAllowed(n, effective, group.external || group.explicit || false)).length;
     return (
       <label key={group.key} className="checkbox tool-group" data-testid={`tool-group-${group.key}`}>
         <input

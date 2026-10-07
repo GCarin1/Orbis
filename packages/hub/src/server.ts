@@ -71,6 +71,7 @@ import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
 import { FilesService } from "./files/service.js";
 import { InitiativeService } from "./initiative/service.js";
+import { HealthService } from "./health/service.js";
 
 export interface HubOptions {
   env?: Env;
@@ -103,6 +104,7 @@ export interface Hub extends HubContext {
   squads: SquadService;
   files: FilesService;
   initiative: InitiativeService;
+  health: HealthService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -363,6 +365,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   // A server's updates reach the bots that watch it (change 0061).
   mcp.onUpdates((server, updates, watchers, dropped) => void initiative.mcpUpdates(server, updates, watchers, dropped));
   mcp.startWatching();
+  const health = new HealthService(ctx, new SettingsRepo(db), opts.clock);
+  for (const tool of health.tools()) tools.register(tool);
   const templates = new TemplateService(ctx, skillService, routines);
   const hiring = new HiringService(ctx, { skills: skillService.store, vault: secrets.vault, mcp, usage });
   const squads = new SquadService(ctx);
@@ -407,6 +411,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await squads.routes(app);
   await files.routes(app);
   await initiative.routes(app);
+  await health.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -434,6 +439,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     squads,
     files,
     initiative,
+    health,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });

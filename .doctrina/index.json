@@ -32,7 +32,7 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-10-03",
         "implementation": "verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`",
         "realizes": [
@@ -144,6 +144,22 @@
           "conversations",
           "agent-runtimes",
           "tool-gateway"
+        ]
+      },
+      {
+        "id": "health",
+        "path": ".doctrina/specs/health/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-10-07",
+        "implementation": "verified — `packages/hub/src/health/service.ts` (the sync, the days and workouts, the status, the bots' access, `health.summary` and `health.sessions`, wiping), `packages/android/app/src/main/java/app/orbis/android/HealthBridge.kt` and `HealthDays.kt` (reading Health Connect), the web app's Settings → Health (`HealthSettings.tsx`, `health.ts`)",
+        "realizes": [
+          "SC15"
+        ],
+        "depends_on": [
+          "android-app",
+          "tool-gateway",
+          "bots"
         ]
       },
       {
@@ -278,7 +294,7 @@
         "id": "tool-gateway",
         "path": ".doctrina/specs/tool-gateway/spec.md",
         "status": "active",
-        "version": "0.12.0",
+        "version": "0.13.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the registry, the allowlist with `!` exclusions, MCP over HTTP and stdio, untrusted envelopes, the result cap, and the MCP client with the marketplace (`packages/hub/src/mcp/`: stdio and streamable HTTP, OAuth sign-in — for a remote server, or for a program with the user's own client — keys as hub secrets, 43 free servers with their logos)",
         "realizes": [
@@ -309,7 +325,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.34.0",
+        "version": "0.35.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -575,6 +591,21 @@
           "agent-runtimes"
         ],
         "summary": "The hub runs on the phone, inside Termux, in a Debian made by"
+      },
+      {
+        "id": "0019",
+        "path": ".doctrina/decisions/0019-health-data-comes-from-health-connect-through-the-android-app-is-kept-on-the-user-s-hub-and-reaches-only-the-bots-given-health.md",
+        "title": "Health data comes from Health Connect through the Android app, is kept on the user's hub and reaches only the bots given health",
+        "status": "accepted",
+        "date": "2026-10-07",
+        "scope": [
+          "health",
+          "android-app",
+          "tool-gateway",
+          "web-app"
+        ],
+        "summary": "The Orbis Android app reads Health Connect.",
+        "landed": "2026-10-07 — `packages/android/app/src/main/java/app/orbis/android/HealthBridge.kt`, `packages/hub/src/health/service.ts`"
       }
     ],
     "changes": [],
@@ -1821,6 +1852,32 @@
           {
             "capability": "bots",
             "operation": "MODIFIED"
+          },
+          {
+            "capability": "tool-gateway",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0062-health-connect",
+        "title": "health-connect",
+        "path": ".doctrina/changes/archive/2026-10-07-0062-health-connect",
+        "status": "applied",
+        "applied": "2026-10-07",
+        "specs_affected": [
+          {
+            "capability": "android-app",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "health",
+            "operation": "ADDED"
           },
           {
             "capability": "tool-gateway",

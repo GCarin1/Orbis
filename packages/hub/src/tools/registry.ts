@@ -35,6 +35,8 @@ export interface ToolDefinition {
   offer?(bot: Bot): boolean;
   /** The id of the external MCP server the tool comes from: a bot gets it only when its allowlist names it (`mcp.<server>.*`). */
   external?: string;
+  /** A tool `*` does not give (the health data's): a bot gets it only from a pattern that starts with this prefix. */
+  explicitPrefix?: string;
   handler(input: any, ctx: ToolContext): Promise<string | ToolCallResult>;
 }
 
@@ -119,7 +121,7 @@ export class ToolRegistry {
   allowed(bot: Bot, tool: ToolDefinition): boolean {
     if (tool.offer && !tool.offer(bot)) return false;
     if (tool.ungated) return true;
-    return toolAllowed(tool.name, bot.tools, tool.external !== undefined);
+    return toolAllowed(tool.name, bot.tools, tool.external !== undefined ? true : (tool.explicitPrefix ?? false));
   }
 
   forBot(bot: Bot): ToolDefinition[] {

@@ -24,6 +24,62 @@ export interface AndroidApp {
   stopSpeaking?(): void;
   /** Start the hub on this phone again (inside Termux); the app does nothing when the hub is elsewhere. */
   ensureLocalHub?(): void;
+  /** Health Connect on this phone: "available", "update" (install or update it) or "unavailable". */
+  healthStatus?(): string;
+  /** The kinds of health data the user allowed; the answer comes to `window.__orbisHealth`. */
+  healthCheck?(): void;
+  /** Health Connect's screen to allow reading; the answer comes to `window.__orbisHealth`. */
+  healthRequest?(): void;
+  /** Read the last days; the data comes to `window.__orbisHealthData`. */
+  healthRead?(days: number): void;
+  /** Health Connect's settings, or its Play Store page to install or update it. */
+  openHealthConnect?(): void;
+}
+
+/** What the app says the user allowed, or why it could not tell. */
+export interface HealthGrant {
+  granted?: string[];
+  status?: string;
+  error?: string;
+}
+
+/** What the app read from Health Connect, ready for `PUT /api/v1/health/sync`; or why it could not. */
+export interface HealthRead {
+  days?: Array<{ date: string; metrics: Record<string, number> }>;
+  sessions?: Array<{ id: string; start: string; end: string; type: string; title: string | null; source: string | null }>;
+  sources?: string[];
+  granted?: string[];
+  error?: string;
+}
+
+type HealthHooks = { __orbisHealth?: (answer: HealthGrant) => void; __orbisHealthData?: (answer: HealthRead) => void };
+
+/** Ask the app something about Health Connect and wait for its answer (it comes back through a window hook). */
+function healthAnswer<K extends keyof HealthHooks>(hook: K, ask: () => void, ms = 60_000): Promise<Parameters<NonNullable<HealthHooks[K]>>[0]> {
+  return new Promise((resolve, reject) => {
+    const hooks = window as unknown as HealthHooks;
+    const timer = setTimeout(() => {
+      delete hooks[hook];
+      reject(new Error("the app did not answer"));
+    }, ms);
+    hooks[hook] = ((answer: never) => {
+      clearTimeout(timer);
+      delete hooks[hook];
+      resolve(answer);
+    }) as never;
+    ask();
+  });
+}
+
+/** The kinds of health data the user allowed (asking Health Connect's screen first when `request`). */
+export function healthGrant(request = false): Promise<HealthGrant> {
+  const app = androidApp()!;
+  return healthAnswer("__orbisHealth", () => (request ? app.healthRequest!() : app.healthCheck!()), request ? 10 * 60_000 : 30_000);
+}
+
+/** The last `days` days of health data, read by the app. */
+export function healthRead(days: number): Promise<HealthRead> {
+  return healthAnswer("__orbisHealthData", () => androidApp()!.healthRead!(days));
 }
 
 export function androidApp(): AndroidApp | null {

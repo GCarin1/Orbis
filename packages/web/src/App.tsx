@@ -14,6 +14,7 @@ import { TokenGate } from "./components/TokenGate.js";
 import { MAX_GROUP_SIZE, NewGroupDialog } from "./components/Groups.js";
 import { AddMembersDialog, conversationText, GroupHeader, GroupInfoPanel, type GroupActions, type GroupView } from "./components/GroupInfo.js";
 import { FilesPanel } from "./components/Files.js";
+import { startHealthSync } from "./health.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
 import { RoutinesPanel } from "./components/RoutinesPanel.js";
 import { BotSettings } from "./components/BotSettings.js";
@@ -140,6 +141,9 @@ export function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // In the Android app, the health data syncs on its own when the user chose so (change 0062).
+  useEffect(() => (store.api ? startHealthSync(store.api) : undefined), [store.api]);
 
   // In the desktop app and the Android app, a notification click opens its conversation.
   useEffect(() => {

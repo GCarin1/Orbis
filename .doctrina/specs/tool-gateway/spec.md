@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC3
 **Depends on:** bots, approvals
 **Last updated:** 2026-09-27
-**Version:** 0.12.0
+**Version:** 0.13.0
 
 ## Purpose
 
@@ -39,6 +39,7 @@ call through the approvals policy and marks outside content as untrusted.
 - The system shall mark a marketplace server that signs in by itself with a code the user types on the service's page (OneDrive) as "Sign in with a code", listed with the servers that sign in.
 - The system shall treat as read-only, without asking, the tools a marketplace entry names as reads for a server that does not mark them itself, and keep asking first for every other tool of that server.
 - The system shall keep connected every MCP server that a bot watches (a bot with its tools, initiative on and its MCP updates on): a program kept running and started again 15 seconds, then 1, 5 and 15 minutes after it stops; an HTTP server's GET stream kept open with its session and opened again when it ends; and subscribe to a watched server's resources (its first 100) when it allows it.
+- The system shall give a tool marked as given only by name (the health data's, `health.`) to a bot only when its allowlist names it by a pattern that starts with that prefix, as an MCP server's tools need `mcp.`, and say so in the tool list.
 
 ### Event-driven
 
@@ -92,6 +93,7 @@ call through the approvals policy and marks outside content as untrusted.
 16. [verified] A tool a catalog entry names as a read is read-only and allowed without asking; a connection whose entry now starts another program is an error offering no tools, stays one on Reconnect, and starts the new program once connected again — verified by `packages/hub/test/mcp-marketing.test.ts`
 17. [verified] The phone's Debian installs `python3` and `pipx`, so the servers started with `pipx` run there — verified by `packages/hub/test/phone-script.test.ts`
 18. [verified] A watched program's warning and changed resource (read again) reach its bot as untrusted data in a run of initiative whose message is posted, its debug line does not, its ping is answered and its new tool is offered; a server no bot watches is not listened to, and stops being watched when its bot turns updates off; a watched program that stops is started again; an HTTP server's GET stream is opened with its session, its ping answered and its error message reaches the bot — verified by `packages/hub/test/mcp-updates.test.ts`
+19. [verified] `*` gives neither health tool, `health.*` gives both, and the tool list marks them as given only by `health.` — verified by `packages/hub/test/health.test.ts`
 
 ## Maturity
 

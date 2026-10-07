@@ -338,4 +338,27 @@ CREATE TABLE initiatives (
 );
 CREATE INDEX initiatives_by_bot ON initiatives (bot_id, created_at);`,
   },
+  {
+    // specs/health: the user's health data read from Health Connect on the phone, one value per day and
+    // metric, and their workouts (change 0062-health-connect).
+    version: 14,
+    sql: `CREATE TABLE health_metrics (
+  date TEXT NOT NULL,
+  metric TEXT NOT NULL,
+  value REAL NOT NULL,
+  unit TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (date, metric)
+);
+CREATE TABLE health_sessions (
+  id TEXT PRIMARY KEY,
+  start_at TEXT NOT NULL,
+  end_at TEXT NOT NULL,
+  type TEXT NOT NULL,
+  title TEXT,
+  source TEXT,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX health_sessions_by_start ON health_sessions (start_at);`,
+  },
 ];

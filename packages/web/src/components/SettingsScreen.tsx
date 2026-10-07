@@ -14,9 +14,10 @@ import { ComputersSettings } from "./ComputerModes.js";
 import { VoiceSettings } from "./VoiceSettings.js";
 import { PhoneSettings } from "./PhoneSettings.js";
 import { InitiativeSettingsTab } from "./InitiativeSettings.js";
+import { HealthSettings } from "./HealthSettings.js";
 
-export type SettingsTab = "brains" | "computers" | "initiative" | "voice" | "phone";
-const TABS: SettingsTab[] = ["brains", "computers", "initiative", "voice", "phone"];
+export type SettingsTab = "brains" | "computers" | "initiative" | "health" | "voice" | "phone";
+const TABS: SettingsTab[] = ["brains", "computers", "initiative", "health", "voice", "phone"];
 
 export function SettingsScreen({
   api,
@@ -55,6 +56,7 @@ export function SettingsScreen({
         {tab === "brains" && <BrainsTab api={api} bots={bots} onConfigureBot={onConfigureBot} />}
         {tab === "computers" && <ComputersSettings api={api} />}
         {tab === "initiative" && <InitiativeSettingsTab api={api} />}
+        {tab === "health" && <HealthSettings api={api} bots={bots} />}
         {tab === "voice" && <VoiceSettings api={api} />}
         {tab === "phone" && <PhoneSettings api={api} />}
       </div>

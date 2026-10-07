@@ -195,8 +195,13 @@ certificate the phone does not trust is never loaded; the first screen says so.
   conversation — open one and it is in the message box.
 - **Back** closes what is open first — a dialog, the group info, a panel, the
   conversation — and then puts the app in the background, keeping it live.
-- **Files**: a group's photo uses the phone's picker; exporting a conversation
-  or a bot template saves it in **Downloads**.
+- **Files**: the clip in the message box and a group's photo use the phone's
+  picker, which takes more than one file at once. A file of a conversation, an
+  exported conversation or a bot template is saved in **Downloads**.
+- **Health data** (⚙ Settings → Health): the app reads Health Connect, only
+  to read and only what you allow. That is where Zepp (Amazfit), Samsung
+  Health, Google Fit and Fitbit write. Your hub keeps the data for the bots
+  you allow. See [health.md](health.md).
 - **Links** in messages open in the phone's browser; the app only shows your hub.
 - Nothing is backed up or moved to another phone: the hub's address and the
   login token stay on this one.

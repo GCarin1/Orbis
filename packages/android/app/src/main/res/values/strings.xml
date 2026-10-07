@@ -15,4 +15,7 @@
     <string name="local_running">O Orbis deste celular: os seus bots, o banco de dados e o Claude Code.</string>
     <string name="local_stopped">O Orbis no Termux parou: %1$s</string>
     <string name="command_copied" tools:ignore="Typos">Comando copiado: cole no Termux.</string>
+    <string name="health_privacy_title">Orbis e seus dados de saúde</string>
+    <string name="health_privacy">O Orbis lê do Health Connect, só para ler e só o que você permitir, os seus passos, distância, calorias, frequência cardíaca, sono, treinos, peso, gordura corporal e oxigenação do sangue.\n\nO app envia esses dados apenas para o seu próprio hub do Orbis (neste celular ou no computador que você conectou), e só quando você sincroniza, com o app aberto. Eles ficam guardados nesse hub. Só os bots que você liberar em Configurações → Saúde podem lê-los, e o cérebro desses bots envia o que ler ao provedor do modelo que você escolheu.\n\nO Orbis nunca grava no Health Connect. Para parar, desligue as permissões no Health Connect e apague os dados em Configurações → Saúde.</string>
+    <string name="health_unavailable">Este celular não tem o Health Connect.</string>
 </resources>

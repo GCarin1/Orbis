@@ -785,6 +785,68 @@ export interface McpServer {
   updatedAt: string;
 }
 
+/**
+ * The health data a user's phone reads from Health Connect (specs/health): one value per day and metric,
+ * with its unit. Google Fit, Zepp (Amazfit), Samsung Health and Fitbit write there.
+ */
+export const HEALTH_METRICS = {
+  steps: "steps",
+  distance_m: "m",
+  active_kcal: "kcal",
+  total_kcal: "kcal",
+  heart_rate_avg: "bpm",
+  heart_rate_min: "bpm",
+  heart_rate_max: "bpm",
+  resting_heart_rate: "bpm",
+  sleep_minutes: "min",
+  sleep_deep_minutes: "min",
+  sleep_rem_minutes: "min",
+  sleep_light_minutes: "min",
+  sleep_awake_minutes: "min",
+  exercise_minutes: "min",
+  weight_kg: "kg",
+  body_fat_pct: "%",
+  oxygen_saturation_avg: "%",
+} as const;
+export type HealthMetric = keyof typeof HEALTH_METRICS;
+
+export interface HealthDay {
+  /** The phone's local date, YYYY-MM-DD. */
+  date: string;
+  metrics: Partial<Record<HealthMetric, number>>;
+}
+
+/** A workout from Health Connect. */
+export interface HealthSession {
+  id: string;
+  start: string;
+  end: string;
+  /** Health Connect's exercise type, as a name ("running", "walking"…). */
+  type: string;
+  title: string | null;
+  /** The app that wrote it (its package name). */
+  source: string | null;
+}
+
+/** What the phone sends after reading Health Connect. */
+export interface HealthSync {
+  days: HealthDay[];
+  sessions?: HealthSession[];
+  /** The apps whose data it read (package names). */
+  sources?: string[];
+}
+
+export interface HealthStatus {
+  lastSyncAt: string | null;
+  /** How many days have data, and the first and last of them. */
+  days: number;
+  firstDate: string | null;
+  lastDate: string | null;
+  sources: string[];
+  /** The bots that may read it (their allowlist names `health.`). */
+  bots: string[];
+}
+
 /** A registered tool, for choosing a bot's tools (`GET /api/v1/tools`). */
 export interface ToolInfo {
   name: string;
@@ -792,6 +854,8 @@ export interface ToolInfo {
   risk: "read" | "write" | "external";
   /** The MCP server it comes from, or null for Orbis's own tools. */
   server: string | null;
+  /** A tool `*` does not give: only a pattern that starts with this prefix does (the health data's `health.`). */
+  explicit?: string;
 }
 
 // --- ChatGPT through the Codex CLI (specs/agent-runtimes) ----------------------

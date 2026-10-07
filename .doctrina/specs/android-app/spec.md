@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC14
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -21,10 +21,11 @@ GitHub Actions workflow builds the APK of the current version on demand.
 ### Ubiquitous
 
 - The Android app shall show in a WebView the web app served by the hub at the address the user gave, with JavaScript and the page's storage on and file access off.
-- The Android app shall expose to the page only starting the hub on this phone, its state, its install command, Termux and the app's permission settings (from its connect screen alone), starting the hub on this phone again (when it is the saved hub), connecting to a hub (from its connect screen alone), reading the clipboard (from its connect screen alone), reading a QR code with Google Play's code scanner (from its connect screen alone), the hub's address, the app's version, changing the hub, saving a text file or a conversation's file to Downloads, showing a notification, the notification permission, keeping connected in the background, the battery settings, the phone's dictation and the phone's voice.
+- The Android app shall expose to the page only starting the hub on this phone, its state, its install command, Termux and the app's permission settings (from its connect screen alone), starting the hub on this phone again (when it is the saved hub), connecting to a hub (from its connect screen alone), reading the clipboard (from its connect screen alone), reading a QR code with Google Play's code scanner (from its connect screen alone), the hub's address, the app's version, changing the hub, saving a text file or a conversation's file to Downloads, showing a notification, the notification permission, keeping connected in the background, the battery settings, the phone's dictation, the phone's voice, and Health Connect's state, its permission screen, the kinds of health data the user allowed and reading them (from the hub's page alone).
 - The Android app shall take its version name from Orbis's version (the root `package.json`) and its version code from the build number.
 - The web app shall, inside the Android app, save the files it exports (a conversation, a bot template) through the app, show the hub and the app's version in Settings with a button to change the hub, and tell the app what the phone's Back button closes first.
 - The system shall provide `scripts/android/orbis-termux.sh`, which installs in Termux a Debian made by proot-distro with Node.js 22, Orbis built from the repository and Claude Code (its native build, else its last JavaScript release), lets other apps start Termux commands, and installs `orbis-phone` with `serve`, `stop`, `status`, `logs`, `update`, `token` and `setup-token`.
+- The Android app shall install on Android 8.0 (API 26) or newer, declare a read permission for each kind of health data it reads, and show why it reads them on the screen Health Connect opens from its permission settings.
 
 ### Event-driven
 
@@ -50,6 +51,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When the install script runs where proot-distro keeps Debian in containers/<name>/rootfs (version 5) or in installed-rootfs/<name> (older), the system shall find it there, install Debian only when it is missing or a broken copy, and have orbis-phone look for Debian each time it runs.
 - When `orbis-phone serve` runs the hub on the phone (started by the app or by hand), the system shall hold Termux's wake lock while the hub runs, so bots answer and routines fire with the screen off, unless `ORBIS_AWAKE=0`.
 - When the page asks for more than one file, the Android app shall give it every file picked in the phone's picker.
+- When the page asks to allow health data, the Android app shall open Health Connect's permission screen and tell the page the kinds of data the user allowed; when Health Connect must be installed or updated, it shall open its page in the Play Store.
 
 ### State-driven
 
@@ -88,6 +90,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 20. [verified] The app stays connected in the background unless the user turns it off — verified by `packages/android/app/src/test/java/app/orbis/android/HubTest.java`
 21. [verified] With stand-ins for Termux, the hub started the way the app starts it takes Termux's wake lock — verified by `packages/hub/test/phone-script.test.ts`
 22. [verified] Inside the Android app, a conversation's file is saved to Downloads through the app with its bytes — verified by `packages/web/test/files.test.tsx`
+23. [verified] A night's stages add up on the day it ended and workouts are named, as the app sends them to the page — verified by `packages/android/app/src/test/java/app/orbis/android/HealthDaysTest.kt`
 
 ## Maturity
 
