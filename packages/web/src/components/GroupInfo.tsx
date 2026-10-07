@@ -21,13 +21,15 @@ import {
   InfoIcon,
   LinkIcon,
   MoreIcon,
+  PaperclipIcon,
   PencilIcon,
   SearchIcon,
   TrashIcon,
   UserPlusIcon,
 } from "./Icons.js";
+import { FilesPanel } from "./Files.js";
 
-export type GroupView = "info" | "search" | "links";
+export type GroupView = "info" | "search" | "links" | "files";
 
 /** What the menu, the header and the info do to the group; App wires them to the store. */
 export interface GroupActions {
@@ -134,6 +136,7 @@ export function GroupMenu({ group, actions }: { group: Conversation; actions: Gr
         <div className="menu" role="menu" aria-label={t("group.menu")}>
           {item(t("group.addMembers"), <UserPlusIcon size={16} />, actions.add)}
           {item(t("group.info"), <InfoIcon size={16} />, () => actions.info("info"))}
+          {item(t("files.title"), <PaperclipIcon size={16} />, () => actions.info("files"))}
           {item(t("group.links"), <LinkIcon size={16} />, () => actions.info("links"))}
           {item(t("group.search"), <SearchIcon size={16} />, () => actions.info("search"))}
           {item(
@@ -515,6 +518,20 @@ export function GroupInfoPanel({
     );
   }
 
+  if (view === "files") {
+    return (
+      <FilesPanel
+        api={api}
+        conversationId={group.id}
+        bots={bots}
+        refreshKey={group.lastItemAt}
+        title={t("files.title")}
+        onBack={() => onView("info")}
+        onShowItem={(itemId) => run(() => onShowItem(itemId))}
+      />
+    );
+  }
+
   if (view === "links") {
     return (
       <aside className="side-panel group-info" aria-label={t("group.links")} data-testid="group-info">
@@ -683,6 +700,10 @@ export function GroupInfoPanel({
       )}
 
       <section className="info-card">
+        <button type="button" className="info-row" onClick={() => onView("files")}>
+          <span>{t("files.title")}</span>
+          <ChevronRightIcon size={16} />
+        </button>
         <button type="button" className="info-row" onClick={() => onView("links")}>
           <span>{t("group.links")}</span>
           <span className="muted">{links?.length ?? "…"}</span>

@@ -156,6 +156,6 @@ describe("sending", () => {
     await act(async () => fireEvent.keyDown(box, { key: "Enter", isComposing: true }));
     expect(onSend).not.toHaveBeenCalled();
     await act(async () => fireEvent.keyDown(box, { key: "Enter" }));
-    expect(onSend).toHaveBeenCalledWith("olá");
+    expect(onSend).toHaveBeenCalledWith("olá", []);
   });
 });

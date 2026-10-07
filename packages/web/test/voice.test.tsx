@@ -109,7 +109,7 @@ describe("the microphone", () => {
     expect(screen.getByRole("button", { name: "Stop listening" }).getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
-    await waitFor(() => expect(onSend).toHaveBeenCalledWith("Hi ship the launch page today"));
+    await waitFor(() => expect(onSend).toHaveBeenCalledWith("Hi ship the launch page today", []));
     expect(screen.getByRole("button", { name: "Speak" })).toBeTruthy();
   });
 

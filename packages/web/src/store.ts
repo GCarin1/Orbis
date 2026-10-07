@@ -60,7 +60,8 @@ interface State {
   loadTimeline(conversationId: string): Promise<void>;
   /** Load the page of items before the oldest one shown. */
   loadEarlier(conversationId: string): Promise<void>;
-  send(conversationId: string, text: string): Promise<void>;
+  /** Send a message; its files are uploaded first and go with it. */
+  send(conversationId: string, text: string, files?: File[]): Promise<void>;
   /** Stop runs (a bot's current one and those waiting behind it). */
   cancelRuns(runIds: string[]): Promise<void>;
   /** Try a failed or cancelled run again. */
@@ -305,10 +306,15 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ runs: { ...s.runs, [run.id]: { ...run, ...(s.runs[run.id] ?? {}) } } }));
   },
 
-  async send(conversationId, text) {
+  async send(conversationId, text, files = []) {
     const api = get().api;
     if (!api) return;
-    const res = await api.post<{ item: TimelineItem; runs: Run[] }>(`/api/v1/conversations/${conversationId}/messages`, { text });
+    const attachments: string[] = [];
+    for (const file of files) attachments.push((await api.upload(conversationId, file, file.name || "file")).id);
+    const res = await api.post<{ item: TimelineItem; runs: Run[] }>(
+      `/api/v1/conversations/${conversationId}/messages`,
+      attachments.length ? { text, attachments } : { text },
+    );
     set((s) => ({
       items: { ...s.items, [conversationId]: upsertItem(s.items[conversationId], res.item) },
       runs: { ...s.runs, ...Object.fromEntries(res.runs.map((r) => [r.id, { ...r, ...(s.runs[r.id] ?? {}) }])) },

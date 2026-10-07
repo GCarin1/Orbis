@@ -9,6 +9,7 @@ import { useStore, type RunView } from "../store.js";
 import { canSpeak, speak } from "../voice.js";
 import { Avatar, BotFace } from "./Avatar.js";
 import { CardView } from "./Cards.js";
+import { FileAttachments } from "./Files.js";
 import { SpeakerIcon } from "./Icons.js";
 import { Markdown, plainText } from "./Markdown.js";
 
@@ -360,9 +361,12 @@ export function Timeline({
                       ↪ {t("thread.replyTo", { text: clip(parent.text, 80) })}
                     </div>
                   )}
-                  <div className="bubble-text">
-                    <Markdown text={item.text} bots={team} />
-                  </div>
+                  {item.files && item.files.length > 0 && <FileAttachments files={item.files} />}
+                  {item.text && (
+                    <div className="bubble-text">
+                      <Markdown text={item.text} bots={team} />
+                    </div>
+                  )}
                   {reactions.length > 0 && (
                     <span className="reactions">
                       {reactions.map(([emoji, count]) => (

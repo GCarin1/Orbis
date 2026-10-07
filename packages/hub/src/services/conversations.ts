@@ -31,6 +31,16 @@ export type SkillResolution =
 
 export type SkillResolver = (bot: Bot, text: string) => SkillResolution;
 
+/** The files a user's message carries (specs/conversations: files in conversations). */
+export interface AttachmentHandler {
+  /** Throws a 400 when an id is not a file uploaded to this conversation and not yet sent. */
+  check(conversationId: string, ids: string[]): void;
+  /** The files now belong to the message. */
+  bind(itemId: string, ids: string[]): void;
+  /** What a bot answering the message is told of its files, after copying them into its workspace. */
+  note(bot: Bot, item: TimelineItem): string | null;
+}
+
 export interface ConversationServiceDeps {
   config: HubConfig;
   bus: EventBus;
@@ -61,6 +71,7 @@ export const GROUP_PHOTO = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/
 export class ConversationService {
   private router: MessageRouter;
   private skillResolver: SkillResolver | null = null;
+  private attachments: AttachmentHandler | null = null;
 
   constructor(private readonly d: ConversationServiceDeps) {
     this.router = {
@@ -77,6 +88,10 @@ export class ConversationService {
     this.skillResolver = resolver;
   }
 
+  setAttachmentHandler(handler: AttachmentHandler): void {
+    this.attachments = handler;
+  }
+
   /** Start the bot's run for a user message, or post why a `/skill` cannot run. */
   private runFor(bot: Bot, conversation: Conversation, item: TimelineItem): Run | null {
     const resolved = this.skillResolver?.(bot, item.text) ?? { kind: "none" };
@@ -87,13 +102,16 @@ export class ConversationService {
       });
       return null;
     }
+    const text = resolved.kind === "skill" ? resolved.input : item.text;
+    // The files of the message wait in the bot's workspace; its task says where.
+    const files = item.files?.length ? this.attachments?.note(bot, item) : null;
     return this.d.engine.enqueue({
       botId: bot.id,
       conversationId: conversation.id,
       trigger: { type: "message", ref: item.id },
       // Every bot answering this message is one chain: they do not wake each other again.
       chainId: item.id,
-      input: resolved.kind === "skill" ? resolved.input : item.text,
+      input: files ? (text ? `${text}\n\n${files}` : files) : text,
       skill: resolved.kind === "skill" ? resolved.skill : null,
       triggerItemId: item.id,
       replyParentId: item.parentId,
@@ -317,6 +335,10 @@ export class ConversationService {
         throw badRequest("invalid parent", { parentId: "must be an item of this conversation" });
       }
     }
+    if (attachments.length) {
+      if (!this.attachments) throw badRequest("invalid attachments", { attachments: "this hub keeps no files" });
+      this.attachments.check(conversationId, attachments);
+    }
     const item = this.d.timeline.post({
       conversationId,
       kind: "message",
@@ -326,7 +348,10 @@ export class ConversationService {
       mentions: extractMentions(text),
       attachments,
     });
-    return { item, runs: this.router.route(conversation, item) };
+    if (!attachments.length) return { item, runs: this.router.route(conversation, item) };
+    this.attachments!.bind(item.id, attachments);
+    const sent = this.d.items.get(item.id)!;
+    return { item: sent, runs: this.router.route(conversation, sent) };
   }
 
   /** The bots of the team a message mentions, by handle, by role (`@qa`) or by squad (its representative). */

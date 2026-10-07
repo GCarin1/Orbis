@@ -28,6 +28,23 @@ change that delivered it.
 
 ### Added
 
+- **Files in conversations** (change 0059-files-conversations-sends-bots).
+  - Send files to a bot or a group with the clip 📎, by pasting a
+    screenshot or by dragging them onto the message box. A message carries
+    up to 10 files of up to 25 MB, alone or with text.
+  - The bots that answer find the files in their workspace
+    (`orbis-files/`). Their task says where each file is, with the text of
+    small text files.
+  - Bots send back the files they make with `files.send`, and use
+    `files.list` and `files.get` for the conversation's earlier files.
+  - Images show in the chat and open large; audio and video play; other
+    files are cards that download. **Files** lists a conversation's files,
+    in a bot's ⋮ menu and in a group's info.
+  - The Android app saves a file to Downloads and picks several files at
+    once.
+  - Files are deleted with their conversation. A file never runs as a page
+    inside Orbis.
+
 - **Google Drive and OneDrive in the MCP catalog** (change 0057-google-drive-onedrive-mcp).
   - **Google Drive**, with a personal or Workspace account: read all of
     Drive (Docs, Sheets and Slides too) and create files and folders. Google

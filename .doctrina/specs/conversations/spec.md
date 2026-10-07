@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.10.0
+**Version:** 0.11.0
 
 ## Purpose
 
@@ -30,6 +30,9 @@ timeline changes.
 - The system shall tell each run where it takes place: the bot's own conversation, a colleague's conversation it was brought into, or a group with its title, its other members and whether the bot leads it.
 - The system shall write a run's steps to the database at most every 250 ms while it runs and once when it ends, and index the lookups every run makes (items, approvals and routine records by run; runs by conversation and by status).
 - The system shall keep for each group a description, a photo (a small `data:` image URL, or none) and a mute switch, changed with its name and lead through the group's update, and shall give the group's bots its description in their context there.
+- The system shall keep each file sent in a conversation — by the user, or by a bot that made it — with its name, type, size, author and message, its bytes in the data directory and never in the database, and list a conversation's files newest first.
+- The system shall accept files of up to 25 MB and up to 10 files per message, take a name without folders or control characters, and take the file's type from the upload or else from its name.
+- The system shall serve a file's content to a request with the hub's token in its header or its address, showing images, audio, video, PDF and plain text in place and sending every other type as a download, always with a sandboxing content security policy and `nosniff`.
 
 ### Event-driven
 
@@ -48,6 +51,10 @@ timeline changes.
 - When the user clears a conversation, the system shall delete its items, forget its bots' brain sessions of it and the run summaries its runs left, keep the memories a bot saved on purpose, and publish `conversation.cleared`.
 - When a group's name, description, photo or lead changes, the system shall post an event saying so (`group.renamed`, `group.described`, `group.photo`, `group.lead`), which the bots' history leaves out.
 - When the user searches a conversation, the system shall return its messages that hold the words ignoring case and accents, newest first, and when the user asks for its links, each http(s) address written in its messages once, newest first, with who wrote it.
+- When the user sends a message carrying files, the system shall copy them into the workspace of each bot it wakes, under `orbis-files/`, and tell each bot their names, kinds, sizes and paths, with the text of the text files up to 20,000 bytes as untrusted content.
+- When a bot calls `files.send` with a file of its workspace, the system shall post it in the run's conversation as a message of that bot with the caption it gave.
+- When a bot calls `files.list` or `files.get`, the system shall list the conversation's files or copy the one named (by id or name) into the bot's workspace.
+- When a conversation is cleared or deleted, or an upload stays unsent for a day, the system shall delete its files and their bytes.
 
 ### State-driven
 
@@ -64,6 +71,7 @@ timeline changes.
 - The system shall not try again a routine's or a webhook's run outside its routine, which keeps the routine's rules (a test run is draft-only); it shall answer 409 `routine_run`.
 - The system shall not run a bot that left a group and was not added back when a message there mentions it; it shall post a `member.absent` event instead, and shall not clear a conversation while one of its runs is not over.
 - The system shall not accept as a group's photo anything but a PNG, JPEG, WebP or GIF image as a `data:` URL, nor change a direct conversation's group info.
+- The system shall not accept as an attachment a file of another conversation or one already sent, nor send with `files.send` a file outside the bot's workspace.
 
 ## Acceptance criteria
 
@@ -80,6 +88,7 @@ timeline changes.
 11. [verified] Trying again a failed routine test run answers 409 `routine_run` — verified by `packages/hub/test/review.test.ts`.
 12. [verified] Creating a group and adding a bot post joined events with the bot's face; a bot added later reads the earlier messages; a removed bot is said to have left and a mention of it does not run it but says so, until it is added back; a group shrinks to one bot and not to none; a deleted bot leaves its groups, said in each, the change is published and a group left with no bot is deleted; clearing deletes the items, the sessions and the run summaries, keeps a saved preference, and is refused while a run works — verified by `packages/hub/test/group-membership.test.ts`.
 13. [verified] A group's name, description, photo, lead and mute change and each visible change is said in the group; the same values again and the mute say nothing; a non-image photo and a direct conversation are refused; the description reaches the bots' context and the info events stay out of their history; search ignores case and accents, newest first; links come once each, newest first — verified by `packages/hub/test/group-info.test.ts`.
+14. [verified] An uploaded JSON stays the bytes it is; files sent with no text reach the bot's workspace and its task (the text of a small text file as untrusted content), are listed and named in the message; a message of files alone shows them in the list of chats; another conversation's file, one already sent, an empty one and one over 25 MB are refused; images show in place, a page is downloaded and never runs, the token works in the address only for a file's content; a bot sends a file of its workspace with its caption, is refused one outside it or missing, lists the files and copies one back; a day-old unsent upload and a cleared conversation's files are deleted — verified by `packages/hub/test/files.test.ts`
 
 ## Maturity
 

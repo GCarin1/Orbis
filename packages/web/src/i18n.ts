@@ -25,6 +25,18 @@ const pt = {
   "conv.empty": "Escolha um bot na barra lateral para conversar.",
   "conv.start": "Diga olá para {name}. A descrição dele guarda as regras duradouras; a mensagem guarda a tarefa do momento.",
   "composer.placeholder": "Mensagem para {name} — Enter envia, Shift+Enter quebra a linha",
+  "files.title": "Arquivos",
+  "files.attach": "Anexar arquivos",
+  "files.pending": "Arquivos que vão com a mensagem",
+  "files.remove": "Tirar {name}",
+  "files.open": "Abrir {name}",
+  "files.download": "Baixar {name}",
+  "files.none": "Nenhum arquivo nesta conversa ainda. Envie com o clipe 📎, colando ou arrastando; os bots enviam os arquivos que criam.",
+  "files.tooLarge": "{name} é grande demais: o limite é {max} por arquivo.",
+  "files.tooMany": "Uma mensagem leva até {max} arquivos.",
+  "files.sending": "Enviando {count} arquivo(s)…",
+  "files.saveFailed": "Não foi possível salvar: {error}",
+  "files.pastedName": "imagem",
   "composer.send": "Enviar",
   "steps.show": "Ver {count} passos",
   "steps.hide": "Ocultar passos",
@@ -519,6 +531,7 @@ const pt = {
   "tools.group.secret": "Pedir segredos",
   "tools.group.draft": "Rascunhos para aprovar",
   "tools.group.conversation": "Postar em conversas",
+  "tools.group.files": "Arquivos da conversa (enviar e ler)",
   "chatgpt.title": "ChatGPT com a sua assinatura (sem API)",
   "chatgpt.help": "Use o seu plano pago do ChatGPT (Plus, Pro, Business…) como cérebro dos bots, sem chave de API. O Orbis usa o Codex CLI da OpenAI, que entra com a sua conta do ChatGPT; a senha e os tokens ficam com o Codex neste computador. O uso conta nos limites do seu plano.",
   "chatgpt.connected": "Conectado ao ChatGPT",
@@ -916,6 +929,18 @@ const en: Record<TextKey, string> = {
   "conv.empty": "Pick a bot in the sidebar to start talking.",
   "conv.start": "Say hello to {name}. Its description holds the durable rules; your message holds the task of the moment.",
   "composer.placeholder": "Message {name} — Enter sends, Shift+Enter adds a line",
+  "files.title": "Files",
+  "files.attach": "Attach files",
+  "files.pending": "Files that go with the message",
+  "files.remove": "Take {name} out",
+  "files.open": "Open {name}",
+  "files.download": "Download {name}",
+  "files.none": "No files in this conversation yet. Send some with the 📎 clip, by pasting or dragging them; bots send the files they make.",
+  "files.tooLarge": "{name} is too large: the limit is {max} per file.",
+  "files.tooMany": "A message carries up to {max} files.",
+  "files.sending": "Sending {count} file(s)…",
+  "files.saveFailed": "Could not save: {error}",
+  "files.pastedName": "image",
   "composer.send": "Send",
   "steps.show": "Show {count} steps",
   "steps.hide": "Hide steps",
@@ -1410,6 +1435,7 @@ const en: Record<TextKey, string> = {
   "tools.group.secret": "Ask for secrets",
   "tools.group.draft": "Drafts to approve",
   "tools.group.conversation": "Post in conversations",
+  "tools.group.files": "Conversation files (send and read)",
   "chatgpt.title": "ChatGPT with your subscription (no API)",
   "chatgpt.help": "Use your paid ChatGPT plan (Plus, Pro, Business…) as your bots' brain, with no API key. Orbis uses OpenAI's Codex CLI, which signs in with your ChatGPT account; the password and tokens stay with Codex on this computer. Usage counts against your plan's limits.",
   "chatgpt.connected": "Connected to ChatGPT",
@@ -1816,7 +1842,9 @@ export const useLang = create<LangState>((set) => ({
 }));
 
 export function translate(lang: Lang, key: TextKey, vars: Record<string, string | number> = {}): string {
-  return TEXTS[lang][key].replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`));
+  // A key the hub makes up (a new group of tools) and no text names shows as the key, never as a crash.
+  const text: string = TEXTS[lang][key] ?? TEXTS.en[key] ?? String(key);
+  return text.replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`));
 }
 
 export function useT() {

@@ -269,3 +269,24 @@ export const BriefcaseIcon = (p: P) => (
     <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18" />
   </Icon>
 );
+
+export const PaperclipIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="m21 11.5-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9" />
+  </Icon>
+);
+
+export const FileIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+  </Icon>
+);
+
+export const DownloadIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M12 4v11" />
+    <path d="m7 10 5 5 5-5" />
+    <path d="M5 20h14" />
+  </Icon>
+);

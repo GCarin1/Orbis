@@ -69,6 +69,7 @@ import { SquadService } from "./squads/service.js";
 import { HiringService } from "./hiring/service.js";
 import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
+import { FilesService } from "./files/service.js";
 
 export interface HubOptions {
   env?: Env;
@@ -95,6 +96,7 @@ export interface Hub extends HubContext {
   mcp: McpConnections;
   hiring: HiringService;
   squads: SquadService;
+  files: FilesService;
   /** Start listening; resolves with the base URL. */
   listen(): Promise<string>;
   close(): Promise<void>;
@@ -129,6 +131,8 @@ function bearer(req: FastifyRequest): string | null {
 function needsHubToken(url: string): "bearer" | "query" | null {
   const p = url.split("?")[0]!;
   if (p === "/api/v1/stream") return "query";
+  // A file's content opens in an <img>, a player or a download, which send no Authorization header.
+  if (/^\/api\/v1\/files\/[^/]+\/content$/.test(p)) return "query";
   // A phone trades a pairing code for the token: it has no token yet (api/pairing-routes.ts).
   if (p === "/api/v1/pairing/claim") return null;
   if (p.startsWith("/api/") || p.startsWith("/v1/")) return "bearer";
@@ -330,6 +334,10 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   engine.addHooks(skillService.hooks());
   engine.addContextSection((bot) => skillService.contextSection(bot));
   conversationService.setSkillResolver((bot, text) => skillService.resolve(bot, text));
+  const files = new FilesService(ctx, opts.clock);
+  conversationService.setAttachmentHandler(files);
+  for (const tool of files.tools()) tools.register(tool);
+  files.start();
   const secrets = new SecretService(ctx);
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
@@ -385,6 +393,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerMcpRoutes(app, mcp);
   await hiring.routes(app);
   await squads.routes(app);
+  await files.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -410,6 +419,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     mcp,
     hiring,
     squads,
+    files,
     app,
     async listen() {
       const address = await app.listen({ port: config.port, host: config.host });
@@ -420,6 +430,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       if (closed) return;
       closed = true;
       routines.stop();
+      files.stop();
       await engine.shutdown();
       await mcp.shutdown();
       codexAccount.shutdown();

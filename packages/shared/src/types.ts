@@ -298,6 +298,19 @@ export interface TimelineEvent {
   data: Record<string, unknown>;
 }
 
+/** A file sent in a conversation (specs/conversations): by the user, or by a bot that made it. */
+export interface ConversationFile {
+  id: string;
+  conversationId: string;
+  name: string;
+  mime: string;
+  size: number;
+  author: Author;
+  /** The message that carries it; null while it is uploaded and not yet sent. */
+  itemId: string | null;
+  createdAt: string;
+}
+
 export interface TimelineItem {
   id: string;
   conversationId: string;
@@ -306,7 +319,10 @@ export interface TimelineItem {
   text: string;
   parentId: string | null;
   mentions: string[];
+  /** The ids of the files the message carries. */
   attachments: string[];
+  /** Those files, when the message carries any. */
+  files?: ConversationFile[];
   reactions: Record<string, number>;
   runId: string | null;
   card?: Card;

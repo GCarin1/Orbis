@@ -49,7 +49,7 @@ describe("a bot's header", () => {
     expect(screen.queryByRole("button", { name: "Routines" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Bot options" }));
     const menu = screen.getByRole("menu", { name: "Bot options" });
-    expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Details", "Routines", "Computeron", "Bot settings", "Clear conversation"]);
+    expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Details", "Files", "Routines", "Computeron", "Bot settings", "Clear conversation"]);
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Routines" }));
     expect(onPanel).toHaveBeenCalledWith("routines");
     expect(screen.queryByRole("menu")).toBeNull();

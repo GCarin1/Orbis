@@ -1,4 +1,4 @@
-import type { Author, Card, Conversation, ConversationLink, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
+import type { Author, Card, Conversation, ConversationFile, ConversationLink, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
 import { all, get, json, run, type Database, type Row } from "../db/index.js";
 
 function toConversation(r: Row, members: string[]): Conversation {
@@ -34,7 +34,28 @@ const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLo
 /** Reactions are stored per actor and exposed as counts. */
 type ReactionStore = Record<string, string[]>;
 
-function toItem(r: Row): TimelineItem {
+export function toFile(r: Row): ConversationFile {
+  return {
+    id: r.id as string,
+    conversationId: r.conversation_id as string,
+    name: r.name as string,
+    mime: r.mime as string,
+    size: Number(r.size),
+    author: { type: r.author_type as Author["type"], id: (r.author_id as string | null) ?? null },
+    itemId: (r.item_id as string | null) ?? null,
+    createdAt: r.created_at as string,
+  };
+}
+
+/** The files an item carries, in the order it names them (a file gone from the store is left out). */
+function filesOf(db: Database, ids: string[]): ConversationFile[] {
+  if (!ids.length) return [];
+  const rows = all(db, `SELECT * FROM files WHERE id IN (${ids.map(() => "?").join(", ")})`, ...ids);
+  const byId = new Map(rows.map((r) => [r.id as string, toFile(r)]));
+  return ids.map((id) => byId.get(id)).filter((f): f is ConversationFile => f !== undefined);
+}
+
+function toItem(r: Row, db?: Database): TimelineItem {
   const reactions = json<ReactionStore>(r.reactions, {});
   const item: TimelineItem = {
     id: r.id as string,
@@ -54,6 +75,7 @@ function toItem(r: Row): TimelineItem {
   if (card) item.card = card;
   const event = json<TimelineEvent | null>(r.event, null);
   if (event) item.event = event;
+  if (db && item.attachments.length) item.files = filesOf(db, item.attachments);
   return item;
 }
 
@@ -218,7 +240,7 @@ export class ItemsRepo {
 
   get(id: string): TimelineItem | undefined {
     const row = get(this.db, "SELECT * FROM items WHERE id = ?", id);
-    return row ? toItem(row) : undefined;
+    return row ? toItem(row, this.db) : undefined;
   }
 
   /** Items in timeline order, the page ending just before `before` when given. */
@@ -258,7 +280,7 @@ export class ItemsRepo {
             beforeSeq,
             limit,
           );
-    return rows.reverse().map(toItem);
+    return rows.reverse().map((r) => toItem(r, this.db));
   }
 
   /** Messages whose text holds `query`, ignoring case and accents ("acao" finds "Ação"), newest first. */
@@ -268,7 +290,7 @@ export class ItemsRepo {
     const found: TimelineItem[] = [];
     for (const row of all(this.db, "SELECT * FROM items WHERE conversation_id = ? AND kind = 'message' ORDER BY seq DESC", conversationId)) {
       if (!fold(String(row.text)).includes(needle)) continue;
-      found.push(toItem(row));
+      found.push(toItem(row, this.db));
       if (found.length >= limit) break;
     }
     return found;
@@ -302,12 +324,12 @@ export class ItemsRepo {
       `SELECT * FROM items WHERE kind = 'card' AND json_extract(card, '$.type') = ? AND json_extract(card, '$.state') IN (${states.map(() => "?").join(", ")}) ORDER BY seq`,
       type,
       ...states,
-    ).map(toItem);
+    ).map((r) => toItem(r, this.db));
   }
 
   /** The cards a run posted (its handoffs), oldest first. */
   cardsOf(runId: string): TimelineItem[] {
-    return all(this.db, "SELECT * FROM items WHERE run_id = ? AND kind = 'card' ORDER BY seq ASC", runId).map(toItem);
+    return all(this.db, "SELECT * FROM items WHERE run_id = ? AND kind = 'card' ORDER BY seq ASC", runId).map((r) => toItem(r, this.db));
   }
 
   /** The bot message a run posted as its reply. */
@@ -317,7 +339,7 @@ export class ItemsRepo {
       "SELECT * FROM items WHERE run_id = ? AND kind = 'message' AND author_type = 'bot' ORDER BY seq DESC LIMIT 1",
       runId,
     );
-    return row ? toItem(row) : undefined;
+    return row ? toItem(row, this.db) : undefined;
   }
 
   setCard(id: string, card: Card, at: string): TimelineItem {

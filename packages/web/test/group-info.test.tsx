@@ -79,7 +79,7 @@ describe("the group's header and ⋮ menu", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((m) => m.textContent),
-    ).toEqual(["Add members", "Group info", "Group links", "Search", "Mute notifications", "More"]);
+    ).toEqual(["Add members", "Group info", "Files", "Group links", "Search", "Mute notifications", "More"]);
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Add members" }));
     expect(a.add).toHaveBeenCalled();
     expect(screen.queryByRole("menu")).toBeNull();

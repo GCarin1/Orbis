@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-09-27
-**Version:** 0.31.0
+**Version:** 0.32.0
 
 ## Purpose
 
@@ -59,6 +59,8 @@ run's steps.
 - The web app shall say a routine's schedule in words in the user's language (every day, weekdays, chosen weekdays, a day of the month or every hour, at a time; any other cron as a cron), with its timezone when it is not the device's, in the routines panel and in routine cards, and say in a routine card whose routine it is.
 - The web app shall let a routine's schedule be picked as every day, weekdays, chosen weekdays or a day of the month at a time, every hour at a minute, a cron, or a webhook, and read the pick back in words before the routine is created.
 - The web app shall offer a bot in a list of bots to pick (who a bot reports to, a squad's manager, a new squad's members) with its role, and a new squad's members one per row with their face, role and current squad.
+- The web app shall let the user attach files to a message with the clip button, by pasting (a screenshot) or by dropping them on the message box, show each as a chip with its thumbnail or name and size that can be taken out, and send the files alone or with text.
+- The web app shall show a message's images in place (opened large on a tap), play its audio and video, show every other file as a card with its extension and size that downloads it, and list a conversation's files from the bot's ⋮ menu and from a group's info and menu.
 
 ### Event-driven
 
@@ -103,6 +105,7 @@ run's steps.
 - The web app shall not offer Try again on a routine's run, and shall say why when trying again is refused.
 - The web app shall not put a `chat-http` token in the bot; it shall save it as the bot's secret, keep a saved one when the field is left empty, and never show it back.
 - The web app shall not scroll a screen, panel or dialog sideways on a screen 390 px wide; a table wider than its screen scrolls inside its own box.
+- The web app shall not attach a file over 25 MB or more than 10 files to one message; it shall say which file and the limit.
 
 ### Optional
 
@@ -167,6 +170,7 @@ run's steps.
 55. [verified] The usual repeats turn into their cron and back, any other cron stays custom, and a schedule is said in Portuguese or English with the timezone only when it is not the device's — verified by `packages/web/test/schedule.test.tsx`
 56. [verified] Back on screen, a closed stream opens at once instead of waiting out its backoff, an open one that does not answer within 4 seconds is replaced, and a connection that never opens is tried again — verified by `packages/web/test/audit-cycle2.test.tsx`
 57. [verified] In a real browser, the ⋮ menu opens a bot's routines, a routine picked as every day at 02:00 in America/Sao_Paulo is saved as `0 2 * * *` in that timezone, tested and enabled — verified by `tests/e2e/skills-routines.test.ts`
+58. [verified] The clip adds files shown as chips, one can be taken out, files alone are sent and the box empties; a pasted screenshot gets a name and a dropped file is added; a file over 25 MB is refused with its name and the limit; a message shows its image (opened large and closed with Escape), its audio player and a card for its PDF, the token in each address; the conversation's files list its documents with who sent them and its images in a grid — verified by `packages/web/test/files.test.tsx`
 
 ## Maturity
 

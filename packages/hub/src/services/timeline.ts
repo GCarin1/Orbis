@@ -28,10 +28,12 @@ export class Timeline {
     this.conversations.touch(saved.conversationId, at);
     if (saved.kind === "message") {
       const conv = this.conversations.get(saved.conversationId);
+      // A message of files alone shows them in the list of chats.
+      const preview = saved.text || (saved.files?.length ? `📎 ${saved.files.map((f) => f.name).join(", ")}` : "");
       if (saved.author.type === "bot" && saved.author.id) {
-        this.bots.setLastMessage(saved.author.id, saved.text, at);
+        this.bots.setLastMessage(saved.author.id, preview, at);
       } else if (conv?.kind === "direct" && conv.members[0]) {
-        this.bots.setLastMessage(conv.members[0], saved.text, at);
+        this.bots.setLastMessage(conv.members[0], preview, at);
       }
     }
     this.bus.publish("timeline.item", { conversationId: saved.conversationId, item: saved });

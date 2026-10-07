@@ -13,6 +13,7 @@ import { Timeline } from "./components/Timeline.js";
 import { TokenGate } from "./components/TokenGate.js";
 import { MAX_GROUP_SIZE, NewGroupDialog } from "./components/Groups.js";
 import { AddMembersDialog, conversationText, GroupHeader, GroupInfoPanel, type GroupActions, type GroupView } from "./components/GroupInfo.js";
+import { FilesPanel } from "./components/Files.js";
 import { ComputerPanel } from "./components/ComputerPanel.js";
 import { RoutinesPanel } from "./components/RoutinesPanel.js";
 import { BotSettings } from "./components/BotSettings.js";
@@ -27,7 +28,7 @@ import { PanelResizer, usePanelWidth } from "./components/PanelResizer.js";
 import { GroupFace, Sidebar, type View } from "./components/Sidebar.js";
 import { BotHeader } from "./components/BotHeader.js";
 
-type Panel = "details" | "computer" | "routines" | "settings" | null;
+type Panel = "details" | "computer" | "routines" | "settings" | "files" | null;
 
 const PANEL_KEY = "orbis.detailsPanel";
 const wide = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1180px)").matches;
@@ -375,7 +376,7 @@ export function App() {
               transcribe={transcribe}
               prefill={shared}
               onPrefilled={() => setShared(null)}
-              onSend={(text) => store.send(group.id, text)}
+              onSend={(text, files) => store.send(group.id, text, files)}
             />
           </>
         ) : selected && conversationId ? (
@@ -417,7 +418,7 @@ export function App() {
               transcribe={transcribe}
               prefill={shared}
               onPrefilled={() => setShared(null)}
-              onSend={(text) => store.send(conversationId, text)}
+              onSend={(text, files) => store.send(conversationId, text, files)}
             />
           </>
         ) : (
@@ -467,6 +468,19 @@ export function App() {
             setPanel(null);
           }}
           onClose={() => setPanel(wide() ? "details" : null)}
+        />
+      )}
+      {selected && panel === "files" && !group && view === "chat" && store.api && conversationId && (
+        <FilesPanel
+          key={conversationId}
+          api={store.api}
+          conversationId={conversationId}
+          bots={store.bots}
+          refreshKey={store.conversations[conversationId]?.lastItemAt ?? null}
+          onClose={() => setPanel(wide() ? "details" : null)}
+          onShowItem={async (itemId) => {
+            await store.revealItem(conversationId, itemId);
+          }}
         />
       )}
       {selected && panel === "routines" && !group && view === "chat" && (

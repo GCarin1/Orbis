@@ -5,7 +5,8 @@ import type { Bot } from "@orbis/shared";
 import { useLang, useT, type TextKey } from "../i18n.js";
 import { canSpeak, useDictation, useVoice } from "../voice.js";
 import { Avatar } from "./Avatar.js";
-import { MicIcon, PlusIcon, SendIcon, SpeakerIcon, SpeakerOffIcon, StopIcon } from "./Icons.js";
+import { MAX_FILE_BYTES, MAX_FILES, PendingFiles, formatSize } from "./Files.js";
+import { MicIcon, PaperclipIcon, PlusIcon, SendIcon, SpeakerIcon, SpeakerOffIcon, StopIcon } from "./Icons.js";
 
 export interface MentionOption {
   handle: string;
@@ -70,7 +71,8 @@ export function Composer({
   /** Text to put in the box (shared into the Android app); `onPrefilled` once it is there. */
   prefill?: string | null;
   onPrefilled?(): void;
-  onSend(text: string): Promise<void>;
+  /** Send the text and the files picked, pasted or dropped (uploaded first). */
+  onSend(text: string, files: File[]): Promise<void>;
 }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -82,6 +84,10 @@ export function Composer({
   const [caret, setCaret] = useState(0);
   const [active, setActive] = useState(0);
   const [dismissed, setDismissed] = useState<number | null>(null);
+  /** The files that go with the next message. */
+  const [files, setFiles] = useState<File[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   /** Where the caret goes after a pick, applied in the same commit as the new text. */
   const pendingCaret = useRef<number | null>(null);
@@ -131,15 +137,30 @@ export function Composer({
         : filterMentions(mentions, token.query).map((m) => ({ key: `@${m.handle}`, insert: `@${m.handle} `, label: m.label, bot: m.bot }));
   const open = suggestions.length > 0;
 
+  /** Add files to the next message: too large ones, or past the limit, are said and left out. */
+  const addFiles = (picked: File[]) => {
+    if (!picked.length) return;
+    const tooLarge = picked.filter((f) => f.size > MAX_FILE_BYTES);
+    const fitting = picked.filter((f) => f.size <= MAX_FILE_BYTES && f.size > 0);
+    setFiles((current) => {
+      const next = [...current, ...fitting].slice(0, MAX_FILES);
+      if (current.length + fitting.length > MAX_FILES) setSendError(t("files.tooMany", { max: MAX_FILES }));
+      return next;
+    });
+    if (tooLarge.length) setSendError(t("files.tooLarge", { name: tooLarge[0]!.name, max: formatSize(MAX_FILE_BYTES, lang) }));
+    else setSendError(null);
+  };
+
   const submit = async () => {
     const value = text.trim();
-    if (!value || busy) return;
+    if ((!value && files.length === 0) || busy) return;
     dictation.cancel();
     setBusy(true);
     setSendError(null);
     try {
-      await onSend(value);
+      await onSend(value, files);
       setText("");
+      setFiles([]);
       setCaret(0);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
@@ -187,12 +208,25 @@ export function Composer({
 
   return (
     <form
-      className="composer"
+      className={`composer${dragging ? " dragging" : ""}`}
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
       }}
+      onDragOver={(e) => {
+        if (!e.dataTransfer?.types.includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        if (!e.dataTransfer?.files.length) return;
+        e.preventDefault();
+        setDragging(false);
+        addFiles([...e.dataTransfer.files]);
+      }}
     >
+      <PendingFiles files={files} onRemove={(index) => setFiles((current) => current.filter((_, i) => i !== index))} />
       {open && (
         <ul className="mention-list" role="listbox" aria-label={skillToken ? t("composer.skills") : t("composer.mentions")}>
           {suggestions.map((option, i) => (
@@ -229,6 +263,27 @@ export function Composer({
       >
         <PlusIcon />
       </button>
+      <button
+        type="button"
+        className="composer-plus composer-attach"
+        aria-label={t("files.attach")}
+        title={t("files.attach")}
+        disabled={busy}
+        onClick={() => picker.current?.click()}
+      >
+        <PaperclipIcon />
+      </button>
+      <input
+        ref={picker}
+        type="file"
+        multiple
+        hidden
+        data-testid="file-input"
+        onChange={(e) => {
+          addFiles([...(e.target.files ?? [])]);
+          e.target.value = "";
+        }}
+      />
       <textarea
         ref={box}
         value={text}
@@ -240,6 +295,13 @@ export function Composer({
         }}
         onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
         onKeyDown={onKey}
+        onPaste={(e) => {
+          // A pasted image (a screenshot) or file goes with the message; pasted text stays text.
+          const pasted = [...(e.clipboardData?.files ?? [])];
+          if (!pasted.length) return;
+          e.preventDefault();
+          addFiles(pasted.map((f, i) => (f.name && f.name !== "image.png" ? f : new File([f], `${t("files.pastedName")}-${Date.now()}${i ? `-${i}` : ""}.${(f.type.split("/")[1] ?? "png").replace("jpeg", "jpg")}`, { type: f.type }))));
+        }}
         placeholder={t("composer.short", { name })}
         aria-label={t("composer.placeholder", { name })}
         aria-autocomplete="list"
@@ -283,7 +345,12 @@ export function Composer({
           {t("composer.failed", { error: sendError })}
         </p>
       )}
-      <button className="composer-send" type="submit" disabled={busy || !text.trim()} aria-label={t("composer.send")} title={t("composer.send")}>
+      {busy && files.length > 0 && (
+        <p className="composer-hint" role="status" data-testid="upload-status">
+          {t("files.sending", { count: files.length })}
+        </p>
+      )}
+      <button className="composer-send" type="submit" disabled={busy || (!text.trim() && files.length === 0)} aria-label={t("composer.send")} title={t("composer.send")}>
         <SendIcon />
       </button>
     </form>

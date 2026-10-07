@@ -148,15 +148,17 @@ export function assembleContext(opts: AssembleOptions, deps: AssembleDeps): Asse
     const raw = deps.items.list(opts.conversationId, { limit: CONTEXT_BUDGET.items * 3 });
     const candidates = raw
       .filter((it) => it.id !== opts.excludeItemId)
-      .filter((it) => (it.kind === "message" || it.kind === "event") && it.text.trim() !== "")
+      .filter((it) => (it.kind === "message" || it.kind === "event") && (it.text.trim() !== "" || Boolean(it.files?.length)))
       .filter((it) => relevantTo(it, bot))
       .map<ContextItem>((it) => {
         const author = authorLabel(it, bot, handles);
+        // The files a message carried, by name and id: files.get brings one into the workspace.
+        const files = it.files?.length ? `[files sent: ${it.files.map((f) => `${f.name} (${f.id})`).join(", ")}]` : "";
         return {
           itemId: it.id,
           author,
           role: author === "user" ? "user" : author === "you" ? "assistant" : "other",
-          text: it.text,
+          text: [it.text, files].filter(Boolean).join("\n"),
           at: it.createdAt,
         };
       });

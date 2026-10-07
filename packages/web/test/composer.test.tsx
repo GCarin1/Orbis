@@ -59,7 +59,7 @@ describe("@ autocomplete", () => {
     await act(async () => {
       fireEvent.keyDown(box, { key: "Enter" });
     });
-    expect(onSend).toHaveBeenCalledWith("ask @bob and @bob thanks @");
+    expect(onSend).toHaveBeenCalledWith("ask @bob and @bob thanks @", []);
   });
 });
 
@@ -96,6 +96,6 @@ describe("/ autocomplete", () => {
     await act(async () => {
       fireEvent.keyDown(box, { key: "Enter" });
     });
-    expect(onSend).toHaveBeenCalledWith("/review PR 42");
+    expect(onSend).toHaveBeenCalledWith("/review PR 42", []);
   });
 });

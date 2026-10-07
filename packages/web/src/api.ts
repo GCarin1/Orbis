@@ -1,5 +1,5 @@
 // The web app's client of the hub API (same origin) and its event stream.
-import type { ApiErrorBody, StreamEvent } from "@orbis/shared";
+import type { ApiErrorBody, ConversationFile, StreamEvent } from "@orbis/shared";
 
 const TOKEN_KEY = "orbis.token";
 
@@ -122,6 +122,22 @@ export class Api {
     const parsed = text ? (JSON.parse(text) as { text?: string } & ApiErrorBody) : null;
     if (!res.ok) throw new ApiError(res.status, parsed);
     return parsed?.text ?? "";
+  }
+  /** Upload a file to a conversation (sent later with a message); resolves with the stored file. */
+  async upload(conversationId: string, file: Blob, name: string): Promise<ConversationFile> {
+    const res = await fetch(`${this.base}/api/v1/conversations/${conversationId}/files`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${this.token}`, "content-type": file.type || "application/octet-stream", "x-file-name": encodeURIComponent(name) },
+      body: file,
+    });
+    const text = await res.text();
+    const parsed = text ? (JSON.parse(text) as unknown) : null;
+    if (!res.ok) throw new ApiError(res.status, parsed as ApiErrorBody | null);
+    return parsed as ConversationFile;
+  }
+  /** Where a file's content is: an <img>, a player or a link opens it (it carries the token, as the stream does). */
+  fileUrl(id: string, download = false): string {
+    return `${this.base}/api/v1/files/${id}/content?token=${encodeURIComponent(this.token)}${download ? "&download=1" : ""}`;
   }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>("POST", path, body);

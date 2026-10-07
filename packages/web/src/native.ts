@@ -5,6 +5,8 @@
 
 export interface AndroidApp {
   saveText(name: string, mime: string, text: string): void;
+  /** Save any file (an image, a PDF) to Downloads, its bytes in base64. */
+  saveFile?(name: string, mime: string, base64: string): void;
   changeHub(): void;
   hubUrl(): string;
   version(): string;

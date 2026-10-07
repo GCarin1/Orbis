@@ -461,7 +461,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PICK_FILES && pendingFiles != null) {
-            pendingFiles.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+            pendingFiles.onReceiveValue(pickedFiles(resultCode, data));
             pendingFiles = null;
             return;
         }
@@ -522,9 +522,24 @@ public class MainActivity extends Activity {
     }
 
     /** Write a file the web app hands over (an exported chat, a bot template) to Downloads. */
+    /** What the file picker gave: one file, or several when the page asked for many (files sent in a chat). */
+    private static Uri[] pickedFiles(int resultCode, Intent data) {
+        if (resultCode != RESULT_OK || data == null) return null;
+        android.content.ClipData clip = data.getClipData();
+        if (clip != null && clip.getItemCount() > 0) {
+            Uri[] uris = new Uri[clip.getItemCount()];
+            for (int i = 0; i < uris.length; i++) uris[i] = clip.getItemAt(i).getUri();
+            return uris;
+        }
+        return WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+    }
+
     private String saveDownload(String name, String mime, String text) throws Exception {
+        return saveDownload(name, mime, text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String saveDownload(String name, String mime, byte[] bytes) throws Exception {
         String file = Hub.safeFileName(name);
-        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ContentValues values = new ContentValues();
             values.put(MediaStore.Downloads.DISPLAY_NAME, file);
@@ -680,6 +695,19 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 try {
                     Toast.makeText(MainActivity.this, getString(R.string.saved_to, saveDownload(name, mime, text)), Toast.LENGTH_LONG).show();
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, getString(R.string.save_failed, String.valueOf(e.getMessage())), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        /** A file of a conversation (an image, a PDF) to Downloads; the page sends its bytes in base64. */
+        @JavascriptInterface
+        public void saveFile(String name, String mime, String base64) {
+            runOnUiThread(() -> {
+                try {
+                    byte[] bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
+                    Toast.makeText(MainActivity.this, getString(R.string.saved_to, saveDownload(name, mime, bytes)), Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, getString(R.string.save_failed, String.valueOf(e.getMessage())), Toast.LENGTH_LONG).show();
                 }

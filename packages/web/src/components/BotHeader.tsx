@@ -6,9 +6,9 @@ import { useT } from "../i18n.js";
 import { Avatar, StateLabel } from "./Avatar.js";
 import { brainLabel, brainShort } from "./brains.js";
 import { useDismiss } from "./GroupInfo.js";
-import { BackIcon, ClockIcon, EraseIcon, GearIcon, InfoIcon, MonitorIcon, MoreIcon } from "./Icons.js";
+import { BackIcon, ClockIcon, EraseIcon, GearIcon, InfoIcon, MonitorIcon, MoreIcon, PaperclipIcon } from "./Icons.js";
 
-export type BotPanelName = "details" | "computer" | "routines" | "settings";
+export type BotPanelName = "details" | "computer" | "routines" | "settings" | "files";
 
 export function BotHeader({
   bot,
@@ -79,6 +79,7 @@ export function BotHeader({
           {open && (
             <div className="menu" role="menu" aria-label={t("bot.menu")}>
               {item(t("panel.details"), <InfoIcon size={16} />, () => onPanel("details"))}
+              {item(t("files.title"), <PaperclipIcon size={16} />, () => onPanel("files"))}
               {item(t("routines.open"), <ClockIcon size={16} />, () => onPanel("routines"))}
               {item(
                 t("computer.open"),

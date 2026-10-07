@@ -305,4 +305,21 @@ CREATE INDEX candidates_by_round ON hiring_candidates (round_id, position);`,
 ALTER TABLE bots ADD COLUMN squad_id TEXT REFERENCES squads(id) ON DELETE SET NULL;
 ALTER TABLE routine_runs ADD COLUMN called_by TEXT;`,
   },
+  {
+    // specs/conversations: files sent in a conversation, by the user or by a bot; the bytes live in
+    // <data>/files/<id> (change 0059-files-conversations-sends-bots).
+    version: 12,
+    sql: `CREATE TABLE files (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  item_id TEXT REFERENCES items(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  author_type TEXT NOT NULL,
+  author_id TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX files_by_conversation ON files (conversation_id, created_at);`,
+  },
 ];
