@@ -28,6 +28,19 @@ change that delivered it.
 
 ### Added
 
+- **Orbis accounts in the cloud, phase 3: export and import your data** (change 0065-export-import, ADR 0022).
+  - Settings → Data downloads everything the hub keeps as one `.orbis` file:
+    bots, conversations, groups, memory, routines, squads, hiring, health,
+    files and skills. The bots' keys go along only sealed by a password you
+    choose (scrypt + AES-256-GCM).
+  - Import it into another hub (the keys with the file's password) or into
+    your Orbis account in the cloud (never the keys). What is already there
+    stays as it is, so importing again adds nothing; the report shows what
+    came in.
+  - The file is checked part by part (SHA-256) before anything is written. A
+    bot's "my computer" consent, the linked account and MCP OAuth sign-ins
+    never travel.
+  - Fixes: routines and MCP servers added by an import work at once.
 - **Orbis accounts in the cloud, phase 2: sign in with an email and a password** (change 0064-account-sign-in, ADR 0021).
   - Settings → Account signs in to your Orbis account (or creates it) and
     links this hub to it. From then on any device opens the hub with that

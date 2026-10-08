@@ -125,6 +125,23 @@ export function saveTextFile(name: string, text: string, type = "text/plain;char
   URL.revokeObjectURL(link.href);
 }
 
+/** Save bytes the user asked for (an export): to Downloads in the Android app, as a download in a browser. */
+export async function saveBlobFile(name: string, blob: Blob): Promise<void> {
+  const android = androidApp();
+  if (android && androidCan("saveFile")) {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    android.saveFile!(name, blob.type || "application/octet-stream", btoa(binary));
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 60_000);
+}
+
 type Hooks = {
   __orbisBack?: () => boolean;
   __orbisOpenConversation?: (conversationId: string) => void;

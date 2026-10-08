@@ -88,9 +88,9 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "last_updated": "2026-10-08",
-        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`) and signing in with an email and a password (`packages/hub/src/auth/`, `packages/web/src/account.ts`, change 0064); export and import, the runner link and the Cloudflare deploy come in later changes",
+        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in with an email and a password (`packages/hub/src/auth/`, `packages/web/src/account.ts`, change 0064), the `.orbis` export and its import into a hub or the cloud account (`packages/hub/src/export/`, change 0065); the runner link and the Cloudflare deploy come in later changes",
         "realizes": [
           "SC16"
         ],
@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.36.0",
+        "version": "0.37.0",
         "last_updated": "2026-10-08",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -642,14 +642,28 @@
         "title": "The hub opens for the account linked to it: a Supabase session checked against the project's public keys, no shared secret; tickets and file keys take credentials out of addresses",
         "status": "accepted",
         "date": "2026-10-08",
+        "landed": "2026-10-08 — `packages/hub/src/auth/jwt.ts`, `packages/hub/src/auth/account.ts`, `packages/web/src/account.ts`",
         "scope": [
           "hub-api",
           "web-app",
           "cloud",
           "cli"
         ],
-        "summary": "A hub belongs to at most one account.",
-        "landed": "2026-10-08 — `packages/hub/src/auth/jwt.ts`, `packages/hub/src/auth/account.ts`, `packages/web/src/account.ts`"
+        "summary": "A hub belongs to at most one account."
+      },
+      {
+        "id": "0022",
+        "path": ".doctrina/decisions/0022-a-orbis-export-carries-a-hub-s-data-as-one-checked-file-its-secrets-sealed-by-the-user-s-password-it-imports-into-a-hub-or-the-cloud-account-without-duplicates-and-never-carries-a-consent-or-a-secret-to-the-cloud.md",
+        "title": "A .orbis export carries a hub's data as one checked file, its secrets sealed by the user's password; it imports into a hub or the cloud account without duplicates and never carries a consent or a secret to the cloud",
+        "status": "accepted",
+        "date": "2026-10-08",
+        "scope": [
+          "cloud",
+          "web-app",
+          "secrets"
+        ],
+        "summary": "One file, `.orbis`: a ZIP.",
+        "landed": "2026-10-08 — `packages/hub/src/export/service.ts`, `packages/hub/src/export/zip.ts`, `packages/hub/src/export/seal.ts`, `packages/web/src/components/DataSettings.tsx`"
       }
     ],
     "changes": [],
@@ -1969,6 +1983,24 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0065-export-import",
+        "title": "export-import",
+        "path": ".doctrina/changes/archive/2026-10-08-0065-export-import",
+        "status": "applied",
+        "applied": "2026-10-08",
+        "specs_affected": [
+          {
+            "capability": "cloud",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "runtime (confident; signals: secrets) — opened anyway (--force)"
       }
     ],
     "skills": [

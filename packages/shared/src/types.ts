@@ -312,6 +312,19 @@ export interface AccountStatus {
   via: "token" | "account" | null;
 }
 
+/** What an import of a `.orbis` export did (change 0065): per table, rows added and rows already there. */
+export interface ImportReport {
+  target: "hub" | "cloud";
+  /** The export's date and the hub that made it. */
+  exportedAt: string;
+  tables: Record<string, { added: number; skipped: number }>;
+  files: { added: number; skipped: number };
+  skills: { added: number; skipped: number };
+  /** Secrets go to a hub only, opened by the export's password. */
+  secrets: { added: number; skipped: number; inFile: boolean; opened: boolean };
+  warnings: string[];
+}
+
 /** A link found in a conversation's messages (its "media, links and docs"). */
 export interface ConversationLink {
   url: string;

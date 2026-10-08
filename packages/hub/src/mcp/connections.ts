@@ -326,7 +326,16 @@ export class McpConnections {
 
   /** At hub start: the tools of every server are known from the last connection; servers start on first use. */
   start(): void {
-    for (const row of this.rows()) {
+    this.adopt(this.rows());
+  }
+
+  /** Servers an import added while the hub runs: offered like those found at start. */
+  adoptNew(): void {
+    this.adopt(this.rows().filter((row) => !this.registered.has(row.id) && !this.live.has(row.id)));
+  }
+
+  private adopt(rows: Row[]): void {
+    for (const row of rows) {
       if (this.outdated(row)) {
         row.status = "error";
         row.error = outdatedError(row.name);

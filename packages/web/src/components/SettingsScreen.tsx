@@ -16,10 +16,21 @@ import { PhoneSettings } from "./PhoneSettings.js";
 import { InitiativeSettingsTab } from "./InitiativeSettings.js";
 import { HealthSettings } from "./HealthSettings.js";
 import { AccountSettings } from "./AccountSettings.js";
+import { DataSettings } from "./DataSettings.js";
+import { useStore } from "../store.js";
 import type { AccountSession } from "../account.js";
 
-export type SettingsTab = "brains" | "computers" | "initiative" | "health" | "voice" | "phone" | "account";
-const TABS: SettingsTab[] = ["brains", "computers", "initiative", "health", "voice", "phone", "account"];
+export type SettingsTab = "brains" | "computers" | "initiative" | "health" | "voice" | "phone" | "account" | "data";
+const TABS: SettingsTab[] = ["brains", "computers", "initiative", "health", "voice", "phone", "account", "data"];
+
+/** What an import added shows at once: the lists are read again. */
+function reloadAll(): void {
+  const s = useStore.getState();
+  void s.loadBots().catch(() => undefined);
+  void s.loadConversations().catch(() => undefined);
+  void s.loadSquads().catch(() => undefined);
+  void s.loadMcpServers().catch(() => undefined);
+}
 
 export function SettingsScreen({
   api,
@@ -67,6 +78,7 @@ export function SettingsScreen({
         {tab === "voice" && <VoiceSettings api={api} />}
         {tab === "phone" && <PhoneSettings api={api} />}
         {tab === "account" && <AccountSettings api={api} account={account} onSignedOut={onSignedOut} />}
+        {tab === "data" && <DataSettings api={api} account={account} onImported={reloadAll} />}
       </div>
     </section>
   );

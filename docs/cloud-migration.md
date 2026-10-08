@@ -27,13 +27,8 @@ and queues messages; the bots answer when the runner is back.
    the Supabase project.
 2. **Sign-in** (change 0064, done) — the hub opens for the Orbis account
    linked to it; see [Signing in with an account](#signing-in-with-an-account-phase-2).
-3. **Export and import** — *Settings → Data → Download my data* on the
-   local hub writes an `.orbis` file: a manifest with the SHA-256 of each
-   part, one JSON Lines file per table, the files, and the secrets
-   encrypted with an export password (scrypt + AES-256-GCM). Signed in to
-   the cloud, *Import data* checks the manifest and the hashes, gives the
-   rows to the account and reports what came in. Importing again adds no
-   duplicates. MCP OAuth connections must be made again.
+3. **Export and import** (change 0065, done) — see
+   [Moving your data](#moving-your-data-phase-3).
 4. **The runner linked to the account** — `orbis-phone link`: sign in once
    on the phone; it gets a device token, limited to running the account's
    bots and revocable from the web app.
@@ -128,6 +123,48 @@ Supabase → Authentication → URL Configuration:
 Never add an open wildcard such as `https://**`: a reset link would then
 deliver a session to any site.
 
+## Moving your data (phase 3)
+
+Updating Orbis keeps everything where it is, on your hub: nothing needs an
+account. To bring your data elsewhere (a new phone, your cloud account),
+use **Settings → Data**.
+
+1. **Download my data.** Type a file password twice (at least 10
+   characters) to bring the bots' keys and tokens along, sealed by it. Or
+   untick it, and the file holds no key. Keep the password: nobody can
+   recover it. The file `orbis-<date>.orbis` goes to the browser's
+   downloads, or to the phone's Downloads in the Android app.
+2. **Import a .orbis file**, choosing where it goes:
+   - **Into this hub** — everything, and the keys with the file's password.
+   - **Into my cloud account** — sign in to the account. The bots,
+     conversations, memory, routines and the rest go in. The keys never go
+     to the cloud: they stay in the file for your phone's hub.
+
+What is already there stays as it is: importing the same file again adds
+nothing. The report shows, per kind of data, what came in and what was
+already there.
+
+What the file holds (ADR 0022):
+
+- `manifest.json`: the format, the counts, and the SHA-256 of every part.
+  A changed, missing or extra part stops the import.
+- One JSON Lines part per table.
+- The conversations' files and the skills.
+- Only with a password, `secrets.sealed.json` (scrypt + AES-256-GCM).
+
+What does not travel:
+
+- The vault itself.
+- MCP sign-ins with an account (OAuth): sign in again.
+- The CLI sessions.
+- The account linked to the old hub.
+- A bot's "my computer" consent: it works in its own isolated computer
+  until you give it the new machine.
+- Runs still working arrive cancelled, and pending approvals expire.
+
+Until the cloud's file storage opens (phase 5), the files' contents and the
+skills stay in the file and on the hub: keep the `.orbis` file.
+
 ## Security check
 
 What the local hub does today, acceptable only on a local network, and
@@ -143,7 +180,7 @@ how the cloud closes each gap:
    dies after 5 wrong tries, and claims stop past 20 a minute.
 4. **The vault key sits on the hub's own disk.** → The vault stays only on
    the runner; the cloud never receives a secret, and the export carries
-   them encrypted by a password.
+   them sealed by the user's password (change 0065, done).
 5. **`http.fetch`, MCP over HTTP and OAuth discovery fetch any address**
    (SSRF). → Block private, loopback and link-local addresses after the
    name is resolved, and limit redirects.

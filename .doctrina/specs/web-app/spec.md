@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-08
-**Version:** 0.36.0
+**Version:** 0.37.0
 
 ## Purpose
 
@@ -99,6 +99,8 @@ run's steps.
 - When the hub has an account linked, the sign-in screen shall ask first for that account's email and password, offer to email a reset link that comes back to the page, and still offer the token or a pairing code.
 - When an email's reset link opens the page, the web app shall take its session out of the address and ask for a new password of at least 10 characters, typed twice.
 - When the user, signed in with the hub's token, signs in to their account or creates it in Settings → Account, the web app shall offer to link this hub to it, and show the account linked, how this device signed in, signing out and unlinking.
+- When the user downloads their data in Settings → Data, the web app shall ask for a password typed twice to seal the bots' keys (or none, leaving them out) and save the `.orbis` file to the browser's downloads or the phone's Downloads.
+- When the user imports a `.orbis` file in Settings → Data, the web app shall send it to this hub with the file's password, or to the cloud account it is signed in to (or signs in to there) without that password, and show per kind of data what came in and what was already there, and the warnings.
 
 ### State-driven
 
@@ -183,6 +185,7 @@ run's steps.
 60. [verified] A connected server's card says nothing of updates while no bot watches it and names the bots it tells once they do — verified by `packages/web/test/marketplace.test.tsx`
 61. [verified] Inside the Android app, Health Connect is allowed through the app and the days it read are synced to the hub, an outdated Health Connect sends to its install; in a browser the screen says where to connect it; a bot ticked gets the data and deleting empties the hub; the automatic sync runs only in the app and when the device chose it — verified by `packages/web/test/health.test.tsx`
 62. [verified] The client signs in with the publishable key, refuses a short password before asking, renews a session once for many requests and ends it when refused, and takes an email link's session or error out of the address; the sign-in screen signs in with the linked account, says a wrong password, emails a reset link back to the page, saves a new password and still offers the token; Settings → Account signs in, links, unlinks and creates an account that must be confirmed — verified by `packages/web/test/account.test.tsx`
+63. [verified] Settings → Data downloads the file with the secrets sealed by the password typed twice, or without them; imports into this hub with the file's password and shows what came in; imports into the cloud account it signs in to without sending the file's password — verified by `packages/web/test/data.test.tsx`
 
 ## Maturity
 

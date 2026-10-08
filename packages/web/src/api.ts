@@ -1,5 +1,5 @@
 // The web app's client of the hub API (same origin) and its event stream.
-import type { ApiErrorBody, ConversationFile, StreamEvent } from "@orbis/shared";
+import type { ApiErrorBody, ConversationFile, ImportReport, StreamEvent } from "@orbis/shared";
 
 const TOKEN_KEY = "orbis.token";
 
@@ -144,6 +144,27 @@ export class Api {
     const parsed = text ? (JSON.parse(text) as unknown) : null;
     if (!res.ok) throw new ApiError(res.status, parsed as ApiErrorBody | null);
     return parsed as ConversationFile;
+  }
+  /** The hub's `.orbis` export (its secrets sealed by the password, when given). */
+  async exportData(password: string | null): Promise<Blob> {
+    const res = await fetch(`${this.base}/api/v1/export`, {
+      method: "POST",
+      headers: { authorization: await this.bearer(), "content-type": "application/json" },
+      body: JSON.stringify(password ? { password } : {}),
+    });
+    if (!res.ok) throw new ApiError(res.status, (await res.json().catch(() => null)) as ApiErrorBody | null);
+    return res.blob();
+  }
+  /** Import a `.orbis` export into this hub, or into the cloud account whose session is given. */
+  async importData(file: Blob, opts: { password?: string | null; cloudSession?: string }): Promise<ImportReport> {
+    const headers: Record<string, string> = { authorization: await this.bearer(), "content-type": "application/octet-stream" };
+    if (opts.password) headers["x-orbis-export-password"] = encodeURIComponent(opts.password);
+    if (opts.cloudSession) headers["x-orbis-account"] = opts.cloudSession;
+    const res = await fetch(`${this.base}/api/v1/import${opts.cloudSession ? "/cloud" : ""}`, { method: "POST", headers, body: file });
+    const text = await res.text();
+    const parsed = text ? (JSON.parse(text) as unknown) : null;
+    if (!res.ok) throw new ApiError(res.status, parsed as ApiErrorBody | null);
+    return parsed as ImportReport;
   }
   /** Where a file's content is: an <img>, a player or a link opens it with the file key (an hour; never the token). */
   fileUrl(id: string, download = false): string {

@@ -72,6 +72,7 @@ import { registerMcpRoutes } from "./mcp/routes.js";
 import { FilesService } from "./files/service.js";
 import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
+import { ExportService } from "./export/service.js";
 
 export interface HubOptions {
   env?: Env;
@@ -92,11 +93,14 @@ export interface HubOptions {
   mcp?: { updateBatchMs?: number; watchRetryMs?: number[] };
   /** How account sessions are checked: the project's keys fetched with `fetch`, and the clock (tests fake both). */
   auth?: { fetch?: typeof fetch; now?: () => number };
+  /** How an import reaches the cloud account's database (tests fake it). */
+  cloud?: { fetch?: typeof fetch };
 }
 
 export interface Hub extends HubContext {
   app: FastifyInstance;
   auth: HubAuth;
+  exports: ExportService;
   skills: SkillService;
   routines: RoutineService;
   secrets: SecretService;
@@ -406,6 +410,19 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await files.routes(app);
   await initiative.routes(app);
   await health.routes(app);
+  const exports = new ExportService(ctx, {
+    vault: secrets.vault,
+    hubSecrets: secrets.hubSecrets,
+    filesDir: files.dir,
+    auth,
+    fetch: opts.cloud?.fetch,
+    // What an import added while the hub runs: its routines scheduled, its MCP servers offered.
+    afterImport: () => {
+      routines.reload();
+      mcp.adoptNew();
+    },
+  });
+  await exports.routes(app);
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -424,6 +441,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const hub: Hub = {
     ...ctx,
     auth,
+    exports,
     skills: skillService,
     routines,
     secrets,

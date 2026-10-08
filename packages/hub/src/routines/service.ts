@@ -299,6 +299,11 @@ export class RoutineService {
     return fired;
   }
 
+  /** Schedule every routine again (an import added some). */
+  reload(): void {
+    for (const row of this.repo.listAll()) this.schedule(row);
+  }
+
   start(intervalMs = 15_000): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
