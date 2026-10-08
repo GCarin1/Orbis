@@ -296,6 +296,22 @@ export interface PairingCode {
   addresses: string[];
 }
 
+/** Before signing in (change 0064): the Supabase project accounts sign in with, and whether one opens this hub. */
+export interface AuthConfig {
+  /** The project's address and publishable key (both public); null when the hub has no account sign-in. */
+  supabase: { url: string; key: string } | null;
+  linked: boolean;
+}
+
+/** The Orbis account linked to this hub, whose sessions open it like its token. */
+export interface AccountStatus {
+  /** Whether the hub takes account sign-ins at all. */
+  available: boolean;
+  linked: { userId: string; email: string | null; linkedAt: string } | null;
+  /** How this request signed in: the hub's token or the account's session. */
+  via: "token" | "account" | null;
+}
+
 /** A link found in a conversation's messages (its "media, links and docs"). */
 export interface ConversationLink {
   url: string;

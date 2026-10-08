@@ -15,20 +15,27 @@ import { VoiceSettings } from "./VoiceSettings.js";
 import { PhoneSettings } from "./PhoneSettings.js";
 import { InitiativeSettingsTab } from "./InitiativeSettings.js";
 import { HealthSettings } from "./HealthSettings.js";
+import { AccountSettings } from "./AccountSettings.js";
+import type { AccountSession } from "../account.js";
 
-export type SettingsTab = "brains" | "computers" | "initiative" | "health" | "voice" | "phone";
-const TABS: SettingsTab[] = ["brains", "computers", "initiative", "health", "voice", "phone"];
+export type SettingsTab = "brains" | "computers" | "initiative" | "health" | "voice" | "phone" | "account";
+const TABS: SettingsTab[] = ["brains", "computers", "initiative", "health", "voice", "phone", "account"];
 
 export function SettingsScreen({
   api,
   bots,
   onConfigureBot,
   initialTab = "brains",
+  account = null,
+  onSignedOut = () => undefined,
 }: {
   api: Api;
   bots: Bot[];
   onConfigureBot(botId: string): void;
   initialTab?: SettingsTab;
+  /** The Orbis account this device signed in with (null: the hub's token). */
+  account?: AccountSession | null;
+  onSignedOut?(): void;
 }) {
   const t = useT();
   const [tab, setTab] = useState<SettingsTab>(initialTab);
@@ -59,6 +66,7 @@ export function SettingsScreen({
         {tab === "health" && <HealthSettings api={api} bots={bots} />}
         {tab === "voice" && <VoiceSettings api={api} />}
         {tab === "phone" && <PhoneSettings api={api} />}
+        {tab === "account" && <AccountSettings api={api} account={account} onSignedOut={onSignedOut} />}
       </div>
     </section>
   );

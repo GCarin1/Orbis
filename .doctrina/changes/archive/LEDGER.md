@@ -66,3 +66,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-07 — 0061-mcp-server-updates — mcp-server-updates (specs: bots MODIFIED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-10-07 — 0062-health-connect — health-connect (specs: android-app MODIFIED, health ADDED, tool-gateway MODIFIED, web-app MODIFIED)
 - 2026-10-08 — 0063-cloud-database — cloud-database (specs: cloud ADDED)
+- 2026-10-08 — 0064-account-sign-in — account-sign-in (specs: cloud MODIFIED, hub-api MODIFIED, web-app MODIFIED)

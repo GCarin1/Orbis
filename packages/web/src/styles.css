@@ -4581,3 +4581,26 @@ label.pick-row.on {
 .health-table th {
   white-space: nowrap;
 }
+
+/* Settings → Account (change 0064) */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+.account-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.88em;
+  font-weight: 600;
+}
+.account-form input {
+  font-weight: 400;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: var(--panel-2);
+  max-width: 100%;
+}

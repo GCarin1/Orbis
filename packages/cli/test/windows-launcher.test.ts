@@ -70,6 +70,14 @@ describe("a restart seen from the old window", () => {
     expect(launcher.wasRestarted(4242, Date.now() + 120_000)).toBe(false); // an old note
     writeFileSync(launcher.RESTART_FLAG, "not json");
     expect(launcher.wasRestarted(4242)).toBe(false);
+    // A window whose server came up late keeps the note a newer launcher wrote after it started (a quick
+    // second start), and clears an older one.
+    const before = Date.now() - 5_000;
+    writeFileSync(launcher.RESTART_FLAG, JSON.stringify([4242]));
+    launcher.clearRestartFlag(before);
+    expect(launcher.wasRestarted(4242)).toBe(true);
+    launcher.clearRestartFlag(Date.now() + 1_000);
+    expect(launcher.wasRestarted(4242)).toBe(false);
   });
 });
 

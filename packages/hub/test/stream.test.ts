@@ -44,7 +44,8 @@ describe("stream", () => {
     const anaConv = (await t.api("GET", `/api/v1/bots/${ana.id}/conversation`)).body;
     await t.api("GET", `/api/v1/bots/${bob.id}/conversation`);
 
-    const client = await connect(`${base}/api/v1/stream?token=${TOKEN}`);
+    const { ticket } = (await t.api("POST", "/api/v1/stream/ticket")).body as { ticket: string };
+    const client = await connect(`${base}/api/v1/stream?ticket=${ticket}`);
     client.ws.send(JSON.stringify({ type: "subscribe", conversations: [anaConv.id] }));
     await client.next("subscribed");
 
@@ -61,10 +62,15 @@ describe("stream", () => {
     expect(client.events.some((e) => e.type === "run.step" && (e.data as { botId: string }).botId === bob.id)).toBe(false);
   });
 
-  it("refuses a stream without a valid token", async () => {
+  it("opens only with a ticket, once, and never with the token in the address", async () => {
     t = await testHub();
     const base = (await t.hub.listen()).replace("http", "ws");
-    await expect(connect(`${base}/api/v1/stream?token=nope`)).rejects.toThrow();
+    await expect(connect(`${base}/api/v1/stream?token=${TOKEN}`)).rejects.toThrow();
+    await expect(connect(`${base}/api/v1/stream?ticket=nope`)).rejects.toThrow();
+    const { ticket, expiresAt } = (await t.api("POST", "/api/v1/stream/ticket")).body as { ticket: string; expiresAt: string };
+    expect(Date.parse(expiresAt) - Date.now()).toBeLessThanOrEqual(60_000);
+    (await connect(`${base}/api/v1/stream?ticket=${ticket}`)).ws.close();
+    await expect(connect(`${base}/api/v1/stream?ticket=${ticket}`)).rejects.toThrow();
   });
 
   it("matches events against a filter", () => {

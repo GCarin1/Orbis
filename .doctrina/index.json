@@ -88,9 +88,9 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "last_updated": "2026-10-08",
-        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`, applied to the Supabase project `orbis`); sign-in, export and import, the runner link and the Cloudflare deploy come in later changes",
+        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`) and signing in with an email and a password (`packages/hub/src/auth/`, `packages/web/src/account.ts`, change 0064); export and import, the runner link and the Cloudflare deploy come in later changes",
         "realizes": [
           "SC16"
         ],
@@ -200,8 +200,8 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.7.0",
-        "last_updated": "2026-09-27",
+        "version": "0.8.0",
+        "last_updated": "2026-10-08",
         "implementation": "verified",
         "realizes": [
           "SC7",
@@ -340,8 +340,8 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.35.0",
-        "last_updated": "2026-09-27",
+        "version": "0.36.0",
+        "last_updated": "2026-10-08",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
           "SC7",
@@ -628,13 +628,28 @@
         "title": "Account data lives in Supabase Postgres closed by row level security to its owner; the phone runner keeps its SQLite and its secrets and syncs",
         "status": "accepted",
         "date": "2026-10-08",
+        "landed": "2026-10-08 — `supabase/migrations/0001_orbis_core.sql`, `packages/hub/test/cloud-schema.test.ts`",
         "scope": [
           "cloud",
           "hub-api",
           "secrets"
         ],
-        "summary": "The cloud keeps the account's data in Supabase Postgres (project",
-        "landed": "2026-10-08 — `supabase/migrations/0001_orbis_core.sql`, `packages/hub/test/cloud-schema.test.ts`"
+        "summary": "The cloud keeps the account's data in Supabase Postgres (project"
+      },
+      {
+        "id": "0021",
+        "path": ".doctrina/decisions/0021-the-hub-opens-for-the-account-linked-to-it-a-supabase-session-checked-against-the-project-s-public-keys-no-shared-secret-tickets-and-file-keys-take-credentials-out-of-addresses.md",
+        "title": "The hub opens for the account linked to it: a Supabase session checked against the project's public keys, no shared secret; tickets and file keys take credentials out of addresses",
+        "status": "accepted",
+        "date": "2026-10-08",
+        "scope": [
+          "hub-api",
+          "web-app",
+          "cloud",
+          "cli"
+        ],
+        "summary": "A hub belongs to at most one account.",
+        "landed": "2026-10-08 — `packages/hub/src/auth/jwt.ts`, `packages/hub/src/auth/account.ts`, `packages/web/src/account.ts`"
       }
     ],
     "changes": [],
@@ -1929,6 +1944,28 @@
           {
             "capability": "cloud",
             "operation": "ADDED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0064-account-sign-in",
+        "title": "account-sign-in",
+        "path": ".doctrina/changes/archive/2026-10-08-0064-account-sign-in",
+        "status": "applied",
+        "applied": "2026-10-08",
+        "specs_affected": [
+          {
+            "capability": "cloud",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
           }
         ],
         "lane": "product"

@@ -28,6 +28,18 @@ change that delivered it.
 
 ### Added
 
+- **Orbis accounts in the cloud, phase 2: sign in with an email and a password** (change 0064-account-sign-in, ADR 0021).
+  - Settings → Account signs in to your Orbis account (or creates it) and
+    links this hub to it. From then on any device opens the hub with that
+    email and password, and the sign-in screen asks for them first. Forgot
+    the password: a reset link comes back to the page.
+  - The hub checks each session against the Supabase project's public keys,
+    with no shared secret, and only the linked account's.
+  - No credential travels in an address: the stream opens with a one-time
+    ticket and files with an hour-long file key; `?token=` no longer works.
+  - Past 20 refused credentials a minute from one address, the hub answers
+    429; a valid credential always passes.
+  - New settings `ORBIS_SUPABASE_URL` and `ORBIS_SUPABASE_KEY`.
 - **Orbis accounts in the cloud, phase 1: the account database** (change 0063-cloud-database, ADR 0020).
   - Supabase project `orbis` (São Paulo, free plan) with the schema in
     `supabase/migrations/0001_orbis_core.sql`: every hub table but the

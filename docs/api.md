@@ -10,8 +10,20 @@ the running hub also serves an OpenAPI 3.1 document at
 
 Every `/api/*` and `/v1/*` request carries `Authorization: Bearer <token>`.
 The token is `ORBIS_TOKEN`, or the content of `~/.orbis/token` (created at
-first start with mode 0600). `GET /health` needs no token. The stream takes
-the token as a query parameter because browsers cannot set WebSocket headers.
+first start with mode 0600). `GET /health` needs no token. No credential ever
+goes in an address:
+
+- The stream opens with a one-time ticket: `POST /api/v1/stream/ticket`
+  answers `{ ticket, expiresAt }`, which works once, within a minute.
+- A file's content opens with a file key: `POST /api/v1/files/key` answers
+  `{ key, expiresAt }`, which works an hour, for file content only.
+
+**An Orbis account** (change 0064) can open the hub instead of the token.
+Once an account is linked (`POST /api/v1/account/link` with the token and the
+account's `accessToken`), its Supabase session works as the bearer value. The
+hub checks it against the project's public keys. `GET /api/v1/auth/config`
+(no token) says where accounts sign in and whether one is linked. After 20
+refused credentials a minute from one address, the next refusal answers 429.
 
 **Pairing a phone.** `POST /api/v1/pairing` (with the token) → `{ code,
 expiresAt, listening, addresses }`: a six-digit code that works once, for five
@@ -149,7 +161,8 @@ See [secrets-and-usage.md](secrets-and-usage.md).
 
 ## Stream
 
-`ws://127.0.0.1:7420/api/v1/stream?token=<token>` — send
+`ws://127.0.0.1:7420/api/v1/stream?ticket=<ticket>` (from
+`POST /api/v1/stream/ticket`) — send
 `{"type":"subscribe","conversations":["cnv_…"]}` (omit `conversations` for
 everything). Events: `bot.state`, `bot.updated`, `bot.deleted`,
 `bot.report` (a manager came back on its own: `{ botId, conversationId, itemId, text }`),

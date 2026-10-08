@@ -88,21 +88,22 @@ describe("files sent by the user", () => {
 });
 
 describe("serving a file", () => {
-  it("shows images in place, downloads the rest, never runs a page, and takes the token in the address", async () => {
+  it("shows images in place, downloads the rest, never runs a page, and takes a file key in the address, never the token", async () => {
     t = await testHub();
     const bot = await createBot(t);
     const conv = (await t.api("GET", `/api/v1/bots/${bot.id}/conversation`)).body;
     const png = (await upload(conv.id, "a.png", Buffer.from([1, 2, 3]), "image/png")).body;
     const page = (await upload(conv.id, "página.html", "<script>alert(1)</script>", "text/html")).body;
+    const { key } = (await t.api("POST", "/api/v1/files/key")).body as { key: string };
 
-    const shown = await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${png.id}/content?token=${TOKEN}` });
+    const shown = await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${png.id}/content?key=${key}` });
     expect(shown.statusCode).toBe(200);
     expect(shown.headers["content-type"]).toBe("image/png");
     expect(shown.headers["content-disposition"]).toMatch(/^inline/);
     expect(shown.headers["content-security-policy"]).toMatch(/^sandbox/);
     expect(shown.headers["x-content-type-options"]).toBe("nosniff");
 
-    const html = await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${page.id}/content?token=${TOKEN}` });
+    const html = await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${page.id}/content?key=${key}` });
     expect(html.headers["content-type"]).toBe("text/plain; charset=utf-8");
     expect(html.headers["content-disposition"]).toBe(`attachment; filename="p_gina.html"; filename*=UTF-8''${encodeURIComponent("página.html")}`);
 
@@ -111,9 +112,10 @@ describe("serving a file", () => {
     expect(download.rawPayload).toEqual(Buffer.from([1, 2, 3]));
 
     expect((await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${png.id}/content` })).statusCode).toBe(401);
-    expect((await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${png.id}/content?token=wrong` })).statusCode).toBe(401);
-    // Only a file's content takes the token in the address.
-    expect((await t.hub.app.inject({ method: "GET", url: `/api/v1/conversations/${conv.id}/files?token=${TOKEN}` })).statusCode).toBe(401);
+    // The token itself never works in the address, and a key opens only a file's content.
+    expect((await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${png.id}/content?token=${TOKEN}` })).statusCode).toBe(401);
+    expect((await t.hub.app.inject({ method: "GET", url: `/api/v1/files/${png.id}/content?key=${key.slice(0, -2)}xx` })).statusCode).toBe(401);
+    expect((await t.hub.app.inject({ method: "GET", url: `/api/v1/conversations/${conv.id}/files?key=${key}` })).statusCode).toBe(401);
   });
 });
 

@@ -5,8 +5,8 @@
 **Implementation:** verified
 **Realizes:** SC7, SC13
 **Depends on:** bots, conversations
-**Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Last updated:** 2026-10-08
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -21,7 +21,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 ### Ubiquitous
 
 - The system shall serve the REST API under `/api/v1`, the WebSocket stream at `/api/v1/stream`, the MCP endpoint at `/mcp`, the OpenAI-compatible endpoints `/v1/chat/completions` and `/v1/models`, the webhook receiver under `/hooks`, and the web app's static files at `/`, all on one port (ORBIS_PORT, default 7420).
-- The system shall require a bearer token on every REST, stream and OpenAI-compatible request, the token read from ORBIS_TOKEN or generated at first start into the data directory file `token`.
+- The system shall require, on every REST, stream and OpenAI-compatible request, the hub's token (read from ORBIS_TOKEN or generated at first start into the data directory file `token`) or, once an Orbis account is linked to the hub, a Supabase Auth session of that account, checked against the public keys of the project ORBIS_SUPABASE_URL names (the Orbis project by default; `off` takes no account).
 - The system shall bind to 127.0.0.1 unless ORBIS_HOST names another address.
 - The system shall validate every request body against its schema and answer 400 naming each failing field.
 - The system shall publish an OpenAPI 3.1 document of the REST API at `/api/v1/openapi.json`.
@@ -36,6 +36,8 @@ routes and shapes are owned by `contracts/hub-surface`.
 - When a recording arrives at `/api/v1/voice/transcribe`, the system shall send it to the transcription service in use — the one saved in the settings screen, else ORBIS_TRANSCRIBE_URL, else OpenAI's with OPENAI_API_KEY — as an OpenAI-compatible `/audio/transcriptions` upload with the model and the spoken language, and answer the text.
 - When the signed-in web app asks for a pairing code, the hub shall make a six-digit code that works once, for five minutes, replacing the one before, and answer it with whether the hub takes connections from the network and its addresses on this computer's network cards.
 - When a phone sends a pairing code to `POST /api/v1/pairing/claim`, which needs no token, the hub shall answer the hub's token for the current code and use the code up, and otherwise answer `invalid_code`.
+- When a request signed with the hub's token links an account with that account's session, the hub shall open from then on for that account's sessions, and for no other account's; when the account is unlinked, its sessions shall stop opening the hub at once.
+- When a signed-in client asks for a stream ticket, the hub shall answer one that opens the event stream once, within 60 seconds; when it asks for a file key, one that opens files' content, and nothing else, for an hour.
 
 ### Unwanted-behavior (must-not)
 
@@ -44,6 +46,9 @@ routes and shapes are owned by `contracts/hub-surface`.
 - The system shall not fail with a server error when a `/v1/chat/completions` message starts no run (a `/skill` the bot is not offered); it shall answer 400 `no_run`.
 - The hub shall not accept a pairing code after its fifth wrong try, nor more than 20 pairing claims a minute from anywhere.
 - The image, the compose file, its example environment and the dev container shall not hold a token, a key or an address of the user's, and shall not set `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
+- The hub shall not take a credential in an address: the stream opens only with a ticket, a file's content only with a file key or the bearer header, and `?token=` works nowhere.
+- The hub shall not take a session signed with `none` or a shared secret, one from another project, for anonymous users, expired or not valid yet beyond 30 seconds of clock skew, nor let a session alone link an account.
+- Past 20 refused credentials in a minute from one address, the hub shall answer 429 `too_many_failures` instead of 401, and shall never refuse a valid credential for it.
 
 ## Acceptance criteria
 
@@ -56,6 +61,8 @@ routes and shapes are owned by `contracts/hub-surface`.
 7. [verified] A code works once, for five minutes, dies after five wrong tries and when cancelled; claims past 20 a minute are refused; the hub knows when it listens on the network and its addresses; the claim route alone takes no token — verified by `packages/hub/test/pairing.test.ts`.
 8. [verified] In a real browser, Settings → Phone makes a code, says how long it works and that the hub listens on this computer only, and the code is traded for the token once — verified by `tests/e2e/phone-pairing.test.ts`.
 9. [verified] The image serves on 0.0.0.0:7420 as the node user with /data and Claude Code's folder on the volume; compose publishes on 127.0.0.1 with the tunnels as profiles; the example environment leaves every secret empty and git ignores the real one; the dev container forwards 7420, keeps its data outside the repository and asks for ORBIS_TOKEN and CLAUDE_CODE_OAUTH_TOKEN as Codespaces secrets — verified by `packages/hub/test/cloud-kit.test.ts`.
+10. [verified] A session holds only when signed by the project's key, from the project, for a signed-in account, in time, never unsigned nor HS256, and a new key id fetches the keys again; it opens the hub only once the token linked its account, never another account's, a session alone cannot link, and unlinking closes it; 20 refusals a minute make the next wait while the token still passes; with ORBIS_SUPABASE_URL off there is no account — verified by `packages/hub/test/auth.test.ts`
+11. [verified] The stream opens only with a ticket, once, never with the token in its address; a file's content opens with the file key or the bearer header, never with `?token=`, and the key opens nothing else — verified by `packages/hub/test/stream.test.ts` and `packages/hub/test/files.test.ts`
 
 ## Maturity
 

@@ -3,11 +3,11 @@
 
 **Capability:** cloud
 **Status:** active
-**Implementation:** partial — the account database (`supabase/migrations/0001_orbis_core.sql`, applied to the Supabase project `orbis`); sign-in, export and import, the runner link and the Cloudflare deploy come in later changes
+**Implementation:** partial — the account database (`supabase/migrations/0001_orbis_core.sql`) and signing in with an email and a password (`packages/hub/src/auth/`, `packages/web/src/account.ts`, change 0064); export and import, the runner link and the Cloudflare deploy come in later changes
 **Realizes:** SC16
 **Depends on:** hub-api, secrets
 **Last updated:** 2026-10-08
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -30,6 +30,7 @@ and its secrets, and syncs with the account (ADR 0020).
 ### Event-driven
 
 - When a user signs up, the system shall create their profile, which only they read and change.
+- When a user signs in with their account's email and password, the system shall open the hub linked to that account (ADR 0021), its session checked against the project's public keys with no shared secret.
 
 ### Unwanted-behavior (must-not)
 
@@ -42,6 +43,7 @@ and its secrets, and syncs with the account (ADR 0020).
 1. [verified] Every hub table but `secrets` has a cloud twin whose `owner_id` defaults to `auth.uid()` and cascades from `auth.users`, and there is no `secrets` table — verified by `packages/hub/test/cloud-schema.test.ts`
 2. [verified] Row level security is forced on every table, with owner-only policies for the four verbs, nothing for `anon`, and owner policies on profiles — verified by `packages/hub/test/cloud-schema.test.ts`
 3. [verified] A `secret:` setting is refused, routines carry no secret, the device token hash is not granted to accounts, and the sign-up function runs with an empty `search_path` — verified by `packages/hub/test/cloud-schema.test.ts`
+4. [verified] A session of the account linked to a hub opens it and no other account's does; the web app signs in, creates an account, resets a password and links a hub — verified by `packages/hub/test/auth.test.ts` and `packages/web/test/account.test.tsx`
 
 ## Maturity
 

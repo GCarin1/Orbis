@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { roleSlug, type Bot, type TranscriptionStatus } from "@orbis/shared";
+import { roleSlug, type AuthConfig, type Bot, type TranscriptionStatus } from "@orbis/shared";
 import { Api, capturePairingFromUrl, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
+import { AccountSession, authConfig, captureAuthFromUrl, loadSession, saveSession, type Session } from "./account.js";
 import { useLang, useT } from "./i18n.js";
 import { useStore } from "./store.js";
 import { useReadAloud, useVoice } from "./voice.js";
@@ -52,6 +53,24 @@ export function App() {
   });
   /** A pairing code from a QR code's link (#pair=…), for the sign-in screen to trade for the token. */
   const [pairCode] = useState(capturePairingFromUrl);
+  // The Orbis account (change 0064): where accounts sign in, an email's link (a new password, a confirmed
+  // account), and the session kept on this device; the hub's token, when there is one, comes first.
+  const [auth, setAuth] = useState<AuthConfig | null | undefined>(undefined);
+  const [emailLink, setEmailLink] = useState(captureAuthFromUrl);
+  const [session, setSession] = useState<Session | null>(() => (emailLink?.type === "signup" && emailLink.session) || loadSession());
+  useEffect(() => {
+    void authConfig().then(setAuth);
+  }, []);
+  const account = useMemo(
+    () => (!token && session && auth?.supabase ? new AccountSession(auth.supabase, session, () => setSession(null)) : null),
+    [token, session, auth],
+  );
+  const signedOut = () => {
+    saveToken(null);
+    setToken(null);
+    saveSession(null);
+    setSession(null);
+  };
   const lang = useLang((s) => s.lang);
   const [creatingGroup, setCreatingGroup] = useState(false);
   /** A group's info beside its conversation (a flyout; full screen on a phone), and which part of it. */
@@ -91,9 +110,28 @@ export function App() {
   const store = useStore();
 
   useEffect(() => {
-    if (!token) return;
-    const api = new Api(token);
-    store.setApi(api);
+    if (!token && !account) return;
+    const api = new Api(token ?? account!.token);
+    // Files open with a file key, renewed while the app is open: shown only once it is there.
+    const fileKey = api.keepFileKey();
+    let stopStream = () => undefined as void;
+    let cancelled = false;
+    void fileKey.ready.then(() => {
+      if (cancelled) return;
+      store.setApi(api);
+      stopStream = start(api);
+    });
+    return () => {
+      cancelled = true;
+      fileKey.stop();
+      stopStream();
+      keepLocalHubUp(true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, account]);
+
+  /** Load everything and follow the stream; returns its stop. */
+  const start = (api: Api) => {
     void api
       .get<{ maxGroupSize: number }>("/api/v1/conversations/limits")
       .then((limits) => setMaxGroupSize(limits.maxGroupSize))
@@ -107,12 +145,9 @@ export function App() {
     void useStore.getState().loadMcpServers().catch(() => undefined);
     void useStore.getState().loadSquads().catch(() => undefined);
     void useStore.getState().loadBots().catch((err: unknown) => {
-      if ((err as { status?: number }).status === 401) {
-        saveToken(null);
-        setToken(null);
-      }
+      if ((err as { status?: number }).status === 401) signedOut();
     });
-    const stop = openStream(token, {
+    return openStream(() => api.streamTicket(), {
       onEvent: (e) => {
         const s = useStore.getState();
         s.apply(e);
@@ -124,7 +159,9 @@ export function App() {
         // The hub on this phone that Android stopped: the app starts it again.
         keepLocalHubUp(c);
       },
-      onReconnect: () => {
+      onReconnect: async () => {
+        // A hub that restarted forgot its file keys: a new one before the timeline shows files again.
+        await api.renewFileKey();
         const s = useStore.getState();
         void s.loadBots();
         void s.loadApprovals();
@@ -135,12 +172,7 @@ export function App() {
         if (conv) void s.loadTimeline(conv);
       },
     });
-    return () => {
-      stop();
-      keepLocalHubUp(true);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  };
 
   // In the Android app, the health data syncs on its own when the user chose so (change 0062).
   useEffect(() => (store.api ? startHealthSync(store.api) : undefined), [store.api]);
@@ -232,13 +264,24 @@ export function App() {
     return () => setBackHandler(null);
   });
 
-  if (!token) {
+  const newPassword = emailLink?.type === "recovery" && emailLink.session ? emailLink.session : null;
+  if ((!token && !account) || newPassword) {
+    // A saved session waits for where it signs in before the sign-in screen shows.
+    if (!token && session && auth === undefined) return null;
     return (
       <TokenGate
         pairCode={pairCode}
+        auth={auth ?? null}
+        newPassword={newPassword}
+        linkError={emailLink?.error ?? null}
         onToken={(value) => {
           saveToken(value);
           setToken(value);
+        }}
+        onSession={(next) => {
+          setEmailLink(null);
+          saveSession(next);
+          setSession(next);
         }}
       />
     );
@@ -326,6 +369,8 @@ export function App() {
           <SettingsScreen
             api={store.api}
             bots={bots}
+            account={account}
+            onSignedOut={signedOut}
             onConfigureBot={(id) => {
               setView("chat");
               setPanel("settings");

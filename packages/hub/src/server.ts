@@ -3,7 +3,6 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { timingSafeEqual } from "node:crypto";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
 import swagger from "@fastify/swagger";
@@ -24,7 +23,8 @@ import { SecretService } from "./secrets/service.js";
 import { UsageService } from "./usage/service.js";
 import { TemplateService } from "./templates/service.js";
 import { openDatabase, type Database } from "./db/index.js";
-import { HttpError, unauthorized } from "./errors.js";
+import { HttpError } from "./errors.js";
+import { HubAuth } from "./auth/account.js";
 import { BotsRepo } from "./repos/bots.js";
 import { ConversationsRepo, ItemsRepo } from "./repos/conversations.js";
 import { MemoryRepo } from "./repos/memory.js";
@@ -90,10 +90,13 @@ export interface HubOptions {
   random?: () => number;
   /** How long MCP updates are gathered, and how soon a watched server starts again (tests shorten them). */
   mcp?: { updateBatchMs?: number; watchRetryMs?: number[] };
+  /** How account sessions are checked: the project's keys fetched with `fetch`, and the clock (tests fake both). */
+  auth?: { fetch?: typeof fetch; now?: () => number };
 }
 
 export interface Hub extends HubContext {
   app: FastifyInstance;
+  auth: HubAuth;
   skills: SkillService;
   routines: RoutineService;
   secrets: SecretService;
@@ -122,27 +125,17 @@ export function defaultWebDir(): string | null {
   }
 }
 
-function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
-
-function bearer(req: FastifyRequest): string | null {
-  const header = req.headers.authorization;
-  if (!header) return null;
-  const m = /^Bearer\s+(.+)$/i.exec(header);
-  return m ? m[1]!.trim() : null;
-}
-
 /** Paths that carry their own authentication or none (health, webhooks, MCP run tokens, static files). */
-function needsHubToken(url: string): "bearer" | "query" | null {
+function needsAuth(url: string): "bearer" | "stream" | "file" | null {
   const p = url.split("?")[0]!;
-  if (p === "/api/v1/stream") return "query";
-  // A file's content opens in an <img>, a player or a download, which send no Authorization header.
-  if (/^\/api\/v1\/files\/[^/]+\/content$/.test(p)) return "query";
+  // Browsers cannot set a WebSocket's headers: the stream opens with a one-time ticket (api/stream.ts).
+  if (p === "/api/v1/stream") return "stream";
+  // A file's content opens in an <img>, a player or a download, which send no Authorization header: a file key.
+  if (/^\/api\/v1\/files\/[^/]+\/content$/.test(p)) return "file";
   // A phone trades a pairing code for the token: it has no token yet (api/pairing-routes.ts).
   if (p === "/api/v1/pairing/claim") return null;
+  // Before signing in, the page asks where accounts sign in (auth/account.ts).
+  if (p === "/api/v1/auth/config") return null;
   if (p.startsWith("/api/") || p.startsWith("/v1/")) return "bearer";
   return null;
 }
@@ -285,14 +278,14 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   // refused upgrade (401) still has its socket destroyed.
   await app.register(websocket);
   const vncSessions = new VncSessions();
+  const auth = new HubAuth(config, new SettingsRepo(db), opts.auth);
   app.addHook("onRequest", async (req) => {
-    const mode = needsHubToken(req.url);
+    const mode = needsAuth(req.url);
     if (!mode) return;
     // noVNC pages inside an iframe authenticate with their path-scoped cookie.
     if (vncSessions.allows(req.url, req.headers.cookie)) return;
+    await auth.authenticate(req, mode);
     // Any authenticated change is user activity (routines pause after a long absence).
-    const presented = mode === "bearer" ? bearer(req) : (new URL(req.url, "http://x").searchParams.get("token") ?? bearer(req));
-    if (!presented || !safeEqual(presented, config.token)) throw unauthorized();
     if (mode === "bearer" && req.method !== "GET" && req.method !== "HEAD") routines.recordActivity();
   });
 
@@ -395,6 +388,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerOpenAiCompat(app, ctx);
   await registerGroupRoutes(app, ctx);
   await registerPairingRoutes(app, ctx);
+  await auth.routes(app);
   await memoryService.routes(app);
   await registerComputerRoutes(app, ctx, browser, vncSessions, opts.computerSetup ?? new ComputerSetup(config.computerProvider));
   await skillService.routes(app);
@@ -429,6 +423,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   let closed = false;
   const hub: Hub = {
     ...ctx,
+    auth,
     skills: skillService,
     routines,
     secrets,

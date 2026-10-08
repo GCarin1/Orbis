@@ -48,6 +48,24 @@ export interface HubConfig {
   browserExecutable: string | null;
   /** USD per million tokens by model prefix: the shipped table with `<data>/prices.json` over it. */
   prices: Record<string, Price>;
+  /**
+   * The Supabase project whose accounts sign in with an email and a password (change 0064): its address and
+   * publishable key, both public by design; null when ORBIS_SUPABASE_URL is `off`.
+   */
+  supabase: { url: string; key: string } | null;
+}
+
+/** The Orbis cloud project (ADR 0020); a hub of another project sets ORBIS_SUPABASE_URL and ORBIS_SUPABASE_KEY. */
+export const DEFAULT_SUPABASE = { url: "https://tqjxkgxmnkypzbpirztw.supabase.co", key: "sb_publishable_Cw2RD01Yq0XADHZcncziSA_7e3suhPT" };
+
+function readSupabase(env: Env): { url: string; key: string } | null {
+  const url = readVar(env, "ORBIS_SUPABASE_URL");
+  if (url?.toLowerCase() === "off") return null;
+  if (!url) return { ...DEFAULT_SUPABASE, key: readVar(env, "ORBIS_SUPABASE_KEY") ?? DEFAULT_SUPABASE.key };
+  if (!/^https:\/\/[^/?#]+$/.test(url.replace(/\/+$/, ""))) throw new Error(`ORBIS_SUPABASE_URL must be https://<project>.supabase.co or off, got "${url}"`);
+  const key = readVar(env, "ORBIS_SUPABASE_KEY");
+  if (!key) throw new Error("ORBIS_SUPABASE_KEY must be set with ORBIS_SUPABASE_URL (the project's publishable key)");
+  return { url: url.replace(/\/+$/, ""), key };
 }
 
 export const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434/v1";
@@ -146,6 +164,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     webDir: overrides.webDir === undefined ? null : overrides.webDir,
     browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
     prices: overrides.prices ?? loadPrices(dataDir),
+    supabase: overrides.supabase !== undefined ? overrides.supabase : readSupabase(env),
   };
 }
 

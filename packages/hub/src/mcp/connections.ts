@@ -132,6 +132,8 @@ const safeName = (name: string) => name.replace(/[^A-Za-z0-9_-]/g, "_").slice(0,
 export class McpConnections {
   private readonly live = new Map<string, McpClient>();
   private readonly attaching = new Map<string, Promise<void>>();
+  /** The hub stopped: connections still finishing record nothing and keep nothing. */
+  private closed = false;
   private readonly registered = new Map<string, string[]>();
   private readonly authStates = new Map<string, { serverId: string; verifier: string; expires: number }>();
   private readonly authUrls = new Map<string, string>();
@@ -167,6 +169,8 @@ export class McpConnections {
   }
 
   private save(row: Row): void {
+    // A connection that ends after the hub stopped (its database closed) has nothing left to record.
+    if (this.closed) return;
     row.updatedAt = new Date().toISOString();
     run(
       this.hub.db,
@@ -340,6 +344,7 @@ export class McpConnections {
   }
 
   async shutdown(): Promise<void> {
+    this.closed = true;
     this.unsubscribe?.();
     this.unsubscribe = null;
     if (this.watchTimer) clearTimeout(this.watchTimer);
@@ -636,6 +641,11 @@ export class McpConnections {
       client = new McpClient(await this.transport(row));
       await client.connect();
       row.tools = await client.listTools();
+      // The hub stopped while this server was connecting: nothing may use it now.
+      if (this.closed) {
+        await client.close().catch(() => undefined);
+        return;
+      }
       this.live.set(id, client);
       row.status = "connected";
       row.error = null;

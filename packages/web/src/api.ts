@@ -64,17 +64,27 @@ export function saveToken(token: string | null): void {
   }
 }
 
+/** What signs the requests: the hub's token, or a function giving the account's current session (change 0064). */
+export type Credential = string | (() => Promise<string>);
+
 export class Api {
+  /** The key that opens files' content in an address (`POST /files/key`), never the token. */
+  private fileKey = "";
+
   constructor(
-    private readonly token: string,
+    private readonly credential: Credential,
     private readonly base = "",
   ) {}
+
+  private async bearer(): Promise<string> {
+    return `Bearer ${typeof this.credential === "string" ? this.credential : await this.credential()}`;
+  }
 
   async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.base + path, {
       method,
       headers: {
-        authorization: `Bearer ${this.token}`,
+        authorization: await this.bearer(),
         ...(body !== undefined ? { "content-type": "application/json" } : {}),
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -90,7 +100,7 @@ export class Api {
   }
   /** A text resource (a YAML template). */
   async text(path: string): Promise<string> {
-    const res = await fetch(this.base + path, { headers: { authorization: `Bearer ${this.token}` } });
+    const res = await fetch(this.base + path, { headers: { authorization: await this.bearer() } });
     const body = await res.text();
     if (!res.ok) {
       let parsed: ApiErrorBody | null = null;
@@ -106,7 +116,7 @@ export class Api {
 
   /** A binary resource (screenshots), or null on 404. */
   async blob(path: string): Promise<Blob | null> {
-    const res = await fetch(this.base + path, { headers: { authorization: `Bearer ${this.token}` } });
+    const res = await fetch(this.base + path, { headers: { authorization: await this.bearer() } });
     if (res.status === 404) return null;
     if (!res.ok) throw new ApiError(res.status, null);
     return res.blob();
@@ -115,7 +125,7 @@ export class Api {
   async transcribe(audio: Blob, lang: string): Promise<string> {
     const res = await fetch(`${this.base}/api/v1/voice/transcribe?lang=${encodeURIComponent(lang)}`, {
       method: "POST",
-      headers: { authorization: `Bearer ${this.token}`, "content-type": audio.type || "audio/webm" },
+      headers: { authorization: await this.bearer(), "content-type": audio.type || "audio/webm" },
       body: audio,
     });
     const text = await res.text();
@@ -127,7 +137,7 @@ export class Api {
   async upload(conversationId: string, file: Blob, name: string): Promise<ConversationFile> {
     const res = await fetch(`${this.base}/api/v1/conversations/${conversationId}/files`, {
       method: "POST",
-      headers: { authorization: `Bearer ${this.token}`, "content-type": file.type || "application/octet-stream", "x-file-name": encodeURIComponent(name) },
+      headers: { authorization: await this.bearer(), "content-type": file.type || "application/octet-stream", "x-file-name": encodeURIComponent(name) },
       body: file,
     });
     const text = await res.text();
@@ -135,9 +145,29 @@ export class Api {
     if (!res.ok) throw new ApiError(res.status, parsed as ApiErrorBody | null);
     return parsed as ConversationFile;
   }
-  /** Where a file's content is: an <img>, a player or a link opens it (it carries the token, as the stream does). */
+  /** Where a file's content is: an <img>, a player or a link opens it with the file key (an hour; never the token). */
   fileUrl(id: string, download = false): string {
-    return `${this.base}/api/v1/files/${id}/content?token=${encodeURIComponent(this.token)}${download ? "&download=1" : ""}`;
+    return `${this.base}/api/v1/files/${id}/content?key=${encodeURIComponent(this.fileKey)}${download ? "&download=1" : ""}`;
+  }
+  setFileKey(key: string): void {
+    this.fileKey = key;
+  }
+  /** Fetch the file key now and again every FILE_KEY_RENEW_MS, so the addresses shown keep working; returns a stop. */
+  keepFileKey(): { ready: Promise<void>; stop(): void } {
+    const ready = this.renewFileKey();
+    const timer = setInterval(() => void this.renewFileKey(), FILE_KEY_RENEW_MS);
+    return { ready, stop: () => clearInterval(timer) };
+  }
+  /** A new file key now (a restarted hub forgot the last one); never fails. */
+  renewFileKey(): Promise<void> {
+    return this.post<{ key: string }>("/api/v1/files/key").then(
+      (r) => this.setFileKey(r.key),
+      () => undefined,
+    );
+  }
+  /** A one-time ticket that opens the event stream (the token never goes in its address). */
+  async streamTicket(): Promise<string> {
+    return (await this.post<{ ticket: string }>("/api/v1/stream/ticket")).ticket;
   }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>("POST", path, body);
@@ -152,6 +182,9 @@ export class Api {
     return this.request<T>("DELETE", path);
   }
 }
+
+/** A file key works an hour: it is renewed well before. */
+export const FILE_KEY_RENEW_MS = 20 * 60_000;
 
 /** How often the stream checks the hub still answers, and how long an answer may take. */
 export const STREAM_PING_MS = 25_000;
@@ -175,7 +208,7 @@ const OPEN = 1;
  * at once and an open one must answer within STREAM_WAKE_PONG_MS.
  */
 export function openStream(
-  token: string,
+  ticket: () => string | Promise<string>,
   handlers: { onEvent(e: StreamEvent): void; onStatus(connected: boolean): void; onReconnect(): void },
 ): () => void {
   let ws: WebSocket | null = null;
@@ -185,6 +218,8 @@ export function openStream(
   let connectTimer: ReturnType<typeof setTimeout> | null = null;
   let pingTimer: ReturnType<typeof setInterval> | null = null;
   let pongTimer: ReturnType<typeof setTimeout> | null = null;
+  /** A ticket is being asked: no second connection meanwhile. */
+  let asking = false;
 
   const check = (within = STREAM_PONG_MS) => {
     if (!ws || ws.readyState !== OPEN || pongTimer) return;
@@ -201,6 +236,7 @@ export function openStream(
   };
   const onWake = () => {
     if (stopped || (typeof document !== "undefined" && document.visibilityState === "hidden")) return;
+    if (asking) return;
     if (!ws || ws.readyState > OPEN) {
       // Closed and waiting out the backoff: try now.
       if (timer) clearTimeout(timer);
@@ -216,10 +252,37 @@ export function openStream(
     }
   };
 
+  const retry = () => {
+    if (stopped) return;
+    attempt++;
+    timer = setTimeout(connect, Math.min(15_000, 500 * 2 ** Math.min(attempt, 5)));
+  };
+  /** Ask a one-time ticket, then open with it; a ticket refused (the hub down, the session over) waits like a close. */
   const connect = () => {
+    let got: string | Promise<string>;
+    try {
+      got = ticket();
+    } catch {
+      return retry();
+    }
+    if (typeof got === "string") return open(got);
+    asking = true;
+    got.then(
+      (value) => {
+        asking = false;
+        if (!stopped) open(value);
+      },
+      () => {
+        asking = false;
+        handlers.onStatus(false);
+        retry();
+      },
+    );
+  };
+  const open = (value: string) => {
     if (connectTimer) clearTimeout(connectTimer);
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
-    const current = new WebSocket(`${proto}://${window.location.host}/api/v1/stream?token=${encodeURIComponent(token)}`);
+    const current = new WebSocket(`${proto}://${window.location.host}/api/v1/stream?ticket=${encodeURIComponent(value)}`);
     ws = current;
     connectTimer = setTimeout(() => {
       connectTimer = null;
@@ -256,9 +319,7 @@ export function openStream(
       if (connectTimer) clearTimeout(connectTimer);
       connectTimer = null;
       handlers.onStatus(false);
-      if (stopped) return;
-      attempt++;
-      timer = setTimeout(connect, Math.min(15_000, 500 * 2 ** Math.min(attempt, 5)));
+      retry();
     };
   };
   connect();

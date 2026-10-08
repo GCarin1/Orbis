@@ -174,6 +174,18 @@ export async function stopHub(port, log = console.log, platform = process.platfo
   return null;
 }
 
+/**
+ * The restart is over: remove the note, unless it was written after this window started its server — then a
+ * newer launcher is stopping this one, and this window must still find its note when its server ends.
+ */
+export function clearRestartFlag(startedAt) {
+  try {
+    if (statSync(RESTART_FLAG).mtimeMs <= startedAt) rmSync(RESTART_FLAG, { force: true });
+  } catch {
+    /* no note */
+  }
+}
+
 /** The server `pid` of this window was stopped by a newer launcher (a restart), not by a crash or by the user. */
 export function wasRestarted(pid, now = Date.now()) {
   try {
@@ -293,6 +305,7 @@ export async function main(argv, env = process.env, log = console.log) {
   const hubEnv = options.phone ? { ...env, ORBIS_HOST: "0.0.0.0" } : env;
   const phone = listensOnNetwork(hubEnv);
   log(`Iniciando o Orbis em ${url}  (feche esta janela, ou Ctrl+C, para parar)\n`);
+  const startedAt = Date.now();
   const child = spawn(process.execPath, [path.join(ROOT, "packages/cli/dist/index.js"), "serve"], { cwd: ROOT, stdio: "inherit", env: hubEnv });
   let interrupted = false;
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
@@ -314,7 +327,7 @@ export async function main(argv, env = process.env, log = console.log) {
       if (!up) await sleep(500);
     }
     if (!up) return;
-    rmSync(RESTART_FLAG, { force: true });
+    clearRestartFlag(startedAt);
     const token = tokenFor(env);
     if (phone) {
       const links = phoneLinks(port, token);

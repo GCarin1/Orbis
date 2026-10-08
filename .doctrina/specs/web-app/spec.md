@@ -5,8 +5,8 @@
 **Implementation:** verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and "Messages from", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
-**Last updated:** 2026-09-27
-**Version:** 0.35.0
+**Last updated:** 2026-10-08
+**Version:** 0.36.0
 
 ## Purpose
 
@@ -64,6 +64,8 @@ run's steps.
 - The web app shall show in a bot's settings its initiative switch, how often it writes, whether it answers its MCP servers' updates and a "Try it now" button; in Settings → Initiative the switch for every bot and the quiet hours, saved with the device's timezone; and above a message a bot wrote on its own, that it did.
 - The web app shall say on a connected MCP server's card which bots it tells about its updates, while any do, and above a message a bot wrote about an MCP update, that it did.
 - The web app shall offer Settings → Health: inside the Android app, Health Connect's state, allowing it, syncing now and syncing on its own when the app opens and every 30 minutes while it is open (a choice of the device); anywhere, the last sync, its apps, the last 7 days, the bots that may read it and deleting it.
+- The web app shall open the event stream with a one-time ticket and show files with the hub's file key, renewed every 20 minutes and when the stream reconnects, never putting the token or a session in an address.
+- The web app shall keep an Orbis account's session on the device and renew it a minute before it ends, once for every request waiting, ending it when its renewal is refused; the hub's token, when the device has one, comes first.
 
 ### Event-driven
 
@@ -94,6 +96,9 @@ run's steps.
 - When a test of Claude Code fails because its saved subscription token was refused, the system shall say to make a new token with `claude setup-token` and replace it.
 - When the user opens Settings → Phone, the system shall point to running Orbis in the cloud with the Claude subscription token, in `docs/cloud.md`.
 - When the user enables a routine that was never tested, the web app shall say so in the user's language and offer to test it or to enable it anyway.
+- When the hub has an account linked, the sign-in screen shall ask first for that account's email and password, offer to email a reset link that comes back to the page, and still offer the token or a pairing code.
+- When an email's reset link opens the page, the web app shall take its session out of the address and ask for a new password of at least 10 characters, typed twice.
+- When the user, signed in with the hub's token, signs in to their account or creates it in Settings → Account, the web app shall offer to link this hub to it, and show the account linked, how this device signed in, signing out and unlinking.
 
 ### State-driven
 
@@ -177,6 +182,7 @@ run's steps.
 59. [verified] A bot's initiative is off until ticked, how often waits until then, both and the MCP choice go with Save, Try it now gives the bot its chance; Settings → Initiative saves every bot's switch and the quiet hours with the device's timezone; a message of initiative says so — verified by `packages/web/test/initiative.test.tsx`
 60. [verified] A connected server's card says nothing of updates while no bot watches it and names the bots it tells once they do — verified by `packages/web/test/marketplace.test.tsx`
 61. [verified] Inside the Android app, Health Connect is allowed through the app and the days it read are synced to the hub, an outdated Health Connect sends to its install; in a browser the screen says where to connect it; a bot ticked gets the data and deleting empties the hub; the automatic sync runs only in the app and when the device chose it — verified by `packages/web/test/health.test.tsx`
+62. [verified] The client signs in with the publishable key, refuses a short password before asking, renews a session once for many requests and ends it when refused, and takes an email link's session or error out of the address; the sign-in screen signs in with the linked account, says a wrong password, emails a reset link back to the page, saves a new password and still offers the token; Settings → Account signs in, links, unlinks and creates an account that must be confirmed — verified by `packages/web/test/account.test.tsx`
 
 ## Maturity
 

@@ -14,6 +14,8 @@ import { bot } from "./fixtures.js";
 
 const ana = bot({ name: "Ana", role: "Research" });
 const api = new Api("tok-1");
+// Files open with the file key the hub gives (never the token in the address).
+api.setFileKey("key-1");
 
 beforeEach(() => {
   act(() => useLang.getState().setLang("en"));
@@ -88,8 +90,8 @@ describe("a message's files", () => {
     render(<Timeline items={[item]} bots={{ [ana.id]: ana }} runs={{}} activeRuns={[]} />);
     const shown = screen.getByTestId("attachments");
     // The token goes in the address: an <img> sends no Authorization header.
-    expect(within(shown).getByRole("img", { name: "chart.png" }).getAttribute("src")).toBe("/api/v1/files/fil_chartpng/content?token=tok-1");
-    expect(shown.querySelector("audio")!.getAttribute("src")).toBe("/api/v1/files/fil_notem4a/content?token=tok-1");
+    expect(within(shown).getByRole("img", { name: "chart.png" }).getAttribute("src")).toBe("/api/v1/files/fil_chartpng/content?key=key-1");
+    expect(shown.querySelector("audio")!.getAttribute("src")).toBe("/api/v1/files/fil_notem4a/content?key=key-1");
     const cards = within(shown).getAllByTestId("file-card").map((c) => c.textContent);
     expect(cards).toContain("PDFreport.pdf1.5 MB");
     expect(screen.getByText("Here is the report")).toBeTruthy();
@@ -127,7 +129,7 @@ describe("saving a file in the Android app", () => {
     try {
       const { saveFile: save } = await import("../src/components/Files.js");
       await save(api, file({ name: "report.pdf", mime: "application/pdf" }));
-      expect(fetchMock).toHaveBeenCalledWith("/api/v1/files/fil_reportpdf/content?token=tok-1&download=1");
+      expect(fetchMock).toHaveBeenCalledWith("/api/v1/files/fil_reportpdf/content?key=key-1&download=1");
       expect(saveFile).toHaveBeenCalledWith("report.pdf", "application/pdf", "aGk=");
     } finally {
       delete (window as unknown as { orbisAndroid?: unknown }).orbisAndroid;

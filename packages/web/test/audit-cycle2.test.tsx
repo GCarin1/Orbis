@@ -55,7 +55,7 @@ describe("the event stream", () => {
     vi.stubGlobal("WebSocket", FakeSocket);
     const status: boolean[] = [];
     const onReconnect = vi.fn();
-    const stop = openStream("t", { onEvent: () => undefined, onStatus: (c) => status.push(c), onReconnect });
+    const stop = openStream(() => "t", { onEvent: () => undefined, onStatus: (c) => status.push(c), onReconnect });
     FakeSocket.all[0]!.open();
     // A live connection answers the ping.
     vi.advanceTimersByTime(STREAM_PING_MS);
@@ -80,7 +80,7 @@ describe("the event stream", () => {
     vi.stubGlobal("WebSocket", FakeSocket);
     const status: boolean[] = [];
     const onReconnect = vi.fn();
-    const stop = openStream("t", { onEvent: () => undefined, onStatus: (c) => status.push(c), onReconnect });
+    const stop = openStream(() => "t", { onEvent: () => undefined, onStatus: (c) => status.push(c), onReconnect });
     FakeSocket.all[0]!.open();
     // The phone froze the app: the connection dropped, and the backoff grew while nobody looked.
     for (let i = 0; i < 4; i++) {

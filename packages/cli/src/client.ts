@@ -71,8 +71,10 @@ export class HubClient {
    * Open the event stream subscribed to the given conversations; resolves once
    * the hub confirmed the subscription, so no event after it is missed.
    */
-  stream(conversations: string[] | null, onEvent: (event: StreamEvent) => void): Promise<{ close(): void }> {
-    const wsUrl = `${this.conn.url.replace(/^http/, "ws")}/api/v1/stream?token=${encodeURIComponent(this.conn.token ?? "")}`;
+  async stream(conversations: string[] | null, onEvent: (event: StreamEvent) => void): Promise<{ close(): void }> {
+    // A one-time ticket opens the stream: the token never travels in the address.
+    const { ticket } = await this.post<{ ticket: string }>("/api/v1/stream/ticket", {});
+    const wsUrl = `${this.conn.url.replace(/^http/, "ws")}/api/v1/stream?ticket=${encodeURIComponent(ticket)}`;
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(wsUrl);
       let ready = false;
