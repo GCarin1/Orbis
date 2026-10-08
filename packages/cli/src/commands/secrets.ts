@@ -6,8 +6,8 @@ import { UsageError, json, out, paint, type Io } from "../io.js";
 
 const botPath = (bot: string) => `/api/v1/bots/${encodeURIComponent(bot.replace(/^@/, ""))}/secrets`;
 
-/** Read one line from the terminal without echoing it. */
-function hiddenLine(io: Io, prompt: string): Promise<string> {
+/** Read one line from the terminal without echoing it (or echoing it, for what is not secret). */
+export function hiddenLine(io: Io, prompt: string, echo = false): Promise<string> {
   return new Promise((resolve, reject) => {
     const stdin = io.stdin as NodeJS.ReadStream;
     io.stdout.write(prompt);
@@ -27,8 +27,13 @@ function hiddenLine(io: Io, prompt: string): Promise<string> {
       for (const ch of chunk.toString("utf8")) {
         if (ch === "\r" || ch === "\n") return done();
         if (ch === "\u0003") return done(new UsageError("cancelled"));
-        if (ch === "\u007f" || ch === "\b") value = value.slice(0, -1);
-        else value += ch;
+        if (ch === "\u007f" || ch === "\b") {
+          if (echo && value) io.stdout.write("\b \b");
+          value = value.slice(0, -1);
+        } else {
+          value += ch;
+          if (echo) io.stdout.write(ch);
+        }
       }
     };
     stdin.on("data", onData);

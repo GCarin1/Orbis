@@ -4604,3 +4604,19 @@ label.pick-row.on {
   background: var(--panel-2);
   max-width: 100%;
 }
+
+/* Settings → Account, devices (change 0066) */
+.device-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.device-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}

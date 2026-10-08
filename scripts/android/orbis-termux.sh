@@ -17,6 +17,8 @@
 #   update    pull the newest Orbis, build it again and stop the hub (the app starts the new one)
 #   token     the hub's token, and a link that signs the phone's browser in
 #   setup-token  Claude Code's `claude setup-token`: a token for your Claude plan, to paste in Orbis
+#   link      make this phone's hub a device of your Orbis account (email and password at prompts); unlink
+#             leaves it (--status: what it sent, --sync: send now)
 set -euo pipefail
 
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
@@ -285,6 +287,14 @@ cmd_open() {
   fi
 }
 
+# The hub's own CLI, inside Debian, signed in to this phone's hub with its token.
+cmd_cli() {
+  healthy || die "the hub is not running: open the Orbis app, or orbis-phone open"
+  local token
+  token="$(cmd_token | sed -n 1p)"
+  distro ORBIS_URL="http://127.0.0.1:$PORT" ORBIS_TOKEN="$token" node "$APP/packages/cli/dist/index.js" "$@"
+}
+
 cmd_update() {
   local running=""
   healthy && running=1
@@ -305,6 +315,8 @@ case "${1:-install}" in
   token) cmd_token ;;
   open) cmd_open ;;
   setup-token) distro claude setup-token ;;
-  -h | --help | help) sed -n '2,18p' "${BASH_SOURCE[0]}" ;;
+  link) shift && cmd_cli link "$@" ;;
+  unlink) cmd_cli unlink ;;
+  -h | --help | help) sed -n '2,20p' "${BASH_SOURCE[0]}" ;;
   *) die "unknown command: $1 (orbis-phone help)" ;;
 esac

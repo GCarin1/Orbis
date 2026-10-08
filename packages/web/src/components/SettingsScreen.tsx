@@ -17,6 +17,7 @@ import { InitiativeSettingsTab } from "./InitiativeSettings.js";
 import { HealthSettings } from "./HealthSettings.js";
 import { AccountSettings } from "./AccountSettings.js";
 import { DataSettings } from "./DataSettings.js";
+import { DeviceSettings } from "./DeviceSettings.js";
 import { useStore } from "../store.js";
 import type { AccountSession } from "../account.js";
 
@@ -77,7 +78,12 @@ export function SettingsScreen({
         {tab === "health" && <HealthSettings api={api} bots={bots} />}
         {tab === "voice" && <VoiceSettings api={api} />}
         {tab === "phone" && <PhoneSettings api={api} />}
-        {tab === "account" && <AccountSettings api={api} account={account} onSignedOut={onSignedOut} />}
+        {tab === "account" && (
+          <>
+            <AccountSettings api={api} account={account} onSignedOut={onSignedOut} />
+            <DeviceSettings api={api} account={account} />
+          </>
+        )}
         {tab === "data" && <DataSettings api={api} account={account} onImported={reloadAll} />}
       </div>
     </section>

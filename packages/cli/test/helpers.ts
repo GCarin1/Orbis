@@ -45,10 +45,16 @@ export async function runCli(
   return { code, stdout: stdout(), stderr: stderr() };
 }
 
-export async function startTestHub(): Promise<{ hub: Hub; url: string; env: Record<string, string>; cleanup(): Promise<void> }> {
+export async function startTestHub(
+  opts: { fetch?: typeof fetch } = {},
+): Promise<{ hub: Hub; url: string; env: Record<string, string>; cleanup(): Promise<void> }> {
   const dataDir = mkdtempSync(path.join(tmpdir(), "orbis-cli-hub-"));
   const home = mkdtempSync(path.join(tmpdir(), "orbis-cli-home-"));
-  const hub = await createHub({ env: {}, config: { dataDir, token: TOKEN, port: 0, webDir: null } });
+  const hub = await createHub({
+    env: {},
+    config: { dataDir, token: TOKEN, port: 0, webDir: null },
+    ...(opts.fetch ? { auth: { fetch: opts.fetch }, cloud: { fetch: opts.fetch } } : {}),
+  });
   const url = await hub.listen();
   return {
     hub,

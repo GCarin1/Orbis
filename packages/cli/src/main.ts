@@ -16,6 +16,7 @@ import { skillsCommand } from "./commands/skills.js";
 import { routinesCommand } from "./commands/routines.js";
 import { secretsCommand } from "./commands/secrets.js";
 import { usageCommand } from "./commands/usage.js";
+import { linkCommand, unlinkCommand } from "./commands/link.js";
 
 export const HELP = `orbis — persistent AI bots with their own computer, memory and approvals
 
@@ -24,6 +25,8 @@ Usage: orbis <command> [options]
   serve [--port N] [--host H] [--data-dir D]   run the hub (API, stream, web app)
   open                                         open the web app in your browser
   login [--url U] [--token T] [--show-token]   save or show how to reach the hub
+  link [--name N] [--email E] | --status | --sync   make this hub a device of your Orbis account (email and password at prompts)
+  unlink                                       leave the account: the device's token stops working
   bots list|create|show|edit|delete|duplicate|export|import   manage bots; share one as a YAML template
   chat @bot [message]                          talk to a bot (interactive without a message)
   group list|create|chat|add|remove|delete     group conversations of 2 to 6 bots
@@ -50,6 +53,8 @@ const COMMANDS: Record<string, Command> = {
   serve: serveCommand,
   open: openCommand,
   login: loginCommand,
+  link: linkCommand,
+  unlink: unlinkCommand,
   bots: botsCommand,
   bot: botsCommand,
   chat: chatCommand,

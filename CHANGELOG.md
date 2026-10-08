@@ -28,6 +28,19 @@ change that delivered it.
 
 ### Added
 
+- **Orbis accounts in the cloud, phase 4: the phone linked to your account** (change 0066-runner-link, ADR 0023).
+  - `orbis-phone link` (or Settings → Account) signs in once and makes the
+    hub a device of the account, with a token of its own kept in its vault;
+    the cloud keeps only its hash.
+  - What changes on the phone reaches the account on its own, every 15
+    seconds: bots, conversations, memory, routines, health and the rest,
+    never the keys.
+  - Settings → Account lists your devices and revokes one at once; a revoked
+    phone stops sending and forgets its token. `orbis link --status`,
+    `--sync`, and `orbis unlink`.
+  - In the cloud: `register_device`, `device_sync` and `device_unlink`
+    (`supabase/migrations/0002_devices.sql`), which write only under the
+    device's owner.
 - **Orbis accounts in the cloud, phase 3: export and import your data** (change 0065-export-import, ADR 0022).
   - Settings → Data downloads everything the hub keeps as one `.orbis` file:
     bots, conversations, groups, memory, routines, squads, hiring, health,

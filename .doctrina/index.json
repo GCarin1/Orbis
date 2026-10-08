@@ -74,8 +74,8 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.12.0",
-        "last_updated": "2026-09-27",
+        "version": "0.13.0",
+        "last_updated": "2026-10-08",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
           "SC7"
@@ -88,9 +88,9 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "last_updated": "2026-10-08",
-        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in with an email and a password (`packages/hub/src/auth/`, `packages/web/src/account.ts`, change 0064), the `.orbis` export and its import into a hub or the cloud account (`packages/hub/src/export/`, change 0065); the runner link and the Cloudflare deploy come in later changes",
+        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), and this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066); the Cloudflare deploy comes in a later change",
         "realizes": [
           "SC16"
         ],
@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.37.0",
+        "version": "0.38.0",
         "last_updated": "2026-10-08",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -657,13 +657,27 @@
         "title": "A .orbis export carries a hub's data as one checked file, its secrets sealed by the user's password; it imports into a hub or the cloud account without duplicates and never carries a consent or a secret to the cloud",
         "status": "accepted",
         "date": "2026-10-08",
+        "landed": "2026-10-08 — `packages/hub/src/export/service.ts`, `packages/hub/src/export/zip.ts`, `packages/hub/src/export/seal.ts`, `packages/web/src/components/DataSettings.tsx`",
         "scope": [
           "cloud",
           "web-app",
           "secrets"
         ],
-        "summary": "One file, `.orbis`: a ZIP.",
-        "landed": "2026-10-08 — `packages/hub/src/export/service.ts`, `packages/hub/src/export/zip.ts`, `packages/hub/src/export/seal.ts`, `packages/web/src/components/DataSettings.tsx`"
+        "summary": "One file, `.orbis`: a ZIP."
+      },
+      {
+        "id": "0023",
+        "path": ".doctrina/decisions/0023-a-device-joins-its-account-with-a-token-of-its-own-only-its-hash-in-the-cloud-it-sends-its-rows-through-a-function-that-checks-the-token-and-writes-only-under-its-owner.md",
+        "title": "A device joins its account with a token of its own, only its hash in the cloud; it sends its rows through a function that checks the token and writes only under its owner",
+        "status": "accepted",
+        "date": "2026-10-08",
+        "scope": [
+          "cloud",
+          "cli",
+          "web-app",
+          "secrets"
+        ],
+        "summary": "A device token per hub."
       }
     ],
     "changes": [],
@@ -2001,6 +2015,28 @@
           }
         ],
         "lane": "runtime (confident; signals: secrets) — opened anyway (--force)"
+      },
+      {
+        "id": "0066-runner-link",
+        "title": "runner-link",
+        "path": ".doctrina/changes/archive/2026-10-08-0066-runner-link",
+        "status": "applied",
+        "applied": "2026-10-08",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cloud",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "runtime (confident; signals: runner) — opened anyway (--force)"
       }
     ],
     "skills": [

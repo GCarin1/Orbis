@@ -73,6 +73,7 @@ import { FilesService } from "./files/service.js";
 import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
 import { ExportService } from "./export/service.js";
+import { SyncService } from "./sync/service.js";
 
 export interface HubOptions {
   env?: Env;
@@ -101,6 +102,7 @@ export interface Hub extends HubContext {
   app: FastifyInstance;
   auth: HubAuth;
   exports: ExportService;
+  sync: SyncService;
   skills: SkillService;
   routines: RoutineService;
   secrets: SecretService;
@@ -423,6 +425,10 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     },
   });
   await exports.routes(app);
+  // This hub as a device of an account: what changes here reaches the account (change 0066).
+  const sync = new SyncService(ctx, { auth, hubSecrets: secrets.hubSecrets, settings: new SettingsRepo(db), fetch: opts.cloud?.fetch, now: opts.auth?.now });
+  await sync.routes(app);
+  sync.start();
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -442,6 +448,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     ...ctx,
     auth,
     exports,
+    sync,
     skills: skillService,
     routines,
     secrets,
@@ -463,6 +470,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       if (closed) return;
       closed = true;
       routines.stop();
+      sync.stop();
       files.stop();
       initiative.stop();
       await engine.shutdown();

@@ -6,6 +6,59 @@ export interface Migration {
   sql: string;
 }
 
+/** The tables a linked device sends to its account, with their primary keys (supabase/migrations/0002_devices.sql). */
+export const SYNC_KEYS: Record<string, string[]> = {
+  settings: ["key"],
+  squads: ["id"],
+  bots: ["id"],
+  conversations: ["id"],
+  conversation_members: ["conversation_id", "bot_id"],
+  items: ["id"],
+  runs: ["id"],
+  memory: ["id"],
+  routines: ["id"],
+  routine_runs: ["id"],
+  approvals: ["id"],
+  mcp_servers: ["id"],
+  hiring_rounds: ["id"],
+  hiring_candidates: ["id"],
+  files: ["id"],
+  initiatives: ["id"],
+  health_metrics: ["date", "metric"],
+  health_sessions: ["id"],
+};
+
+/** Settings that stay on this hub: the vault's, the linked account and device, the last activity. */
+export const LOCAL_SETTING_KEYS = ["account", "user.lastActiveAt", "claude.tokenSavedAt", "device", "sync.on"];
+
+function syncOutboxSql(): string {
+  const parts = [
+    `CREATE TABLE sync_outbox (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  tbl TEXT NOT NULL,
+  pk TEXT NOT NULL,
+  op TEXT NOT NULL CHECK (op IN ('upsert','delete')),
+  at TEXT NOT NULL
+);`,
+  ];
+  const linked = "EXISTS (SELECT 1 FROM settings WHERE key = 'sync.on')";
+  const local = LOCAL_SETTING_KEYS.map((k) => `'${k}'`).join(", ");
+  for (const [table, keys] of Object.entries(SYNC_KEYS)) {
+    for (const [event, row, op] of [
+      ["INSERT", "NEW", "upsert"],
+      ["UPDATE", "NEW", "upsert"],
+      ["DELETE", "OLD", "delete"],
+    ] as const) {
+      const only = table === "settings" ? ` AND ${row}.key NOT LIKE 'secret:%' AND ${row}.key NOT IN (${local})` : "";
+      parts.push(
+        `CREATE TRIGGER sync_${table}_${event.toLowerCase()} AFTER ${event} ON ${table} WHEN ${linked}${only} BEGIN ` +
+          `INSERT INTO sync_outbox (tbl, pk, op, at) VALUES ('${table}', json_array(${keys.map((k) => `${row}.${k}`).join(", ")}), '${op}', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')); END;`,
+      );
+    }
+  }
+  return parts.join("\n");
+}
+
 export const MIGRATIONS: Migration[] = [
   {
     version: 1,
@@ -360,5 +413,11 @@ CREATE TABLE health_sessions (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX health_sessions_by_start ON health_sessions (start_at);`,
+  },
+  {
+    // specs/cloud: what changed since the last sync to the account this hub's device belongs to
+    // (change 0066-runner-link). The triggers write only while the device is linked (`sync.on`).
+    version: 15,
+    sql: syncOutboxSql(),
   },
 ];

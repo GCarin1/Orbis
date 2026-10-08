@@ -68,3 +68,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-08 — 0063-cloud-database — cloud-database (specs: cloud ADDED)
 - 2026-10-08 — 0064-account-sign-in — account-sign-in (specs: cloud MODIFIED, hub-api MODIFIED, web-app MODIFIED)
 - 2026-10-08 — 0065-export-import — export-import (specs: cloud MODIFIED, web-app MODIFIED)
+- 2026-10-08 — 0066-runner-link — runner-link (specs: cli MODIFIED, cloud MODIFIED, web-app MODIFIED)

@@ -11,7 +11,7 @@ import Type from "typebox";
 import type { ImportReport } from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { all, get, transaction, type Database } from "../db/index.js";
-import { MIGRATIONS } from "../db/migrations.js";
+import { LOCAL_SETTING_KEYS, MIGRATIONS } from "../db/migrations.js";
 import { HttpError } from "../errors.js";
 import type { Vault } from "../secrets/vault.js";
 import type { HubSecrets } from "../secrets/hub-secrets.js";
@@ -54,11 +54,11 @@ export const TABLES = [
 ] as const;
 export type ExportTable = (typeof TABLES)[number];
 
-/** Settings that belong to this hub, not to the data: the linked account, the last activity, the vault's. */
-const LOCAL_SETTINGS = new Set(["account", "user.lastActiveAt", "claude.tokenSavedAt"]);
-const isLocalSetting = (key: string) => key.startsWith("secret:") || LOCAL_SETTINGS.has(key);
-/** MCP OAuth sign-ins are made for the old hub's address: they are signed in again. */
-const isOAuthSecret = (name: string) => /^mcp\..+\.oauth$/.test(name);
+/** Settings that belong to this hub, not to the data: the linked account and device, the last activity, the vault's. */
+const LOCAL_SETTINGS = new Set(LOCAL_SETTING_KEYS);
+export const isLocalSetting = (key: string) => key.startsWith("secret:") || LOCAL_SETTINGS.has(key);
+/** MCP OAuth sign-ins are made for the old hub's address, and a device token is this hub's: neither travels. */
+const isOAuthSecret = (name: string) => /^mcp\..+\.oauth$/.test(name) || name === "device.token";
 
 /** How each table's columns go into the cloud (supabase/migrations/0001_orbis_core.sql). */
 export const CLOUD: Record<ExportTable, { key: string[]; json?: string[]; bool?: string[]; drop?: string[] }> = {

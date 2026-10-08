@@ -29,9 +29,8 @@ and queues messages; the bots answer when the runner is back.
    linked to it; see [Signing in with an account](#signing-in-with-an-account-phase-2).
 3. **Export and import** (change 0065, done) — see
    [Moving your data](#moving-your-data-phase-3).
-4. **The runner linked to the account** — `orbis-phone link`: sign in once
-   on the phone; it gets a device token, limited to running the account's
-   bots and revocable from the web app.
+4. **The phone linked to the account** (change 0066, done) — see
+   [Linking the phone to your account](#linking-the-phone-to-your-account-phase-4).
 5. **Deploy** — the Worker, the Durable Object and R2 with `wrangler`, from
    GitHub Actions.
 6. **Moving over** — each person exports on the phone, creates an account,
@@ -165,6 +164,48 @@ What does not travel:
 Until the cloud's file storage opens (phase 5), the files' contents and the
 skills stay in the file and on the hub: keep the `.orbis` file.
 
+## Linking the phone to your account (phase 4)
+
+On the phone, in Termux:
+
+```
+orbis-phone link
+```
+
+Or, in the app, use **Settings → Account → This hub in your account**.
+
+Type the account's email and password once. The hub becomes a **device**
+of the account. From then on it sends what changes (bots, conversations,
+memory, routines, health and the rest) to the account on its own, every
+15 seconds while it is on. The bots' keys never leave the phone.
+
+- `orbis-phone link --status`: what is waiting and when it last sent.
+  `--sync` sends now.
+- `orbis-phone unlink`: leaves the account. The device's token stops
+  working, and the data already in the account stays.
+- **Your devices** (Settings → Account): every hub linked to the account.
+  **Revoke** cuts one off at once, for example a lost phone.
+
+How it is protected (ADR 0023):
+
+- The device gets a token of its own (32 random bytes). The phone keeps it
+  in its vault; the cloud keeps only its SHA-256. The password and the
+  session are not kept.
+- The token opens only one door, `device_sync`:
+  - it writes the device's rows under its owner and nowhere else;
+  - it takes only the synced tables, and at most 500 rows a call;
+  - it reads nothing back.
+- A revoked token stops at once. The phone then sends nothing more and
+  forgets it.
+- At most 10 active devices per account.
+- Only the hub's own token links or unlinks it, never a session that
+  opened it.
+
+This phase goes from the phone to the cloud. Messages typed in the cloud's
+app reach the phone with phase 5.
+
+The cloud's functions are in `supabase/migrations/0002_devices.sql`.
+
 ## Security check
 
 What the local hub does today, acceptable only on a local network, and
@@ -197,8 +238,9 @@ how the cloud closes each gap:
    quota per account.
 10. **Third-party content** (MCP results, files) already reaches the bots
     marked as untrusted. → Kept.
-11. **Runner device tokens.** → Least scope, rotation, revocation from the
-    web app, kept encrypted on the phone.
+11. **Runner device tokens.** → Least scope (one function, only the owner's
+    rows), revocation from the web app, kept encrypted on the phone, only a
+    hash in the cloud (change 0066, done).
 
 In the cloud as well:
 

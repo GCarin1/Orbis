@@ -325,6 +325,18 @@ export interface ImportReport {
   warnings: string[];
 }
 
+/** This hub as a device of an Orbis account (change 0066): what it sends to the cloud, and how it went. */
+export interface DeviceStatus {
+  available: boolean;
+  linked: { id: string; name: string; ownerId: string; email: string | null; linkedAt: string } | null;
+  /** Changes waiting to reach the account. */
+  pending: number;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  /** The account revoked this device: nothing is sent any more. */
+  revoked: boolean;
+}
+
 /** A link found in a conversation's messages (its "media, links and docs"). */
 export interface ConversationLink {
   url: string;

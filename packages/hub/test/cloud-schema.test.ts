@@ -20,7 +20,7 @@ const secured = (cloud.match(/foreach t in array array\[([\s\S]*?)\]/)?.[1] ?? "
 
 describe("the cloud schema", () => {
   it("has a twin of every hub table but the vault, each owned by an account", () => {
-    const missing = hubTables.filter((t) => t !== "secrets" && !cloudTables.includes(t));
+    const missing = hubTables.filter((t) => t !== "secrets" && t !== "sync_outbox" && !cloudTables.includes(t));
     expect(missing).toEqual([]);
     expect(cloudTables).not.toContain("secrets");
     for (const table of cloudTables.filter((t) => t !== "profiles")) {

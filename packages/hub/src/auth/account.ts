@@ -69,6 +69,11 @@ export class HubAuth {
     }
   }
 
+  /** Link this hub to an account (its sessions open it from then on). */
+  setLinked(userId: string, email: string | null): void {
+    this.settings.set(ACCOUNT_KEY, JSON.stringify({ userId, email, linkedAt: new Date(this.now()).toISOString() } satisfies Linked));
+  }
+
   /** How the request proved itself, once the auth hook let it through. */
   viaOf(req: FastifyRequest): Via | null {
     return this.via.get(req) ?? null;
@@ -186,8 +191,7 @@ export class HubAuth {
           if (err instanceof InvalidSession) throw new HttpError(400, "invalid_session", `the account's session does not hold: ${err.message}`, { accessToken: err.message });
           throw err;
         }
-        const linked: Linked = { userId: claims.userId, email: claims.email, linkedAt: new Date(this.now()).toISOString() };
-        this.settings.set(ACCOUNT_KEY, JSON.stringify(linked));
+        this.setLinked(claims.userId, claims.email);
         return this.status("token");
       },
     );
