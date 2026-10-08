@@ -11,7 +11,7 @@ import type { Author, Bot, ConversationFile, Run, TimelineItem } from "@orbis/sh
 import type { HubContext } from "../context.js";
 import { all, get, run as exec } from "../db/index.js";
 import { badRequest, conflict, notFound } from "../errors.js";
-import { newId, nowIso } from "../ids.js";
+import { newId } from "../ids.js";
 import { toFile } from "../repos/conversations.js";
 import { confine } from "../computer/paths.js";
 import { decodeText } from "../computer/tools.js";
@@ -198,7 +198,7 @@ export class FilesService implements AttachmentHandler {
     const name = safeName(rawName);
     const given = (mime ?? "").split(";")[0]!.trim().toLowerCase();
     const type = given && given !== "application/octet-stream" && /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(given) ? given : typeOf(name);
-    const file: ConversationFile = { id: newId("fil"), conversationId, name, mime: type, size: bytes.length, author, itemId: null, createdAt: nowIso() };
+    const file: ConversationFile = { id: newId("fil"), conversationId, name, mime: type, size: bytes.length, author, itemId: null, createdAt: this.clock().toISOString() };
     writeFileSync(this.pathOf(file.id), bytes, { mode: 0o600 });
     exec(
       this.hub.db,

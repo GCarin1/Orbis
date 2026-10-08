@@ -89,7 +89,7 @@ describe("a bot's initiative", () => {
 
   it("stays silent in quiet hours, when everyone's initiative is off, and checks the settings", async () => {
     // 05:00 UTC is 02:00 in São Paulo.
-    const clock = await hubAt("2026-10-07T05:00:00Z");
+    const clock = await hubAt("2036-10-07T05:00:00Z");
     await createBot(t!, { name: "Ana", initiative: { enabled: true, frequency: "often" } });
     clock.advance(0);
     const settings = await t!.api("PUT", "/api/v1/initiative", { timezone: "America/Sao_Paulo", quietStart: "22:00", quietEnd: "08:00" });
@@ -112,7 +112,7 @@ describe("a bot's initiative", () => {
   });
 
   it("posts nothing for [silent], says nothing of a failure, and counts neither", async () => {
-    await hubAt("2026-10-07T15:00:00Z");
+    await hubAt("2036-10-07T15:00:00Z");
     const ana = await createBot(t!, { name: "Ana", initiative: { enabled: true } });
     const conv = (await t!.api("GET", `/api/v1/bots/${ana.id}/conversation`)).body;
     const quiet = t!.hub.initiative.wake(t!.hub.botService.get(ana.id), "idle", "/reply [silent]")!;
@@ -130,7 +130,7 @@ describe("a bot's initiative", () => {
   });
 
   it("gives the bot its chance at once with Try it now", async () => {
-    await hubAt("2026-10-07T15:00:00Z");
+    await hubAt("2036-10-07T15:00:00Z");
     const ana = await createBot(t!, { name: "Ana" });
     const now = await t!.api("POST", `/api/v1/bots/${ana.id}/initiative/now`);
     expect(now.status).toBe(202);

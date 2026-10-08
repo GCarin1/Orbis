@@ -28,6 +28,18 @@ change that delivered it.
 
 ### Added
 
+- **Orbis accounts in the cloud, phase 1: the account database** (change 0063-cloud-database, ADR 0020).
+  - Supabase project `orbis` (São Paulo, free plan) with the schema in
+    `supabase/migrations/0001_orbis_core.sql`: every hub table but the
+    vault, each row owned by an account, row level security forced on
+    every table, nothing for anonymous visitors.
+  - No secret is kept in the cloud: no vault, no `secret:` setting, no
+    routine webhook secret, and runner devices keep only a token hash the
+    account cannot read.
+  - Guide `docs/cloud-migration.md`: the architecture on Cloudflare's and
+    Supabase's free tiers, the phases (sign-in, export and import, the
+    runner link, deploy), the security check and the Auth settings.
+
 - **Health data for a health bot** (change 0062-health-connect).
   - The Android app reads Health Connect, only to read and only what you
     allow. Zepp (Amazfit), Samsung Health, Google Fit and Fitbit write

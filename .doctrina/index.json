@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-07",
+  "last_updated": "2026-10-08",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -82,6 +82,21 @@
         ],
         "depends_on": [
           "hub-api"
+        ]
+      },
+      {
+        "id": "cloud",
+        "path": ".doctrina/specs/cloud/spec.md",
+        "status": "active",
+        "version": "0.1.0",
+        "last_updated": "2026-10-08",
+        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`, applied to the Supabase project `orbis`); sign-in, export and import, the runner link and the Cloudflare deploy come in later changes",
+        "realizes": [
+          "SC16"
+        ],
+        "depends_on": [
+          "hub-api",
+          "secrets"
         ]
       },
       {
@@ -598,14 +613,28 @@
         "title": "Health data comes from Health Connect through the Android app, is kept on the user's hub and reaches only the bots given health",
         "status": "accepted",
         "date": "2026-10-07",
+        "landed": "2026-10-07 — `packages/android/app/src/main/java/app/orbis/android/HealthBridge.kt`, `packages/hub/src/health/service.ts`",
         "scope": [
           "health",
           "android-app",
           "tool-gateway",
           "web-app"
         ],
-        "summary": "The Orbis Android app reads Health Connect.",
-        "landed": "2026-10-07 — `packages/android/app/src/main/java/app/orbis/android/HealthBridge.kt`, `packages/hub/src/health/service.ts`"
+        "summary": "The Orbis Android app reads Health Connect."
+      },
+      {
+        "id": "0020",
+        "path": ".doctrina/decisions/0020-account-data-lives-in-supabase-postgres-closed-by-row-level-security-to-its-owner-the-phone-runner-keeps-its-sqlite-and-its-secrets-and-syncs.md",
+        "title": "Account data lives in Supabase Postgres closed by row level security to its owner; the phone runner keeps its SQLite and its secrets and syncs",
+        "status": "accepted",
+        "date": "2026-10-08",
+        "scope": [
+          "cloud",
+          "hub-api",
+          "secrets"
+        ],
+        "summary": "The cloud keeps the account's data in Supabase Postgres (project",
+        "landed": "2026-10-08 — `supabase/migrations/0001_orbis_core.sql`, `packages/hub/test/cloud-schema.test.ts`"
       }
     ],
     "changes": [],
@@ -1886,6 +1915,20 @@
           {
             "capability": "web-app",
             "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0063-cloud-database",
+        "title": "cloud-database",
+        "path": ".doctrina/changes/archive/2026-10-08-0063-cloud-database",
+        "status": "applied",
+        "applied": "2026-10-08",
+        "specs_affected": [
+          {
+            "capability": "cloud",
+            "operation": "ADDED"
           }
         ],
         "lane": "product"

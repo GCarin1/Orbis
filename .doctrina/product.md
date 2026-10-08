@@ -126,6 +126,7 @@ Out of scope (deferred or rejected):
 - [SC13] A user reaches Orbis from the phone anywhere, with the computer off — the hub in a GitHub Codespace or on a server with Docker, behind a tunnel — and its Claude Code bots run on the user's own Claude plan through the token of claude setup-token, never on the API
 - [SC14] A user installs the Orbis APK and uses Orbis on the phone alone — the hub, its data and Claude Code run on the phone inside Termux, started and opened by the app, with no computer, no server and no sign-in
 - [SC15] A user gives a health bot the data of their watch or phone (steps, sleep, heart rate, workouts, weight) read from Health Connect on the phone — where Google Fit, Zepp (Amazfit), Samsung Health and Fitbit write — kept on their own hub and read only by the bots they allow
+- [SC16] A user signs in to Orbis with an email and a password and keeps their bots and data in their own cloud account — Supabase Postgres closed to every other account by row level security, the web app and API on Cloudflare's free tier — while their phone runs the bots and keeps the secrets, and brings the data of a local hub with them
   description, skills and routines, never its computer, logins, history or
   secrets, and export is refused when the secret scan finds a credential.
 
