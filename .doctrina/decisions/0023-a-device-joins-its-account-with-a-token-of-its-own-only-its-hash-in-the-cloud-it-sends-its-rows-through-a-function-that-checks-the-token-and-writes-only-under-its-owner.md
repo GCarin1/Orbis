@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded by:** —
 - **Evidence:** `supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/service.ts`, `packages/cli/src/commands/link.ts`, `packages/web/src/components/DeviceSettings.tsx`
-- **Landed:** —
+- **Landed:** 2026-10-10 — `supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/service.ts`, `packages/cli/src/commands/link.ts`
 
 ## Context
 

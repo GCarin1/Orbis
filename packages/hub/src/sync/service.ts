@@ -141,16 +141,23 @@ export class SyncService {
     if (!res.ok || !made?.token) {
       throw new HttpError(502, "cloud_refused", `the account did not take this device: ${(body as { message?: string } | null)?.message ?? `HTTP ${res.status}`}`);
     }
-    // The token lives only in this hub's vault; the cloud keeps its hash.
-    this.deps.hubSecrets.set(TOKEN_SECRET, made.token);
     const device: Device = { id: made.id, name, ownerId: claims.userId, email: claims.email, linkedAt: new Date(this.now()).toISOString() };
-    transaction(this.hub.db, () => {
-      this.deps.settings.set(DEVICE_KEY, JSON.stringify(device));
-      if (!linkedAccount) this.deps.auth.setLinked(claims.userId, claims.email);
-      run(this.hub.db, "DELETE FROM sync_outbox");
-      this.deps.settings.set(SYNC_ON, "1");
-      this.queueEverything();
-    });
+    try {
+      // The token lives only in this hub's vault; the cloud keeps its hash.
+      this.deps.hubSecrets.set(TOKEN_SECRET, made.token);
+      transaction(this.hub.db, () => {
+        this.deps.settings.set(DEVICE_KEY, JSON.stringify(device));
+        if (!linkedAccount) this.deps.auth.setLinked(claims.userId, claims.email);
+        run(this.hub.db, "DELETE FROM sync_outbox");
+        this.deps.settings.set(SYNC_ON, "1");
+        this.queueEverything();
+      });
+    } catch (err) {
+      // This hub could not keep the device: the account must not keep it either, or it would stay there unused.
+      await this.call("device_unlink", { p_token: made.token }).catch(() => undefined);
+      this.deps.hubSecrets.delete(TOKEN_SECRET);
+      throw err;
+    }
     this.lastError = null;
     this.failures = 0;
     this.nextTryAt = 0;

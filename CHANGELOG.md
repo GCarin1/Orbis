@@ -7,6 +7,10 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Linking a phone never leaves an unused device in the account** (change 0067-runner-link-rollback): when the hub cannot keep the device it just registered, it revokes it in the cloud before reporting the error.
+
 ### Changed
 
 - **Instagram in the MCP catalog is now adelaidasofia/instagram-mcp** (change 0058-instagram-adelaidasofia).

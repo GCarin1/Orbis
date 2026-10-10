@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-08",
+  "last_updated": "2026-10-10",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -677,7 +677,8 @@
           "web-app",
           "secrets"
         ],
-        "summary": "A device token per hub."
+        "summary": "A device token per hub.",
+        "landed": "2026-10-10 — `supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/service.ts`, `packages/cli/src/commands/link.ts`"
       }
     ],
     "changes": [],
@@ -2037,6 +2038,15 @@
           }
         ],
         "lane": "runtime (confident; signals: runner) — opened anyway (--force)"
+      },
+      {
+        "id": "0067-runner-link-rollback",
+        "title": "runner-link-rollback",
+        "path": ".doctrina/changes/archive/2026-10-10-0067-runner-link-rollback",
+        "status": "applied",
+        "applied": "2026-10-10",
+        "specs_affected": [],
+        "lane": "runtime (confident; signals: runner) — opened as chore"
       }
     ],
     "skills": [

@@ -158,6 +158,23 @@ describe("linking this hub as a device", () => {
     expect(outbox()).toEqual([]);
   });
 
+  it("revokes the device it just registered when this hub cannot keep it, so none stays unused in the account", async () => {
+    const c = cloud();
+    await hubWith(c);
+    const setLinked = vi.spyOn(t.hub.auth, "setLinked").mockImplementation(() => {
+      throw new Error("disk full");
+    });
+    const failed = await link({ email: "ana@example.com", password: "a long password" });
+    expect(failed.status).toBe(500);
+    expect(c.calls.map((x) => x.fn)).toEqual(["register_device", "device_unlink"]);
+    expect(c.calls[1]!.body).toEqual({ p_token: DEVICE_TOKEN });
+    expect(t.hub.secrets.hubSecrets.get("device.token")).toBeNull();
+    expect(((await t.api("GET", "/api/v1/device")).body as DeviceStatus).linked).toBeNull();
+    // Linking again works once the hub can keep it.
+    setLinked.mockRestore();
+    expect((await link({ email: "ana@example.com", password: "a long password" })).status).toBe(200);
+  });
+
   it("the device's link and token never go into an export", async () => {
     const c = cloud();
     await hubWith(c);
