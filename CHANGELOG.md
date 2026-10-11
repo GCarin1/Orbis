@@ -7,6 +7,10 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Added
+
+- **Orbis on a home server** (change 0071-umbrel-home, ADR 0027): `deploy/umbrel/docker-compose.yml` runs one person's Orbis on UmbrelOS (through Portainer) or any Docker host. Each person gets their own hub, data and account, reached only through the stack's own Tailscale node at `https://orbis-<name>.<tailnet>.ts.net`, with no port open anywhere. The server image is now published ready for amd64 and arm64 (`ghcr.io/gcarin1/orbis`). Guide: `docs/umbrel.md`.
+
 ### Changed
 
 - **Oracle only, no Cloudflare** (change 0070-oracle-only, ADR 0026): the server serves Orbis itself over HTTPS — `orbis-server install` adds Caddy (a free certificate, `<ip>.sslip.io` when there is no domain), opens only 80 and 443, and puts HSTS, a strict CSP and `X-Frame-Options: DENY` on every answer. The Cloudflare relay (`packages/cloud`, `ORBIS_CLOUD_URL`, `orbis link --cloud`, the phone-off notice) is removed. Behind the proxy the hub counts refused sign-ins per visitor (`ORBIS_PUBLIC_URL`) and wants a token of at least 24 characters.

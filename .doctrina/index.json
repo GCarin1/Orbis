@@ -88,7 +88,7 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-10-11",
         "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in with two-step verification (`packages/hub/src/auth/`, changes 0064 and 0070), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), the hub as a device of the account keeping a copy there (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066), and the hub on an always-on server serving the app over HTTPS (`deploy/`, `scripts/server/orbis-server.sh`, changes 0069 and 0070)",
         "realizes": [
@@ -717,14 +717,26 @@
         "status": "accepted",
         "date": "2026-10-11",
         "supersedes": "0024, 0025",
+        "landed": "2026-10-11 — `deploy/Caddyfile`, `scripts/server/orbis-server.sh`, `packages/hub/src/auth/account.ts`",
         "scope": [
           "cloud",
           "web-app",
           "cli",
           "hub-api"
         ],
-        "summary": "The server is the only place Orbis runs.",
-        "landed": "2026-10-11 — `deploy/Caddyfile`, `scripts/server/orbis-server.sh`, `packages/hub/src/auth/account.ts`"
+        "summary": "The server is the only place Orbis runs."
+      },
+      {
+        "id": "0027",
+        "path": ".doctrina/decisions/0027-orbis-on-a-home-server-one-hub-per-person-each-reached-only-through-its-own-tailscale-node-over-https-from-a-prebuilt-image.md",
+        "title": "Orbis on a home server: one hub per person, each reached only through its own Tailscale node over HTTPS, from a prebuilt image",
+        "status": "accepted",
+        "date": "2026-10-11",
+        "scope": [
+          "cloud"
+        ],
+        "summary": "One hub per person, the same as on any server.",
+        "landed": "2026-10-11 — `deploy/umbrel/docker-compose.yml`, `.github/workflows/server-image.yml`, `docs/umbrel.md`"
       }
     ],
     "changes": [],
@@ -2151,6 +2163,20 @@
           },
           {
             "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0071-umbrel-home",
+        "title": "umbrel-home",
+        "path": ".doctrina/changes/archive/2026-10-11-0071-umbrel-home",
+        "status": "applied",
+        "applied": "2026-10-11",
+        "specs_affected": [
+          {
+            "capability": "cloud",
             "operation": "MODIFIED"
           }
         ],

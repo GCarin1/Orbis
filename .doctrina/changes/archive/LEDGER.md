@@ -73,3 +73,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-11 — 0068-cloud-relay — cloud-relay (specs: cli MODIFIED, cloud MODIFIED, web-app MODIFIED)
 - 2026-10-11 — 0069-server-runner — server-runner (specs: cli MODIFIED, cloud MODIFIED)
 - 2026-10-11 — 0070-oracle-only — oracle-only (specs: cli MODIFIED, cloud MODIFIED, web-app MODIFIED)
+- 2026-10-11 — 0071-umbrel-home — umbrel-home (specs: cloud MODIFIED)

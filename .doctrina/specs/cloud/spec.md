@@ -7,7 +7,7 @@
 **Realizes:** SC16
 **Depends on:** hub-api, secrets
 **Last updated:** 2026-10-11
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -28,6 +28,7 @@ and its secrets, and syncs with the account (ADR 0020).
 - The system shall keep, per runner device of an account, its name, the SHA-256 hash of its token, when it was last seen and when it was revoked.
 - The system shall export everything a hub keeps as one `.orbis` file: a manifest with the SHA-256 of every part, every table but the vault, the CLI sessions and the search index, the conversations' files and the skills, and, only when the user gives a password of at least 10 characters, the secrets sealed by it with scrypt and AES-256-GCM (ADR 0022).
 - The system shall serve the web app and its API from the user's own always-on server, with Caddy in front for HTTPS (a certificate it gets and renews itself) and only ports 22, 80 and 443 open; the hub's own port shall listen on the server only (ADR 0026).
+- The system shall publish its server image, ready for amd64 and arm64, so a home server compiles nothing.
 
 ### Event-driven
 
@@ -43,6 +44,7 @@ and its secrets, and syncs with the account (ADR 0020).
 - When the user runs `orbis-server token`, the system shall print the hub's token; `orbis-server update` shall pull Orbis and rebuild the hub and Caddy, keeping the data in its volume.
 - When the user runs `orbis-server install` on an always-on Linux server, the system shall install Docker when missing, check Orbis out, keep the address (the user's domain, else `<public-ip>.sslip.io`) and the Claude plan's token in a `deploy/.env` readable only by its owner, open ports 80 and 443 in the server's firewall, and start the hub with Caddy; `import` shall bring a `.orbis` file into the hub and remove the copy after (ADR 0026).
 - When a hub is linked as a device with `orbis-server link`, the system shall keep a copy of its data in the account as any device does, and the app shall keep talking to the hub itself.
+- When a person's Orbis is deployed on a home server from `deploy/umbrel/docker-compose.yml`, the system shall run their own hub with its own data volume and memory ceiling, publish no port, and reach it only through the stack's own Tailscale node, which serves `https://orbis-<name>.<tailnet>.ts.net` to the hub over the stack's private network and never through Funnel; a stack without its name, tailnet or auth key shall not start (ADR 0027).
 
 ### Unwanted-behavior (must-not)
 
@@ -66,6 +68,7 @@ and its secrets, and syncs with the account (ADR 0020).
 8. [verified] Behind its proxy a hub refuses a token under 24 characters, makes one visitor wait after 20 refused tries while another and the owner still get in — verified by `packages/hub/test/auth.test.ts`
 9. [verified] With two-step verification on, a session of the password alone is refused and one with the second step opens the hub; only such a session or the hub's token turns it on or off; sessions report their `aal` — verified by `packages/hub/test/auth.test.ts`
 10. [verified] `orbis-server.sh` installs Docker when missing, clones Orbis, writes `deploy/.env` readable only by its owner with the HTTPS address (`<ip>.sslip.io` without a domain), opens 80 and 443, starts the hub with Caddy, takes the user's own domain, links the hub, shows its token, imports a `.orbis` file and removes it after, lists its commands and says when Orbis is not installed — verified by `packages/hub/test/server-script.test.ts`
+11. [verified] A person's stack publishes no port, serves HTTPS on 443 of its own Tailscale node to `http://orbis:7420` and never Funnel, writes the serve file before Tailscale's own start, gives the hub the published image, its own data and node volumes, its address and a memory ceiling, restarts on its own, writes no key in the file and refuses to start without its name, tailnet or auth key; the image is published for amd64 and arm64 — verified by `packages/hub/test/cloud-kit.test.ts`
 
 ## Maturity
 

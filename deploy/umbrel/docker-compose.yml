@@ -1,0 +1,53 @@
+# One person's Orbis on a home server — UmbrelOS through Portainer, or any Docker host (docs/umbrel.md,
+# ADR 0027). One stack per person: their own hub (bots, data, vault, Claude plan) and their own Tailscale node,
+# which serves https://orbis-<name>.<tailnet>.ts.net with a valid certificate to the people of the tailnet only.
+# No port of the server nor of the router is opened; the hub is reachable only through its Tailscale node.
+#
+# Portainer → Stacks → Add stack → Repository: this repository, compose path deploy/umbrel/docker-compose.yml,
+# and these environment variables (the stack's name: orbis-<name>):
+#   ORBIS_NAME               a short name: letters, digits and dashes (gabriel)
+#   ORBIS_TAILNET            your tailnet's DNS name, from the Tailscale admin console → DNS (tail1234.ts.net)
+#   TS_AUTHKEY               a Tailscale auth key (admin console → Settings → Keys), used once at the first start
+#   CLAUDE_CODE_OAUTH_TOKEN  optional: the token `claude setup-token` prints (or paste it later in the app)
+#   TZ                       optional: America/Sao_Paulo
+#   ORBIS_MEMORY             optional: the hub's memory ceiling, 1536m by default (two people on 4 GB: keep it)
+services:
+  orbis:
+    image: ${ORBIS_IMAGE:-ghcr.io/gcarin1/orbis:latest}
+    restart: unless-stopped
+    environment:
+      # The hub makes its own 43-character token in /data/token: the recovery key (docs/umbrel.md).
+      ORBIS_TOKEN: ""
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      # Its address: the hub trusts its Tailscale node for the visitor's address and signs MCP servers in to it.
+      ORBIS_PUBLIC_URL: https://orbis-${ORBIS_NAME:?set ORBIS_NAME}.${ORBIS_TAILNET:?set ORBIS_TAILNET}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - orbis-data:/data
+    mem_limit: ${ORBIS_MEMORY:-1536m}
+    # No ports: only the Tailscale node below reaches it, on this stack's own network.
+
+  tailscale:
+    image: tailscale/tailscale:v1.102.4
+    restart: unless-stopped
+    hostname: orbis-${ORBIS_NAME}
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?set TS_AUTHKEY}
+      TS_AUTH_ONCE: "true"
+      TS_HOSTNAME: orbis-${ORBIS_NAME}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /tmp/serve.json
+      # Tailscale Serve (never Funnel): HTTPS on 443 of this node, to the hub. Private to the tailnet.
+      ORBIS_SERVE: >-
+        {"TCP":{"443":{"HTTPS":true}},
+        "Web":{"orbis-${ORBIS_NAME}.${ORBIS_TAILNET}:443":{"Handlers":{"/":{"Proxy":"http://orbis:7420"}}}},
+        "AllowFunnel":{"orbis-${ORBIS_NAME}.${ORBIS_TAILNET}:443":false}}
+    # The serve file is written from the variable above, then the image's own start (containerboot) runs.
+    command: ["sh", "-c", "printf '%s' \"$$ORBIS_SERVE\" > /tmp/serve.json && exec /usr/local/bin/containerboot"]
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    mem_limit: 128m
+
+volumes:
+  orbis-data:
+  tailscale-state:

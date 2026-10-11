@@ -1,5 +1,8 @@
 # Orbis on a free server that stays on (Oracle Cloud)
 
+> A machine at home instead, private to your own devices with nothing open to the internet (UmbrelOS or any
+> Docker host)? See [umbrel.md](umbrel.md).
+
 The bots need a computer that is on: Claude Code on your plan, the terminal,
 the MCP programs and the browser all run there. A free Oracle Cloud VM runs
 the hub 24 hours a day, and serves the app itself over HTTPS. The phone is

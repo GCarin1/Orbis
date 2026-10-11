@@ -36,6 +36,9 @@ The phone is only a screen: the Orbis app or a browser. Setting it up:
 7. **Oracle only** (change 0070, done) — the server serves the app itself
    over HTTPS (Caddy), with two-step verification for accounts. See
    [server.md](server.md).
+8. **A home server** (change 0071, done) — UmbrelOS through Portainer, one
+   hub per person, each reached only through its own Tailscale node. See
+   [umbrel.md](umbrel.md).
 
 ## The account database (phase 1)
 

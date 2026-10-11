@@ -8,6 +8,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse } from "yaml";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
@@ -63,6 +64,60 @@ describe("the compose file", () => {
     const html = read("packages/web/index.html");
     const inline = /<script>([\s\S]*?)<\/script>/.exec(html)![1]!;
     expect(caddy).toContain(`'sha256-${createHash("sha256").update(inline).digest("base64")}'`);
+  });
+});
+
+describe("one person's stack on a home server (change 0071, docs/umbrel.md)", () => {
+  const text = read("deploy/umbrel/docker-compose.yml");
+  const ENV: Record<string, string> = { ORBIS_NAME: "gabriel", ORBIS_TAILNET: "tail1234.ts.net", TS_AUTHKEY: "tskey-auth-x" };
+  // Compose's own interpolation, enough for this file: ${VAR}, ${VAR:-default}, ${VAR:?error}, and $$ for a $.
+  const interpolate = (value: string, env: Record<string, string> = ENV) =>
+    value.replace(/\$\$|\$\{(\w+)(?::([-?])([^}]*))?\}/g, (all, name?: string, kind?: string, fallback?: string) => {
+      if (all === "$$") return "$";
+      if (env[name!] !== undefined) return env[name!]!;
+      if (kind === "?") throw new Error(`${name} is required`);
+      return fallback ?? "";
+    });
+  const stack = parse(text) as { services: Record<string, { image: string; ports?: unknown; environment: Record<string, string>; command?: string[]; volumes: string[]; mem_limit?: string; restart: string }> };
+  const { orbis, tailscale } = stack.services as Record<string, (typeof stack.services)[string]>;
+
+  it("opens no port: the hub is reached only through its own Tailscale node, which serves HTTPS and never Funnel", () => {
+    expect(orbis!.ports).toBeUndefined();
+    expect(tailscale!.ports).toBeUndefined();
+    const serve = JSON.parse(interpolate(tailscale!.environment.ORBIS_SERVE!)) as Record<string, Record<string, unknown>>;
+    expect(serve.TCP).toEqual({ "443": { HTTPS: true } });
+    expect(serve.Web).toEqual({ "orbis-gabriel.tail1234.ts.net:443": { Handlers: { "/": { Proxy: "http://orbis:7420" } } } });
+    expect(serve.AllowFunnel).toEqual({ "orbis-gabriel.tail1234.ts.net:443": false });
+    // The serve file is written from that variable, then the image's own start runs.
+    expect(tailscale!.command!.join(" ")).toMatch(/printf '%s' "\$\$ORBIS_SERVE" > \/tmp\/serve\.json && exec \/usr\/local\/bin\/containerboot/);
+    expect(tailscale!.environment.TS_SERVE_CONFIG).toBe("/tmp/serve.json");
+  });
+
+  it("gives each person their own hub: the published image, its own data and node, the address it is opened at, restarted on its own", () => {
+    expect(orbis!.image).toBe("${ORBIS_IMAGE:-ghcr.io/gcarin1/orbis:latest}");
+    expect(interpolate(orbis!.environment.ORBIS_PUBLIC_URL!)).toBe("https://orbis-gabriel.tail1234.ts.net");
+    expect(interpolate(tailscale!.environment.TS_HOSTNAME!)).toBe("orbis-gabriel");
+    expect(orbis!.volumes).toEqual(["orbis-data:/data"]);
+    expect(tailscale!.volumes).toEqual(["tailscale-state:/var/lib/tailscale"]);
+    for (const s of [orbis!, tailscale!]) expect(s.restart).toBe("unless-stopped");
+    expect(orbis!.mem_limit).toBe("${ORBIS_MEMORY:-1536m}");
+    // The hub makes its own long token; no key or token is written in the file.
+    expect(orbis!.environment.ORBIS_TOKEN).toBe("");
+    expect(text).not.toMatch(/tskey-[a-z]+-\w{6,}|sk-ant-/);
+    // A stack without its name, tailnet or auth key does not start.
+    const all = Object.values({ ...orbis!.environment, ...tailscale!.environment }).map(String);
+    for (const name of Object.keys(ENV)) {
+      const without = Object.fromEntries(Object.entries(ENV).filter(([k]) => k !== name));
+      expect(() => all.forEach((v) => interpolate(v, without)), name).toThrow(`${name} is required`);
+    }
+  });
+
+  it("is published ready for both kinds of machine, so a home server compiles nothing", () => {
+    const workflow = read(".github/workflows/server-image.yml");
+    expect(workflow).toMatch(/platforms: linux\/amd64,linux\/arm64/);
+    expect(workflow).toMatch(/push: true/);
+    expect(workflow).toMatch(/ghcr\.io\/\$\{GITHUB_REPOSITORY_OWNER,,\}\/orbis/);
+    expect(workflow).toMatch(/packages: write/);
   });
 });
 
