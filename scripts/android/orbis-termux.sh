@@ -1,7 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # Orbis on this phone (docs/android.md, ADR 0018): the hub, the web app and Claude Code run inside
 # Termux, in a Debian made by proot-distro, so the Orbis app works with the computer off and no server
-# in between. The first time, in Termux:
+# in between. (With an Orbis account, a free server can run the hub instead and Termux is not needed:
+# docs/server.md.) The first time, in Termux:
 #
 #   curl -fsSLo orbis-termux.sh https://raw.githubusercontent.com/GCarin1/Orbis/HEAD/scripts/android/orbis-termux.sh && bash orbis-termux.sh
 #
@@ -317,6 +318,6 @@ case "${1:-install}" in
   setup-token) distro claude setup-token ;;
   link) shift && cmd_cli link "$@" ;;
   unlink) cmd_cli unlink ;;
-  -h | --help | help) sed -n '2,20p' "${BASH_SOURCE[0]}" ;;
+  -h | --help | help) sed -n '2,22p' "${BASH_SOURCE[0]}" ;;
   *) die "unknown command: $1 (orbis-phone help)" ;;
 esac

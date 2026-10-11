@@ -34,8 +34,10 @@ answer when the runner is back (reading the history meanwhile comes later).
 5. **The cloud** (change 0068, done) — the Worker and one Durable Object per
    account relay the web app to the phone, deployed from GitHub Actions; see
    [Orbis from anywhere](#orbis-from-anywhere-phase-5).
-6. **Moving over** — each person exports on the phone, creates an account,
-   imports, checks, and points the app at the cloud address.
+6. **Moving over, without Termux** (change 0069, done) — the hub runs on a
+   free server that stays on (Oracle Cloud Always Free, Docker), linked as
+   the account's device; each person exports on the phone, imports on the
+   server, and points the app at the cloud address. See [server.md](server.md).
 
 ## The account database (phase 1)
 

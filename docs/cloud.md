@@ -113,6 +113,11 @@ Good to know:
 
 ## A server that stays on
 
+> With an Orbis account, the simplest way is now [server.md](server.md):
+> `orbis-server install` on a free Oracle VM, linked to the Orbis cloud, with
+> no tunnel and no Termux. What follows is the older setup without an account.
+
+
 Use any Linux machine that stays on, x86 or ARM. For example:
 
 - a free cloud VM, such as Oracle Cloud's Always Free ARM VM;

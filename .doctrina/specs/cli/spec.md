@@ -6,7 +6,7 @@
 **Realizes:** SC7
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.14.0
+**Version:** 0.15.0
 
 ## Purpose
 
@@ -43,6 +43,7 @@ It talks to the hub only through the public API.
 - When `Orbis.bat` runs on Windows for the first time, the launcher shall create the Orbis shortcut with the Orbis icon on the Desktop and in the Start menu, say that the shortcut replaces the .bat, and keep a note so the shortcut does not come back after the owner deletes it, unless given `--atalhos` (make it again) or `--sem-atalhos` (never).
 - When the user runs `orbis link` (or `orbis-phone link` on the phone), the CLI shall read the account's email and password at prompts, the password hidden, or from the first lines of stdin, never from arguments, link the hub as a device of that account and show the device; `--status` shows what it sent, `--sync` sends now, and `orbis unlink` leaves the account.
 - When the user runs `orbis link --cloud <url>`, the CLI shall set the Orbis cloud this device relays to (with the link, or at once when already linked; `default` for the published cloud), and `orbis link --status` shall show whether the relay to the cloud is connected.
+- When the user runs `orbis data export [-o file] [--password]`, the CLI shall save the hub's `.orbis` export readable only by its owner, its secrets sealed only with a password of at least 10 characters; `orbis data import <file> [--password]` shall import it into the hub and show what was added and what was already there; the password is read at a hidden prompt or from stdin, never from arguments.
 
 ### Unwanted-behavior (must-not)
 
@@ -70,6 +71,7 @@ It talks to the hub only through the public API.
 14. [verified] The shortcuts are made on the first run only, again with `--atalhos`, never with `--sem-atalhos`, with no note left when PowerShell made none, and nothing is done off Windows — verified by `packages/cli/test/windows-launcher.test.ts`.
 15. [verified] `orbis link` links with the email and password piped on stdin, says a wrong password, shows the device without its token, `--status --json` answers its state, and `orbis unlink` leaves the account — verified by `packages/cli/test/link.test.ts`
 16. [verified] `orbis link --status` shows the cloud (none yet), `--cloud https://…` sets it on a linked hub and shows it disconnected, and a cloud address that is not https is refused — verified by `packages/cli/test/link.test.ts`
+17. [verified] `orbis data export` refuses a short password and saves the file private; `orbis data import` refuses a wrong password, imports bots and sealed secrets into another hub, and doubles nothing the second time — verified by `packages/cli/test/data.test.ts`
 
 ## Maturity
 

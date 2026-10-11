@@ -74,7 +74,7 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.14.0",
+        "version": "0.15.0",
         "last_updated": "2026-10-11",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
@@ -88,7 +88,7 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-10-11",
         "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066), and the Cloudflare cloud relaying the web app to the account's hub (`packages/cloud/`, `packages/hub/src/relay/`, `supabase/migrations/0003_device_identity.sql`, change 0068); reading the history while the phone is off comes later",
         "realizes": [
@@ -686,14 +686,27 @@
         "title": "The cloud is an authenticated relay to the account's own hub; it reimplements no API and keeps no secret",
         "status": "accepted",
         "date": "2026-10-11",
+        "landed": "2026-10-11 — `packages/cloud/src/worker.ts`, `packages/cloud/src/account.ts`, `packages/hub/src/relay/client.ts`",
         "scope": [
           "cloud",
           "web-app",
           "cli",
           "hub-api"
         ],
-        "summary": "A relay, not a second API.",
-        "landed": "2026-10-11 — `packages/cloud/src/worker.ts`, `packages/cloud/src/account.ts`, `packages/hub/src/relay/client.ts`"
+        "summary": "A relay, not a second API."
+      },
+      {
+        "id": "0025",
+        "path": ".doctrina/decisions/0025-the-runner-leaves-the-phone-for-an-always-on-free-server-in-docker-linked-as-the-account-s-device-termux-becomes-optional.md",
+        "title": "The runner leaves the phone for an always-on free server in Docker, linked as the account's device; Termux becomes optional",
+        "status": "accepted",
+        "date": "2026-10-11",
+        "scope": [
+          "cloud",
+          "cli"
+        ],
+        "summary": "The runner is a server that stays on.",
+        "landed": "2026-10-11 — `scripts/server/orbis-server.sh`, `packages/cli/src/commands/data.ts`, `packages/hub/src/relay/client.ts`"
       }
     ],
     "changes": [],
@@ -2084,6 +2097,24 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0069-server-runner",
+        "title": "server-runner",
+        "path": ".doctrina/changes/archive/2026-10-11-0069-server-runner",
+        "status": "applied",
+        "applied": "2026-10-11",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cloud",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "runtime (confident; signals: runner, docker) — opened anyway (--force)"
       }
     ],
     "skills": [

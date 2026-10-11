@@ -1,5 +1,7 @@
-# Orbis on a server that stays on (docs/cloud.md): the hub, and — if you want to
-# reach it from anywhere without opening ports — a Cloudflare tunnel.
+# Orbis on a server that stays on (docs/server.md, docs/cloud.md): the hub. Linked to your Orbis account
+# (`orbis-server link`, scripts/server/orbis-server.sh) it reaches the Orbis cloud on its own: open the
+# cloud's address anywhere, no port and no tunnel needed (ADR 0024, ADR 0025). The tunnels below are the
+# older way, without an account.
 #
 #   cd deploy
 #   cp .env.example .env        # then fill it in (never commit .env)
@@ -22,6 +24,9 @@ services:
       # The token `claude setup-token` prints: Claude Code runs on your Claude plan, not the API.
       # Empty: paste it later in Settings → Brains → Claude Code.
       CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      # The Orbis cloud this hub relays to once linked (https://orbis.<you>.workers.dev). Empty: the one
+      # chosen at `orbis link --cloud`.
+      ORBIS_CLOUD_URL: ${ORBIS_CLOUD_URL:-}
       TZ: ${TZ:-UTC}
     volumes:
       - orbis-data:/data

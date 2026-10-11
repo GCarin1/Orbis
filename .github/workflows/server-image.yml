@@ -1,0 +1,43 @@
+# Builds the Orbis server image for both kinds of machine (docs/server.md, ADR 0025, change 0069-server-runner):
+# linux/arm64 — Oracle Cloud's Always Free Ampere VM — and linux/amd64. Nothing is published: it proves the
+# image that `orbis-server install` builds on the server builds there.
+name: Server image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "claude/**"]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "deploy/**"
+      - "scripts/server/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/server-image.yml"
+
+concurrency:
+  group: server-image-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build for arm64 and amd64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64,linux/amd64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Check the server script
+        run: bash -n scripts/server/orbis-server.sh

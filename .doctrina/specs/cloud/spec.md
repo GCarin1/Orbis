@@ -7,7 +7,7 @@
 **Realizes:** SC16
 **Depends on:** hub-api, secrets
 **Last updated:** 2026-10-11
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -41,6 +41,8 @@ and its secrets, and syncs with the account (ADR 0020).
 - When a hub is linked as a device and knows its cloud (`ORBIS_CLOUD_URL`, else `orbis link --cloud`, else the published cloud), the system shall open one WebSocket from the hub out to the cloud with the device's token in the upgrade's Authorization header, have the cloud check the token with Supabase before handing the socket to the token's account, and keep only the newest hub of an account connected.
 - When a browser calls the cloud's API, the system shall check its Supabase session against the project's published keys before relaying it, and the hub shall check it again as the session of the account linked to it; a stream ticket or file key shall name its account so the cloud routes it, the hub checking its own part.
 - When no hub of the account is connected, the system shall answer the account's API with 503 `runner_offline`, and a hub leaving shall answer the requests waiting the same way and close the account's open streams.
+- When the user runs `orbis-server install` on an always-on Linux server, the system shall install Docker when missing, check Orbis out, keep the cloud's address and the Claude plan's token in a `deploy/.env` readable only by its owner, and start the hub; `orbis-server link` shall make it a device of the account connected to that cloud, and `import` shall bring a `.orbis` file into it and remove the copy after (ADR 0025).
+- When the cloud closes a hub's relay because another hub of the same account connected, the hub shall give way for good, say so, and try again only once it is unlinked and linked again, given another cloud, or restarted.
 
 ### Unwanted-behavior (must-not)
 
@@ -62,6 +64,8 @@ and its secrets, and syncs with the account (ADR 0020).
 6. [verified] Linking signs in, keeps the device's token in the vault and never answers it, links the account and sends every row once; each change goes once with the row's latest state, deletions by key, bots before their conversations; nothing is queued while not linked; what waits stays while the cloud is down; once revoked nothing is sent and the token is forgotten; another account, a second link and a session alone are refused; unlinking leaves nothing; an export carries neither the device nor its token — verified by `packages/hub/test/sync.test.ts`
 7. [verified] The Worker serves the app with its security headers and the one inline script by hash, answers where accounts sign in, relays the API only with a valid session of the account it names and never cookies or its own headers, keeps pairing and the hub's links off the cloud, hands out tickets and file keys that name the account and routes them there, takes a hub's relay only with a device token Supabase knows (never passing it on), and limits by address; the account's object says the phone is off without a hub, relays requests and answers in pieces both ways, relays streams under their own id, answers waiting requests and closes streams when the hub leaves, keeps the newest hub and renews an hour-old relay — verified by `packages/cloud/test/cloud.test.ts`
 8. [verified] Once linked the hub opens the relay with its token in the Authorization header and never in the address, answers relayed requests with its own routes and auth (no session, another account or a session managing the device refused; only the API crosses), carries a 1.2 MB upload and download in pieces, relays its event stream opened with a one-time ticket, closes when unlinked and stays closed when the cloud says the device was revoked — verified by `packages/hub/test/relay.test.ts`
+9. [verified] A hub replaced by another of its account says so and does not come back, however long, until it is linked again — verified by `packages/hub/test/relay.test.ts`
+10. [verified] `orbis-server.sh` installs Docker when missing, clones Orbis, writes `deploy/.env` with the cloud's address readable only by its owner, starts the hub, links it with the cloud from that file, imports a `.orbis` file and removes it after, lists its commands and says when Orbis is not installed — verified by `packages/hub/test/server-script.test.ts`
 
 ## Maturity
 

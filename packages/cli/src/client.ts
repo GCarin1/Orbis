@@ -51,6 +51,36 @@ export class HubClient {
     return parsed as T;
   }
 
+  /** A request whose body or answer is a file (the `.orbis` export and import): the answer's bytes. */
+  async bytes(method: string, path: string, body: Uint8Array | object, headers: Record<string, string> = {}): Promise<Uint8Array> {
+    const raw = body instanceof Uint8Array;
+    let res: Response;
+    try {
+      res = await fetch(this.conn.url + path, {
+        method,
+        headers: {
+          ...(this.conn.token ? { authorization: `Bearer ${this.conn.token}` } : {}),
+          "content-type": raw ? "application/octet-stream" : "application/json",
+          ...headers,
+        },
+        body: raw ? (body as Uint8Array<ArrayBuffer>) : JSON.stringify(body),
+      });
+    } catch (err) {
+      throw new Error(`cannot reach the Orbis hub at ${this.conn.url} — is it running? (orbis serve)`, { cause: err });
+    }
+    const data = new Uint8Array(await res.arrayBuffer());
+    if (!res.ok) {
+      let parsed: ApiErrorBody | null = null;
+      try {
+        parsed = JSON.parse(new TextDecoder().decode(data)) as ApiErrorBody;
+      } catch {
+        /* not JSON */
+      }
+      throw new ApiError(res.status, parsed);
+    }
+    return data;
+  }
+
   get<T = unknown>(path: string) {
     return this.request<T>("GET", path);
   }

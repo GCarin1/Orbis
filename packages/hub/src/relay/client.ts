@@ -18,8 +18,6 @@ import {
 
 /** The most a relayed request's body may carry (a 25 MB file and its form around it). */
 export const RELAY_MAX_BODY = 30 * 1024 * 1024;
-/** How long another hub of the account having taken the relay keeps this one quiet. */
-export const REPLACED_WAIT_MS = 5 * 60_000;
 
 export interface RelayStatus {
   url: string | null;
@@ -51,8 +49,12 @@ export class RelayClient {
   private attempt = 0;
   private retryTimer: NodeJS.Timeout | null = null;
   private pingTimer: NodeJS.Timeout | null = null;
-  private quietUntil = 0;
-  /** The token the socket opened with: a new one (linked again) opens a new socket. */
+  /**
+   * The link (token and cloud) the relay keeps quiet for: revoked, or replaced by another hub of the account
+   * (a phone and a server would otherwise take it from each other). A new link or cloud tries again.
+   */
+  private quietFor: string | null = null;
+  /** The link (token and cloud) the socket opened with: a new one opens a new socket. */
   private openedWith: string | null = null;
   private stopped = true;
   private readonly bodies = new Map<string, { head: Extract<RelayFrame, { t: "req" }>; body: BodyCollector }>();
@@ -105,13 +107,17 @@ export class RelayClient {
     const token = this.deps.token();
     const url = this.deps.url();
     if (!token || !url) {
+      // Unlinked, or the relay turned off: the next link starts afresh.
       this.disconnect();
-      if (!token) this.quietUntil = 0;
+      this.quietFor = null;
       return;
     }
-    if (this.socket && this.openedWith === token) return;
+    const link = `${token}|${url}`;
+    if (this.socket && this.openedWith === link) return;
     if (this.socket) this.disconnect();
-    if (this.retryTimer || this.now() < this.quietUntil) return;
+    if (this.quietFor === link) return;
+    this.quietFor = null;
+    if (this.retryTimer) return;
     this.connect(url, token);
   }
 
@@ -127,7 +133,7 @@ export class RelayClient {
       return;
     }
     this.socket = socket;
-    this.openedWith = token;
+    this.openedWith = `${token}|${url}`;
     socket.addEventListener("open", () => {
       if (this.socket !== socket) return;
       this.connected = true;
@@ -144,6 +150,7 @@ export class RelayClient {
     });
     socket.addEventListener("close", (e) => {
       if (this.socket !== socket) return;
+      const link = this.openedWith;
       this.dropAll();
       this.socket = null;
       this.openedWith = null;
@@ -151,12 +158,13 @@ export class RelayClient {
       if (e.code === RELAY_REVOKED) {
         // The cloud found the device revoked: the device's sync forgets the token; nothing is tried meanwhile.
         this.lastError = "the account revoked this device";
-        this.quietUntil = Number.POSITIVE_INFINITY;
+        this.quietFor = link;
         return;
       }
       if (e.code === RELAY_REPLACED) {
-        this.lastError = "another hub of this account is connected to the cloud";
-        this.quietUntil = this.now() + REPLACED_WAIT_MS;
+        // One hub relays for an account: this one gives way for good, until it is linked again or restarted.
+        this.lastError = "another hub of this account took over the cloud: unlink one of them (orbis unlink)";
+        this.quietFor = link;
         return;
       }
       this.lastError ??= "the connection to the Orbis cloud closed";

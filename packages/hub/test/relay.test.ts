@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, sign } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import { WebSocketServer, type WebSocket as ServerSocket } from "ws";
-import { bodyFrames, BodyCollector, parseFrame, RELAY_CHUNK_BYTES, RELAY_REVOKED, type DeviceStatus, type RelayFrame } from "@orbis/shared";
+import { bodyFrames, BodyCollector, parseFrame, RELAY_CHUNK_BYTES, RELAY_REPLACED, RELAY_REVOKED, type DeviceStatus, type RelayFrame } from "@orbis/shared";
 import { DEFAULT_SUPABASE } from "../src/config.js";
 import { createBot, testHub, type TestHub } from "./helpers.js";
 
@@ -201,5 +201,21 @@ describe("the relay to the Orbis cloud", () => {
     t!.hub.relay.sync();
     await new Promise((r) => setTimeout(r, 200));
     expect(cloud!.runners).toHaveLength(1);
+  });
+
+  it("gives way for good when another hub of the account takes the cloud, until its link changes (change 0069)", async () => {
+    const { sb, runner } = await linkedHub();
+    runner.socket.close(RELAY_REPLACED, "replaced");
+    await vi.waitFor(() => expect(t!.hub.sync.status().cloud.lastError).toMatch(/another hub of this account took over the cloud/));
+    // The phone and a server would otherwise take the relay from each other: no retry, however long.
+    t!.hub.relay.sync();
+    await new Promise((r) => setTimeout(r, 300));
+    expect(cloud!.runners).toHaveLength(1);
+    // Unlinked and linked again (the user chose this hub): it tries again.
+    await t!.api("DELETE", "/api/v1/device");
+    const second = new Promise((r) => cloud!.wss.once("connection", r));
+    expect((await t!.api("POST", "/api/v1/device/link", { name: "Servidor", accessToken: sb.session() })).status).toBe(200);
+    await second;
+    expect(cloud!.runners).toHaveLength(2);
   });
 });
