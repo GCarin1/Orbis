@@ -8,12 +8,13 @@ import { DeviceSettings } from "../src/components/DeviceSettings.js";
 import { useLang } from "../src/i18n.js";
 
 const project = { url: "https://proj.supabase.co", key: "sb_publishable_x" };
-const off: DeviceStatus = { available: true, linked: null, pending: 0, lastSyncAt: null, lastError: null, revoked: false };
+const off: DeviceStatus = { available: true, linked: null, pending: 0, lastSyncAt: null, lastError: null, revoked: false, cloud: { url: null, connected: false, lastError: null } };
 const on: DeviceStatus = {
   ...off,
   linked: { id: "dev-1", name: "Celular", ownerId: "u1", email: "ana@example.com", linkedAt: "2026-10-08T12:00:00.000Z" },
   pending: 3,
   lastSyncAt: "2026-10-08T12:05:00.000Z",
+  cloud: { url: "https://orbis.example.workers.dev", connected: true, lastError: null },
 };
 
 /** The hub's config and the cloud: sign-in and the devices table, recording every request. */
@@ -67,6 +68,7 @@ describe("Settings → Account, devices", () => {
     await waitFor(() => expect(within(screen.getByTestId("device-this")).getByText('Device "Celular" of the account ana@example.com.')).toBeTruthy());
     expect(post).toHaveBeenCalledWith("/api/v1/device/link", { name: "Celular", email: "ana@example.com", password: "a long password" });
     expect(screen.getByTestId("device-this").textContent).toContain("Waiting to send: 3");
+    expect(screen.getByTestId("device-cloud").textContent).toBe("Cloud: connected to https://orbis.example.workers.dev");
 
     fireEvent.click(screen.getByRole("button", { name: "Send now" }));
     await waitFor(() => expect(screen.getByTestId("device-this").textContent).toContain("Waiting to send: 0"));

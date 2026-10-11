@@ -7,6 +7,10 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Added
+
+- **Orbis from anywhere, through Cloudflare** (change 0068-cloud-relay, ADR 0024): `packages/cloud` is a Worker that serves the web app and relays its API to the account's own phone through one Durable Object per account (free plan). The phone opens the connection itself with its device token (`orbis link --cloud <url>`, `ORBIS_CLOUD_URL`); sessions are checked in the cloud and again on the phone; every answer carries HSTS, a strict CSP and `X-Frame-Options: DENY`. With the phone off the app says so (503 `runner_offline`). `.github/workflows/cloud.yml` deploys it with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets; `supabase/migrations/0003_device_identity.sql` adds the check of a device's token.
+
 ### Fixed
 
 - **Linking a phone never leaves an unused device in the account** (change 0067-runner-link-rollback): when the hub cannot keep the device it just registered, it revokes it in the cloud before reporting the error.

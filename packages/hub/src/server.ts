@@ -74,6 +74,7 @@ import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
 import { ExportService } from "./export/service.js";
 import { SyncService } from "./sync/service.js";
+import { RelayClient } from "./relay/client.js";
 
 export interface HubOptions {
   env?: Env;
@@ -95,7 +96,7 @@ export interface HubOptions {
   /** How account sessions are checked: the project's keys fetched with `fetch`, and the clock (tests fake both). */
   auth?: { fetch?: typeof fetch; now?: () => number };
   /** How an import reaches the cloud account's database (tests fake it). */
-  cloud?: { fetch?: typeof fetch };
+  cloud?: { fetch?: typeof fetch; WebSocket?: ConstructorParameters<typeof RelayClient>[1]["WebSocket"] };
 }
 
 export interface Hub extends HubContext {
@@ -103,6 +104,7 @@ export interface Hub extends HubContext {
   auth: HubAuth;
   exports: ExportService;
   sync: SyncService;
+  relay: RelayClient;
   skills: SkillService;
   routines: RoutineService;
   secrets: SecretService;
@@ -426,9 +428,12 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   });
   await exports.routes(app);
   // This hub as a device of an account: what changes here reaches the account (change 0066).
-  const sync = new SyncService(ctx, { auth, hubSecrets: secrets.hubSecrets, settings: new SettingsRepo(db), fetch: opts.cloud?.fetch, now: opts.auth?.now });
+  // The relay to the cloud opens once this hub is a device of an account (change 0068).
+  const relay: RelayClient = new RelayClient(app, { token: () => sync.token(), url: () => sync.cloudUrl(), WebSocket: opts.cloud?.WebSocket, now: opts.auth?.now });
+  const sync: SyncService = new SyncService(ctx, { auth, hubSecrets: secrets.hubSecrets, settings: new SettingsRepo(db), fetch: opts.cloud?.fetch, now: opts.auth?.now, relay });
   await sync.routes(app);
   sync.start();
+  relay.start();
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -449,6 +454,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     auth,
     exports,
     sync,
+    relay,
     skills: skillService,
     routines,
     secrets,
@@ -471,6 +477,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       closed = true;
       routines.stop();
       sync.stop();
+      relay.stop();
       files.stop();
       initiative.stop();
       await engine.shutdown();

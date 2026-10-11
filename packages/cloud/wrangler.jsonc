@@ -1,0 +1,28 @@
+// The Orbis cloud on Cloudflare (change 0068-cloud-relay, docs/cloud-migration.md): `npx wrangler deploy` from
+// this folder, after `npm run build` made packages/web/dist. Free plan: a Worker, SQLite Durable Objects and
+// static assets. No secret: the Supabase address and publishable key are public by design.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "orbis",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Every answer carries the cloud's security headers.
+    "run_worker_first": true
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ACCOUNT", "class_name": "Account" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Account"] }],
+  "ratelimits": [{ "name": "LIMITER", "namespace_id": "7420", "simple": { "limit": 300, "period": 60 } }],
+  "vars": {
+    "SUPABASE_URL": "https://tqjxkgxmnkypzbpirztw.supabase.co",
+    "SUPABASE_KEY": "sb_publishable_Cw2RD01Yq0XADHZcncziSA_7e3suhPT"
+  },
+  // No request logs: a stream ticket or a file key travels in an address.
+  "observability": { "enabled": false }
+}

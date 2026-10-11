@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-10",
+  "last_updated": "2026-10-11",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -74,8 +74,8 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.13.0",
-        "last_updated": "2026-10-08",
+        "version": "0.14.0",
+        "last_updated": "2026-10-11",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
           "SC7"
@@ -88,9 +88,9 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.4.0",
-        "last_updated": "2026-10-08",
-        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), and this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066); the Cloudflare deploy comes in a later change",
+        "version": "0.5.0",
+        "last_updated": "2026-10-11",
+        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066), and the Cloudflare cloud relaying the web app to the account's hub (`packages/cloud/`, `packages/hub/src/relay/`, `supabase/migrations/0003_device_identity.sql`, change 0068); reading the history while the phone is off comes later",
         "realizes": [
           "SC16"
         ],
@@ -340,8 +340,8 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.38.0",
-        "last_updated": "2026-10-08",
+        "version": "0.39.0",
+        "last_updated": "2026-10-11",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
           "SC7",
@@ -671,14 +671,29 @@
         "title": "A device joins its account with a token of its own, only its hash in the cloud; it sends its rows through a function that checks the token and writes only under its owner",
         "status": "accepted",
         "date": "2026-10-08",
+        "landed": "2026-10-10 — `supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/service.ts`, `packages/cli/src/commands/link.ts`",
         "scope": [
           "cloud",
           "cli",
           "web-app",
           "secrets"
         ],
-        "summary": "A device token per hub.",
-        "landed": "2026-10-10 — `supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/service.ts`, `packages/cli/src/commands/link.ts`"
+        "summary": "A device token per hub."
+      },
+      {
+        "id": "0024",
+        "path": ".doctrina/decisions/0024-the-cloud-is-an-authenticated-relay-to-the-account-s-own-hub-it-reimplements-no-api-and-keeps-no-secret.md",
+        "title": "The cloud is an authenticated relay to the account's own hub; it reimplements no API and keeps no secret",
+        "status": "accepted",
+        "date": "2026-10-11",
+        "scope": [
+          "cloud",
+          "web-app",
+          "cli",
+          "hub-api"
+        ],
+        "summary": "A relay, not a second API.",
+        "landed": "2026-10-11 — `packages/cloud/src/worker.ts`, `packages/cloud/src/account.ts`, `packages/hub/src/relay/client.ts`"
       }
     ],
     "changes": [],
@@ -2047,6 +2062,28 @@
         "applied": "2026-10-10",
         "specs_affected": [],
         "lane": "runtime (confident; signals: runner) — opened as chore"
+      },
+      {
+        "id": "0068-cloud-relay",
+        "title": "cloud-relay",
+        "path": ".doctrina/changes/archive/2026-10-11-0068-cloud-relay",
+        "status": "applied",
+        "applied": "2026-10-11",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cloud",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [

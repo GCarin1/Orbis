@@ -2,7 +2,7 @@
   "name": "orbis",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-hosted, open-source team of persistent AI bots with their own computer, memory, skills, routines and approvals \u2014 driven by API models or by agent CLIs you already subscribe to.",
+  "description": "Self-hosted, open-source team of persistent AI bots with their own computer, memory, skills, routines and approvals — driven by API models or by agent CLIs you already subscribe to.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -13,10 +13,11 @@
     "packages/hub",
     "packages/cli",
     "packages/web",
-    "packages/desktop"
+    "packages/desktop",
+    "packages/cloud"
   ],
   "scripts": {
-    "typecheck": "tsc -b packages/shared packages/hub packages/cli packages/desktop && tsc -p packages/web --noEmit",
+    "typecheck": "tsc -b packages/shared packages/hub packages/cli packages/desktop && tsc -p packages/web --noEmit && tsc -p packages/cloud",
     "test": "vitest run",
     "build": "tsc -b packages/shared packages/hub packages/cli packages/desktop && npm run build -w @orbis/web",
     "check": "npm run typecheck && npm test && npm run build",
@@ -28,7 +29,8 @@
     "brand:ico": "node scripts/make-ico.mjs",
     "desktop": "npm run build && electron packages/desktop",
     "brand:android": "node scripts/render-android-icons.mjs",
-    "android:apk": "gradle -p packages/android assembleRelease"
+    "android:apk": "gradle -p packages/android assembleRelease",
+    "cloud:deploy": "npm run build && cd packages/cloud && npx wrangler@4.142.0 deploy"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

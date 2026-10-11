@@ -1,0 +1,78 @@
+# Publishes the Orbis cloud on Cloudflare (specs/cloud, ADR 0024, change 0068-cloud-relay): the web app as the
+# Worker's static assets, the Worker and its Durable Object `Account`. Free plan; no secret in the Worker.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   a Cloudflare API token from the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID  the account's id (Cloudflare dashboard → Workers & Pages, right column)
+# Without them the job builds and tests, and says the deploy was skipped.
+#
+# Runs on a push that changes the cloud, the web app or their shared code, and by hand (Actions → "Cloud" →
+# Run workflow). The published address is printed in the run's summary.
+name: Cloud
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "claude/**"]
+    paths:
+      - "packages/cloud/**"
+      - "packages/web/**"
+      - "packages/shared/**"
+      - ".github/workflows/cloud.yml"
+
+concurrency:
+  group: cloud-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the web app and the shared code
+        run: npx tsc -b packages/shared && npm run build -w @orbis/web
+
+      - name: Test the cloud
+        run: npx tsc -p packages/cloud && npx vitest run --project cloud
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: packages/cloud
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Deploy skipped: set the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets"
+            exit 0
+          fi
+          npx -y wrangler@4.142.0 deploy 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Orbis cloud published: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check the published cloud
+        if: steps.deploy.outputs.url != ''
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          sleep 5
+          curl -fsS "$URL/health"
+          headers=$(curl -fsSI "$URL/")
+          for h in strict-transport-security content-security-policy x-frame-options x-content-type-options; do
+            echo "$headers" | grep -qi "^$h:" || { echo "missing $h"; exit 1; }
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/v1/bots")" = "401"
+          echo "Security headers present; the API refuses a request without a session."

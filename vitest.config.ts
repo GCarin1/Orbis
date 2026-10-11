@@ -15,6 +15,7 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "shared", include: ["packages/shared/test/**/*.test.ts"], environment: "node" } },
+      { extends: true, test: { name: "cloud", include: ["packages/cloud/test/**/*.test.ts"], environment: "node" } },
       {
         extends: true,
         test: {

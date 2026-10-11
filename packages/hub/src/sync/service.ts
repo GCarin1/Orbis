@@ -15,6 +15,8 @@ import type { HubSecrets } from "../secrets/hub-secrets.js";
 import type { HubAuth } from "../auth/account.js";
 import { InvalidSession } from "../auth/jwt.js";
 import { ExportService, isLocalSetting, TABLES, type ExportTable } from "../export/service.js";
+import { DEFAULT_CLOUD_URL, validCloudUrl } from "../config.js";
+import type { RelayStatus } from "../relay/client.js";
 
 export const SYNC_EVERY_MS = 15_000;
 /** Rows a call to the cloud carries (the function takes 500 at most). */
@@ -32,6 +34,8 @@ interface Device {
   email: string | null;
   linkedAt: string;
   revoked?: boolean;
+  /** The Orbis cloud this device relays to, when set at `orbis link --cloud` (change 0068). */
+  cloudUrl?: string;
 }
 
 type Row = Record<string, unknown>;
@@ -55,8 +59,40 @@ export class SyncService {
 
   constructor(
     private readonly hub: HubContext,
-    private readonly deps: { auth: HubAuth; hubSecrets: HubSecrets; settings: SettingsRepo; fetch?: typeof fetch; now?: () => number },
+    private readonly deps: {
+      auth: HubAuth;
+      hubSecrets: HubSecrets;
+      settings: SettingsRepo;
+      fetch?: typeof fetch;
+      now?: () => number;
+      /** The relay to the cloud: told when the link changes, asked how it is (change 0068). */
+      relay?: { sync(): void; status(): RelayStatus };
+    },
   ) {}
+
+  /** The device's token while it is linked and not revoked (the relay opens with it). */
+  token(): string | null {
+    const device = this.device();
+    return device && !device.revoked ? this.deps.hubSecrets.get(TOKEN_SECRET) : null;
+  }
+
+  /** The cloud the relay goes to: ORBIS_CLOUD_URL, else the device's own choice, else the published cloud. */
+  cloudUrl(): string | null {
+    if (this.hub.config.cloudUrl !== undefined) return this.hub.config.cloudUrl;
+    return this.device()?.cloudUrl ?? DEFAULT_CLOUD_URL;
+  }
+
+  /** Choose the cloud this device relays to (null: the published one). */
+  setCloudUrl(url: string | null): DeviceStatus {
+    const device = this.device();
+    if (!device) throw new HttpError(409, "not_linked", "link this hub to an account first");
+    const valid = url === null ? null : validCloudUrl(url);
+    if (url !== null && !valid) throw new HttpError(400, "invalid_request", "the cloud's address must be https://…", { url: "must be https://…" });
+    const { cloudUrl: _old, ...rest } = device;
+    this.deps.settings.set(DEVICE_KEY, JSON.stringify(valid ? { ...rest, cloudUrl: valid } : rest));
+    this.deps.relay?.sync();
+    return this.status();
+  }
 
   private get fetcher(): typeof fetch {
     return this.deps.fetch ?? fetch;
@@ -86,6 +122,7 @@ export class SyncService {
       lastSyncAt: this.lastSyncAt,
       lastError: this.lastError,
       revoked: Boolean(device?.revoked),
+      cloud: this.deps.relay ? this.deps.relay.status() : { url: this.cloudUrl(), connected: false, lastError: null },
     };
   }
 
@@ -113,10 +150,12 @@ export class SyncService {
   }
 
   /** Join the account as a device: its token into the vault, the account linked, everything queued to send once. */
-  async link(input: { email?: string; password?: string; accessToken?: string }, name: string): Promise<DeviceStatus> {
+  async link(input: { email?: string; password?: string; accessToken?: string; cloudUrl?: string }, name: string): Promise<DeviceStatus> {
     const project = this.project();
     const current = this.device();
     if (current && !current.revoked) throw new HttpError(409, "already_linked", `this hub is already the device "${current.name}" of ${current.email ?? "an account"}: unlink it first`);
+    const cloudUrl = input.cloudUrl === undefined ? undefined : validCloudUrl(input.cloudUrl);
+    if (cloudUrl === null) throw new HttpError(400, "invalid_request", "the cloud's address must be https://…", { cloudUrl: "must be https://…" });
     const session = input.accessToken ?? (input.email && input.password ? await this.signIn(input.email, input.password) : null);
     if (!session) throw new HttpError(400, "invalid_request", "give the account's email and password", { email: "required", password: "required" });
     let claims;
@@ -141,7 +180,7 @@ export class SyncService {
     if (!res.ok || !made?.token) {
       throw new HttpError(502, "cloud_refused", `the account did not take this device: ${(body as { message?: string } | null)?.message ?? `HTTP ${res.status}`}`);
     }
-    const device: Device = { id: made.id, name, ownerId: claims.userId, email: claims.email, linkedAt: new Date(this.now()).toISOString() };
+    const device: Device = { id: made.id, name, ownerId: claims.userId, email: claims.email, linkedAt: new Date(this.now()).toISOString(), ...(cloudUrl ? { cloudUrl } : {}) };
     try {
       // The token lives only in this hub's vault; the cloud keeps its hash.
       this.deps.hubSecrets.set(TOKEN_SECRET, made.token);
@@ -161,6 +200,7 @@ export class SyncService {
     this.lastError = null;
     this.failures = 0;
     this.nextTryAt = 0;
+    this.deps.relay?.sync();
     void this.tick();
     return this.status();
   }
@@ -247,6 +287,7 @@ export class SyncService {
         run(this.hub.db, "DELETE FROM sync_outbox");
         this.deps.hubSecrets.delete(TOKEN_SECRET);
         this.lastError = "the account revoked this device";
+        this.deps.relay?.sync();
         return sent;
       }
       this.failures++;
@@ -288,6 +329,7 @@ export class SyncService {
     });
     this.lastError = null;
     this.lastSyncAt = null;
+    this.deps.relay?.sync();
     return this.status();
   }
 
@@ -320,6 +362,7 @@ export class SyncService {
               email: Type.Optional(Type.String({ maxLength: 320 })),
               password: Type.Optional(Type.String({ maxLength: 1024 })),
               accessToken: Type.Optional(Type.String({ minLength: 20, maxLength: 8192 })),
+              cloudUrl: Type.Optional(Type.String({ minLength: 8, maxLength: 300 })),
             },
             { additionalProperties: false },
           ),
@@ -336,6 +379,14 @@ export class SyncService {
       await this.tick();
       return this.status();
     });
+    app.put(
+      "/api/v1/device/cloud",
+      { schema: { tags: ["account"], body: Type.Object({ url: Type.Union([Type.String({ minLength: 8, maxLength: 300 }), Type.Null()]) }, { additionalProperties: false }) } },
+      async (req): Promise<DeviceStatus> => {
+        tokenOnly(req);
+        return this.setCloudUrl(req.body.url);
+      },
+    );
     app.delete("/api/v1/device", { schema: { tags: ["account"] } }, async (req): Promise<DeviceStatus> => {
       tokenOnly(req);
       return this.unlink();

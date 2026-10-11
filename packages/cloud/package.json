@@ -1,0 +1,19 @@
+{
+  "name": "@orbis/cloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orbis cloud: the Cloudflare Worker and Durable Object that relay the web app to each account's hub.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@orbis/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260914.1"
+  }
+}

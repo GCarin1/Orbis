@@ -335,6 +335,8 @@ export interface DeviceStatus {
   lastError: string | null;
   /** The account revoked this device: nothing is sent any more. */
   revoked: boolean;
+  /** The relay to the Orbis cloud (change 0068): where it goes, whether it is open, why not. */
+  cloud: { url: string | null; connected: boolean; lastError: string | null };
 }
 
 /** A link found in a conversation's messages (its "media, links and docs"). */

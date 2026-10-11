@@ -5,8 +5,8 @@
 **Implementation:** verified — every command group listed above, `bots export|import` included
 **Realizes:** SC7
 **Depends on:** hub-api
-**Last updated:** 2026-10-08
-**Version:** 0.13.0
+**Last updated:** 2026-10-11
+**Version:** 0.14.0
 
 ## Purpose
 
@@ -42,6 +42,7 @@ It talks to the hub only through the public API.
 - When `Orbis-Token.bat` runs, the launcher shall show the login token of the data directory, creating it in the hub's own format when there is none, copy it to the clipboard and print the address that opens the web app signed in; given `--novo` it shall replace the token after asking.
 - When `Orbis.bat` runs on Windows for the first time, the launcher shall create the Orbis shortcut with the Orbis icon on the Desktop and in the Start menu, say that the shortcut replaces the .bat, and keep a note so the shortcut does not come back after the owner deletes it, unless given `--atalhos` (make it again) or `--sem-atalhos` (never).
 - When the user runs `orbis link` (or `orbis-phone link` on the phone), the CLI shall read the account's email and password at prompts, the password hidden, or from the first lines of stdin, never from arguments, link the hub as a device of that account and show the device; `--status` shows what it sent, `--sync` sends now, and `orbis unlink` leaves the account.
+- When the user runs `orbis link --cloud <url>`, the CLI shall set the Orbis cloud this device relays to (with the link, or at once when already linked; `default` for the published cloud), and `orbis link --status` shall show whether the relay to the cloud is connected.
 
 ### Unwanted-behavior (must-not)
 
@@ -68,6 +69,7 @@ It talks to the hub only through the public API.
 13. [verified] A second launcher on the same port restarts the first one with the same data and token, the first window ends with status 0 and says why, and Ctrl+C on the new one ends it quietly; a program that is not Orbis on the port is named and left running with exit status 1; a failed build leaves the running Orbis untouched; the port's owner is read from the netstat tables of an English and a Portuguese Windows; the token is created in the hub's format, kept, replaced only when asked, and left alone when ORBIS_TOKEN decides; the icon holds seven sizes up to 256 pixels and the shortcuts use it — verified by `packages/cli/test/windows-launcher.test.ts`.
 14. [verified] The shortcuts are made on the first run only, again with `--atalhos`, never with `--sem-atalhos`, with no note left when PowerShell made none, and nothing is done off Windows — verified by `packages/cli/test/windows-launcher.test.ts`.
 15. [verified] `orbis link` links with the email and password piped on stdin, says a wrong password, shows the device without its token, `--status --json` answers its state, and `orbis unlink` leaves the account — verified by `packages/cli/test/link.test.ts`
+16. [verified] `orbis link --status` shows the cloud (none yet), `--cloud https://…` sets it on a linked hub and shows it disconnected, and a cloud address that is not https is refused — verified by `packages/cli/test/link.test.ts`
 
 ## Maturity
 

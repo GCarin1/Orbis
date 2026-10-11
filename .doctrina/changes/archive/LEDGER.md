@@ -70,3 +70,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-08 — 0065-export-import — export-import (specs: cloud MODIFIED, web-app MODIFIED)
 - 2026-10-08 — 0066-runner-link — runner-link (specs: cli MODIFIED, cloud MODIFIED, web-app MODIFIED)
 - 2026-10-10 — 0067-runner-link-rollback — runner-link-rollback
+- 2026-10-11 — 0068-cloud-relay — cloud-relay (specs: cli MODIFIED, cloud MODIFIED, web-app MODIFIED)

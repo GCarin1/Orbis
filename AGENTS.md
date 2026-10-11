@@ -77,7 +77,7 @@ canonical templates and syncs `index.json`. Flags: `doctrina <cmd> --help`.
 
 - Runtime: Node.js >= 22.12, TypeScript 5.9 strict ESM; hub = Fastify 5 + `node:sqlite`; web = React 19 + Vite.
 - Package manager: npm workspaces (`packages/shared|hub|cli|web`).
-- Test runner: Vitest projects `shared hub cli desktop web e2e` (e2e drives Playwright Chromium).
+- Test runner: Vitest projects `shared cloud hub cli desktop web e2e` (e2e drives Playwright Chromium).
 - Linter / formatter: `tsc` strict is the lint; no formatter enforced.
 
 ## Commands
@@ -94,6 +94,7 @@ npm run desktop                         # the desktop app
 
 `packages/shared` types/events · `packages/hub` server, run engine, brains, computer ·
 `packages/cli` the `orbis` command · `packages/web` web app · `packages/desktop` Electron shell ·
+`packages/cloud` Cloudflare Worker + Durable Object relay (`.github/workflows/cloud.yml` deploys it) ·
 `packages/android` Android WebView shell (Gradle; `.github/workflows/android.yml` builds the APK) ·
 `docker/desktop` bot computer image · `tests/e2e` browser tests · `docs/` guides · `docs/brand` logo.
 

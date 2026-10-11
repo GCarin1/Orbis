@@ -52,6 +52,12 @@ describe("orbis link", () => {
 
     const status = JSON.parse((await runCli(["link", "--status", "--json"], hub.env)).stdout);
     expect(status.linked).toMatchObject({ name: "Celular", email: "ana@example.com" });
+    expect((await runCli(["link", "--status"], hub.env)).stdout).toContain("cloud: none (choose one: orbis link --cloud https://…)");
+
+    // The cloud this device relays to (change 0068): chosen once linked, shown in the status.
+    const cloudSet = await runCli(["link", "--cloud", "https://orbis.example.workers.dev"], hub.env);
+    expect(cloudSet.stdout).toMatch(/cloud: disconnected \(https:\/\/orbis\.example\.workers\.dev\)/);
+    expect((await runCli(["link", "--cloud", "ftp://nope"], hub.env)).stderr).toContain("must be https://");
 
     expect((await runCli(["unlink"], hub.env)).stdout).toContain("Unlinked: the device's token no longer works");
     expect((await runCli(["link", "--status"], hub.env)).stdout).toContain("Not linked");

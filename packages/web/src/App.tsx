@@ -108,6 +108,8 @@ export function App() {
     }
   };
   const store = useStore();
+  /** The cloud answered that the phone running the hub is off. */
+  const [phoneOff, setPhoneOff] = useState(false);
 
   useEffect(() => {
     if (!token && !account) return;
@@ -147,7 +149,19 @@ export function App() {
     void useStore.getState().loadBots().catch((err: unknown) => {
       if ((err as { status?: number }).status === 401) signedOut();
     });
-    return openStream(() => api.streamTicket(), {
+    // Through the cloud, a ticket refused with runner_offline means the phone with the hub is off (change 0068).
+    const ticket = () =>
+      api.streamTicket().then(
+        (value) => {
+          setPhoneOff(false);
+          return value;
+        },
+        (err: unknown) => {
+          setPhoneOff((err as { body?: { error?: { code?: string } } | null }).body?.error?.code === "runner_offline");
+          throw err;
+        },
+      );
+    return openStream(ticket, {
       onEvent: (e) => {
         const s = useStore.getState();
         s.apply(e);
@@ -340,7 +354,7 @@ export function App() {
         squads={store.squads?.squads}
       />
       <main className="main">
-        {!store.connected && <div className="banner">{t("stream.offline")}</div>}
+        {!store.connected && <div className="banner" role="status">{phoneOff ? t("stream.phoneOff") : t("stream.offline")}</div>}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "tools" && store.api ? <Marketplace api={store.api} bots={bots} servers={store.mcpServers} onLoad={() => store.loadMcpServers()} /> : null}
         {view === "squads" && store.api ? (

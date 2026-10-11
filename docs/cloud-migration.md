@@ -18,8 +18,8 @@ on free tiers at low use (ADR 0020).
 | Files | Cloudflare R2, private, short signed links | Replaces `<data>/files` |
 
 Cloudflare Containers would run the runner in the cloud too, but only on
-the paid plan (US$ 5/month). With the phone off, the app shows the history
-and queues messages; the bots answer when the runner is back.
+the paid plan (US$ 5/month). With the phone off, the app says so; the bots
+answer when the runner is back (reading the history meanwhile comes later).
 
 ## Phases
 
@@ -31,8 +31,9 @@ and queues messages; the bots answer when the runner is back.
    [Moving your data](#moving-your-data-phase-3).
 4. **The phone linked to the account** (change 0066, done) — see
    [Linking the phone to your account](#linking-the-phone-to-your-account-phase-4).
-5. **Deploy** — the Worker, the Durable Object and R2 with `wrangler`, from
-   GitHub Actions.
+5. **The cloud** (change 0068, done) — the Worker and one Durable Object per
+   account relay the web app to the phone, deployed from GitHub Actions; see
+   [Orbis from anywhere](#orbis-from-anywhere-phase-5).
 6. **Moving over** — each person exports on the phone, creates an account,
    imports, checks, and points the app at the cloud address.
 
@@ -202,9 +203,85 @@ How it is protected (ADR 0023):
   opened it.
 
 This phase goes from the phone to the cloud. Messages typed in the cloud's
-app reach the phone with phase 5.
+app reach the phone through phase 5.
 
 The cloud's functions are in `supabase/migrations/0002_devices.sql`.
+
+## Orbis from anywhere (phase 5)
+
+The cloud is a Cloudflare Worker (`packages/cloud`) that serves the web app.
+It relays the app's API to **your own phone**. One Durable Object per account
+holds the connection, and the phone opens that connection itself: no port of
+the phone is opened. The cloud reimplements nothing and keeps no secret
+(ADR 0024).
+
+```
+browser ──https──▶ Worker ──▶ Durable Object of the account ◀──wss── phone (hub)
+          session checked     one per account              token of the device
+```
+
+### Publishing it (once)
+
+1. In Cloudflare: **My Profile → API Tokens → Create Token → "Edit
+   Cloudflare Workers"** (your account, all zones not needed) → Create.
+   Copy the token.
+2. Find the **Account ID**: Cloudflare dashboard → **Workers & Pages**, in
+   the right column.
+3. In GitHub, `GCarin1/Orbis` → **Settings → Secrets and variables →
+   Actions → New repository secret**:
+   - `CLOUDFLARE_API_TOKEN`: the token from step 1;
+   - `CLOUDFLARE_ACCOUNT_ID`: the id from step 2.
+4. **Actions → Cloud → Run workflow** (or any push that changes
+   `packages/cloud`, `packages/web` or `packages/shared`). The run builds,
+   tests and runs `wrangler deploy`. Its summary prints the address, such
+   as `https://orbis.<your-subdomain>.workers.dev`, and checks the security
+   headers.
+5. In Supabase, **Authentication → URL Configuration**, add that address to
+   the Redirect URLs (`https://orbis.<your-subdomain>.workers.dev/**`) so
+   confirmation and password links come back to it.
+
+Free plan: a Worker, SQLite Durable Objects (an idle connection hibernates)
+and static assets. No card needed.
+
+### Connecting the phone
+
+On the phone, once linked (phase 4):
+
+```
+orbis-phone link --cloud https://orbis.<your-subdomain>.workers.dev
+orbis-phone link --status      # cloud: connected (…)
+```
+
+(`ORBIS_CLOUD_URL` does the same, and `off` turns the relay off.) Then
+open the cloud's address in any browser, or in the Android app, and sign in
+with the account's email and password.
+
+### How it is protected
+
+- **The browser** proves its account with its Supabase session. The Worker
+  checks it with the project's published keys before anything reaches the
+  account, and the phone checks it again.
+- **The phone** proves its device with its token, in the WebSocket's
+  `Authorization` header, never in the address. Supabase checks it
+  (`device_identity`, only the hash). It does not reach the Durable Object.
+  - Only the newest phone of an account is connected.
+  - Every hour the connection opens again, so a revoked device drops off.
+- **Every answer** carries HSTS, a CSP that allows only the cloud's own
+  origin and the Supabase project, `X-Frame-Options: DENY`, `nosniff` and
+  `Referrer-Policy: no-referrer`. There is no CORS.
+- **Limits**: 300 requests a minute per address and 600 per account. There
+  are no request logs.
+- **Refused in the cloud**: pairing, linking or unlinking devices, and
+  unlinking the account. These need the hub's own token, on the hub itself.
+
+### With the phone off
+
+The app says "Your phone is off or offline: your bots answer when it is
+back". Reading the history from the account while the phone is off comes
+later.
+
+The computer's live view and MCP sign-ins (OAuth) are still done on the
+hub itself.
 
 ## Security check
 

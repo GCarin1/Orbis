@@ -118,6 +118,12 @@ export function DeviceSettings({ api, account = null }: { api: Api; account?: Ac
               <p className="muted small">{t("device.state", { pending: status.pending, when: when(status.lastSyncAt) })}</p>
             )}
             {status.lastError && !status.revoked && <p className="error small">{status.lastError}</p>}
+            {!status.revoked && status.cloud?.url && (
+              <p className="muted small" data-testid="device-cloud">
+                {t(status.cloud.connected ? "device.cloudOn" : "device.cloudOff", { url: status.cloud.url })}
+                {!status.cloud.connected && status.cloud.lastError ? ` (${status.cloud.lastError})` : ""}
+              </p>
+            )}
             <div className="card-actions">
               {!status.revoked && (
                 <button type="button" className="btn" disabled={busy} onClick={() => void syncNow()}>

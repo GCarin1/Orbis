@@ -1,6 +1,7 @@
 // `orbis link` and `orbis unlink` (specs/cli, change 0066-runner-link): make this hub a device of an Orbis
 // account. The account's email and password are typed at prompts (the password hidden) or piped on stdin, never
 // passed as arguments (shell history); the hub signs in itself and keeps only the device's own token.
+// `--cloud <url>` names the Orbis cloud the hub relays to (change 0068-cloud-relay; `default` for the published one).
 import { hostname } from "node:os";
 import { parseArgs } from "node:util";
 import type { DeviceStatus } from "@orbis/shared";
@@ -16,6 +17,8 @@ function show(ctx: CommandContext, s: DeviceStatus): void {
   if (s.revoked) return out(ctx.io, "The account revoked this device: nothing is sent. Run: orbis unlink, then orbis link");
   out(ctx.io, `waiting to send: ${s.pending}   last sync: ${s.lastSyncAt ?? "not yet"}`);
   if (s.lastError) out(ctx.io, `last error: ${s.lastError}`);
+  if (!s.cloud.url) out(ctx.io, "cloud: none (choose one: orbis link --cloud https://…)");
+  else out(ctx.io, `cloud: ${s.cloud.connected ? "connected" : "disconnected"} (${s.cloud.url})${!s.cloud.connected && s.cloud.lastError ? ` — ${s.cloud.lastError}` : ""}`);
 }
 
 /** Email then password, from prompts in a terminal, else the first two lines of stdin. */
@@ -33,16 +36,22 @@ async function credentials(ctx: CommandContext, email: string | undefined): Prom
 export async function linkCommand(args: string[], ctx: CommandContext): Promise<number> {
   const { values } = parseArgs({
     args,
-    options: { name: { type: "string" }, email: { type: "string" }, status: { type: "boolean" }, sync: { type: "boolean" } },
+    options: { name: { type: "string" }, email: { type: "string" }, status: { type: "boolean" }, sync: { type: "boolean" }, cloud: { type: "string" } },
     strict: true,
   });
   const client = ctx.client();
   if (values.status) return show(ctx, await client.get<DeviceStatus>("/api/v1/device")), 0;
   if (values.sync) return show(ctx, await client.post<DeviceStatus>("/api/v1/device/sync", {})), 0;
+  // The cloud this device relays to (change 0068): set now when already linked, else with the link below.
+  const cloudUrl = values.cloud === undefined ? undefined : values.cloud === "default" ? null : values.cloud;
+  if (cloudUrl !== undefined) {
+    const current = await client.get<DeviceStatus>("/api/v1/device");
+    if (current.linked && !current.revoked) return show(ctx, await client.put<DeviceStatus>("/api/v1/device/cloud", { url: cloudUrl })), 0;
+  }
   const { email, password } = await credentials(ctx, values.email);
   if (!email || !password) throw new UsageError("orbis link needs the account's email and password");
   const name = (values.name ?? `Orbis — ${hostname() === "localhost" ? "celular" : hostname()}`).slice(0, 80);
-  const status = await client.post<DeviceStatus>("/api/v1/device/link", { name, email, password });
+  const status = await client.post<DeviceStatus>("/api/v1/device/link", { name, email, password, ...(cloudUrl ? { cloudUrl } : {}) });
   if (!ctx.json) out(ctx.io, "Linked. This hub now sends its data to your account; its keys stay here.");
   show(ctx, status);
   return 0;

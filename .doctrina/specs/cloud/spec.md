@@ -3,11 +3,11 @@
 
 **Capability:** cloud
 **Status:** active
-**Implementation:** partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), and this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066); the Cloudflare deploy comes in a later change
+**Implementation:** partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066), and the Cloudflare cloud relaying the web app to the account's hub (`packages/cloud/`, `packages/hub/src/relay/`, `supabase/migrations/0003_device_identity.sql`, change 0068); reading the history while the phone is off comes later
 **Realizes:** SC16
 **Depends on:** hub-api, secrets
-**Last updated:** 2026-10-08
-**Version:** 0.4.0
+**Last updated:** 2026-10-11
+**Version:** 0.5.0
 
 ## Purpose
 
@@ -27,6 +27,7 @@ and its secrets, and syncs with the account (ADR 0020).
 - The system shall enable and force row level security on every cloud table, with policies that let the signed-in user read, add, change and delete only rows whose `owner_id` is theirs.
 - The system shall keep, per runner device of an account, its name, the SHA-256 hash of its token, when it was last seen and when it was revoked.
 - The system shall export everything a hub keeps as one `.orbis` file: a manifest with the SHA-256 of every part, every table but the vault, the CLI sessions and the search index, the conversations' files and the skills, and, only when the user gives a password of at least 10 characters, the secrets sealed by it with scrypt and AES-256-GCM (ADR 0022).
+- The system shall serve the web app from the cloud's static assets and relay every other request under `/api/` and `/v1/` to the account's own hub through one Durable Object per account, without reimplementing the hub's routes nor keeping any secret beyond the Supabase project's address and publishable key (ADR 0024).
 
 ### Event-driven
 
@@ -37,6 +38,9 @@ and its secrets, and syncs with the account (ADR 0020).
 - When a hub is linked to an account with the account's email and password, the system shall register it as a device with a token of 32 random bytes, answered once, kept in the hub's vault and only as its SHA-256 in the cloud (ADR 0023).
 - When a row of a synced table changes while a hub is linked as a device, the system shall record it (but this hub's own settings) and send, every 15 seconds and table by table in the order of their references, the latest state of each changed row and the keys of the deleted ones through the cloud's device function, which writes them only under the device's owner.
 - When the account revokes a device, the system shall refuse its token at once; the hub shall then send nothing more, forget its token and say it was revoked.
+- When a hub is linked as a device and knows its cloud (`ORBIS_CLOUD_URL`, else `orbis link --cloud`, else the published cloud), the system shall open one WebSocket from the hub out to the cloud with the device's token in the upgrade's Authorization header, have the cloud check the token with Supabase before handing the socket to the token's account, and keep only the newest hub of an account connected.
+- When a browser calls the cloud's API, the system shall check its Supabase session against the project's published keys before relaying it, and the hub shall check it again as the session of the account linked to it; a stream ticket or file key shall name its account so the cloud routes it, the hub checking its own part.
+- When no hub of the account is connected, the system shall answer the account's API with 503 `runner_offline`, and a hub leaving shall answer the requests waiting the same way and close the account's open streams.
 
 ### Unwanted-behavior (must-not)
 
@@ -46,6 +50,7 @@ and its secrets, and syncs with the account (ADR 0020).
 - The system shall not import a file whose parts are missing, unlisted, changed or of a newer format, nor a file whose bots or squads take handles another bot or squad holds, writing nothing then.
 - The system shall not carry over a bot's consent to work on the user's own machine, the linked account, MCP OAuth sign-ins, nor runs and approvals still waiting.
 - The system shall not send a secret, the device's token or this hub's own settings to the cloud, nor let a session alone link or unlink a hub as a device, nor take more than 10 active devices per account or 500 rows a call.
+- The cloud shall not relay pairing, the hub's device or account links, nor unlinking the account; shall not pass the device's token, cookies or its own headers on to an account; shall not keep a relay open more than an hour without checking its token again; and shall answer every page and API call with HSTS, a CSP of its own origin and the Supabase project, `X-Frame-Options: DENY`, `nosniff` and `Referrer-Policy: no-referrer`.
 
 ## Acceptance criteria
 
@@ -55,6 +60,8 @@ and its secrets, and syncs with the account (ADR 0020).
 4. [verified] A session of the account linked to a hub opens it and no other account's does; the web app signs in, creates an account, resets a password and links a hub — verified by `packages/hub/test/auth.test.ts` and `packages/web/test/account.test.tsx`
 5. [verified] The file zips and unzips and refuses damaged parts and unsafe paths; the secrets open only with their password; an export holds every table but the vault, the files, the skills and the sealed secrets and nothing in clear; imported into an empty hub it brings everything (the secrets into its vault, the routine's webhook secret, the file, the skill, health), a "my computer" bot works in its own computer, a second import adds nothing, without the password everything but the secrets comes, a changed part, a handle another bot holds and a file that is no export are refused; into the cloud every table goes under the account's session in reference order as the cloud's columns take them, never a secret, never twice, and another session is refused; every exported column maps onto a cloud column of its type — verified by `packages/hub/test/export.test.ts`
 6. [verified] Linking signs in, keeps the device's token in the vault and never answers it, links the account and sends every row once; each change goes once with the row's latest state, deletions by key, bots before their conversations; nothing is queued while not linked; what waits stays while the cloud is down; once revoked nothing is sent and the token is forgotten; another account, a second link and a session alone are refused; unlinking leaves nothing; an export carries neither the device nor its token — verified by `packages/hub/test/sync.test.ts`
+7. [verified] The Worker serves the app with its security headers and the one inline script by hash, answers where accounts sign in, relays the API only with a valid session of the account it names and never cookies or its own headers, keeps pairing and the hub's links off the cloud, hands out tickets and file keys that name the account and routes them there, takes a hub's relay only with a device token Supabase knows (never passing it on), and limits by address; the account's object says the phone is off without a hub, relays requests and answers in pieces both ways, relays streams under their own id, answers waiting requests and closes streams when the hub leaves, keeps the newest hub and renews an hour-old relay — verified by `packages/cloud/test/cloud.test.ts`
+8. [verified] Once linked the hub opens the relay with its token in the Authorization header and never in the address, answers relayed requests with its own routes and auth (no session, another account or a session managing the device refused; only the API crosses), carries a 1.2 MB upload and download in pieces, relays its event stream opened with a one-time ticket, closes when unlinked and stays closed when the cloud says the device was revoked — verified by `packages/hub/test/relay.test.ts`
 
 ## Maturity
 

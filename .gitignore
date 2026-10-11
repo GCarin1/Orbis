@@ -10,3 +10,6 @@ packages/desktop/out/
 packages/web/dev-dist/
 test-results/
 playwright-report/
+
+# wrangler dev state
+.wrangler/

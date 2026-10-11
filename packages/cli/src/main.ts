@@ -25,7 +25,7 @@ Usage: orbis <command> [options]
   serve [--port N] [--host H] [--data-dir D]   run the hub (API, stream, web app)
   open                                         open the web app in your browser
   login [--url U] [--token T] [--show-token]   save or show how to reach the hub
-  link [--name N] [--email E] | --status | --sync   make this hub a device of your Orbis account (email and password at prompts)
+  link [--name N] [--email E] [--cloud URL] | --status | --sync   make this hub a device of your Orbis account (email and password at prompts)
   unlink                                       leave the account: the device's token stops working
   bots list|create|show|edit|delete|duplicate|export|import   manage bots; share one as a YAML template
   chat @bot [message]                          talk to a bot (interactive without a message)

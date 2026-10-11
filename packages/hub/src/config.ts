@@ -53,6 +53,32 @@ export interface HubConfig {
    * publishable key, both public by design; null when ORBIS_SUPABASE_URL is `off`.
    */
   supabase: { url: string; key: string } | null;
+  /**
+   * The Orbis cloud this hub, once linked as a device, opens its relay to (change 0068): `ORBIS_CLOUD_URL`;
+   * undefined lets the device's own setting decide, null (`off`) turns the relay off.
+   */
+  cloudUrl?: string | null;
+}
+
+/**
+ * The published Orbis cloud (change 0068): the Worker `orbis` of the project's Cloudflare account. Null until
+ * its address is known; meanwhile a device names its cloud with `orbis link --cloud` or ORBIS_CLOUD_URL.
+ */
+export const DEFAULT_CLOUD_URL: string | null = null;
+
+/** A cloud address: https, or http on this machine (a local `wrangler dev`). */
+export function validCloudUrl(url: string): string | null {
+  const trimmed = url.trim().replace(/\/+$/, "");
+  return /^(https:\/\/[^/?#\s]+|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)$/.test(trimmed) ? trimmed : null;
+}
+
+function readCloudUrl(env: Env): string | null | undefined {
+  const url = readVar(env, "ORBIS_CLOUD_URL");
+  if (!url) return undefined;
+  if (url.toLowerCase() === "off") return null;
+  const valid = validCloudUrl(url);
+  if (!valid) throw new Error(`ORBIS_CLOUD_URL must be https://<the Orbis cloud> or off, got "${url}"`);
+  return valid;
 }
 
 /** The Orbis cloud project (ADR 0020); a hub of another project sets ORBIS_SUPABASE_URL and ORBIS_SUPABASE_KEY. */
@@ -165,6 +191,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
     prices: overrides.prices ?? loadPrices(dataDir),
     supabase: overrides.supabase !== undefined ? overrides.supabase : readSupabase(env),
+    cloudUrl: overrides.cloudUrl !== undefined ? overrides.cloudUrl : readCloudUrl(env),
   };
 }
 
