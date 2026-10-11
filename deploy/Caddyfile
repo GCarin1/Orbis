@@ -1,0 +1,30 @@
+# Orbis behind Caddy (docs/server.md, ADR 0026): HTTPS with a free certificate Caddy gets and renews by itself,
+# and the browser's protections on every answer. The hub keeps its own sign-in (token or account, with two-step
+# verification) on every request.
+{$ORBIS_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		Permissions-Policy "camera=(), geolocation=(), microphone=(self)"
+		Cross-Origin-Opener-Policy same-origin
+		-Server
+		-X-Powered-By
+	}
+
+	# The computer's live view (noVNC) is a page of its own, framed by the app.
+	@vnc path_regexp ^/api/v1/bots/[^/]+/computer/vnc/
+	header @vnc X-Frame-Options SAMEORIGIN
+
+	# Everything else: never framed, only its own files, and talking only to itself and the account's Supabase.
+	# A hub file keeps its own stricter policy (`?` sets it only when absent).
+	@app not path_regexp ^/api/v1/bots/[^/]+/computer/vnc/
+	header @app {
+		X-Frame-Options DENY
+		?Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-9MqPMnCy9kWHd4wGcT6oCIVQWJrrRDNdu+EOjmaKrrI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' {$ORBIS_SUPABASE_URL}; frame-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+	}
+
+	reverse_proxy orbis:7420
+}

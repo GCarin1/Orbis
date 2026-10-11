@@ -1,7 +1,8 @@
-// specs/hub-api — the cloud kit (change 0051): the hub's image, its compose file with the tunnels, and
+// specs/hub-api — the cloud kit (change 0051): the hub's image, its compose file with Caddy for HTTPS (change 0070), and
 // the Codespaces dev container keep what makes a hub on a server safe and lasting — its data and
 // Claude Code's login on one volume, the port on the machine only, the subscription token and never
 // an API key, no secret written in the files.
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -35,19 +36,33 @@ describe("the hub's image", () => {
 describe("the compose file", () => {
   const compose = read("deploy/docker-compose.yml");
 
-  it("publishes the port on the machine only, keeps the data on a volume, and has the tunnels as profiles", () => {
+  it("publishes the hub's port on the machine only, keeps the data on a volume, and has Caddy for HTTPS as a profile", () => {
     expect(compose).toMatch(/"127\.0\.0\.1:\$\{ORBIS_PORT:-7420\}:7420"/);
     expect(compose).toMatch(/- orbis-data:\/data/);
     expect(compose).toMatch(/CLAUDE_CODE_OAUTH_TOKEN: \$\{CLAUDE_CODE_OAUTH_TOKEN:-\}/);
-    expect(compose).toMatch(/profiles: \["quick-tunnel"\][\s\S]*--url http:\/\/orbis:7420/);
-    expect(compose).toMatch(/profiles: \["tunnel"\][\s\S]*TUNNEL_TOKEN: \$\{TUNNEL_TOKEN:-\}/);
+    // Only Caddy faces the internet (change 0070): 80 for the certificate, 443 for Orbis.
+    expect(compose).toMatch(/profiles: \["https"\][\s\S]*image: caddy:[\s\S]*"443:443"/);
+    expect(compose).toMatch(/ORBIS_PUBLIC_URL: \$\{ORBIS_PUBLIC_URL:-\}/);
+    expect(compose).not.toMatch(/cloudflared|TUNNEL_TOKEN/);
     expect(compose).not.toMatch(/ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN/);
   });
 
   it("comes with an example environment whose secrets are empty, and the real one is ignored by git", () => {
     const example = read("deploy/.env.example");
-    for (const name of ["ORBIS_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "TUNNEL_TOKEN"]) expect(example).toMatch(new RegExp(`^${name}=$`, "m"));
+    for (const name of ["ORBIS_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "ORBIS_DOMAIN", "ORBIS_PUBLIC_URL"]) expect(example).toMatch(new RegExp(`^${name}=$`, "m"));
     expect(read(".gitignore")).toMatch(/^\.env$/m);
+  });
+
+  it("serves Orbis over HTTPS with the browser's protections, and frames only the computer's live view", () => {
+    const caddy = read("deploy/Caddyfile");
+    expect(caddy).toMatch(/^\{\$ORBIS_DOMAIN\} \{/m);
+    expect(caddy).toMatch(/reverse_proxy orbis:7420/);
+    for (const h of ["Strict-Transport-Security", "X-Content-Type-Options nosniff", "Referrer-Policy no-referrer", "X-Frame-Options DENY", "frame-ancestors 'none'"]) expect(caddy).toContain(h);
+    expect(caddy).not.toMatch(/'unsafe-eval'|script-src[^;]*'unsafe-inline'/);
+    // The one inline script of the web app, by its hash.
+    const html = read("packages/web/index.html");
+    const inline = /<script>([\s\S]*?)<\/script>/.exec(html)![1]!;
+    expect(caddy).toContain(`'sha256-${createHash("sha256").update(inline).digest("base64")}'`);
   });
 });
 

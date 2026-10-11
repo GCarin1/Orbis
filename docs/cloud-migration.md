@@ -1,25 +1,22 @@
-# Orbis in the cloud — Cloudflare + Supabase
+# Orbis with accounts — an Oracle server + Supabase
 
-Orbis is moving from one hub per person (on the phone in Termux, or on a
-computer) to **accounts in the cloud** with an email and a password. The
-data of a local hub comes along through an export file. Everything runs
-on free tiers at low use (ADR 0020).
+Orbis moved from one hub per person (on the phone in Termux, or on a
+computer) to **a hub on a free server that stays on**, opened with an
+**account** (email, password and, optionally, an authenticator's code). The
+data of an old hub comes along through an export file. Everything runs on
+free tiers (ADR 0020, ADR 0026).
 
 ## Architecture
 
 | Part | Where (free tier) | Role |
 |---|---|---|
-| Web app | Cloudflare Workers Static Assets | Served from the edge; the APK opens it from anywhere |
-| API and edge | A Cloudflare Worker | Checks the Supabase session, rate limits, reads and writes the account's data |
-| Live stream and run queue | A Durable Object per account (SQLite) | The web app's WebSocket; the runs waiting for the runner |
-| Runner | The current hub, on the phone in Termux | Runs the bots (brain CLIs, shell, stdio MCP servers, Health Connect) and keeps the secrets; connects outwards, opens no port |
-| Database | Supabase Postgres, project `orbis` | The account's data, closed by row level security |
-| Sign-in | Supabase Auth, email and password | Replaces the hub's single token |
-| Files | Cloudflare R2, private, short signed links | Replaces `<data>/files` |
+| Hub, web app, bots | An Oracle Cloud Always Free VM, in Docker | Runs the bots (brain CLIs, shell, MCP servers, browser), keeps the secrets in its vault, serves the app |
+| HTTPS | Caddy on the same VM | A free certificate it renews itself; the browser's protections on every answer |
+| Sign-in | Supabase Auth | Email and password, two-step verification (TOTP) |
+| Database | Supabase Postgres, project `orbis` | A copy of the account's data, closed by row level security |
 
-Cloudflare Containers would run the runner in the cloud too, but only on
-the paid plan (US$ 5/month). With the phone off, the app says so; the bots
-answer when the runner is back (reading the history meanwhile comes later).
+The phone is only a screen: the Orbis app or a browser. Setting it up:
+[server.md](server.md).
 
 ## Phases
 
@@ -31,13 +28,14 @@ answer when the runner is back (reading the history meanwhile comes later).
    [Moving your data](#moving-your-data-phase-3).
 4. **The phone linked to the account** (change 0066, done) — see
    [Linking the phone to your account](#linking-the-phone-to-your-account-phase-4).
-5. **The cloud** (change 0068, done) — the Worker and one Durable Object per
-   account relay the web app to the phone, deployed from GitHub Actions; see
-   [Orbis from anywhere](#orbis-from-anywhere-phase-5).
-6. **Moving over, without Termux** (change 0069, done) — the hub runs on a
-   free server that stays on (Oracle Cloud Always Free, Docker), linked as
-   the account's device; each person exports on the phone, imports on the
-   server, and points the app at the cloud address. See [server.md](server.md).
+5. **A Cloudflare relay** (change 0068) — replaced by phase 7: one piece
+   fewer to run.
+6. **Without Termux** (change 0069, done) — the hub runs on a free server
+   that stays on (Oracle Cloud Always Free, Docker); `orbis data
+   export|import` moves the data there.
+7. **Oracle only** (change 0070, done) — the server serves the app itself
+   over HTTPS (Caddy), with two-step verification for accounts. See
+   [server.md](server.md).
 
 ## The account database (phase 1)
 
@@ -204,129 +202,47 @@ How it is protected (ADR 0023):
 - Only the hub's own token links or unlinks it, never a session that
   opened it.
 
-This phase goes from the phone to the cloud. Messages typed in the cloud's
-app reach the phone through phase 5.
+This sends from the hub to the account: Supabase keeps a copy. The app
+itself always talks to the hub.
 
 The cloud's functions are in `supabase/migrations/0002_devices.sql`.
 
-## Orbis from anywhere (phase 5)
-
-The cloud is a Cloudflare Worker (`packages/cloud`) that serves the web app.
-It relays the app's API to **your own phone**. One Durable Object per account
-holds the connection, and the phone opens that connection itself: no port of
-the phone is opened. The cloud reimplements nothing and keeps no secret
-(ADR 0024).
-
-```
-browser ──https──▶ Worker ──▶ Durable Object of the account ◀──wss── phone (hub)
-          session checked     one per account              token of the device
-```
-
-### Publishing it (once)
-
-1. In Cloudflare: **My Profile → API Tokens → Create Token → "Edit
-   Cloudflare Workers"** (your account, all zones not needed) → Create.
-   Copy the token.
-2. Find the **Account ID**: Cloudflare dashboard → **Workers & Pages**, in
-   the right column.
-3. In GitHub, `GCarin1/Orbis` → **Settings → Secrets and variables →
-   Actions → New repository secret**:
-   - `CLOUDFLARE_API_TOKEN`: the token from step 1;
-   - `CLOUDFLARE_ACCOUNT_ID`: the id from step 2.
-4. **Actions → Cloud → Run workflow** (or any push that changes
-   `packages/cloud`, `packages/web` or `packages/shared`). The run builds,
-   tests and runs `wrangler deploy`. Its summary prints the address, such
-   as `https://orbis.<your-subdomain>.workers.dev`, and checks the security
-   headers.
-5. In Supabase, **Authentication → URL Configuration**, add that address to
-   the Redirect URLs (`https://orbis.<your-subdomain>.workers.dev/**`) so
-   confirmation and password links come back to it.
-
-Free plan: a Worker, SQLite Durable Objects (an idle connection hibernates)
-and static assets. No card needed.
-
-### Connecting the phone
-
-On the phone, once linked (phase 4):
-
-```
-orbis-phone link --cloud https://orbis.<your-subdomain>.workers.dev
-orbis-phone link --status      # cloud: connected (…)
-```
-
-(`ORBIS_CLOUD_URL` does the same, and `off` turns the relay off.) Then
-open the cloud's address in any browser, or in the Android app, and sign in
-with the account's email and password.
-
-### How it is protected
-
-- **The browser** proves its account with its Supabase session. The Worker
-  checks it with the project's published keys before anything reaches the
-  account, and the phone checks it again.
-- **The phone** proves its device with its token, in the WebSocket's
-  `Authorization` header, never in the address. Supabase checks it
-  (`device_identity`, only the hash). It does not reach the Durable Object.
-  - Only the newest phone of an account is connected.
-  - Every hour the connection opens again, so a revoked device drops off.
-- **Every answer** carries HSTS, a CSP that allows only the cloud's own
-  origin and the Supabase project, `X-Frame-Options: DENY`, `nosniff` and
-  `Referrer-Policy: no-referrer`. There is no CORS.
-- **Limits**: 300 requests a minute per address and 600 per account. There
-  are no request logs.
-- **Refused in the cloud**: pairing, linking or unlinking devices, and
-  unlinking the account. These need the hub's own token, on the hub itself.
-
-### With the phone off
-
-The app says "Your phone is off or offline: your bots answer when it is
-back". Reading the history from the account while the phone is off comes
-later.
-
-The computer's live view and MCP sign-ins (OAuth) are still done on the
-hub itself.
-
 ## Security check
 
-What the local hub does today, acceptable only on a local network, and
-how the cloud closes each gap:
+What a hub on the internet must hold, and how Orbis holds it (change 0070):
 
 1. **One static token opens everything** (including `computer.shell` and
-   the secrets). → Accounts, short session tokens, row level security.
-2. **The token travels in the address** (`/api/v1/stream?token=`, the
-   file content link), so it lands in logs and history. → Done (change
-   0064): a one-time stream ticket and an hour-long file key.
-3. **Pairing exchanges a 6-digit code for the token.** → Gone in the cloud,
-   since signing in replaces it. The local hub already limits it: a code
-   dies after 5 wrong tries, and claims stop past 20 a minute.
-4. **The vault key sits on the hub's own disk.** → The vault stays only on
-   the runner; the cloud never receives a secret, and the export carries
-   them sealed by the user's password (change 0065, done).
-5. **`http.fetch`, MCP over HTTP and OAuth discovery fetch any address**
-   (SSRF). → Block private, loopback and link-local addresses after the
-   name is resolved, and limit redirects.
-6. **`computer.shell` and stdio MCP servers run commands.** → Only on each
-   person's runner; the cloud hands a runner only its own account's runs
-   and never runs a command itself.
-7. **Routine webhooks and the OAuth callback.** → Keep their signature and
-   `state` checks, and add a rate limit.
-8. **No rate limit and no security headers.** → The hub now limits
-   refused credentials (change 0064). In the Worker: rate limits
-   per address and per account, HSTS, a strict CSP, `X-Frame-Options`,
-   CORS closed to its own origin.
-9. **Uploads** are already sandboxed (CSP sandbox, `nosniff`). → Add a
-   quota per account.
-10. **Third-party content** (MCP results, files) already reaches the bots
-    marked as untrusted. → Kept.
-11. **Runner device tokens.** → Least scope (one function, only the owner's
-    rows), revocation from the web app, kept encrypted on the phone, only a
-    hash in the cloud (change 0066, done).
+   the secrets). → Accounts with short Supabase sessions checked against
+   the project's published keys, and optional two-step verification the
+   hub enforces (a session without the second step is refused). The token
+   is kept as the recovery key. On the internet it must have at least 24
+   characters; the one Orbis makes has 43.
+2. **The token travels in the address.** → A one-time stream ticket and an
+   hour-long file key (change 0064).
+3. **Pairing exchanges a 6-digit code for the token.** → A code dies after
+   5 wrong tries or 5 minutes, claims stop past 20 a minute, and only a
+   signed-in user makes a code.
+4. **Brute force on sign-in.** → 20 refused tries a minute per address,
+   then 429. Behind Caddy the hub takes the visitor's real address, and
+   trusts that header only from its own machine and private network.
+5. **Open ports.** → Only 22 (SSH, by key), 80 (the certificate and the
+   redirect) and 443. The hub's port 7420 listens on the VM only.
+6. **No security headers.** → Caddy adds HSTS, a CSP limited to Orbis and
+   its Supabase project (the one inline script by hash), `X-Frame-Options:
+   DENY`, `nosniff`, `Referrer-Policy: no-referrer` and a Permissions-Policy.
+7. **The database.** → Row level security on every table: an account reads
+   and writes only its own rows. The app holds only the publishable key; no
+   service key exists anywhere. A device writes through one function, which
+   checks its token's hash and the owner.
+8. **Leaked keys.** → The bots' keys live only in the hub's encrypted vault
+   on the VM. Exports carry them sealed by a password. `deploy/.env`
+   (mode 600) is ignored by git, and the repository's history holds no real
+   key (only the redactor's fake test fixtures).
+9. **`http.fetch` and MCP over HTTP fetch any address** (SSRF), and
+   `computer.shell` runs commands. → On your own VM this reaches only your
+   own server; give these tools only to bots you trust.
+10. **Uploads** are sandboxed (CSP sandbox, `nosniff`), and third-party
+    content reaches the bots marked as untrusted.
 
-In the cloud as well:
-
-- Supabase: the service role key only in the Worker's secrets, never in
-  the web app (which uses the publishable key) nor on a phone.
-- Cloudflare: secrets through `wrangler secret`, and Turnstile on sign-up
-  and password reset.
-- Logs never carry secrets.
-- LGPD: export and delete the account. Health data reaches only the bots
-  the user picks.
+Worth turning on in Supabase: leaked password protection
+(Authentication → Passwords).

@@ -7,6 +7,14 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Changed
+
+- **Oracle only, no Cloudflare** (change 0070-oracle-only, ADR 0026): the server serves Orbis itself over HTTPS — `orbis-server install` adds Caddy (a free certificate, `<ip>.sslip.io` when there is no domain), opens only 80 and 443, and puts HSTS, a strict CSP and `X-Frame-Options: DENY` on every answer. The Cloudflare relay (`packages/cloud`, `ORBIS_CLOUD_URL`, `orbis link --cloud`, the phone-off notice) is removed. Behind the proxy the hub counts refused sign-ins per visitor (`ORBIS_PUBLIC_URL`) and wants a token of at least 24 characters.
+
+### Added
+
+- **Two-step verification for accounts** (change 0070): Settings → Account → Two-step verification sets up an authenticator app from a QR code; then signing in asks its 6-digit code after the password, and the hub refuses any account session without it. The hub's token stays as the recovery key.
+
 ### Added
 
 - **Orbis without Termux** (change 0069-server-runner, ADR 0025): `scripts/server/orbis-server.sh` installs the hub with Docker on an always-on free server (Oracle Cloud Always Free, arm64 or x86-64), links it to your account and connects it to the Orbis cloud with no port or tunnel; `orbis data export|import` moves a hub's `.orbis` file to it. A hub replaced by another of its account now gives way for good instead of taking the cloud back every five minutes. Guide: `docs/server.md`.

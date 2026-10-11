@@ -27,6 +27,8 @@ interface Linked {
   userId: string;
   email: string | null;
   linkedAt: string;
+  /** The account asks a second step (an authenticator's code): its sessions open the hub only at `aal2`. */
+  mfa?: boolean;
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -87,7 +89,10 @@ export class HubAuth {
     if (!linked || !this.tokens || !looksLikeJwt(presented)) return null;
     try {
       const claims = await this.tokens.verify(presented);
-      return claims.userId === linked.userId ? "account" : null;
+      if (claims.userId !== linked.userId) return null;
+      // Two-step verification on: a session proven by the password alone does not open the hub.
+      if (linked.mfa && claims.aal !== "aal2") return null;
+      return "account";
     } catch (err) {
       if (err instanceof InvalidSession) return null;
       throw err;
@@ -166,7 +171,11 @@ export class HubAuth {
 
   status(via: Via | null): AccountStatus {
     const linked = this.linked();
-    return { available: Boolean(this.tokens), linked: linked ? { userId: linked.userId, email: linked.email, linkedAt: linked.linkedAt } : null, via };
+    return {
+      available: Boolean(this.tokens),
+      linked: linked ? { userId: linked.userId, email: linked.email, linkedAt: linked.linkedAt, mfa: Boolean(linked.mfa) } : null,
+      via,
+    };
   }
 
   async routes(root: FastifyInstance): Promise<void> {
@@ -199,6 +208,22 @@ export class HubAuth {
       this.settings.delete(ACCOUNT_KEY);
       return this.status(this.viaOf(req));
     });
+    // Two-step verification (change 0070): turned on or off with the hub's token, or with a session of the
+    // account that gave its second step (aal2) — never with a session proven by the password alone.
+    app.put(
+      "/api/v1/account/mfa",
+      { schema: { tags: ["account"], body: Type.Object({ required: Type.Boolean() }, { additionalProperties: false }) } },
+      async (req): Promise<AccountStatus> => {
+        const linked = this.linked();
+        if (!linked) throw new HttpError(409, "not_linked", "link an account to this hub first");
+        if (this.viaOf(req) !== "token") {
+          const claims = await this.tokens!.verify(bearer(req)!).catch(() => null);
+          if (claims?.aal !== "aal2") throw new HttpError(403, "mfa_session_required", "give your authenticator's code first: this change needs a session with the second step");
+        }
+        this.settings.set(ACCOUNT_KEY, JSON.stringify({ ...linked, mfa: req.body.required } satisfies Linked));
+        return this.status(this.viaOf(req));
+      },
+    );
     app.post("/api/v1/stream/ticket", { schema: { tags: ["stream"] } }, async (req) => this.issueTicket(this.viaOf(req) ?? "token"));
     app.post("/api/v1/files/key", { schema: { tags: ["files"] } }, async () => this.issueFileKey());
   }

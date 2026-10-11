@@ -113,71 +113,15 @@ Good to know:
 
 ## A server that stays on
 
-> With an Orbis account, the simplest way is now [server.md](server.md):
-> `orbis-server install` on a free Oracle VM, linked to the Orbis cloud, with
-> no tunnel and no Termux. What follows is the older setup without an account.
-
-
-Use any Linux machine that stays on, x86 or ARM. For example:
-
-- a free cloud VM, such as Oracle Cloud's Always Free ARM VM;
-- a small VPS;
-- a Raspberry Pi 4 or 5 at home.
-
-The repository's `Dockerfile` builds an image with the hub, the web app,
-Claude Code, Chromium (for the browser tools), git, curl and python3. It
-runs as a normal user. `deploy/docker-compose.yml` runs the image, and can
-put it on the internet through a Cloudflare tunnel without opening any port.
-
-```
-curl -fsSL https://get.docker.com | sh       # Docker, when the machine has none
-git clone https://github.com/<you>/Orbis.git
-cd Orbis/deploy
-cp .env.example .env
-nano .env                                    # ORBIS_TOKEN and CLAUDE_CODE_OAUTH_TOKEN
-docker compose --profile quick-tunnel up -d --build
-docker compose logs quick-tunnel | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com'
-```
-
-Open the printed `https://….trycloudflare.com` address on the phone, then
-type the token or pair with the QR code.
-
-Three ways to reach the server:
-
-| How | Address | Notes |
-|---|---|---|
-| `--profile quick-tunnel` | `https://<random>.trycloudflare.com` | Free, with no account. The address changes each time the tunnel restarts. Good for trying. |
-| `--profile tunnel` | your own domain, which does not change | Create a tunnel in Cloudflare Zero Trust → Networks → Tunnels, point a public hostname at `http://orbis:7420`, and put its token in `TUNNEL_TOKEN`. |
-| [Tailscale](https://tailscale.com) | `https://<machine>.<tailnet>.ts.net` | A private network of your own devices, with no public address. Install it on the server and on the phone, then run `tailscale serve --bg 7420` on the server. |
-
-Without a profile, compose publishes the hub on `127.0.0.1:7420` of the
-server only.
-
-Everything that must survive an update lives in the `orbis-data` volume
-(`/data`). That is the database, the token, the vault's key, the bots'
-workspaces, and Claude Code's sign-in and sessions (`/data/claude`).
-
-```
-git pull && docker compose up -d --build     # update
-docker compose exec orbis cat /data/token    # the hub's token, when ORBIS_TOKEN is empty
-docker run --rm -v deploy_orbis-data:/data -v "$PWD":/backup busybox tar czf /backup/orbis-data.tgz /data   # backup
-```
-
-Two build options:
+See [server.md](server.md): `orbis-server install` on a free Oracle Cloud
+VM (or any always-on Ubuntu or Debian machine, arm64 or x86-64) runs the
+hub's image (`Dockerfile`) with Caddy in front for HTTPS, and opens the
+firewall's ports 80 and 443 only. Two build options of the image:
 
 - `--build-arg BROWSER_PACKAGES=` leaves Chromium out, for a smaller image
   without browser tools.
 - `--build-arg CLAUDE_CODE_VERSION=<version>` pins Claude Code.
 
-## On the internet, safely
-
-- Every API and stream request needs the hub's token. The address alone
-  opens only the web app's sign-in screen. Set a long `ORBIS_TOKEN`.
-- Pairing codes work once, for five minutes, and die after five wrong
-  tries. The hub takes at most 20 tries a minute.
-- The vault's master key is kept next to the database in `/data`. Set
-  `ORBIS_MASTER_KEY` to keep it somewhere else.
-- In the container, the bots' commands run inside the container, never on
-  your computer.
-- Put tokens only in `deploy/.env` (which git ignores), in Codespaces
-  secrets or in Orbis's settings. Never put them in a committed file.
+Everything that must survive an update lives in the `orbis-data` volume
+(`/data`): the database, the token, the vault's key, the bots' workspaces,
+and Claude Code's sign-in and sessions (`/data/claude`).

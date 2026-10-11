@@ -1,11 +1,11 @@
 # ADR 0025 — The runner leaves the phone for an always-on free server in Docker, linked as the account's device; Termux becomes optional
 
-- **Status:** accepted
+- **Status:** superseded by 0026
 - **Scope:** cloud, cli
 - **Date:** 2026-10-11
 - **Deciders:** project owner ("A ideia é não precisar mais [do Termux]"; chose a free VM), Claude Code
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** 0026
 - **Evidence:** `scripts/server/orbis-server.sh`, `deploy/docker-compose.yml`, `packages/cli/src/commands/data.ts`, `packages/hub/src/relay/client.ts`, `docs/server.md`
 - **Landed:** 2026-10-11 — `scripts/server/orbis-server.sh`, `packages/cli/src/commands/data.ts`, `packages/hub/src/relay/client.ts`
 

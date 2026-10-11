@@ -74,7 +74,7 @@
         "id": "cli",
         "path": ".doctrina/specs/cli/spec.md",
         "status": "active",
-        "version": "0.15.0",
+        "version": "0.16.0",
         "last_updated": "2026-10-11",
         "implementation": "verified — every command group listed above, `bots export|import` included",
         "realizes": [
@@ -88,9 +88,9 @@
         "id": "cloud",
         "path": ".doctrina/specs/cloud/spec.md",
         "status": "active",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "last_updated": "2026-10-11",
-        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in (`packages/hub/src/auth/`, change 0064), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), this hub as a device of the account sending its rows (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066), and the Cloudflare cloud relaying the web app to the account's hub (`packages/cloud/`, `packages/hub/src/relay/`, `supabase/migrations/0003_device_identity.sql`, change 0068); reading the history while the phone is off comes later",
+        "implementation": "partial — the account database (`supabase/migrations/0001_orbis_core.sql`), signing in with two-step verification (`packages/hub/src/auth/`, changes 0064 and 0070), the `.orbis` export and import (`packages/hub/src/export/`, change 0065), the hub as a device of the account keeping a copy there (`supabase/migrations/0002_devices.sql`, `packages/hub/src/sync/`, change 0066), and the hub on an always-on server serving the app over HTTPS (`deploy/`, `scripts/server/orbis-server.sh`, changes 0069 and 0070)",
         "realizes": [
           "SC16"
         ],
@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.39.0",
+        "version": "0.40.0",
         "last_updated": "2026-10-11",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -684,8 +684,9 @@
         "id": "0024",
         "path": ".doctrina/decisions/0024-the-cloud-is-an-authenticated-relay-to-the-account-s-own-hub-it-reimplements-no-api-and-keeps-no-secret.md",
         "title": "The cloud is an authenticated relay to the account's own hub; it reimplements no API and keeps no secret",
-        "status": "accepted",
+        "status": "superseded by 0026",
         "date": "2026-10-11",
+        "superseded_by": "0026",
         "landed": "2026-10-11 — `packages/cloud/src/worker.ts`, `packages/cloud/src/account.ts`, `packages/hub/src/relay/client.ts`",
         "scope": [
           "cloud",
@@ -699,14 +700,31 @@
         "id": "0025",
         "path": ".doctrina/decisions/0025-the-runner-leaves-the-phone-for-an-always-on-free-server-in-docker-linked-as-the-account-s-device-termux-becomes-optional.md",
         "title": "The runner leaves the phone for an always-on free server in Docker, linked as the account's device; Termux becomes optional",
-        "status": "accepted",
+        "status": "superseded by 0026",
         "date": "2026-10-11",
+        "superseded_by": "0026",
+        "landed": "2026-10-11 — `scripts/server/orbis-server.sh`, `packages/cli/src/commands/data.ts`, `packages/hub/src/relay/client.ts`",
         "scope": [
           "cloud",
           "cli"
         ],
-        "summary": "The runner is a server that stays on.",
-        "landed": "2026-10-11 — `scripts/server/orbis-server.sh`, `packages/cli/src/commands/data.ts`, `packages/hub/src/relay/client.ts`"
+        "summary": "The runner is a server that stays on."
+      },
+      {
+        "id": "0026",
+        "path": ".doctrina/decisions/0026-the-server-serves-orbis-itself-over-https-behind-caddy-with-no-cloudflare-accounts-may-require-a-second-step-that-the-hub-enforces.md",
+        "title": "The server serves Orbis itself over HTTPS behind Caddy, with no Cloudflare; accounts may require a second step that the hub enforces",
+        "status": "accepted",
+        "date": "2026-10-11",
+        "supersedes": "0024, 0025",
+        "scope": [
+          "cloud",
+          "web-app",
+          "cli",
+          "hub-api"
+        ],
+        "summary": "The server is the only place Orbis runs.",
+        "landed": "2026-10-11 — `deploy/Caddyfile`, `scripts/server/orbis-server.sh`, `packages/hub/src/auth/account.ts`"
       }
     ],
     "changes": [],
@@ -2115,6 +2133,28 @@
           }
         ],
         "lane": "runtime (confident; signals: runner, docker) — opened anyway (--force)"
+      },
+      {
+        "id": "0070-oracle-only",
+        "title": "oracle-only",
+        "path": ".doctrina/changes/archive/2026-10-11-0070-oracle-only",
+        "status": "applied",
+        "applied": "2026-10-11",
+        "specs_affected": [
+          {
+            "capability": "cli",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "cloud",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [

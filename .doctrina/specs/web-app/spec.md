@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.39.0
+**Version:** 0.40.0
 
 ## Purpose
 
@@ -102,7 +102,7 @@ run's steps.
 - When the user downloads their data in Settings → Data, the web app shall ask for a password typed twice to seal the bots' keys (or none, leaving them out) and save the `.orbis` file to the browser's downloads or the phone's Downloads.
 - When the user imports a `.orbis` file in Settings → Data, the web app shall send it to this hub with the file's password, or to the cloud account it is signed in to (or signs in to there) without that password, and show per kind of data what came in and what was already there, and the warnings.
 - When the user opens Settings → Account, the web app shall show this hub as a device of the account — linking it with a name and the account's email and password, what waits to be sent and when it last sent, sending now, unlinking, and that the account revoked it — and list the account's devices with the account's session, each revocable.
-- When the app runs through the Orbis cloud and the cloud answers that the phone running the hub is off (`runner_offline`), the app shall say "your phone is off or offline: your bots answer when it is back" instead of reconnecting, and Settings → Account shall show whether this hub's relay to the cloud is connected.
+- When the account has an authenticator set up, signing in shall ask its 6-digit code after the password and open the app only with the session it proves; Settings → Account shall set one up from a QR code (or its key) and have the hub require it, and turn it off (change 0070).
 
 ### State-driven
 
@@ -189,7 +189,7 @@ run's steps.
 62. [verified] The client signs in with the publishable key, refuses a short password before asking, renews a session once for many requests and ends it when refused, and takes an email link's session or error out of the address; the sign-in screen signs in with the linked account, says a wrong password, emails a reset link back to the page, saves a new password and still offers the token; Settings → Account signs in, links, unlinks and creates an account that must be confirmed — verified by `packages/web/test/account.test.tsx`
 63. [verified] Settings → Data downloads the file with the secrets sealed by the password typed twice, or without them; imports into this hub with the file's password and shows what came in; imports into the cloud account it signs in to without sending the file's password — verified by `packages/web/test/data.test.tsx`
 64. [verified] Settings → Account links this hub with the account's email and password, shows what waits and sends now, unlinks, says when the account revoked it, and lists the account's devices with its session and revokes one — verified by `packages/web/test/devices.test.tsx`
-65. [verified] With the cloud answering `runner_offline` the app says the phone is off, not "reconnecting" — verified by `packages/web/test/phone-off.test.tsx`; Settings → Account shows this hub connected to its cloud — verified by `packages/web/test/devices.test.tsx`
+65. [verified] Signing in with an authenticator asks its code after the password, says a wrong code, and signs in with the second-step session; without one the password suffices; Settings → Account sets it up from a QR code, has the hub require it and turns it off — verified by `packages/web/test/mfa.test.tsx`
 
 ## Maturity
 

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AuthConfig } from "@orbis/shared";
 import { Api, claimPairing } from "../api.js";
-import { AccountError, MIN_PASSWORD, recover, signIn, updatePassword, type Session } from "../account.js";
+import { AccountError, MIN_PASSWORD, aalOf, recover, signIn, updatePassword, verifiedFactor, verifyFactor, type Session } from "../account.js";
 import { useT } from "../i18n.js";
 import { Mascot } from "./Avatar.js";
 
@@ -47,6 +47,7 @@ function useAccountError() {
     if (code === "email_not_confirmed") return t("account.notConfirmed");
     if (code === "weak_password") return t("account.weakPassword", { min: MIN_PASSWORD });
     if (code === "network") return t("account.unreachable");
+    if (code === "mfa_verification_failed" || code === "invalid_code") return t("mfa.wrongCode");
     if (code === "over_request_rate_limit" || code === "over_email_send_rate_limit") return t("account.tooMany");
     return err instanceof Error ? err.message : String(err);
   };
@@ -104,6 +105,9 @@ function AccountSignIn({ project, onSession, onUseToken, linkError }: { project:
   const [error, setError] = useState<string | null>(linkError);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Signed in with the password, waiting for the authenticator's code (two-step verification). */
+  const [second, setSecond] = useState<{ session: Session; factorId: string } | null>(null);
+  const [code, setCode] = useState("");
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -137,8 +141,37 @@ function AccountSignIn({ project, onSession, onUseToken, linkError }: { project:
       </GateFrame>
     );
   }
+  if (second) {
+    return (
+      <GateFrame title={t("mfa.codeTitle")} onSubmit={() => run(async () => onSession(await verifyFactor(project, second.session, second.factorId, code)))}>
+        <p className="muted">{t("mfa.codeHelp")}</p>
+        <label>
+          {t("mfa.code")}
+          <input inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} autoFocus />
+        </label>
+        {error && <p className="error">{error}</p>}
+        <button className="btn btn-primary" type="submit" disabled={busy || code.replace(/\s/g, "").length !== 6}>
+          {t("mfa.confirm")}
+        </button>
+        <button className="btn" type="button" onClick={() => setSecond(null)}>
+          {t("account.backToSignIn")}
+        </button>
+      </GateFrame>
+    );
+  }
+  const passwordStep = async () => {
+    const session = await signIn(project, email, password);
+    // With an authenticator set up, the password alone is not enough: its code is asked next.
+    const factor = aalOf(session) === "aal2" ? null : await verifiedFactor(project, session);
+    if (factor) {
+      setPassword("");
+      setSecond({ session, factorId: factor.id });
+      return;
+    }
+    onSession(session);
+  };
   return (
-    <GateFrame title={t("account.signInTitle")} onSubmit={() => run(async () => onSession(await signIn(project, email, password)))}>
+    <GateFrame title={t("account.signInTitle")} onSubmit={() => run(passwordStep)}>
       <p className="muted">{t("account.signInHelp")}</p>
       <label>
         {t("account.email")}

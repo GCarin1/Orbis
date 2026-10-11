@@ -17,6 +17,8 @@ export interface AccountClaims {
   email: string | null;
   /** When the token stops working, in seconds since 1970. */
   exp: number;
+  /** How the session was proven: `aal2` once a second step (an authenticator's code) was given (change 0070). */
+  aal: "aal1" | "aal2";
 }
 
 export class InvalidSession extends Error {}
@@ -78,7 +80,12 @@ export class AccountTokens {
     if (typeof claims.exp !== "number" || claims.exp + CLOCK_SKEW_S <= nowS) throw new InvalidSession("the session expired");
     if (typeof claims.nbf === "number" && claims.nbf - CLOCK_SKEW_S > nowS) throw new InvalidSession("the token is not valid yet");
     if (typeof claims.sub !== "string" || !UUID.test(claims.sub)) throw new InvalidSession("the token names no account");
-    return { userId: claims.sub.toLowerCase(), email: typeof claims.email === "string" ? claims.email : null, exp: claims.exp };
+    return {
+      userId: claims.sub.toLowerCase(),
+      email: typeof claims.email === "string" ? claims.email : null,
+      exp: claims.exp,
+      aal: claims.aal === "aal2" ? "aal2" : "aal1",
+    };
   }
 
   private async key(kid: string): Promise<{ key: KeyObject; alg: string } | undefined> {

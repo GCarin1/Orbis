@@ -4,7 +4,18 @@
 import { useEffect, useState } from "react";
 import type { AccountStatus, AuthConfig } from "@orbis/shared";
 import type { Api } from "../api.js";
-import { AccountError, MIN_PASSWORD, signIn, signUp, type AccountSession, type Session } from "../account.js";
+import {
+  AccountError,
+  MIN_PASSWORD,
+  enrollFactor,
+  signIn,
+  signUp,
+  unenrollFactor,
+  verifiedFactor,
+  verifyFactor,
+  type AccountSession,
+  type Session,
+} from "../account.js";
 import { useLang, useT } from "../i18n.js";
 
 export function AccountSettings({ api, account, onSignedOut }: { api: Api; account: AccountSession | null; onSignedOut(): void }) {
@@ -19,6 +30,9 @@ export function AccountSettings({ api, account, onSignedOut }: { api: Api; accou
   const [signedIn, setSignedIn] = useState<Session | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  /** Setting up an authenticator: its QR code and secret, and the code typed back. */
+  const [setup, setSetup] = useState<{ id: string; qrCode: string; secret: string } | null>(null);
+  const [code, setCode] = useState("");
 
   useEffect(() => {
     void Promise.all([api.get<AccountStatus>("/api/v1/account"), api.get<AuthConfig>("/api/v1/auth/config")])
@@ -44,6 +58,8 @@ export function AccountSettings({ api, account, onSignedOut }: { api: Api; accou
             ? t("account.notConfirmed")
             : code === "weak_password"
               ? t("account.weakPassword", { min: MIN_PASSWORD })
+              : code === "mfa_verification_failed" || code === "invalid_code"
+                ? t("mfa.wrongCode")
               : err instanceof Error
                 ? err.message
                 : String(err);
@@ -88,6 +104,32 @@ export function AccountSettings({ api, account, onSignedOut }: { api: Api; accou
       onSignedOut();
     });
 
+  // Two-step verification (change 0070): set up with this device's account session, then required by the hub.
+  const startMfa = () =>
+    act(async () => {
+      if (!account) return;
+      setSetup(await enrollFactor(account.project, account.current()));
+      setCode("");
+    });
+  const confirmMfa = () =>
+    act(async () => {
+      if (!account || !setup) return;
+      account.replace(await verifyFactor(account.project, account.current(), setup.id, code));
+      setStatus(await api.put<AccountStatus>("/api/v1/account/mfa", { required: true }));
+      setSetup(null);
+      return t("mfa.on");
+    });
+  const stopMfa = () => {
+    if (!window.confirm(t("mfa.confirmOff"))) return;
+    void act(async () => {
+      if (!account) return;
+      setStatus(await api.put<AccountStatus>("/api/v1/account/mfa", { required: false }));
+      const factor = await verifiedFactor(account.project, account.current());
+      if (factor) await unenrollFactor(account.project, account.current(), factor.id);
+      return t("mfa.off");
+    });
+  };
+
   const viaToken = status?.via === "token";
   return (
     <div className="account-settings" data-testid="account-settings">
@@ -121,6 +163,55 @@ export function AccountSettings({ api, account, onSignedOut }: { api: Api; accou
           <p className="muted">{t("account.notLinked")}</p>
         )}
       </section>
+
+      {status?.linked && (
+        <section className="health-card" data-testid="account-mfa">
+          <h3>{t("mfa.title")}</h3>
+          <p className="muted small">{t("mfa.intro")}</p>
+          {status.linked.mfa ? (
+            <>
+              <p>{t("mfa.isOn")}</p>
+              {(account || viaToken) && (
+                <button type="button" className="btn" disabled={busy} onClick={stopMfa}>
+                  {t("mfa.turnOff")}
+                </button>
+              )}
+            </>
+          ) : !account ? (
+            <p className="muted small">{t("mfa.signInFirst")}</p>
+          ) : setup ? (
+            <form
+              className="account-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void confirmMfa();
+              }}
+            >
+              <p className="small">{t("mfa.scan")}</p>
+              <img className="mfa-qr" src={setup.qrCode} alt={t("mfa.qrAlt")} width={180} height={180} />
+              <p className="muted small">
+                {t("mfa.secret")} <code data-testid="mfa-secret">{setup.secret}</code>
+              </p>
+              <label>
+                {t("mfa.code")}
+                <input inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} />
+              </label>
+              <div className="card-actions">
+                <button type="submit" className="btn btn-primary" disabled={busy || code.replace(/\s/g, "").length !== 6}>
+                  {t("mfa.confirm")}
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => setSetup(null)}>
+                  {t("account.cancel")}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void startMfa()}>
+              {t("mfa.turnOn")}
+            </button>
+          )}
+        </section>
+      )}
 
       {status?.available && viaToken && project && (
         <section className="health-card" data-testid="account-link">

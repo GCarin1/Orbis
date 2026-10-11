@@ -54,31 +54,22 @@ export interface HubConfig {
    */
   supabase: { url: string; key: string } | null;
   /**
-   * The Orbis cloud this hub, once linked as a device, opens its relay to (change 0068): `ORBIS_CLOUD_URL`;
-   * undefined lets the device's own setting decide, null (`off`) turns the relay off.
+   * The https address this hub is opened at on the internet, behind its own HTTPS proxy (change 0070,
+   * docs/server.md): `ORBIS_PUBLIC_URL`. When set, the hub takes the client's address from the proxy on its
+   * private network, signs MCP servers in back to this address, and wants a long ORBIS_TOKEN.
    */
-  cloudUrl?: string | null;
+  publicUrl: string | null;
 }
 
-/**
- * The published Orbis cloud (change 0068): the Worker `orbis` of the project's Cloudflare account. Null until
- * its address is known; meanwhile a device names its cloud with `orbis link --cloud` or ORBIS_CLOUD_URL.
- */
-export const DEFAULT_CLOUD_URL: string | null = null;
+/** The shortest ORBIS_TOKEN a hub on the internet takes. */
+export const MIN_PUBLIC_TOKEN = 24;
 
-/** A cloud address: https, or http on this machine (a local `wrangler dev`). */
-export function validCloudUrl(url: string): string | null {
+function readPublicUrl(env: Env): string | null {
+  const url = readVar(env, "ORBIS_PUBLIC_URL");
+  if (!url) return null;
   const trimmed = url.trim().replace(/\/+$/, "");
-  return /^(https:\/\/[^/?#\s]+|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)$/.test(trimmed) ? trimmed : null;
-}
-
-function readCloudUrl(env: Env): string | null | undefined {
-  const url = readVar(env, "ORBIS_CLOUD_URL");
-  if (!url) return undefined;
-  if (url.toLowerCase() === "off") return null;
-  const valid = validCloudUrl(url);
-  if (!valid) throw new Error(`ORBIS_CLOUD_URL must be https://<the Orbis cloud> or off, got "${url}"`);
-  return valid;
+  if (!/^https:\/\/[^/?#\s]+$/.test(trimmed)) throw new Error(`ORBIS_PUBLIC_URL must be https://<this hub's address>, got "${url}"`);
+  return trimmed;
 }
 
 /** The Orbis cloud project (ADR 0020); a hub of another project sets ORBIS_SUPABASE_URL and ORBIS_SUPABASE_KEY. */
@@ -162,6 +153,11 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
   const { token, tokenFile } = overrides.token
     ? { token: overrides.token, tokenFile: null }
     : resolveToken(env, dataDir);
+  const publicUrl = overrides.publicUrl !== undefined ? overrides.publicUrl : readPublicUrl(env);
+  // On the internet the token opens everything: a short one chosen by hand is refused (the made one has 43).
+  if (publicUrl && token.length < MIN_PUBLIC_TOKEN) {
+    throw new Error(`ORBIS_TOKEN must have at least ${MIN_PUBLIC_TOKEN} characters on a hub opened at ORBIS_PUBLIC_URL (leave it empty and Orbis makes one)`);
+  }
 
   return {
     version: ORBIS_VERSION,
@@ -191,7 +187,7 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     browserExecutable: overrides.browserExecutable ?? readVar(env, "ORBIS_BROWSER_EXECUTABLE") ?? null,
     prices: overrides.prices ?? loadPrices(dataDir),
     supabase: overrides.supabase !== undefined ? overrides.supabase : readSupabase(env),
-    cloudUrl: overrides.cloudUrl !== undefined ? overrides.cloudUrl : readCloudUrl(env),
+    publicUrl,
   };
 }
 

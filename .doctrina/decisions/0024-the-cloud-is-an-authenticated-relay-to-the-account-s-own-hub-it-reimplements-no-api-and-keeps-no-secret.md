@@ -1,11 +1,11 @@
 # ADR 0024 — The cloud is an authenticated relay to the account's own hub; it reimplements no API and keeps no secret
 
-- **Status:** accepted
+- **Status:** superseded by 0026
 - **Scope:** cloud, web-app, cli, hub-api
 - **Date:** 2026-10-11
 - **Deciders:** project owner (requirement: Orbis in the cloud on Cloudflare's free plan, "vamos para a fase 5"; deploy through GitHub Actions; a simple notice while the phone is off), Claude Code
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** 0026
 - **Evidence:** `packages/cloud/src/worker.ts`, `packages/cloud/src/account.ts`, `packages/hub/src/relay/client.ts`, `supabase/migrations/0003_device_identity.sql`, `.github/workflows/cloud.yml`
 - **Landed:** 2026-10-11 — `packages/cloud/src/worker.ts`, `packages/cloud/src/account.ts`, `packages/hub/src/relay/client.ts`
 

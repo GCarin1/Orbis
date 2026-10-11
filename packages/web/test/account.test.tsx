@@ -139,7 +139,7 @@ describe("Settings → Account", () => {
     const api = new Api("tok");
     vi.spyOn(api, "get").mockImplementation(async (path: string) => (path === "/api/v1/auth/config" ? { supabase: project, linked: false } : status) as never);
     const post = vi.spyOn(api, "post").mockImplementation(async () => {
-      status = { ...status, linked: { userId: user.id, email: user.email, linkedAt: "2026-10-08T12:00:00.000Z" } };
+      status = { ...status, linked: { userId: user.id, email: user.email, linkedAt: "2026-10-08T12:00:00.000Z", mfa: false } };
       return status as never;
     });
     const del = vi.spyOn(api, "delete").mockImplementation(async () => (status = { ...status, linked: null }) as never);

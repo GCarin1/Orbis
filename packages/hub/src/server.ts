@@ -74,7 +74,6 @@ import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
 import { ExportService } from "./export/service.js";
 import { SyncService } from "./sync/service.js";
-import { RelayClient } from "./relay/client.js";
 
 export interface HubOptions {
   env?: Env;
@@ -96,7 +95,7 @@ export interface HubOptions {
   /** How account sessions are checked: the project's keys fetched with `fetch`, and the clock (tests fake both). */
   auth?: { fetch?: typeof fetch; now?: () => number };
   /** How an import reaches the cloud account's database (tests fake it). */
-  cloud?: { fetch?: typeof fetch; WebSocket?: ConstructorParameters<typeof RelayClient>[1]["WebSocket"] };
+  cloud?: { fetch?: typeof fetch };
 }
 
 export interface Hub extends HubContext {
@@ -104,7 +103,6 @@ export interface Hub extends HubContext {
   auth: HubAuth;
   exports: ExportService;
   sync: SyncService;
-  relay: RelayClient;
   skills: SkillService;
   routines: RoutineService;
   secrets: SecretService;
@@ -263,6 +261,9 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     bodyLimit: 2 * 1024 * 1024,
     // Stream sockets (and a refused upgrade) must not keep close() waiting.
     forceCloseConnections: true,
+    // Behind its HTTPS proxy (change 0070), the client's address comes from the proxy on this machine or its
+    // private network, so the refused sign-ins are counted per visitor, not for the proxy.
+    ...(config.publicUrl ? { trustProxy: ["loopback", "uniquelocal"] } : {}),
   });
   app.setValidatorCompiler(TypeBoxValidatorCompiler);
 
@@ -351,7 +352,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
   const voice = new VoiceService(config, new SettingsRepo(db), secrets.hubSecrets);
-  const mcp = new McpConnections(ctx, secrets.hubSecrets, { redirectUri: () => `${url()}/oauth/mcp/callback`, ...opts.mcp });
+  const mcp = new McpConnections(ctx, secrets.hubSecrets, { redirectUri: () => `${config.publicUrl ?? url()}/oauth/mcp/callback`, ...opts.mcp });
   mcp.start();
   const usage = new UsageService(ctx, opts.clock);
   engine.addHooks(usage.hooks());
@@ -428,12 +429,9 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   });
   await exports.routes(app);
   // This hub as a device of an account: what changes here reaches the account (change 0066).
-  // The relay to the cloud opens once this hub is a device of an account (change 0068).
-  const relay: RelayClient = new RelayClient(app, { token: () => sync.token(), url: () => sync.cloudUrl(), WebSocket: opts.cloud?.WebSocket, now: opts.auth?.now });
-  const sync: SyncService = new SyncService(ctx, { auth, hubSecrets: secrets.hubSecrets, settings: new SettingsRepo(db), fetch: opts.cloud?.fetch, now: opts.auth?.now, relay });
+  const sync = new SyncService(ctx, { auth, hubSecrets: secrets.hubSecrets, settings: new SettingsRepo(db), fetch: opts.cloud?.fetch, now: opts.auth?.now });
   await sync.routes(app);
   sync.start();
-  relay.start();
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () => app.swagger());
 
   if (config.webDir) {
@@ -454,7 +452,6 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     auth,
     exports,
     sync,
-    relay,
     skills: skillService,
     routines,
     secrets,
@@ -477,7 +474,6 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
       closed = true;
       routines.stop();
       sync.stop();
-      relay.stop();
       files.stop();
       initiative.stop();
       await engine.shutdown();

@@ -4620,3 +4620,13 @@ label.pick-row.on {
   align-items: center;
   gap: 6px;
 }
+
+/* Two-step verification: the authenticator's QR code, on white so any camera reads it (change 0070). */
+.mfa-qr {
+  display: block;
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  max-width: 100%;
+  height: auto;
+}

@@ -307,7 +307,8 @@ export interface AuthConfig {
 export interface AccountStatus {
   /** Whether the hub takes account sign-ins at all. */
   available: boolean;
-  linked: { userId: string; email: string | null; linkedAt: string } | null;
+  /** `mfa`: the account's sessions need their second step (an authenticator's code) to open the hub. */
+  linked: { userId: string; email: string | null; linkedAt: string; mfa: boolean } | null;
   /** How this request signed in: the hub's token or the account's session. */
   via: "token" | "account" | null;
 }
@@ -335,8 +336,6 @@ export interface DeviceStatus {
   lastError: string | null;
   /** The account revoked this device: nothing is sent any more. */
   revoked: boolean;
-  /** The relay to the Orbis cloud (change 0068): where it goes, whether it is open, why not. */
-  cloud: { url: string | null; connected: boolean; lastError: string | null };
 }
 
 /** A link found in a conversation's messages (its "media, links and docs"). */

@@ -102,6 +102,52 @@ export async function signOut(project: Project, session: Session): Promise<void>
   await call(project, "POST", "/logout?scope=local", {}, session.accessToken).catch(() => undefined);
 }
 
+/** An authenticator app's entry for the account (two-step verification, change 0070). */
+export interface Factor {
+  id: string;
+  status: "verified" | "unverified";
+  factor_type: string;
+}
+
+/** How a session was proven: `aal2` once the authenticator's code was given. Read from the token, unchecked. */
+export function aalOf(session: Session): "aal1" | "aal2" {
+  try {
+    const claims = JSON.parse(atob(session.accessToken.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/"))) as { aal?: string };
+    return claims.aal === "aal2" ? "aal2" : "aal1";
+  } catch {
+    return "aal1";
+  }
+}
+
+/** The account's authenticator, once set up and confirmed; null without one. */
+export async function verifiedFactor(project: Project, session: Session): Promise<Factor | null> {
+  const user = await call<{ factors?: Factor[] }>(project, "GET", "/user", undefined, session.accessToken);
+  return (user.factors ?? []).find((f) => f.factor_type === "totp" && f.status === "verified") ?? null;
+}
+
+/** Start setting up an authenticator: the QR code (an SVG data address) and the secret to type instead. */
+export async function enrollFactor(project: Project, session: Session): Promise<{ id: string; qrCode: string; secret: string }> {
+  // A setup left halfway would block a new one with the same name: it goes first.
+  const user = await call<{ factors?: Factor[] }>(project, "GET", "/user", undefined, session.accessToken);
+  for (const f of user.factors ?? []) if (f.status === "unverified") await call(project, "DELETE", `/factors/${f.id}`, undefined, session.accessToken);
+  const made = await call<{ id: string; totp: { qr_code: string; secret: string } }>(project, "POST", "/factors", { factor_type: "totp", friendly_name: "Orbis" }, session.accessToken);
+  return { id: made.id, qrCode: made.totp.qr_code, secret: made.totp.secret };
+}
+
+/** Give the authenticator's 6-digit code: the session, now proven with the second step (aal2). */
+export async function verifyFactor(project: Project, session: Session, factorId: string, code: string): Promise<Session> {
+  const digits = code.replace(/\s+/g, "");
+  if (!/^\d{6}$/.test(digits)) throw new AccountError("the code has 6 digits", "invalid_code");
+  const challenge = await call<{ id: string }>(project, "POST", `/factors/${factorId}/challenge`, {}, session.accessToken);
+  const answer = await call<TokenAnswer>(project, "POST", `/factors/${factorId}/verify`, { challenge_id: challenge.id, code: digits }, session.accessToken);
+  return toSession({ ...answer, user: answer.user ?? { id: session.user.id, email: session.user.email } });
+}
+
+/** Remove the authenticator (needs a session with the second step). */
+export async function unenrollFactor(project: Project, session: Session, factorId: string): Promise<void> {
+  await call(project, "DELETE", `/factors/${factorId}`, undefined, session.accessToken);
+}
+
 export function loadSession(): Session | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -167,6 +213,12 @@ export class AccountSession {
 
   current(): Session {
     return this.session;
+  }
+
+  /** Take a session proven again (the authenticator's code given): kept on this device too. */
+  replace(next: Session): void {
+    this.session = next;
+    saveSession(next);
   }
 
   /** An access token with more than RENEW_BEFORE_MS left. */

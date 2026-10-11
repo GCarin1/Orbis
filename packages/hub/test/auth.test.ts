@@ -47,7 +47,8 @@ describe("an account's session", () => {
   it("holds only when signed by the project's key, from the project, for a signed-in account, in time", async () => {
     const p = project();
     const tokens = new AccountTokens(DEFAULT_SUPABASE.url, p.fetch as typeof fetch);
-    expect(await tokens.verify(p.session())).toEqual({ userId: ANA, email: "ana@example.com", exp: expect.any(Number) });
+    expect(await tokens.verify(p.session())).toEqual({ userId: ANA, email: "ana@example.com", exp: expect.any(Number), aal: "aal1" });
+    expect((await tokens.verify(p.session({ aal: "aal2" }))).aal).toBe("aal2");
 
     const refused = async (token: string) => expect(tokens.verify(token)).rejects.toBeInstanceOf(InvalidSession);
     const other = generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey;
@@ -113,6 +114,32 @@ describe("signing in to the hub", () => {
     expect((await t.api("GET", "/api/v1/bots")).status).toBe(200);
   });
 
+  it("with two-step verification on, opens only for sessions that gave their second step (change 0070)", async () => {
+    const p = project();
+    t = await testHub({ auth: { fetch: p.fetch as typeof fetch } });
+    const password = p.session({ aal: "aal1" });
+    const twoStep = p.session({ aal: "aal2" });
+    // Not linked yet.
+    expect((await t.api("PUT", "/api/v1/account/mfa", { required: true })).body.error.code).toBe("not_linked");
+    await t.api("POST", "/api/v1/account/link", { accessToken: password });
+    expect(((await t.api("GET", "/api/v1/account")).body as AccountStatus).linked!.mfa).toBe(false);
+
+    // A session proven by the password alone cannot turn it on; one with the second step can.
+    expect((await t.api("PUT", "/api/v1/account/mfa", { required: true }, password)).body.error.code).toBe("mfa_session_required");
+    const on = await t.api("PUT", "/api/v1/account/mfa", { required: true }, twoStep);
+    expect(on.status).toBe(200);
+    expect((on.body as AccountStatus).linked!.mfa).toBe(true);
+
+    // From then on the password alone does not open the hub; the second step and the hub's token do.
+    expect((await t.api("GET", "/api/v1/bots", undefined, password)).status).toBe(401);
+    expect((await t.api("GET", "/api/v1/bots", undefined, twoStep)).status).toBe(200);
+    expect((await t.api("GET", "/api/v1/bots")).status).toBe(200);
+    // Turning it off needs the second step (or the token) too.
+    expect((await t.api("PUT", "/api/v1/account/mfa", { required: false }, password)).status).toBe(401);
+    expect(((await t.api("PUT", "/api/v1/account/mfa", { required: false })).body as AccountStatus).linked!.mfa).toBe(false);
+    expect((await t.api("GET", "/api/v1/bots", undefined, password)).status).toBe(200);
+  });
+
   it("makes an address that keeps failing wait a minute, and still lets the owner in", async () => {
     let now = Date.now();
     t = await testHub({ auth: { now: () => now } });
@@ -124,6 +151,19 @@ describe("signing in to the hub", () => {
     expect((await t.api("GET", "/api/v1/bots")).status).toBe(200);
     now += 61_000;
     expect((await t.api("GET", "/api/v1/bots", undefined, "wrong-later")).status).toBe(401);
+  });
+
+  it("on the internet behind its HTTPS proxy, counts refused sign-ins per visitor and wants a long token (change 0070)", async () => {
+    const long = "L".repeat(43);
+    await expect(testHub({ config: { publicUrl: "https://orbis.example.com", token: "short-token" } })).rejects.toThrow(/at least 24 characters/);
+    t = await testHub({ config: { publicUrl: "https://orbis.example.com", token: long } });
+    const from = (ip: string, token: string) =>
+      t!.hub.app.inject({ method: "GET", url: "/api/v1/bots", headers: { authorization: `Bearer ${token}`, "x-forwarded-for": ip } });
+    for (let i = 0; i < 20; i++) expect((await from("198.51.100.1", "wrong")).statusCode).toBe(401);
+    // That visitor waits; another one, behind the same proxy, does not — and the owner always gets in.
+    expect((await from("198.51.100.1", "wrong")).statusCode).toBe(429);
+    expect((await from("198.51.100.2", "wrong")).statusCode).toBe(401);
+    expect((await from("198.51.100.1", long)).statusCode).toBe(200);
   });
 
   it("has no account sign-in when ORBIS_SUPABASE_URL is off, and refuses a bad project address", async () => {

@@ -13,11 +13,10 @@
     "packages/hub",
     "packages/cli",
     "packages/web",
-    "packages/desktop",
-    "packages/cloud"
+    "packages/desktop"
   ],
   "scripts": {
-    "typecheck": "tsc -b packages/shared packages/hub packages/cli packages/desktop && tsc -p packages/web --noEmit && tsc -p packages/cloud",
+    "typecheck": "tsc -b packages/shared packages/hub packages/cli packages/desktop && tsc -p packages/web --noEmit",
     "test": "vitest run",
     "build": "tsc -b packages/shared packages/hub packages/cli packages/desktop && npm run build -w @orbis/web",
     "check": "npm run typecheck && npm test && npm run build",
@@ -29,8 +28,7 @@
     "brand:ico": "node scripts/make-ico.mjs",
     "desktop": "npm run build && electron packages/desktop",
     "brand:android": "node scripts/render-android-icons.mjs",
-    "android:apk": "gradle -p packages/android assembleRelease",
-    "cloud:deploy": "npm run build && cd packages/cloud && npx wrangler@4.142.0 deploy"
+    "android:apk": "gradle -p packages/android assembleRelease"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
