@@ -7,6 +7,10 @@ change that delivered it.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The server image is published again** (chore 0072-server-image-amd64): the *Server image* workflow builds linux/amd64 natively by default, with arm64 (emulated, slower) only when asked for by hand. A failing `npm ci` in the image build now prints the end of npm's own log, so the reason shows in CI.
+
 ### Added
 
 - **Orbis on a home server** (change 0071-umbrel-home, ADR 0027): `deploy/umbrel/docker-compose.yml` runs one person's Orbis on UmbrelOS (through Portainer) or any Docker host. Each person gets their own hub, data and account, reached only through the stack's own Tailscale node at `https://orbis-<name>.<tailnet>.ts.net`, with no port open anywhere. The server image is now published ready for amd64 and arm64 (`ghcr.io/gcarin1/orbis`). Guide: `docs/umbrel.md`.

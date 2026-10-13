@@ -17,9 +17,12 @@ ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 # The sources come first: npm runs the workspaces' `prepare` (tsc -b) even with scripts off.
 COPY . .
-RUN npm ci --ignore-scripts --no-audit --no-fund \
- && npm run build \
- && npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+# A failing npm prints the end of its debug log, so the reason shows in the build's own output (CI included).
+RUN set -e; \
+    npm ci --ignore-scripts --no-audit --no-fund \
+      || { echo "npm ci failed:"; tail -n 80 /root/.npm/_logs/*-debug-0.log 2>/dev/null; exit 1; }; \
+    npm run build; \
+    npm prune --omit=dev --ignore-scripts --no-audit --no-fund
 
 FROM node:22-bookworm-slim
 ARG CLAUDE_CODE_VERSION=latest

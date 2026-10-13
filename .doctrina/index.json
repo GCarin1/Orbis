@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-11",
+  "last_updated": "2026-10-13",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -732,11 +732,11 @@
         "title": "Orbis on a home server: one hub per person, each reached only through its own Tailscale node over HTTPS, from a prebuilt image",
         "status": "accepted",
         "date": "2026-10-11",
+        "landed": "2026-10-11 — `deploy/umbrel/docker-compose.yml`, `.github/workflows/server-image.yml`, `docs/umbrel.md`",
         "scope": [
           "cloud"
         ],
-        "summary": "One hub per person, the same as on any server.",
-        "landed": "2026-10-11 — `deploy/umbrel/docker-compose.yml`, `.github/workflows/server-image.yml`, `docs/umbrel.md`"
+        "summary": "One hub per person, the same as on any server."
       }
     ],
     "changes": [],
@@ -2181,6 +2181,15 @@
           }
         ],
         "lane": "product"
+      },
+      {
+        "id": "0072-server-image-amd64",
+        "title": "server-image-amd64",
+        "path": ".doctrina/changes/archive/2026-10-13-0072-server-image-amd64",
+        "status": "applied",
+        "applied": "2026-10-13",
+        "specs_affected": [],
+        "lane": "product (confident; signals: build) — opened as chore"
       }
     ],
     "skills": [

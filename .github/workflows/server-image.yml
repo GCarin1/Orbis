@@ -1,7 +1,10 @@
-# Builds and publishes the Orbis server image (docs/server.md, docs/umbrel.md, ADR 0027): linux/amd64 and
-# linux/arm64, as ghcr.io/<owner>/orbis:latest (and :sha-<commit>). A home server (UmbrelOS through Portainer) or
-# a VM pulls it ready, with nothing to compile on a small machine. Runs on a push that changes the image's
-# contents, and by hand (Actions → "Server image" → Run workflow).
+# Builds and publishes the Orbis server image (docs/server.md, docs/umbrel.md, ADR 0027) as
+# ghcr.io/<owner>/orbis:latest (and :sha-<commit>). A home server (UmbrelOS through Portainer) or a VM pulls it
+# ready, with nothing to compile on a small machine. Runs on a push that changes the image's contents, and by
+# hand (Actions → "Server image" → Run workflow).
+#
+# linux/amd64 is built natively on the runner. linux/arm64 (an Ampere VM, a Raspberry Pi) is emulated and much
+# slower: tick "arm64" when running the workflow by hand to add it (change 0072).
 #
 # The first publish makes a private package: GitHub → your profile → Packages → orbis → Package settings →
 # Change visibility → Public, so a server pulls it without signing in. It holds no secret.
@@ -9,6 +12,11 @@ name: Server image
 
 on:
   workflow_dispatch:
+    inputs:
+      arm64:
+        description: "Also build linux/arm64 (emulated, slower)"
+        type: boolean
+        default: false
   push:
     branches: ["main", "claude/**"]
     paths:
@@ -38,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
+        if: inputs.arm64
       - uses: docker/setup-buildx-action@v3
       - name: Image name
         id: name
@@ -47,11 +56,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build for amd64 and arm64, and publish
+      - name: Build and publish
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.arm64 && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           push: true
           tags: |
             ${{ steps.name.outputs.image }}:latest

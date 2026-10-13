@@ -52,8 +52,9 @@ In Portainer: **Stacks → Add stack**:
 | `CLAUDE_CODE_OAUTH_TOKEN` | optional: the `sk-ant-oat…` token from `claude setup-token`; or paste it later in Settings → Brains → Claude Code |
 | `TZ` | `America/Sao_Paulo` |
 
-**Deploy the stack.** It pulls the ready image `ghcr.io/gcarin1/orbis:latest` (amd64 or arm64), so nothing
-compiles on the Umbrel. The Orbis machine `orbis-gabriel` appears in the Tailscale admin console.
+**Deploy the stack.** It pulls the ready image `ghcr.io/gcarin1/orbis:latest` for Intel and AMD machines
+(amd64), so nothing compiles on the Umbrel. For an ARM machine (a Raspberry Pi, an Umbrel Home), run the
+*Server image* Action by hand once with **arm64** ticked. The Orbis machine `orbis-gabriel` appears in the Tailscale admin console.
 
 Repeat for each person with another `ORBIS_NAME`, such as `orbis-ana`. Each stack gets its own volumes, its own
 Tailscale machine and its own address.

@@ -112,9 +112,11 @@ describe("one person's stack on a home server (change 0071, docs/umbrel.md)", ()
     }
   });
 
-  it("is published ready for both kinds of machine, so a home server compiles nothing", () => {
+  it("is published ready, so a home server compiles nothing: amd64 always, arm64 on demand (change 0072)", () => {
     const workflow = read(".github/workflows/server-image.yml");
-    expect(workflow).toMatch(/platforms: linux\/amd64,linux\/arm64/);
+    expect(workflow).toMatch(/platforms: \$\{\{ inputs\.arm64 && 'linux\/amd64,linux\/arm64' \|\| 'linux\/amd64' \}\}/);
+    // The emulator for arm64 runs only when arm64 was asked for.
+    expect(workflow).toMatch(/setup-qemu-action@v3\n\s+if: inputs\.arm64/);
     expect(workflow).toMatch(/push: true/);
     expect(workflow).toMatch(/ghcr\.io\/\$\{GITHUB_REPOSITORY_OWNER,,\}\/orbis/);
     expect(workflow).toMatch(/packages: write/);
