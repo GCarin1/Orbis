@@ -200,7 +200,7 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.10.0",
+        "version": "0.10.1",
         "last_updated": "2026-10-08",
         "implementation": "verified",
         "realizes": [
@@ -759,7 +759,16 @@
         "summary": "A hub with accounts on always shows the account's sign-in."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0078-other-account-message",
+        "title": "other-account-message",
+        "path": ".doctrina/changes/0078-other-account-message",
+        "status": "applied",
+        "opened": "2026-10-13",
+        "lane": "product (uncertain)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",

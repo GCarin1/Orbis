@@ -62,6 +62,23 @@ function toSession(answer: TokenAnswer, now = Date.now()): Session {
   return { accessToken: answer.access_token, refreshToken: answer.refresh_token, expiresAt, user: { id: answer.user.id, email: answer.user.email ?? null } };
 }
 
+/**
+ * Whether this hub opens for a new session (change 0078): a hub owned by another account says so with 403
+ * `other_account`, raised here as an AccountError so the sign-in screen can say why instead of looping.
+ */
+export async function hubAccepts(session: Session, base = ""): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${base}/api/v1/account`, { headers: { authorization: `Bearer ${session.accessToken}` } });
+  } catch {
+    throw new AccountError("the hub did not answer", "network");
+  }
+  if (res.ok) return;
+  const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+  const code = body?.error?.code ?? (res.status === 401 ? "hub_refused" : null);
+  throw new AccountError(body?.error?.message ?? `the hub answered ${res.status}`, code, res.status);
+}
+
 /** The project accounts sign in with, as the hub says; null when it has none. */
 export async function authConfig(base = ""): Promise<AuthConfig | null> {
   try {

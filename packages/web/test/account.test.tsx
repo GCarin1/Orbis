@@ -103,6 +103,30 @@ describe("the sign-in screen", () => {
     expect(screen.getByPlaceholderText("API token")).toBeTruthy();
   });
 
+  it("says when the hub belongs to another account, instead of going back to the sign-in screen (change 0078)", async () => {
+    let owner = false;
+    const fetchMock = fakeAuth((url) => {
+      if (url === "/api/v1/account")
+        return owner
+          ? { body: { available: true, linked: null, via: "account" } }
+          : { status: 403, body: { error: { code: "other_account", message: "this Orbis belongs to another account" } } };
+      return { body: tokenAnswer() };
+    });
+    const onSession = vi.fn();
+    render(<TokenGate auth={auth} onToken={() => undefined} onSession={onSession} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "bia@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "a long password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText(/This Orbis already belongs to another account/)).toBeTruthy();
+    expect(onSession).not.toHaveBeenCalled();
+    // The hub is asked with the new session itself.
+    const asked = fetchMock.mock.calls.find(([url]) => String(url) === "/api/v1/account")!;
+    expect((asked[1]!.headers as Record<string, string>).authorization).toBe("Bearer access-1");
+    owner = true;
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(onSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: "access-1" })));
+  });
+
   it("emails a reset link that comes back to this page, and saves the new password", async () => {
     const fetchMock = fakeAuth(() => ({ body: {} }));
     const { unmount } = render(<TokenGate auth={auth} onToken={() => undefined} />);

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AuthConfig } from "@orbis/shared";
 import { Api, claimPairing } from "../api.js";
-import { AccountError, MIN_PASSWORD, aalOf, recover, signIn, updatePassword, verifiedFactor, verifyFactor, type Session } from "../account.js";
+import { AccountError, MIN_PASSWORD, aalOf, hubAccepts, recover, signIn, updatePassword, verifiedFactor, verifyFactor, type Session } from "../account.js";
 import { useT } from "../i18n.js";
 import { Mascot } from "./Avatar.js";
 
@@ -45,6 +45,8 @@ function useAccountError() {
     const code = err instanceof AccountError ? err.code : null;
     if (code === "invalid_credentials" || code === "invalid_grant") return t("account.wrongPassword");
     if (code === "email_not_confirmed") return t("account.notConfirmed");
+    if (code === "other_account") return t("account.otherAccount");
+    if (code === "hub_refused") return t("account.hubRefused");
     if (code === "weak_password") return t("account.weakPassword", { min: MIN_PASSWORD });
     if (code === "network") return t("account.unreachable");
     if (code === "mfa_verification_failed" || code === "invalid_code") return t("mfa.wrongCode");
@@ -143,7 +145,11 @@ function AccountSignIn({ project, onSession, onUseToken, linkError }: { project:
   }
   if (second) {
     return (
-      <GateFrame title={t("mfa.codeTitle")} onSubmit={() => run(async () => onSession(await verifyFactor(project, second.session, second.factorId, code)))}>
+      <GateFrame title={t("mfa.codeTitle")} onSubmit={() => run(async () => {
+        const next = await verifyFactor(project, second.session, second.factorId, code);
+        await hubAccepts(next);
+        onSession(next);
+      })}>
         <p className="muted">{t("mfa.codeHelp")}</p>
         <label>
           {t("mfa.code")}
@@ -168,6 +174,8 @@ function AccountSignIn({ project, onSession, onUseToken, linkError }: { project:
       setSecond({ session, factorId: factor.id });
       return;
     }
+    // The hub may belong to another account: say so here, not after the screen flips back (change 0078).
+    await hubAccepts(session);
     onSession(session);
   };
   return (

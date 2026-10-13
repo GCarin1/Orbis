@@ -131,8 +131,12 @@ describe("signing in to the hub", () => {
     const ana = p.session(verified);
     expect((await t.api("GET", "/api/v1/bots", undefined, ana)).status).toBe(200);
     expect((await t.api("GET", "/api/v1/account", undefined, ana)).body as AccountStatus).toMatchObject({ linked: { userId: ANA, email: "ana@example.com" }, via: "account" });
-    // From then on another account, confirmed or not, opens nothing; the token still does.
-    expect((await t.api("GET", "/api/v1/bots", undefined, p.session({ sub: BIA, email: "bia@example.com", ...verified }))).status).toBe(401);
+    // From then on another account, confirmed or not, opens nothing, and a confirmed one is told why (change
+    // 0078); the token still does.
+    const bia = await t.api("GET", "/api/v1/bots", undefined, p.session({ sub: BIA, email: "bia@example.com", ...verified }));
+    expect(bia.status).toBe(403);
+    expect(bia.body.error.code).toBe("other_account");
+    expect((await t.api("GET", "/api/v1/bots", undefined, p.session({ sub: BIA, email: "bia@example.com" }))).status).toBe(401);
     expect((await t.api("GET", "/api/v1/bots", undefined, ana)).status).toBe(200);
     expect((await t.api("GET", "/api/v1/bots")).status).toBe(200);
   });

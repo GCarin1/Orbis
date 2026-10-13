@@ -115,14 +115,26 @@ export class HubAuth {
     else if (mode === "file" && query.has("key")) via = this.fileKeyHolds(query.get("key")!) ? "token" : null;
     else via = await this.check(bearer(req));
     if (!via) {
+      // A good session of another account (change 0078): this hub is someone else's, said plainly instead of a
+      // bare 401 that sends the app back to the sign-in screen with no reason. It still counts as a refusal.
+      const other = mode === "bearer" && (await this.otherAccount(bearer(req)));
       // Valid credentials always pass, so a stranger's tries never lock the owner out (a tunnel gives every
       // visitor one address); past the limit a refusal says to wait instead.
       if (this.tooManyFailures(ip)) throw new HttpError(429, "too_many_failures", "too many refused sign-ins from this address: wait a minute");
       this.fail(ip);
+      if (other) throw new HttpError(403, "other_account", "this Orbis belongs to another account: each person signs in to their own");
       throw unauthorized();
     }
     this.via.set(req, via);
     return via;
+  }
+
+  /** Whether a bearer value is a valid, confirmed session of an account other than the linked one. */
+  private async otherAccount(presented: string | null): Promise<boolean> {
+    const linked = this.linked();
+    if (!presented || !linked || !this.tokens || !looksLikeJwt(presented)) return false;
+    const claims = await this.tokens.verify(presented).catch(() => null);
+    return Boolean(claims && claims.emailVerified && claims.userId !== linked.userId);
   }
 
   /** A ticket that opens the event stream once, within a minute. */
