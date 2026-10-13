@@ -38,10 +38,17 @@ In Portainer: **Stacks → Add stack**:
 
 - **Name**: `orbis-gabriel` (one stack per person).
 - **Build method**: *Repository*.
-  - Repository URL: `https://github.com/GCarin1/Orbis`.
-  - Reference: `refs/heads/claude/grok-bot-opensource-clone-i5x5dn`, until it is merged into the default
-    branch.
+  - **Source**: Portainer 2.45 and later keep the repository as a *GitOps source*. Choose it, or **Create new
+    source**:
+    - Repository URL `https://github.com/GCarin1/Orbis`;
+    - **Authentication off**, because the repository is public;
+    - polling off.
+  - **Repository reference**: `refs/heads/claude/grok-bot-opensource-clone-i5x5dn`, until it is merged into the
+    default branch. This is the branch, not the URL. A URL here fails with *reference not found*.
   - Compose path: `deploy/umbrel/docker-compose.yml`.
+  - Without Git: *Web editor* instead, with the contents of
+    [`deploy/umbrel/docker-compose.yml`](../deploy/umbrel/docker-compose.yml) pasted in. To update it, open the
+    stack's **Editor** and run **Update the stack** with *Re-pull image* on.
 - **Environment variables**:
 
 | Name | Value |
@@ -67,6 +74,10 @@ Tailscale machine and its own address.
 1. The hub's token, its recovery key: Portainer → Containers → `orbis-gabriel-orbis-1` → **Console** →
    Connect, then run `cat /data/token`. Keep it in a password manager.
 2. On a device with Tailscale on, open `https://orbis-gabriel.<tailnet>.ts.net` and sign in with the token.
+   The first visit can take a few seconds while Tailscale issues the certificate.
+   - If the browser says the address cannot be found (`DNS_PROBE_…`), first check that Tailscale is connected.
+     Then turn off the browser's **secure DNS** (Brave or Chrome → Settings → Privacy and security → Use secure
+     DNS): it bypasses Tailscale's MagicDNS, which is what knows the `.ts.net` names.
 3. **Settings → Account**: sign in to your Orbis account (or create it) and **link this hub**. From then on
    you sign in with your email and password.
 4. Turn on **two-step verification** there (an authenticator app's code). Then a password alone does not

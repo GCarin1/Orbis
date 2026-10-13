@@ -9,6 +9,12 @@ change that delivered it.
 
 ### Fixed
 
+- **The Umbrel guide matches Portainer 2.45** (chore 0073-umbrel-guide-portainer-2-45): `docs/umbrel.md` now covers three things:
+  - a GitOps source with no authentication;
+  - the branch, not the URL, in *Repository reference*;
+  - the *Web editor* route with no Git.
+
+  It also explains the "address cannot be found" error: the browser's secure DNS bypasses Tailscale's MagicDNS.
 - **The server image is published again** (chore 0072-server-image-amd64): the *Server image* workflow builds linux/amd64 natively by default, with arm64 (emulated, slower) only when asked for by hand. A failing `npm ci` in the image build now prints the end of npm's own log, so the reason shows in CI.
 
 ### Added

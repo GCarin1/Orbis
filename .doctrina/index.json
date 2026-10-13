@@ -2190,6 +2190,15 @@
         "applied": "2026-10-13",
         "specs_affected": [],
         "lane": "product (confident; signals: build) — opened as chore"
+      },
+      {
+        "id": "0073-umbrel-guide-portainer-2-45",
+        "title": "Umbrel guide: Portainer 2.45 GitOps source and secure DNS tip",
+        "path": ".doctrina/changes/archive/2026-10-13-0073-umbrel-guide-portainer-2-45",
+        "status": "applied",
+        "applied": "2026-10-13",
+        "specs_affected": [],
+        "lane": "product (uncertain) — opened as chore"
       }
     ],
     "skills": [
