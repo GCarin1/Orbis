@@ -92,7 +92,9 @@ Tailscale machine and its own address.
 
 1. Tailscale app: signed in. On Android, turn on **Always-on VPN** for Tailscale (Android Settings → Network →
    VPN → Tailscale → ⚙ → Always-on VPN). Then the phone reaches your Orbis all the time, at home or away.
-2. Orbis app: on the connection screen, enter `https://orbis-gabriel.<tailnet>.ts.net` and sign in.
+2. Orbis app: it opens on **Connect to your Orbis**. Enter `https://orbis-gabriel.<tailnet>.ts.net`, tap
+   Connect and sign in with your email and password. Running Orbis on the phone itself (Termux) is only an
+   advanced choice at the bottom.
 3. **Settings → Phone**:
    - allow **Notifications**;
    - keep **Stay connected with the app closed** on.

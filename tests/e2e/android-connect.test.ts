@@ -1,9 +1,9 @@
 // specs/android-app — the Android app's first screen (packages/android/app/src/main/assets/connect.html),
-// in a real browser with the app's bridge stood in for. Orbis on this phone comes first: one button starts
-// it inside Termux and opens it — no computer, no sign-in — with the one-time setup when Termux or the
-// permission is missing (change 0052). Another Orbis is a choice below: the page hands the typed address
-// (and a pairing code) to the app, translates why one is refused, says when the hub did not answer and
-// tries again, offers the recent hubs and a copied link, reads a QR code, and explains a certificate.
+// in a real browser with the app's bridge stood in for. Your Orbis on a server comes first and open (change
+// 0077): the page hands the typed address (and a pairing code) to the app, translates why one is refused,
+// says when the hub did not answer and tries again, offers the recent hubs and a copied link, reads a QR
+// code, and explains a certificate. Orbis on this phone (Termux, change 0052) is an advanced choice, closed
+// below, that starts only when asked, with the one-time setup when Termux or the permission is missing.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -66,16 +66,31 @@ async function open(locale: string, query = "", local: string | null = null): Pr
 }
 const calls = (tab: Page) => tab.evaluate(() => (window as unknown as { calls: Array<[string, string]> }).calls);
 const asked = (tab: Page) => tab.evaluate(() => (window as unknown as { asked: string[] }).asked);
+/** Opens the advanced choice: Orbis on this phone. */
+const advanced = (tab: Page) => tab.locator("#local-box > summary").click();
 const onLocal = (tab: Page, state: string, detail: string | null = null) =>
   tab.evaluate(([s, d]) => (window as unknown as { onLocal(state: string, detail: string | null): void }).onLocal(s!, d ?? null), [state, detail]);
 
-describe("Orbis on this phone, on the first screen", () => {
+describe("Orbis on this phone, an advanced choice on the first screen", () => {
+  it("leads with your Orbis's address and keeps Orbis on this phone closed, never starting it by itself (change 0077)", async () => {
+    const tab = await open("pt-BR", "", "no-permission");
+    await tab.getByText("Conectar ao seu Orbis").waitFor();
+    expect(await tab.getByLabel("Endereço do seu Orbis").isVisible()).toBe(true);
+    expect(await tab.getByLabel("Endereço do seu Orbis").getAttribute("placeholder")).toMatch(/\.ts\.net/);
+    await tab.getByText("Avançado: rodar o Orbis neste celular (Termux)").waitFor();
+    expect(await tab.getByRole("heading", { name: "📱 Orbis neste celular" }).isVisible()).toBe(false);
+    expect(await tab.getByText(/precisa da permissão/).isVisible()).toBe(false);
+    expect(await asked(tab)).toEqual([]);
+    // An app without the hub on the phone has no advanced choice at all.
+    const older = await open("pt-BR");
+    expect(await older.locator("#local-box").isHidden()).toBe(true);
+  });
+
   it("opens Orbis on this phone with one button — no computer, no sign-in — and says how the start goes", async () => {
     const tab = await open("pt-BR", "", "ready");
+    await advanced(tab);
     await tab.getByRole("heading", { name: "📱 Orbis neste celular" }).waitFor();
     await tab.getByText(/sem computador, sem servidor e sem login/).waitFor();
-    // Another Orbis stays a choice, closed; the one-time setup is not needed.
-    expect(await tab.getByLabel("Endereço do outro Orbis").isVisible()).toBe(false);
     expect(await tab.locator("#local-setup").isHidden()).toBe(true);
 
     await tab.getByRole("button", { name: "Abrir o Orbis" }).click();
@@ -95,15 +110,15 @@ describe("Orbis on this phone, on the first screen", () => {
     await tab.getByText("Error: listen EADDRINUSE 127.0.0.1:7420").waitFor();
   });
 
-  it("starts by itself when the app opens on the hub on this phone", async () => {
+  it("starts again by itself, open, when the hub on this phone was lost while in use", async () => {
     const tab = await open("en-US", "?local=start", "ready");
     await tab.getByRole("heading", { name: "📱 Orbis on this phone" }).waitFor();
     expect(await asked(tab)).toEqual(["startLocal"]);
-    expect(await tab.getByLabel("Address of the other Orbis").isVisible()).toBe(false);
   });
 
   it("without Termux, shows the one-time setup: get Termux, copy the command, open Termux", async () => {
     const tab = await open("pt-BR", "", "no-termux");
+    await advanced(tab);
     const setup = tab.locator("#local-setup");
     await setup.getByText("Primeira vez? Prepare o celular, uma vez só:").waitFor();
     await setup.getByText(/raw\.githubusercontent\.com\/someone\/Orbis\/HEAD\/scripts\/android\/orbis-termux\.sh/).waitFor();
@@ -121,6 +136,7 @@ describe("Orbis on this phone, on the first screen", () => {
 
   it("asks for the Termux permission, and opens the app's settings where it is granted by hand", async () => {
     const tab = await open("pt-BR", "", "no-permission");
+    await advanced(tab);
     await tab.getByText(/Permissões adicionais/).waitFor();
     // The system never showed the permission: the screen says what it found, and Orbis still opens from Termux.
     await onLocal(tab, "no-permission", "termux=0.118.3 from=org.fdroid.fdroid declares=no requested=yes granted=no android=34 device=x");
@@ -135,23 +151,22 @@ describe("Orbis on this phone, on the first screen", () => {
 
   it("keeps the address of another Orbis open when one was used", async () => {
     const tab = await open("pt-BR", `?hub=${encodeURIComponent("http://192.168.0.10:7420/")}`, "ready");
-    expect(await tab.getByLabel("Endereço do outro Orbis").inputValue()).toBe("http://192.168.0.10:7420/");
-    await tab.getByRole("heading", { name: "📱 Orbis neste celular" }).waitFor();
+    expect(await tab.getByLabel("Endereço do seu Orbis").inputValue()).toBe("http://192.168.0.10:7420/");
   });
 });
 
 describe("another Orbis, on the first screen", () => {
   it("hands the address and the pairing code to the app and translates why one is refused", async () => {
     const tab = await open("pt-BR");
-    await tab.getByText("Endereço do outro Orbis").waitFor();
+    await tab.getByText("Endereço do seu Orbis", { exact: true }).waitFor();
     await tab.getByRole("button", { name: "Conectar" }).click();
     await tab.getByText("Digite o endereço do Orbis.").waitFor();
-    await tab.getByLabel("Endereço do outro Orbis").fill("ftp://pc");
+    await tab.getByLabel("Endereço do seu Orbis").fill("ftp://pc");
     await tab.getByRole("button", { name: "Conectar" }).click();
     await tab.getByText("Use um endereço http:// ou https://.").waitFor();
 
     // With a code, the app trades it for the token; a wrong one is said.
-    await tab.getByLabel("Endereço do outro Orbis").fill("192.168.0.10");
+    await tab.getByLabel("Endereço do seu Orbis").fill("192.168.0.10");
     await tab.getByLabel(/Código de pareamento/).fill("483 219");
     await tab.getByRole("button", { name: "Conectar" }).click();
     await tab.getByRole("button", { name: "Conectando…" }).waitFor();
@@ -169,9 +184,9 @@ describe("another Orbis, on the first screen", () => {
     const recent = encodeURIComponent(JSON.stringify(["http://192.168.0.10:7420/", "https://orbis.example.com/"]));
     const tab = await open("pt-BR", `?recent=${recent}`);
     await tab.getByRole("button", { name: "orbis.example.com" }).click();
-    expect(await tab.getByLabel("Endereço do outro Orbis").inputValue()).toBe("https://orbis.example.com/");
+    expect(await tab.getByLabel("Endereço do seu Orbis").inputValue()).toBe("https://orbis.example.com/");
     await tab.getByRole("button", { name: "Colar" }).click();
-    expect(await tab.getByLabel("Endereço do outro Orbis").inputValue()).toBe("http://192.168.0.10:7420/#token=abc");
+    expect(await tab.getByLabel("Endereço do seu Orbis").inputValue()).toBe("http://192.168.0.10:7420/#token=abc");
   });
 
   it("reads the computer's QR code and connects with its address and code, or says why not", async () => {
@@ -188,18 +203,18 @@ describe("another Orbis, on the first screen", () => {
     await scan(null, "cancelled");
     await scan("http://192.168.0.10:7420/#pair=483219", null);
     await tab.getByRole("button", { name: "Conectando…" }).waitFor();
-    expect(await tab.getByLabel("Endereço do outro Orbis").inputValue()).toBe("http://192.168.0.10:7420/");
+    expect(await tab.getByLabel("Endereço do seu Orbis").inputValue()).toBe("http://192.168.0.10:7420/");
     expect(await calls(tab)).toEqual([["http://192.168.0.10:7420/", "483219"]]);
   });
 
   it("says why the saved hub did not answer and tries it again by itself, in English too", async () => {
     const hub = encodeURIComponent("http://192.168.0.10:7420/");
     const tab = await open("en-US", `?v=0.1.0%2B7&hub=${hub}&error=${encodeURIComponent("192.168.0.10: net::ERR_CONNECTION_REFUSED")}`);
-    expect(await tab.getByLabel("Address of the other Orbis").inputValue()).toBe("http://192.168.0.10:7420/");
+    expect(await tab.getByLabel("Address of your Orbis").inputValue()).toBe("http://192.168.0.10:7420/");
     await tab.getByText("Orbis did not answer at 192.168.0.10: net::ERR_CONNECTION_REFUSED").waitFor();
     await tab.getByText("Orbis Android · version 0.1.0+7").waitFor();
     await tab
-      .getByText(/Orbis-Celular\.bat/)
+      .getByText(/Keep Tailscale on on this phone/)
       .first()
       .waitFor();
     await tab.getByText(/Trying again in \d+ s…/).waitFor();

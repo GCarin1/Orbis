@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC14
 **Depends on:** web-app, hub-api
 **Last updated:** 2026-10-03
-**Version:** 0.8.0
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -41,7 +41,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When another app shares text with Orbis, the Android app shall connect if the text holds a sign-in link (`…#token=…`) or a pairing link (`…#pair=…`), and otherwise hand the text to the web app, which puts it in the message box of the next conversation opened.
 - When the page asks for dictation or to read a reply aloud, the Android app shall use the phone's speech recognizer and voice.
 - When a hub's saved address does not answer, the connect screen shall try it again every 10 seconds until the user stops it, and offer the last five hubs and a link from the clipboard.
-- When the user taps Open Orbis, or the app opens on the hub on this phone, the Android app shall find the hub on 127.0.0.1:7420 taking its own token, or ask Termux to run `orbis-phone serve` with that token on its standard input, wait up to three minutes saying for how long so far, and open the web app signed in, with no pairing and no sign-in.
+- When the user taps Open Orbis in the connect screen's advanced choice, or the hub on this phone stops answering while it is open, the Android app shall find the hub on 127.0.0.1:7420 taking its own token, or ask Termux to run `orbis-phone serve` with that token on its standard input, wait up to three minutes saying for how long so far, and open the web app signed in, with no pairing and no sign-in.
 - When Termux is missing, its permission is refused, Orbis is not installed in it, Termux refuses commands from other apps, or the hub on this phone does not answer or stops, the connect screen shall say which, and show the one-time setup (get Termux, copy the install command, open Termux) or the app's permission settings.
 - When the web app inside the Android app loses the hub on this phone, it shall ask the app to start it again after 4 seconds and every 30 seconds until the hub answers.
 - When `orbis-phone serve` is given a token and a hub already answers, it shall leave a hub that takes that token running, and start again a hub that takes another one.
@@ -52,6 +52,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 - When `orbis-phone serve` runs the hub on the phone (started by the app or by hand), the system shall hold Termux's wake lock while the hub runs, so bots answer and routines fire with the screen off, unless `ORBIS_AWAKE=0`.
 - When the page asks for more than one file, the Android app shall give it every file picked in the phone's picker.
 - When the page asks to allow health data, the Android app shall open Health Connect's permission screen and tell the page the kinds of data the user allowed; when Health Connect must be installed or updated, it shall open its page in the Play Store.
+- When the app starts, even with the hub on this phone saved, the Android app shall show its connect screen with the address of your Orbis first and open, and Orbis on this phone as a closed advanced choice that does not start Termux nor ask for its permission by itself.
 
 ### State-driven
 
@@ -91,6 +92,7 @@ GitHub Actions workflow builds the APK of the current version on demand.
 21. [verified] With stand-ins for Termux, the hub started the way the app starts it takes Termux's wake lock — verified by `packages/hub/test/phone-script.test.ts`
 22. [verified] Inside the Android app, a conversation's file is saved to Downloads through the app with its bytes — verified by `packages/web/test/files.test.tsx`
 23. [verified] A night's stages add up on the day it ended and workouts are named, as the app sends them to the page — verified by `packages/android/app/src/test/java/app/orbis/android/HealthDaysTest.kt`
+24. [verified] In a real browser, the first screen leads with "Connect to your Orbis" open, an address placeholder on a tailnet, and steps for Tailscale and the account's sign-in; Orbis on this phone is a closed advanced choice, absent from an app without it, that asks nothing until opened, and starts by itself only when the hub on this phone was lost while in use — verified by `tests/e2e/android-connect.test.ts`
 
 ## Maturity
 

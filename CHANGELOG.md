@@ -27,6 +27,7 @@ change that delivered it.
 
 ### Changed
 
+- **The Android app opens on your Orbis's address** (change 0077-android-server-first): the first screen leads with "Connect to your Orbis", which has a tailnet example and steps for Tailscale and sign-in. Orbis on the phone (Termux) becomes a closed advanced choice. A Termux hub saved from before no longer starts, or asks for Termux's permission, when the app opens.
 - **Oracle only, no Cloudflare** (change 0070-oracle-only, ADR 0026): the server serves Orbis itself over HTTPS — `orbis-server install` adds Caddy (a free certificate, `<ip>.sslip.io` when there is no domain), opens only 80 and 443, and puts HSTS, a strict CSP and `X-Frame-Options: DENY` on every answer. The Cloudflare relay (`packages/cloud`, `ORBIS_CLOUD_URL`, `orbis link --cloud`, the phone-off notice) is removed. Behind the proxy the hub counts refused sign-ins per visitor (`ORBIS_PUBLIC_URL`) and wants a token of at least 24 characters.
 
 ### Added

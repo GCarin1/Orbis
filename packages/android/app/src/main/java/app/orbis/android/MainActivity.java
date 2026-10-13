@@ -115,8 +115,9 @@ public class MainActivity extends Activity {
         TermuxResult.listener = this::onTermuxResult;
         if (state == null || web.restoreState(state) == null) {
             if (hub == null) showConnect(null, false, false);
-            // The hub on this phone: the first screen starts it (or finds it running) and opens it.
-            else if (LocalHub.isLocal(hub)) showConnect(null, false, true);
+            // The hub on this phone (Termux) starts only when asked: the first screen leads to your Orbis's
+            // address (change 0077).
+            else if (LocalHub.isLocal(hub)) showConnect(null, false, false);
             else open(hub);
         }
         handle(getIntent());
@@ -221,8 +222,8 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * The first screen: Orbis on this phone (started at once when `startLocal`), or another Orbis's address,
-     * the recent ones, and why the last try failed.
+     * The first screen: your Orbis's address, the recent ones and why the last try failed; Orbis on this phone
+     * as an advanced choice (started at once when `startLocal`).
      */
     private void showConnect(String error, boolean certificate, boolean startLocal) {
         StringBuilder page = new StringBuilder(CONNECT_PAGE).append("?v=").append(Uri.encode(BuildConfig.VERSION_NAME));

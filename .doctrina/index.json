@@ -32,7 +32,7 @@
         "id": "android-app",
         "path": ".doctrina/specs/android-app/spec.md",
         "status": "active",
-        "version": "0.8.0",
+        "version": "0.9.0",
         "last_updated": "2026-10-03",
         "implementation": "verified — Java WebView shell in `packages/android` (the hub on this phone started inside Termux and opened signed in, another Orbis by address, code or QR code, hub-only navigation, file picker, Downloads, Back, notifications, keep-connected service, dictation, voice, share); `scripts/android/orbis-termux.sh`; APK built by `.github/workflows/android.yml`",
         "realizes": [
@@ -2256,6 +2256,20 @@
         "applied": "2026-10-13",
         "specs_affected": [],
         "lane": "product (uncertain) — opened as chore"
+      },
+      {
+        "id": "0077-android-server-first",
+        "title": "android-server-first",
+        "path": ".doctrina/changes/archive/2026-10-13-0077-android-server-first",
+        "status": "applied",
+        "applied": "2026-10-13",
+        "specs_affected": [
+          {
+            "capability": "android-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
       }
     ],
     "skills": [
