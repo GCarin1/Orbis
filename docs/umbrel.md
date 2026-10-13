@@ -108,8 +108,13 @@ keys. Then in the new Orbis: **Settings → Data → Import a .orbis file**. Aft
 
 ## Day to day
 
-- **Updates**: Portainer → Stacks → `orbis-gabriel` → **Pull and redeploy**. The data stays in the stack's
-  volumes.
+- **Updates**: Portainer → Stacks → `orbis-gabriel` → **Pull and redeploy**. The stack always fetches the newest
+  image (`pull_policy: always`), and the data stays in the stack's volumes. A stack made before that: turn on
+  **Re-pull image**, or Containers → `orbis-gabriel-orbis-1` → **Recreate** with **Re-pull image** on.
+- **Still the old screen after an update**: open `https://orbis-gabriel.<tailnet>.ts.net/api/v1/auth/config`.
+  - `"linked":false` → the old image still runs: recreate it as above.
+  - `"linked":true` → the browser kept the old app: reload it, or clear the site's data. In the Android app: Android
+    Settings → Apps → Orbis → Storage → Clear cache.
 - **Backups**: Settings → Data → Download my data. Or Portainer → Volumes → `orbis-gabriel_orbis-data`.
 - **Logs**: Portainer → Containers → `orbis-gabriel-orbis-1` → Logs.
 

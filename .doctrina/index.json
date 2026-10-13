@@ -755,8 +755,8 @@
         "status": "accepted",
         "date": "2026-10-13",
         "supersedes": "0028",
-        "summary": "A hub with accounts on always shows the account's sign-in.",
-        "landed": "2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`"
+        "landed": "2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`",
+        "summary": "A hub with accounts on always shows the account's sign-in."
       }
     ],
     "changes": [],
@@ -2247,6 +2247,15 @@
           }
         ],
         "lane": "product (uncertain)"
+      },
+      {
+        "id": "0076-umbrel-pull-always",
+        "title": "umbrel-pull-always",
+        "path": ".doctrina/changes/archive/2026-10-13-0076-umbrel-pull-always",
+        "status": "applied",
+        "applied": "2026-10-13",
+        "specs_affected": [],
+        "lane": "product (uncertain) — opened as chore"
       }
     ],
     "skills": [

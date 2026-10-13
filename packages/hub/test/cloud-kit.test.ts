@@ -78,7 +78,7 @@ describe("one person's stack on a home server (change 0071, docs/umbrel.md)", ()
       if (kind === "?") throw new Error(`${name} is required`);
       return fallback ?? "";
     });
-  const stack = parse(text) as { services: Record<string, { image: string; ports?: unknown; environment: Record<string, string>; command?: string[]; volumes: string[]; mem_limit?: string; restart: string }> };
+  const stack = parse(text) as { services: Record<string, { image: string; ports?: unknown; environment: Record<string, string>; command?: string[]; volumes: string[]; mem_limit?: string; restart: string; pull_policy?: string }> };
   const { orbis, tailscale } = stack.services as Record<string, (typeof stack.services)[string]>;
 
   it("opens no port: the hub is reached only through its own Tailscale node, which serves HTTPS and never Funnel", () => {
@@ -110,6 +110,10 @@ describe("one person's stack on a home server (change 0071, docs/umbrel.md)", ()
       const without = Object.fromEntries(Object.entries(ENV).filter(([k]) => k !== name));
       expect(() => all.forEach((v) => interpolate(v, without)), name).toThrow(`${name} is required`);
     }
+  });
+
+  it("fetches the newest image on every redeploy, never keeping a stale one (chore 0076)", () => {
+    expect(orbis!.pull_policy).toBe("always");
   });
 
   it("is published ready, so a home server compiles nothing: amd64 always, arm64 on demand (change 0072)", () => {

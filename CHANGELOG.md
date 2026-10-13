@@ -9,6 +9,7 @@ change that delivered it.
 
 ### Fixed
 
+- **An update on the Umbrel always brings the new image** (chore 0076-umbrel-pull-always): the stack's hub has `pull_policy: always`, so *Pull and redeploy* never keeps the old one. `docs/umbrel.md` says how to tell an old image from an old browser cache.
 - **The Umbrel guide matches Portainer 2.45** (chore 0073-umbrel-guide-portainer-2-45): `docs/umbrel.md` now covers three things:
   - a GitOps source with no authentication;
   - the branch, not the URL, in *Repository reference*;

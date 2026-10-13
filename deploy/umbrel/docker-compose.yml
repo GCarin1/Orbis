@@ -14,6 +14,8 @@
 services:
   orbis:
     image: ${ORBIS_IMAGE:-ghcr.io/gcarin1/orbis:latest}
+    # Every deploy and redeploy fetches the newest published image, so an update never keeps the old one.
+    pull_policy: always
     restart: unless-stopped
     environment:
       # The hub makes its own 43-character token in /data/token: the recovery key (docs/umbrel.md).
