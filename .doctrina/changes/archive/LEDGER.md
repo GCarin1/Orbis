@@ -76,3 +76,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-11 — 0071-umbrel-home — umbrel-home (specs: cloud MODIFIED)
 - 2026-10-13 — 0072-server-image-amd64 — server-image-amd64
 - 2026-10-13 — 0073-umbrel-guide-portainer-2-45 — Umbrel guide: Portainer 2.45 GitOps source and secure DNS tip
+- 2026-10-13 — 0074-owner-sign-in — a new hub opens with its owner's sign-in (specs: hub-api MODIFIED)

@@ -15,6 +15,8 @@ export interface AccountClaims {
   /** The account's id (auth.users.id). */
   userId: string;
   email: string | null;
+  /** Whether the account confirmed its email (Supabase's `user_metadata.email_verified`, change 0074). */
+  emailVerified: boolean;
   /** When the token stops working, in seconds since 1970. */
   exp: number;
   /** How the session was proven: `aal2` once a second step (an authenticator's code) was given (change 0070). */
@@ -83,6 +85,7 @@ export class AccountTokens {
     return {
       userId: claims.sub.toLowerCase(),
       email: typeof claims.email === "string" ? claims.email : null,
+      emailVerified: (claims.user_metadata as { email_verified?: unknown } | undefined)?.email_verified === true,
       exp: claims.exp,
       aal: claims.aal === "aal2" ? "aal2" : "aal1",
     };

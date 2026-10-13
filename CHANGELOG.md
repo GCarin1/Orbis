@@ -19,6 +19,7 @@ change that delivered it.
 
 ### Added
 
+- **A new hub opens with its owner's sign-in** (change 0074-owner-sign-in): with `ORBIS_OWNER_EMAIL` set, the hub shows the account's email and password from the first visit, and the first sign-in of that account (its email confirmed) links the hub. There is no token to copy. Any other account opens nothing, and the token stays the recovery key.
 - **Orbis on a home server** (change 0071-umbrel-home, ADR 0027): `deploy/umbrel/docker-compose.yml` runs one person's Orbis on UmbrelOS (through Portainer) or any Docker host. Each person gets their own hub, data and account, reached only through the stack's own Tailscale node at `https://orbis-<name>.<tailnet>.ts.net`, with no port open anywhere. The server image is now published ready for amd64 and arm64 (`ghcr.io/gcarin1/orbis`). Guide: `docs/umbrel.md`.
 
 ### Changed

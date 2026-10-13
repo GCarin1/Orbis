@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC13
 **Depends on:** bots, conversations
 **Last updated:** 2026-10-08
-**Version:** 0.8.0
+**Version:** 0.9.0
 
 ## Purpose
 
@@ -49,6 +49,11 @@ routes and shapes are owned by `contracts/hub-surface`.
 - The hub shall not take a credential in an address: the stream opens only with a ticket, a file's content only with a file key or the bearer header, and `?token=` works nowhere.
 - The hub shall not take a session signed with `none` or a shared secret, one from another project, for anonymous users, expired or not valid yet beyond 30 seconds of clock skew, nor let a session alone link an account.
 - Past 20 refused credentials in a minute from one address, the hub shall answer 429 `too_many_failures` instead of 401, and shall never refuse a valid credential for it.
+- The hub shall not let ORBIS_OWNER_EMAIL open it for another account, for an unconfirmed email, or after an account is linked for any account but the linked one.
+
+### Optional
+
+- Where ORBIS_OWNER_EMAIL names the hub's owner and no account is linked yet, the hub shall report that an account opens it, and the first session of the account with that email, its email confirmed, shall link the hub to that account and open it, so the owner never needs the hub's token.
 
 ## Acceptance criteria
 
@@ -63,6 +68,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 9. [verified] The image serves on 0.0.0.0:7420 as the node user with /data and Claude Code's folder on the volume; compose publishes on 127.0.0.1 with the tunnels as profiles; the example environment leaves every secret empty and git ignores the real one; the dev container forwards 7420, keeps its data outside the repository and asks for ORBIS_TOKEN and CLAUDE_CODE_OAUTH_TOKEN as Codespaces secrets — verified by `packages/hub/test/cloud-kit.test.ts`.
 10. [verified] A session holds only when signed by the project's key, from the project, for a signed-in account, in time, never unsigned nor HS256, and a new key id fetches the keys again; it opens the hub only once the token linked its account, never another account's, a session alone cannot link, and unlinking closes it; 20 refusals a minute make the next wait while the token still passes; with ORBIS_SUPABASE_URL off there is no account — verified by `packages/hub/test/auth.test.ts`
 11. [verified] The stream opens only with a ticket, once, never with the token in its address; a file's content opens with the file key or the bearer header, never with `?token=`, and the key opens nothing else — verified by `packages/hub/test/stream.test.ts` and `packages/hub/test/files.test.ts`
+12. [verified] With its owner named, the sign-in screen asks for the account before any link; only the owner's session with a confirmed email (in any letter case) opens the hub and links it, another account, an unconfirmed email or an anonymous session open nothing, and once linked another account with the same email opens nothing; a malformed ORBIS_OWNER_EMAIL stops the hub — verified by `packages/hub/test/auth.test.ts`
 
 ## Maturity
 

@@ -19,6 +19,7 @@ services:
       # The hub makes its own 43-character token in /data/token: the recovery key (docs/umbrel.md).
       ORBIS_TOKEN: ""
       CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      ORBIS_OWNER_EMAIL: ${ORBIS_OWNER_EMAIL:-}
       # Its address: the hub trusts its Tailscale node for the visitor's address and signs MCP servers in to it.
       ORBIS_PUBLIC_URL: https://orbis-${ORBIS_NAME:?set ORBIS_NAME}.${ORBIS_TAILNET:?set ORBIS_TAILNET}
       TZ: ${TZ:-UTC}

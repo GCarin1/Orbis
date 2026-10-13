@@ -200,7 +200,7 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.8.0",
+        "version": "0.9.0",
         "last_updated": "2026-10-08",
         "implementation": "verified",
         "realizes": [
@@ -737,6 +737,15 @@
           "cloud"
         ],
         "summary": "One hub per person, the same as on any server."
+      },
+      {
+        "id": "0028",
+        "path": ".doctrina/decisions/0028-a-hub-may-name-its-owner-s-email-the-owner-s-confirmed-session-links-it-never-another-account.md",
+        "title": "A hub may name its owner's email; the owner's confirmed session links it, never another account",
+        "status": "accepted",
+        "date": "2026-10-13",
+        "summary": "A hub may name its owner with `ORBIS_OWNER_EMAIL`.",
+        "landed": "2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`"
       }
     ],
     "changes": [],
@@ -2199,6 +2208,20 @@
         "applied": "2026-10-13",
         "specs_affected": [],
         "lane": "product (uncertain) — opened as chore"
+      },
+      {
+        "id": "0074-owner-sign-in",
+        "title": "a new hub opens with its owner's sign-in",
+        "path": ".doctrina/changes/archive/2026-10-13-0074-owner-sign-in",
+        "status": "applied",
+        "applied": "2026-10-13",
+        "specs_affected": [
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
       }
     ],
     "skills": [

@@ -85,10 +85,17 @@ export class HubAuth {
   async check(presented: string | null): Promise<Via | null> {
     if (!presented) return null;
     if (safeEqual(presented, this.config.token)) return "token";
-    const linked = this.linked();
-    if (!linked || !this.tokens || !looksLikeJwt(presented)) return null;
+    let linked = this.linked();
+    if ((!linked && !this.config.ownerEmail) || !this.tokens || !looksLikeJwt(presented)) return null;
     try {
       const claims = await this.tokens.verify(presented);
+      if (!linked) {
+        // A new hub with its owner named (ORBIS_OWNER_EMAIL, change 0074): the owner's own session, with its
+        // email confirmed, links it, so it never needs its token. Any other account still opens nothing.
+        if (!claims.emailVerified || claims.email?.toLowerCase() !== this.config.ownerEmail) return null;
+        this.setLinked(claims.userId, claims.email);
+        linked = this.linked()!;
+      }
       if (claims.userId !== linked.userId) return null;
       // Two-step verification on: a session proven by the password alone does not open the hub.
       if (linked.mfa && claims.aal !== "aal2") return null;
@@ -180,10 +187,11 @@ export class HubAuth {
 
   async routes(root: FastifyInstance): Promise<void> {
     const app = root.withTypeProvider<TypeBoxTypeProvider>();
-    // Before signing in: where the sign-in goes, and whether an account opens this hub (never which one).
+    // Before signing in: where the sign-in goes, and whether an account opens this hub (never which one). A
+    // hub with its owner named opens with the account's sign-in before it is linked.
     app.get("/api/v1/auth/config", { schema: { tags: ["account"], security: [] } }, async (): Promise<AuthConfig> => ({
       supabase: this.config.supabase,
-      linked: this.linked() !== null,
+      linked: this.linked() !== null || (this.config.ownerEmail !== null && this.tokens !== null),
     }));
     app.get("/api/v1/account", { schema: { tags: ["account"] } }, async (req): Promise<AccountStatus> => this.status(this.viaOf(req)));
     app.post(
