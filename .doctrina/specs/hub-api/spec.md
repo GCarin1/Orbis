@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC13
 **Depends on:** bots, conversations
 **Last updated:** 2026-10-08
-**Version:** 0.9.0
+**Version:** 0.10.0
 
 ## Purpose
 
@@ -36,7 +36,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 - When a recording arrives at `/api/v1/voice/transcribe`, the system shall send it to the transcription service in use — the one saved in the settings screen, else ORBIS_TRANSCRIBE_URL, else OpenAI's with OPENAI_API_KEY — as an OpenAI-compatible `/audio/transcriptions` upload with the model and the spoken language, and answer the text.
 - When the signed-in web app asks for a pairing code, the hub shall make a six-digit code that works once, for five minutes, replacing the one before, and answer it with whether the hub takes connections from the network and its addresses on this computer's network cards.
 - When a phone sends a pairing code to `POST /api/v1/pairing/claim`, which needs no token, the hub shall answer the hub's token for the current code and use the code up, and otherwise answer `invalid_code`.
-- When a request signed with the hub's token links an account with that account's session, the hub shall open from then on for that account's sessions, and for no other account's; when the account is unlinked, its sessions shall stop opening the hub at once.
+- When a request signed with the hub's token links an account with that account's session, or when no account is linked yet and an account of the project whose email is confirmed signs in, the hub shall open from then on for that account's sessions, and for no other account's; when the account is unlinked, its sessions shall stop opening the hub at once.
 - When a signed-in client asks for a stream ticket, the hub shall answer one that opens the event stream once, within 60 seconds; when it asks for a file key, one that opens files' content, and nothing else, for an hour.
 
 ### Unwanted-behavior (must-not)
@@ -47,13 +47,13 @@ routes and shapes are owned by `contracts/hub-surface`.
 - The hub shall not accept a pairing code after its fifth wrong try, nor more than 20 pairing claims a minute from anywhere.
 - The image, the compose file, its example environment and the dev container shall not hold a token, a key or an address of the user's, and shall not set `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
 - The hub shall not take a credential in an address: the stream opens only with a ticket, a file's content only with a file key or the bearer header, and `?token=` works nowhere.
-- The hub shall not take a session signed with `none` or a shared secret, one from another project, for anonymous users, expired or not valid yet beyond 30 seconds of clock skew, nor let a session alone link an account.
+- The hub shall not take a session signed with `none` or a shared secret, one from another project, for anonymous users, expired or not valid yet beyond 30 seconds of clock skew, nor let a session link a hub that is already linked or link one with an unconfirmed email.
 - Past 20 refused credentials in a minute from one address, the hub shall answer 429 `too_many_failures` instead of 401, and shall never refuse a valid credential for it.
-- The hub shall not let ORBIS_OWNER_EMAIL open it for another account, for an unconfirmed email, or after an account is linked for any account but the linked one.
+- Once an account is linked, the hub shall not open for any other account's session, whether its email is confirmed or not.
 
 ### Optional
 
-- Where ORBIS_OWNER_EMAIL names the hub's owner and no account is linked yet, the hub shall report that an account opens it, and the first session of the account with that email, its email confirmed, shall link the hub to that account and open it, so the owner never needs the hub's token.
+- Where accounts are on (ORBIS_SUPABASE_URL is not `off`), the hub shall report that an account opens it even before one is linked, so a new hub shows the account's sign-in and never asks for its token.
 
 ## Acceptance criteria
 
@@ -68,7 +68,7 @@ routes and shapes are owned by `contracts/hub-surface`.
 9. [verified] The image serves on 0.0.0.0:7420 as the node user with /data and Claude Code's folder on the volume; compose publishes on 127.0.0.1 with the tunnels as profiles; the example environment leaves every secret empty and git ignores the real one; the dev container forwards 7420, keeps its data outside the repository and asks for ORBIS_TOKEN and CLAUDE_CODE_OAUTH_TOKEN as Codespaces secrets — verified by `packages/hub/test/cloud-kit.test.ts`.
 10. [verified] A session holds only when signed by the project's key, from the project, for a signed-in account, in time, never unsigned nor HS256, and a new key id fetches the keys again; it opens the hub only once the token linked its account, never another account's, a session alone cannot link, and unlinking closes it; 20 refusals a minute make the next wait while the token still passes; with ORBIS_SUPABASE_URL off there is no account — verified by `packages/hub/test/auth.test.ts`
 11. [verified] The stream opens only with a ticket, once, never with the token in its address; a file's content opens with the file key or the bearer header, never with `?token=`, and the key opens nothing else — verified by `packages/hub/test/stream.test.ts` and `packages/hub/test/files.test.ts`
-12. [verified] With its owner named, the sign-in screen asks for the account before any link; only the owner's session with a confirmed email (in any letter case) opens the hub and links it, another account, an unconfirmed email or an anonymous session open nothing, and once linked another account with the same email opens nothing; a malformed ORBIS_OWNER_EMAIL stops the hub — verified by `packages/hub/test/auth.test.ts`
+12. [verified] A new hub's sign-in screen asks for the account before any link; the first session of a confirmed account opens the hub and links it, an unconfirmed email or an anonymous session open nothing, and once linked another account opens nothing while the linked one and the token still do — verified by `packages/hub/test/auth.test.ts`
 
 ## Maturity
 

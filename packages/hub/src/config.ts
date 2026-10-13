@@ -59,19 +59,6 @@ export interface HubConfig {
    * private network, signs MCP servers in back to this address, and wants a long ORBIS_TOKEN.
    */
   publicUrl: string | null;
-  /**
-   * The email of this hub's owner (change 0074, docs/umbrel.md): `ORBIS_OWNER_EMAIL`. Until an account is
-   * linked, a session of that account (its email confirmed) links it by signing in, so a new hub opens with
-   * the account's sign-in instead of its token. Lower-cased; null when unset.
-   */
-  ownerEmail: string | null;
-}
-
-function readOwnerEmail(env: Env): string | null {
-  const email = readVar(env, "ORBIS_OWNER_EMAIL")?.trim();
-  if (!email) return null;
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error(`ORBIS_OWNER_EMAIL must be an email address, got "${email}"`);
-  return email.toLowerCase();
 }
 
 /** The shortest ORBIS_TOKEN a hub on the internet takes. */
@@ -201,7 +188,6 @@ export function loadConfig(env: Env = process.env, overrides: ConfigOverrides = 
     prices: overrides.prices ?? loadPrices(dataDir),
     supabase: overrides.supabase !== undefined ? overrides.supabase : readSupabase(env),
     publicUrl,
-    ownerEmail: overrides.ownerEmail !== undefined ? overrides.ownerEmail : readOwnerEmail(env),
   };
 }
 

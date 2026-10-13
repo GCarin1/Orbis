@@ -1,10 +1,10 @@
 # ADR 0028 — A hub may name its owner's email; the owner's confirmed session links it, never another account
 
-- **Status:** accepted
+- **Status:** superseded by 0029
 - **Date:** 2026-10-13
 - **Deciders:** the project owner
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** 0029
 - **Evidence:** `packages/hub/src/auth/account.ts`, `packages/hub/src/config.ts`, `packages/hub/test/auth.test.ts`
 - **Landed:** 2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`
 

@@ -15,7 +15,7 @@ export interface AccountClaims {
   /** The account's id (auth.users.id). */
   userId: string;
   email: string | null;
-  /** Whether the account confirmed its email (Supabase's `user_metadata.email_verified`, change 0074). */
+  /** Whether the account confirmed its email (Supabase's `user_metadata.email_verified`, change 0075). */
   emailVerified: boolean;
   /** When the token stops working, in seconds since 1970. */
   exp: number;

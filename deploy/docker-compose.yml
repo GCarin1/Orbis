@@ -22,8 +22,6 @@ services:
       CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
       # https://$ORBIS_DOMAIN when Caddy serves it: the hub then trusts Caddy for the visitor's address.
       ORBIS_PUBLIC_URL: ${ORBIS_PUBLIC_URL:-}
-      # Your Orbis account's email: the hub then opens with that account's sign-in, with no token to copy.
-      ORBIS_OWNER_EMAIL: ${ORBIS_OWNER_EMAIL:-}
       TZ: ${TZ:-UTC}
     volumes:
       - orbis-data:/data

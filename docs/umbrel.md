@@ -56,7 +56,6 @@ In Portainer: **Stacks → Add stack**:
 | `ORBIS_NAME` | `gabriel`: letters, digits and dashes; it becomes `orbis-gabriel` |
 | `ORBIS_TAILNET` | your tailnet DNS name, such as `tail1234.ts.net` |
 | `TS_AUTHKEY` | the `tskey-auth-…` key |
-| `ORBIS_OWNER_EMAIL` | your Orbis account's email: the hub opens with the account's sign-in, no token to copy |
 | `CLAUDE_CODE_OAUTH_TOKEN` | optional: the `sk-ant-oat…` token from `claude setup-token`; or paste it later in Settings → Brains → Claude Code |
 | `TZ` | `America/Sao_Paulo` |
 
@@ -73,9 +72,9 @@ Tailscale machine and its own address.
 ## 4. First sign-in
 
 1. On a device with Tailscale on, open `https://orbis-gabriel.<tailnet>.ts.net`.
-   - With `ORBIS_OWNER_EMAIL` set, sign in with that account's email and password. The first sign-in links the
-     hub to the account. Only that account opens it, and its email must be confirmed.
-   - Without it, sign in with the hub's token (step 2), then link the account in **Settings → Account**.
+   Sign in with your Orbis account's email and password. On a new hub the **first account to sign in becomes
+   its owner**, and from then on only that account opens it. Its email must be confirmed. So each person opens
+   their own hub first, with their own account.
    The first visit can take a few seconds while Tailscale issues the certificate.
    - If the browser says the address cannot be found (`DNS_PROBE_…`), first check that Tailscale is connected.
      Then turn off the browser's **secure DNS** (Brave or Chrome → Settings → Privacy and security → Use secure
@@ -83,8 +82,7 @@ Tailscale machine and its own address.
 2. The hub's token is the **recovery key**: it signs in even without the authenticator. Find it in Portainer →
    Containers → `orbis-gabriel-orbis-1` → **Console** → Connect, then run `cat /data/token`. Keep it in a
    password manager.
-3. Signed in with the token: **Settings → Account**, sign in to your Orbis account (or create it) and **link
-   this hub**. From then on you sign in with your email and password.
+3. Another owner by hand: sign in with the token, then link the account in **Settings → Account**.
 4. Turn on **two-step verification** there (an authenticator app's code). Then a password alone does not
    open your Orbis.
 5. In Supabase, **Authentication → URL Configuration**: add `https://orbis-gabriel.<tailnet>.ts.net/**` (and

@@ -86,9 +86,9 @@ describe("signing in to the hub", () => {
     t = await testHub({ auth: { fetch: p.fetch as typeof fetch } });
     const config = await t.api("GET", "/api/v1/auth/config", undefined, "");
     expect(config.status).toBe(200);
-    expect(config.body as AuthConfig).toEqual({ supabase: DEFAULT_SUPABASE, linked: false });
+    expect(config.body as AuthConfig).toEqual({ supabase: DEFAULT_SUPABASE, linked: true });
 
-    // Before it is linked, no account opens the hub.
+    // An account whose email is not confirmed never opens nor takes a new hub.
     const ana = p.session();
     expect((await t.api("GET", "/api/v1/bots", undefined, ana)).status).toBe(401);
 
@@ -114,28 +114,27 @@ describe("signing in to the hub", () => {
     expect((await t.api("GET", "/api/v1/bots")).status).toBe(200);
   });
 
-  it("with its owner named, opens with the owner's confirmed account and no token, and links it (change 0074)", async () => {
+  it("a new hub: the first confirmed account to sign in becomes its owner, and only it opens it (change 0075)", async () => {
     const p = project();
-    t = await testHub({ auth: { fetch: p.fetch as typeof fetch }, config: { ownerEmail: "ana@example.com" } });
+    t = await testHub({ auth: { fetch: p.fetch as typeof fetch } });
     // Not linked yet, the sign-in screen already asks for the account.
     expect((await t.api("GET", "/api/v1/auth/config", undefined, "")).body as AuthConfig).toEqual({ supabase: DEFAULT_SUPABASE, linked: true });
     expect(((await t.api("GET", "/api/v1/account")).body as AccountStatus).linked).toBeNull();
 
     const verified = { user_metadata: { email_verified: true } };
-    // Another account, the owner's email unconfirmed, an anonymous session: nothing opens, nothing links.
-    expect((await t.api("GET", "/api/v1/bots", undefined, p.session({ sub: BIA, email: "bia@example.com", ...verified }))).status).toBe(401);
+    // An unconfirmed email or an anonymous session: nothing opens, nothing links.
     expect((await t.api("GET", "/api/v1/bots", undefined, p.session())).status).toBe(401);
     expect((await t.api("GET", "/api/v1/bots", undefined, p.session({ ...verified, is_anonymous: true }))).status).toBe(401);
     expect(((await t.api("GET", "/api/v1/account")).body as AccountStatus).linked).toBeNull();
 
-    // The owner (the email in any case) signs in: the hub opens and is linked to that account.
-    const ana = p.session({ email: "Ana@Example.com", ...verified });
+    // The first confirmed account signs in: the hub opens and is linked to it.
+    const ana = p.session(verified);
     expect((await t.api("GET", "/api/v1/bots", undefined, ana)).status).toBe(200);
-    expect(((await t.api("GET", "/api/v1/account", undefined, ana)).body as AccountStatus)).toMatchObject({ linked: { userId: ANA }, via: "account" });
-    // From then on the link is what counts: another account with the owner's email (a new sign-up) opens nothing.
-    expect((await t.api("GET", "/api/v1/bots", undefined, p.session({ sub: BIA, ...verified }))).status).toBe(401);
-    expect(() => loadConfig({ ORBIS_OWNER_EMAIL: "not-an-email" }, { dataDir: t!.dataDir, token: TOKEN })).toThrow(/ORBIS_OWNER_EMAIL/);
-    expect(loadConfig({ ORBIS_OWNER_EMAIL: " Ana@Example.com " }, { dataDir: t!.dataDir, token: TOKEN }).ownerEmail).toBe("ana@example.com");
+    expect((await t.api("GET", "/api/v1/account", undefined, ana)).body as AccountStatus).toMatchObject({ linked: { userId: ANA, email: "ana@example.com" }, via: "account" });
+    // From then on another account, confirmed or not, opens nothing; the token still does.
+    expect((await t.api("GET", "/api/v1/bots", undefined, p.session({ sub: BIA, email: "bia@example.com", ...verified }))).status).toBe(401);
+    expect((await t.api("GET", "/api/v1/bots", undefined, ana)).status).toBe(200);
+    expect((await t.api("GET", "/api/v1/bots")).status).toBe(200);
   });
 
   it("with two-step verification on, opens only for sessions that gave their second step (change 0070)", async () => {

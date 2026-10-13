@@ -200,7 +200,7 @@
         "id": "hub-api",
         "path": ".doctrina/specs/hub-api/spec.md",
         "status": "active",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "last_updated": "2026-10-08",
         "implementation": "verified",
         "realizes": [
@@ -742,9 +742,20 @@
         "id": "0028",
         "path": ".doctrina/decisions/0028-a-hub-may-name-its-owner-s-email-the-owner-s-confirmed-session-links-it-never-another-account.md",
         "title": "A hub may name its owner's email; the owner's confirmed session links it, never another account",
+        "status": "superseded by 0029",
+        "date": "2026-10-13",
+        "superseded_by": "0029",
+        "landed": "2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`",
+        "summary": "A hub may name its owner with `ORBIS_OWNER_EMAIL`."
+      },
+      {
+        "id": "0029",
+        "path": ".doctrina/decisions/0029-the-first-confirmed-account-to-sign-in-owns-a-new-hub-no-owner-variable.md",
+        "title": "The first confirmed account to sign in owns a new hub; no owner variable",
         "status": "accepted",
         "date": "2026-10-13",
-        "summary": "A hub may name its owner with `ORBIS_OWNER_EMAIL`.",
+        "supersedes": "0028",
+        "summary": "A hub with accounts on always shows the account's sign-in.",
         "landed": "2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`"
       }
     ],
@@ -2213,6 +2224,20 @@
         "id": "0074-owner-sign-in",
         "title": "a new hub opens with its owner's sign-in",
         "path": ".doctrina/changes/archive/2026-10-13-0074-owner-sign-in",
+        "status": "applied",
+        "applied": "2026-10-13",
+        "specs_affected": [
+          {
+            "capability": "hub-api",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0075-first-account-owns",
+        "title": "first-account-owns",
+        "path": ".doctrina/changes/archive/2026-10-13-0075-first-account-owns",
         "status": "applied",
         "applied": "2026-10-13",
         "specs_affected": [
