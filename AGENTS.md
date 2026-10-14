@@ -133,6 +133,10 @@ Keep this file under 150 lines. The scaffold already spends most of them
 and the generated block above grows with the CLI — `doctrina doctor`
 reports what is left. Density beats prose.
 
+## Showing features
+
+A feature that closes gets its screens sent to the user: `.claude/skills/orbis-screens` (its `capture.mjs` script). Chores send nothing.
+
 ## Definition of done
 
 `doctrina close <id>` is the definition: tasks checked, deltas merged into
