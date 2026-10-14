@@ -28,7 +28,13 @@ into the task, so a brain without tools can read it too.
 - **Claude Code, Codex, Cursor and Gemini CLI** open the files themselves,
   images and PDFs included.
 - **API brains** (Anthropic, OpenAI-compatible, Ollama) read text with
-  `computer.read_file`. They do not see images yet.
+  `computer.read_file`.
+- **Images sent with a message** are seen by the Anthropic brain and by a
+  remote OpenAI-compatible one (change 0081). That means PNG, JPEG, GIF or
+  WebP, up to 5 per message and 5 MB each.
+  - A local model (Ollama, LM Studio) gets only the image's path, because not
+    every local model sees images.
+  - To have a bot look at a Library image, **forward** it to the bot.
 
 A file sent earlier in the conversation is named in the bot's history. The
 bot copies it into its workspace again with `files.get`.

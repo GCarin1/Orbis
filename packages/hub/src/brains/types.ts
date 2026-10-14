@@ -12,6 +12,16 @@ export interface BrainInput {
   context: AssembledContext;
   /** Instructions of the invoked skill, when the run was started with /<skill>. */
   skill: { name: string; body: string } | null;
+  /** Images the user sent with the message of the moment, for brains that see (change 0081-vision). */
+  images?: BrainImage[];
+}
+
+export interface BrainImage {
+  name: string;
+  /** image/png, image/jpeg, image/gif or image/webp. */
+  mime: string;
+  /** The bytes, base64. */
+  data: string;
 }
 
 export interface ToolDescriptor {

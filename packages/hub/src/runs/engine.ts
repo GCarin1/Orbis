@@ -12,7 +12,7 @@ import type { ItemsRepo } from "../repos/conversations.js";
 import type { MemoryRepo } from "../repos/memory.js";
 import type { BrainSessionsRepo, RunsRepo } from "../repos/runs.js";
 import type { Timeline } from "../services/timeline.js";
-import { NO_TOOLS, type BrainEvent, type BrainRegistry, type McpWiring, type ToolBridge } from "../brains/types.js";
+import { NO_TOOLS, type BrainEvent, type BrainImage, type BrainRegistry, type McpWiring, type ToolBridge } from "../brains/types.js";
 
 /**
  * Steps are written to the database at most this often during a run (and
@@ -140,8 +140,14 @@ export class RunEngine {
   private readonly waitingCount = new Map<string, number>();
   private redactor: (<T>(botId: string, value: T) => T) | null = null;
   private stopped = false;
+  private imageSource: ((run: Run) => BrainImage[]) | null = null;
 
   constructor(private readonly d: EngineDeps) {}
+
+  /** Where a run's images come from (the files of the message that started it, change 0081). */
+  setImageSource(source: (run: Run) => BrainImage[]): void {
+    this.imageSource = source;
+  }
 
   setToolHost(host: RunToolHost): void {
     this.toolHost = host;
@@ -154,6 +160,15 @@ export class RunEngine {
   /** Mask secret values in everything a run stores or publishes (steps, reply, error). */
   setRedactor(redactor: <T>(botId: string, value: T) => T): void {
     this.redactor = redactor;
+  }
+
+  private images(run: Run): BrainImage[] {
+    try {
+      return this.imageSource?.(run) ?? [];
+    } catch {
+      // A missing or unreadable image never stops a run: the bot still has the file's path.
+      return [];
+    }
   }
 
   /** Add a section to every run's system text (the offered skills, the conversation). */
@@ -419,7 +434,7 @@ export class RunEngine {
       if (sections.length) context.identity = [context.identity, ...sections].join("\n\n");
 
       const events = adapter!.run(
-        { runId, bot, conversationId, task: req.input, context, skill: req.skill ?? null },
+        { runId, bot, conversationId, task: req.input, context, skill: req.skill ?? null, images: this.images(run) },
         {
           signal: controller.signal,
           workspaceDir,

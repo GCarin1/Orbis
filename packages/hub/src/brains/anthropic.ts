@@ -38,7 +38,20 @@ export function buildAnthropicRequest(input: BrainInput, ctx: BrainContext) {
     // Inputs stream as generated; the gateway validates each against its schema before running it.
     eager_input_streaming: true,
   }));
-  const messages: BetaMessageParam[] = chatTurns(input).map((t) => ({ role: t.role, content: t.text }));
+  const turns = chatTurns(input);
+  const images = input.images ?? [];
+  const messages: BetaMessageParam[] = turns.map((t, i) =>
+    // The images go with the message of the moment, the last turn (change 0081).
+    i === turns.length - 1 && t.role === "user" && images.length
+      ? {
+          role: "user",
+          content: [
+            ...images.map((img) => ({ type: "image" as const, source: { type: "base64" as const, media_type: img.mime as "image/png", data: img.data } })),
+            { type: "text" as const, text: t.text },
+          ],
+        }
+      : { role: t.role, content: t.text },
+  );
   const fallback = wantsRefusalFallback(model, input.bot.brain.baseUrl);
   return {
     model,

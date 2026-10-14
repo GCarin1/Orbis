@@ -6,7 +6,7 @@
 **Realizes:** SC2, SC13
 **Depends on:** bots, tool-gateway, memory
 **Last updated:** 2026-09-27
-**Version:** 0.20.0
+**Version:** 0.21.0
 
 ## Purpose
 
@@ -85,6 +85,7 @@ brain are owned by `contracts/cli-harnesses`.
 - When an OpenAI-compatible server answers one JSON document instead of a stream, the system shall read its text, tool calls, finish reason and usage as the stream's would be read, and when a server refuses the stream with a 4xx that names it, the system shall ask the same step again with `"stream": false`.
 - When the user saves the token that `claude setup-token` prints, the system shall keep it encrypted with the hub's secrets, answer only whether it is saved, where it comes from, when it was saved and until about when it lasts (one year), and give it to Claude Code as `CLAUDE_CODE_OAUTH_TOKEN` in every `claude-code` run, brain test and account check, in place of Claude Code's sign-in.
 - When a `claude-code` run or brain test that had the subscription token fails because Claude Code reports its login refused, the system shall add to the error to run `claude setup-token` again and replace the token in Orbis.
+- When the user sends images (PNG, JPEG, GIF, WebP, up to 5 MB, at most 5) with a message, the system shall give them to the Anthropic brain as image blocks and to a remote OpenAI-compatible brain as data URLs, with the message of the moment and before its text; a local server's model (Ollama, LM Studio, a local base URL) and the CLI brains keep the files' paths in their task.
 
 ### State-driven
 
@@ -151,6 +152,7 @@ brain are owned by `contracts/cli-harnesses`.
 31. [verified] A pasted token is taken bare, from an export line, quoted or wrapped, and an API key is refused; the saved token wins over the server's; a fake Claude Code gets it as CLAUDE_CODE_OAUTH_TOKEN in runs and the brain test with no ANTHROPIC_API_KEY even when the hub has one, a bot's own token secret comes first, a refused token says to run claude setup-token again, and neither the other brains nor host commands get it — verified by `packages/hub/test/runtimes/claude-token.test.ts`.
 32. [verified] A fake Claude Code reports the account with the saved token, and its sign-in runs without the token — verified by `packages/hub/test/runtimes/claude-account.test.ts`.
 33. [verified] The claude-code argv denies Claude Code's own schedulers with `--disallowedTools`, and a flag, never the prompt, follows that list — verified by `packages/hub/test/runtimes/claude-code.test.ts`
+34. [verified] A message's images reach the brains that see — a few, not too large, never another kind of file — as Anthropic image blocks and as OpenAI data URLs before the text, and a local model gets none — verified by `packages/hub/test/vision.test.ts`
 
 ## Maturity
 

@@ -352,6 +352,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   conversationService.setAttachmentHandler(files);
   for (const tool of files.tools()) tools.register(tool);
   files.start();
+  engine.setImageSource((run) => files.imagesFor(run));
   const library = new LibraryService(ctx, files, opts.clock);
   for (const tool of library.tools()) tools.register(tool);
   const folderTasks = new FolderTasks(ctx, library, opts.clock);

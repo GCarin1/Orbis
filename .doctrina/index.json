@@ -15,7 +15,7 @@
         "id": "agent-runtimes",
         "path": ".doctrina/specs/agent-runtimes/spec.md",
         "status": "active",
-        "version": "0.20.0",
+        "version": "0.21.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — ten adapters (mock, anthropic, openai, ollama, lmstudio, claude-code, codex, gemini-cli, cursor, custom-cli), normalized events, session resume for Claude Code, Codex and Cursor, MCP bridge, health check with the local model servers, the brain test, Windows .cmd shims, Claude Code on the plan's token from `claude setup-token`",
         "realizes": [
@@ -2320,6 +2320,20 @@
           },
           {
             "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0081-vision",
+        "title": "vision",
+        "path": ".doctrina/changes/archive/2026-10-14-0081-vision",
+        "status": "applied",
+        "applied": "2026-10-14",
+        "specs_affected": [
+          {
+            "capability": "agent-runtimes",
             "operation": "MODIFIED"
           }
         ],

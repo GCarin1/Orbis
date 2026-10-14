@@ -21,6 +21,7 @@ change that delivered it.
 
 ### Added
 
+- **Bots of an API see images** (change 0081-vision): images sent with a message (or forwarded from the Library) reach the Anthropic brain and remote OpenAI-compatible ones as images, not just a file path. That covers PNG, JPEG, GIF and WebP, up to 5 per message, 5 MB each.
 - **Tasks for a folder's team** (change 0080-folder-tasks): inside a Library folder, give its bots or group a task.
   - The first bot leads: it splits the work with the others and gives the final answer. Each bot keeps what it makes in the folder.
   - A board shows each bot's step live (waiting, doing, done, failed) and, at the end, the result and the files kept.

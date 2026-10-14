@@ -16,6 +16,7 @@ import { toFile } from "../repos/conversations.js";
 import { confine } from "../computer/paths.js";
 import { decodeText } from "../computer/tools.js";
 import type { AttachmentHandler } from "../services/conversations.js";
+import type { BrainImage } from "../brains/types.js";
 import { untrusted, type ToolDefinition } from "../tools/registry.js";
 
 /** The largest file a message may carry, sent by the user or by a bot. */
@@ -24,6 +25,10 @@ export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 export const MAX_FILES_PER_MESSAGE = 10;
 /** The folder of a bot's workspace the files of its conversations are copied to. */
 export const FILES_FOLDER = "orbis-files";
+/** The images a brain that sees gets with a message (change 0081): the types the APIs take, a few, not too large. */
+export const VISION_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGES = 5;
 /** A text file this small is also given to the bot in its task, for brains that cannot read files. */
 const INLINE_TEXT_BYTES = 20_000;
 /** An upload never sent is forgotten after this long. */
@@ -312,6 +317,18 @@ export class FilesService implements AttachmentHandler {
       copyFileSync(this.pathOf(file.id), path.join(folder, name));
       return { file, at: `${FILES_FOLDER}/${name}` };
     });
+  }
+
+  // --- images for brains that see (change 0081-vision) ----------------------------------------------------
+
+  /** The images of the message that started a run, as brains that see take them: a few, not too large. */
+  imagesFor(run: Run): BrainImage[] {
+    if (run.trigger.type !== "message" || !run.trigger.ref) return [];
+    const item = this.hub.repos.items.get(run.trigger.ref);
+    return (item?.files ?? [])
+      .filter((f) => VISION_TYPES.has(f.mime) && f.size <= MAX_IMAGE_BYTES)
+      .slice(0, MAX_IMAGES)
+      .map((f) => ({ name: f.name, mime: f.mime, data: this.bytes(f).toString("base64") }));
   }
 
   // --- the bots' tools -----------------------------------------------------------------------------

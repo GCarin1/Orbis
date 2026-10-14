@@ -28,7 +28,8 @@ interface ToolCallAccumulator {
 }
 
 type ChatMessage =
-  | { role: "system" | "user"; content: string }
+  | { role: "system"; content: string }
+  | { role: "user"; content: string | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }> }
   | { role: "assistant"; content: string | null; tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }> }
   | { role: "tool"; tool_call_id: string; content: string };
 
@@ -186,15 +187,30 @@ export const lmstudioBrain = makeCompatibleBrain({
   envKey: false,
 });
 
+/** The system text and the turns, the last one with the message's images when the model sees them. */
+export function chatMessages(input: BrainInput, vision: boolean): ChatMessage[] {
+  const turns = chatTurns(input);
+  const images = vision ? (input.images ?? []) : [];
+  return [
+    { role: "system", content: renderSystem(input) },
+    ...turns.map((t, i): ChatMessage =>
+      t.role === "user"
+        ? i === turns.length - 1 && images.length
+          ? { role: "user", content: [...images.map((img) => ({ type: "image_url" as const, image_url: { url: `data:${img.mime};base64,${img.data}` } })), { type: "text" as const, text: t.text }] }
+          : { role: "user", content: t.text }
+        : { role: "assistant", content: t.text },
+    ),
+  ];
+}
+
 async function* runCompatible(input: BrainInput, ctx: BrainContext, baseUrl: string, key: string | null): AsyncGenerator<BrainEvent> {
   let tools = ctx.tools.list().map((t) => ({
     type: "function" as const,
     function: { name: toWireName(t.name), description: t.description, parameters: t.inputSchema },
   }));
-  const messages: ChatMessage[] = [
-    { role: "system", content: renderSystem(input) },
-    ...chatTurns(input).map((t) => (t.role === "user" ? { role: "user" as const, content: t.text } : { role: "assistant" as const, content: t.text })),
-  ];
+  // A remote OpenAI-compatible model sees images; a local server's model (Ollama, LM Studio) may not, so it
+  // keeps the paths in its task (change 0081).
+  const messages = chatMessages(input, input.bot.brain.kind === "openai" && !isLocalBaseUrl(baseUrl));
   const maxSteps = input.bot.brain.maxSteps ?? 25;
   let includeUsage = true;
   // Gateways that only answer `"stream": false` say so in a 4xx: ask again without the stream.
