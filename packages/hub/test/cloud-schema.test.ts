@@ -21,7 +21,9 @@ const secured = [...cloud.matchAll(/foreach t in array array\[([\s\S]*?)\]/g)].f
 
 describe("the cloud schema", () => {
   it("has a twin of every hub table but the vault, each owned by an account", () => {
-    const missing = hubTables.filter((t) => t !== "secrets" && t !== "sync_outbox" && !cloudTables.includes(t));
+    // The vault, the sync queue, and the folder tasks of the moment (change 0080) stay on the hub.
+    const local = ["secrets", "sync_outbox", "folder_tasks", "task_steps"];
+    const missing = hubTables.filter((t) => !local.includes(t) && !cloudTables.includes(t));
     expect(missing).toEqual([]);
     expect(cloudTables).not.toContain("secrets");
     for (const table of cloudTables.filter((t) => t !== "profiles")) {

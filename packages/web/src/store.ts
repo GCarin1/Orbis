@@ -482,6 +482,7 @@ export const useStore = create<State>((set, get) => ({
         set((s) => ({ hiring: { ...(s.hiring ?? {}), [round.id]: round } }));
         break;
       }
+      case "folder.task":
       case "library.updated": {
         set((s) => ({ libraryVersion: s.libraryVersion + 1 }));
         break;

@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.12.0
+**Version:** 0.13.0
 
 ## Purpose
 
@@ -60,6 +60,8 @@ timeline changes.
 - When a conversation is cleared or deleted, or an upload stays unsent for a day, the system shall delete its files and their bytes.
 - When the user deletes a Library file, the system shall remove its bytes and its row everywhere, and the message that carried it shall keep its place and show the file as deleted; when the user archives one, it shall leave the Library's lists and stay in its conversation.
 - When the user forwards Library files to a bot or a group, the system shall copy them into that conversation and post them as the user's message, which wakes the bot or the group's lead with the files in its workspace.
+- When the user gives a Library folder a task, the system shall post it as the user's message in the team's conversation — the folder's first group, the one bot's direct chat, or a group of the folder's bots made once and used again — naming the lead, who splits the work with team.handoff and gives the final result, and shall keep one step per bot on the task's board.
+- When a run of a task's chain starts or ends, or a bot calls task.progress, the system shall move that bot's step (pending, doing, done, failed) and announce the task; when no run of the chain is left, the task shall end with the lead's last answer as its result, and the files its runs keep in the folder shall be marked as the task's.
 
 ### State-driven
 
@@ -77,6 +79,7 @@ timeline changes.
 - The system shall not run a bot that left a group and was not added back when a message there mentions it; it shall post a `member.absent` event instead, and shall not clear a conversation while one of its runs is not over.
 - The system shall not accept as a group's photo anything but a PNG, JPEG, WebP or GIF image as a `data:` URL, nor change a direct conversation's group info.
 - The system shall not accept as an attachment a file of another conversation or one already sent, nor send with `files.send` a file outside the bot's workspace.
+- The system shall not start a second task on a folder while one runs, a task on a folder with no team, nor a group larger than the hub's group size for a folder's bots.
 
 ## Acceptance criteria
 
@@ -95,6 +98,7 @@ timeline changes.
 13. [verified] A group's name, description, photo, lead and mute change and each visible change is said in the group; the same values again and the mute say nothing; a non-image photo and a direct conversation are refused; the description reaches the bots' context and the info events stay out of their history; search ignores case and accents, newest first; links come once each, newest first — verified by `packages/hub/test/group-info.test.ts`.
 14. [verified] An uploaded JSON stays the bytes it is; files sent with no text reach the bot's workspace and its task (the text of a small text file as untrusted content), are listed and named in the message; a message of files alone shows them in the list of chats; another conversation's file, one already sent, an empty one and one over 25 MB are refused; images show in place, a page is downloaded and never runs, the token works in the address only for a file's content; a bot sends a file of its workspace with its caption, is refused one outside it or missing, lists the files and copies one back; a day-old unsent upload and a cleared conversation's files are deleted — verified by `packages/hub/test/files.test.ts`
 15. [verified] The Library lists every sent and directly added file by kind, name, folder and page, never an unsent upload, and a Library-only file is never swept; deleting removes it everywhere while its message stays; archiving hides it; forwarding copies it to a bot that wakes with it; folders hold files, bots and groups, and are deleted with or without their files; bots list, copy and keep files only in their folders; the space used is reported; folders and their files travel in an export — verified by `packages/hub/test/library.test.ts`
+16. [verified] A folder task goes to the team's own group (made once, used again), the folder's group or one bot's chat; the lead hands work out, each step moves, the files kept are the task's and the lead's last answer is the result; a second task, a folder with no team and an empty task are refused; a task is cancelled with its runs, fails when the lead fails, and task.progress needs a task — verified by `packages/hub/test/folder-tasks.test.ts`
 
 ## Maturity
 

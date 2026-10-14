@@ -342,7 +342,17 @@ export function App() {
       />
       <main className="main">
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
-        {view === "library" && store.api ? <LibraryScreen api={store.api} bots={bots} conversations={Object.values(store.conversations)} /> : null}
+        {view === "library" && store.api ? <LibraryScreen
+            api={store.api}
+            bots={bots}
+            conversations={Object.values(store.conversations)}
+            onOpenConversation={(id) => {
+              const conversation = store.conversations[id];
+              setView("chat");
+              if (conversation?.kind === "group") void store.selectGroup(id);
+              else if (conversation?.members[0]) openBot(conversation.members[0]);
+            }}
+          /> : null}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "tools" && store.api ? <Marketplace api={store.api} bots={bots} servers={store.mcpServers} onLoad={() => store.loadMcpServers()} /> : null}
         {view === "squads" && store.api ? (

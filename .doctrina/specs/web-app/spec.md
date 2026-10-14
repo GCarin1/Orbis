@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.41.0
+**Version:** 0.42.0
 
 ## Purpose
 
@@ -68,6 +68,7 @@ run's steps.
 - The web app shall keep an Orbis account's session on the device and renew it a minute before it ends, once for every request waiting, ending it when its renewal is refused; the hub's token, when the device has one, comes first.
 - The web app shall have a Library screen in its menu: every file as a grid with tabs (all, images, videos, documents, folders, archived), a search by name, files added from the device, and the space used with the largest files; a file opens large or plays, with download, forward to a bot or a group, move to a folder, archive and delete, and several are selected (by a long press or Select) to act on together.
 - The web app shall show a Library folder with its description, the bots and groups that work on it (chosen in a dialog) and its files, and shall show a message's deleted file as deleted.
+- The web app shall show, in a Library folder, its task board: a box to give the team a task (asking for a team first), the running task with each bot's step and note, a way to open the team's conversation and to cancel, and, once it ends, the result and the files kept, with the earlier tasks on demand — live as the hub announces each move.
 
 ### Event-driven
 
@@ -193,6 +194,7 @@ run's steps.
 64. [verified] Settings → Account links this hub with the account's email and password, shows what waits and sends now, unlinks, says when the account revoked it, and lists the account's devices with its session and revokes one — verified by `packages/web/test/devices.test.tsx`
 65. [verified] Signing in with an authenticator asks its code after the password, says a wrong code, and signs in with the second-step session; without one the password suffices; Settings → Account sets it up from a QR code, has the hub require it and turns it off — verified by `packages/web/test/mfa.test.tsx`
 66. [verified] In a browser, the Library shows the grid and the space used, filters by tab and name, opens a file and forwards it to a bot with a message, selects several to archive, move or delete, opens a folder to add files and choose who works on it, and a message shows its deleted file — verified by `packages/web/test/library.test.tsx`
+67. [verified] In a browser, a folder's board starts a task, shows each bot's step, opens the team's conversation, cancels the task and shows it cancelled, shows a result with its files, and asks for a team first — verified by `packages/web/test/folder-task.test.tsx`
 
 ## Maturity
 

@@ -197,6 +197,10 @@ machine that runs Orbis; none is injected by CI.
     - `PUT /api/v1/library/folders/:id/assignees` (`bots`, `groups`).
   - The stream event `library.updated` (`fileIds`, `folderId`) goes to every subscriber.
   - Bot tools: `library.list`, `library.get` and `library.save`.
+- **Folder tasks** (change 0080).
+  - Routes: `GET` and `POST /api/v1/library/folders/:id/tasks` (`text`), `GET /api/v1/library/tasks/:id`, `POST /api/v1/library/tasks/:id/cancel`.
+  - The stream event `folder.task` (`task`).
+  - Bot tool: `task.progress` (`status`, `note`).
 - A new hub (change 0075, ADR 0029): with accounts on, `GET /api/v1/auth/config` reports `linked: true` even before any account is linked. The first session of a project account whose email is confirmed (`user_metadata.email_verified`) links the hub and opens it. Once linked, only that account id counts: a confirmed session of another account gets 403 `other_account` (change 0078). `POST /api/v1/account/link` with the token still links a chosen account.
 - Behind its HTTPS proxy (change 0070, ADR 0026): with `ORBIS_PUBLIC_URL` (https only) the hub takes the client's address from `X-Forwarded-For` only from loopback and private networks, signs MCP servers in back to `<ORBIS_PUBLIC_URL>/oauth/mcp/callback`, and refuses to start with an `ORBIS_TOKEN` under 24 characters. `deploy/Caddyfile` serves it at `https://$ORBIS_DOMAIN` with HSTS, `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY` (SAMEORIGIN for `/api/v1/bots/:id/computer/vnc/*`) and a CSP of `'self'` plus the Supabase project.
 - Two-step verification (change 0070): `AccountStatus.linked.mfa`; `PUT /account/mfa` `{ required: boolean }` (the hub's token, or an account session whose JWT has `aal: "aal2"`; else 403 `mfa_session_required`; 409 `not_linked`) → `AccountStatus`. While `mfa` is on, an account session without `aal2` is refused like an unknown credential (401). The authenticator itself is enrolled and verified against Supabase Auth (`/auth/v1/factors`), never the hub.

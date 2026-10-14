@@ -101,6 +101,24 @@ three tools:
 - `library.save`: keeps what it makes in the folder, and sends it to the
   conversation it works in.
 
+### A task for the folder's team
+
+Inside a folder, write what the team should do with its files, for example:
+"pick the 10 best photos, write a caption for each and make a PDF album".
+Then tap **Start**.
+
+- **Where the team works:**
+  - in the folder's group, when it has one;
+  - in its bot's chat, when there is one bot;
+  - otherwise in a group "📁 <folder>" of its bots, made once and used again.
+- **How the team coordinates:** the first bot leads. It splits the work among the others with `team.handoff`,
+  gets their results back in one report and gives the final answer. Every bot keeps what it makes in the folder.
+- **The board:** shows each bot's step as it goes (waiting, doing, done, failed) and its note
+  (`task.progress`). At the end it shows the **Result** and the files kept in the folder.
+  **Open the conversation** shows the team at work, and **Cancel task** stops it.
+
+A folder runs one task at a time, within the usual limits of a chain of bots.
+
 Bots, routines and skills that make files fill the Library on their own. A
 routine's or a skill's files are marked with where they came from.
 

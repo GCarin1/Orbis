@@ -477,4 +477,31 @@ CREATE INDEX files_by_folder ON files (folder_id, created_at);
 CREATE INDEX files_by_date ON files (created_at);
 ${["files", "library_folders", "folder_bots", "folder_groups"].map(syncTriggersSql).join("\n")}`,
   },
+  {
+    // specs/conversations: a task given to a Library folder's team, and each bot's step of it (change
+    // 0080-folder-tasks). Kept on this hub: a task is the work of the moment, its result stays in the folder.
+    version: 17,
+    sql: `CREATE TABLE folder_tasks (
+  id TEXT PRIMARY KEY,
+  folder_id TEXT NOT NULL REFERENCES library_folders(id) ON DELETE CASCADE,
+  text TEXT NOT NULL,
+  conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+  lead_bot_id TEXT REFERENCES bots(id) ON DELETE SET NULL,
+  chain_id TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('running', 'done', 'failed', 'cancelled')),
+  result TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  ended_at TEXT
+);
+CREATE INDEX folder_tasks_by_folder ON folder_tasks (folder_id, created_at);
+CREATE INDEX folder_tasks_by_chain ON folder_tasks (chain_id);
+CREATE TABLE task_steps (
+  task_id TEXT NOT NULL REFERENCES folder_tasks(id) ON DELETE CASCADE,
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'doing', 'done', 'failed')),
+  note TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, bot_id)
+);`,
+  },
 ];

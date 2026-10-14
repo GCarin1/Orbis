@@ -71,6 +71,7 @@ import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
 import { FilesService } from "./files/service.js";
 import { LibraryService } from "./library/service.js";
+import { FolderTasks } from "./library/tasks.js";
 import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
 import { ExportService } from "./export/service.js";
@@ -114,6 +115,7 @@ export interface Hub extends HubContext {
   squads: SquadService;
   files: FilesService;
   library: LibraryService;
+  folderTasks: FolderTasks;
   initiative: InitiativeService;
   health: HealthService;
   /** Start listening; resolves with the base URL. */
@@ -352,6 +354,11 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   files.start();
   const library = new LibraryService(ctx, files, opts.clock);
   for (const tool of library.tools()) tools.register(tool);
+  const folderTasks = new FolderTasks(ctx, library, opts.clock);
+  for (const tool of folderTasks.tools()) tools.register(tool);
+  engine.addHooks(folderTasks.hooks());
+  engine.addContextSection((bot) => folderTasks.contextSection(bot));
+  folderTasks.start();
   const secrets = new SecretService(ctx);
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
@@ -418,6 +425,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await squads.routes(app);
   await files.routes(app);
   await library.routes(app);
+  await folderTasks.routes(app);
   await initiative.routes(app);
   await health.routes(app);
   const exports = new ExportService(ctx, {
@@ -467,6 +475,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     squads,
     files,
     library,
+    folderTasks,
     initiative,
     health,
     app,

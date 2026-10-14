@@ -407,6 +407,27 @@ export interface LibraryFolder {
   updatedAt: string;
 }
 
+export type FolderTaskStatus = "running" | "done" | "failed" | "cancelled";
+export type TaskStepStatus = "pending" | "doing" | "done" | "failed";
+
+/** A task given to a Library folder's team, and how each bot's part goes (change 0080-folder-tasks). */
+export interface FolderTask {
+  id: string;
+  folderId: string;
+  text: string;
+  /** The conversation the team works in: the folder's group, its own group, or the bot's direct chat. */
+  conversationId: string | null;
+  leadBotId: string | null;
+  status: FolderTaskStatus;
+  /** The lead's final answer, once the task ends. */
+  result: string;
+  steps: Array<{ botId: string; status: TaskStepStatus; note: string; updatedAt: string }>;
+  /** The files the team kept in the folder for this task. */
+  files: string[];
+  createdAt: string;
+  endedAt: string | null;
+}
+
 export interface LibraryPage {
   files: LibraryFile[];
   /** Pass back as `cursor` for the next page; null at the end. */

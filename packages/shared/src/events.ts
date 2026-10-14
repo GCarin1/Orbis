@@ -1,5 +1,5 @@
 // Stream events (hub → client) from `.doctrina/contracts/hub-surface.md` § Stream.
-import type { Approval, Bot, BotState, ComputerStatus, Conversation, HiringRound, McpServer, Run, SquadsView, Step, TimelineItem } from "./types.js";
+import type { Approval, Bot, BotState, ComputerStatus, Conversation, FolderTask, HiringRound, McpServer, Run, SquadsView, Step, TimelineItem } from "./types.js";
 
 export interface StreamEventMap {
   "bot.state": { botId: string; state: BotState };
@@ -27,6 +27,8 @@ export interface StreamEventMap {
   "squads.updated": SquadsView;
   /** The Library changed: a file put in, deleted, archived, moved, renamed, or a folder changed (change 0079). */
   "library.updated": { fileIds: string[]; folderId?: string | null };
+  /** A folder task started, a bot's step moved, or it ended (change 0080). */
+  "folder.task": { task: FolderTask };
   pong: Record<string, never>;
 }
 
@@ -53,6 +55,7 @@ export const GLOBAL_EVENTS: readonly StreamEventType[] = [
   "hiring.deleted",
   "squads.updated",
   "library.updated",
+  "folder.task",
   "pong",
 ];
 

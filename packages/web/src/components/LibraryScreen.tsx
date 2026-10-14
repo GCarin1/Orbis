@@ -2,12 +2,13 @@
 // directly, as a grid — images, videos, documents, folders, archived — to open, download, forward to a bot or
 // a group, move to a folder, archive or delete, one at a time or several selected; folders and who works on
 // them; and how much space it all takes.
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bot, Conversation, LibraryFile, LibraryFolder, LibraryPage, LibraryUsage } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useLang, useT } from "../i18n.js";
 import { useStore } from "../store.js";
 import { Avatar } from "./Avatar.js";
+import { FolderTaskBoard } from "./FolderTaskBoard.js";
 import { extensionOf, formatSize, isImage, MAX_FILE_BYTES, saveFile } from "./Files.js";
 import { BackIcon, CheckIcon, CloseIcon, DownloadIcon, FileIcon, PlusIcon, SearchIcon, TrashIcon } from "./Icons.js";
 
@@ -333,7 +334,18 @@ function UsageCard({ api, usage, onDelete }: { api: Api; usage: LibraryUsage; on
   );
 }
 
-export function LibraryScreen({ api, bots, conversations, folderExtra }: { api: Api; bots: Bot[]; conversations: Conversation[]; folderExtra?(folder: LibraryFolder): ReactNode }) {
+export function LibraryScreen({
+  api,
+  bots,
+  conversations,
+  onOpenConversation,
+}: {
+  api: Api;
+  bots: Bot[];
+  conversations: Conversation[];
+  /** Open the team's conversation of a folder task (change 0080). */
+  onOpenConversation?(conversationId: string): void;
+}) {
   const t = useT();
   const lang = useLang((s) => s.lang);
   const version = useStore((s) => s.libraryVersion);
@@ -542,7 +554,7 @@ export function LibraryScreen({ api, bots, conversations, folderExtra }: { api: 
             {notice}
           </p>
         )}
-        {folder && folderExtra?.(folder)}
+        {folder && <FolderTaskBoard api={api} folder={folder} bots={byId} onOpenConversation={onOpenConversation} />}
         {tab === "all" && !folder && usage && <UsageCard api={api} usage={usage} onDelete={(file) => batch("delete", [file.id])} />}
         {tab === "folders" && !folder ? (
           <div className="library-folders" data-testid="library-folders">

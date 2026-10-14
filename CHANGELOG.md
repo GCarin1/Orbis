@@ -21,6 +21,9 @@ change that delivered it.
 
 ### Added
 
+- **Tasks for a folder's team** (change 0080-folder-tasks): inside a Library folder, give its bots or group a task.
+  - The first bot leads: it splits the work with the others and gives the final answer. Each bot keeps what it makes in the folder.
+  - A board shows each bot's step live (waiting, doing, done, failed) and, at the end, the result and the files kept.
 - **The Library** (change 0079-library, ADR 0030): a new menu item holds every file Orbis keeps, from every conversation and added directly.
   - Files show as a grid with tabs, search and space used.
   - A file can be opened, downloaded, forwarded to a bot or a group, moved to a folder, archived or deleted, alone or several at once. Deleting removes it everywhere.
