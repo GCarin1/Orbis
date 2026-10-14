@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 import { MIGRATIONS } from "../src/db/migrations.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const cloud = readFileSync(path.join(root, "supabase/migrations/0001_orbis_core.sql"), "utf8");
+// The core schema and the tables later migrations add (the Library's, change 0079).
+const cloud = ["0001_orbis_core.sql", "0005_library.sql"].map((f) => readFileSync(path.join(root, "supabase/migrations", f), "utf8")).join("\n");
 
 const tablesIn = (sql: string, pattern: RegExp) => [...sql.matchAll(pattern)].map((m) => m[1]!);
 const hubTables = tablesIn(MIGRATIONS.map((m) => m.sql).join("\n"), /CREATE TABLE (\w+)/g);
@@ -16,7 +17,7 @@ const cloudTables = tablesIn(cloud, /create table public\.(\w+)/g);
 /** The body of a cloud table's definition. */
 const definition = (table: string) => cloud.slice(cloud.indexOf(`create table public.${table} (`)).split("\n);")[0]!;
 /** The tables the row-level-security loop covers. */
-const secured = (cloud.match(/foreach t in array array\[([\s\S]*?)\]/)?.[1] ?? "").match(/'(\w+)'/g)!.map((s) => s.slice(1, -1));
+const secured = [...cloud.matchAll(/foreach t in array array\[([\s\S]*?)\]/g)].flatMap((m) => m[1]!.match(/'(\w+)'/g)!.map((s) => s.slice(1, -1)));
 
 describe("the cloud schema", () => {
   it("has a twin of every hub table but the vault, each owned by an account", () => {

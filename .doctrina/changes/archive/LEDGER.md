@@ -80,3 +80,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-13 — 0075-first-account-owns — first-account-owns (specs: hub-api MODIFIED)
 - 2026-10-13 — 0076-umbrel-pull-always — umbrel-pull-always
 - 2026-10-13 — 0077-android-server-first — android-server-first (specs: android-app MODIFIED)
+- 2026-10-14 — 0079-library — library (specs: conversations MODIFIED, web-app MODIFIED)

@@ -370,14 +370,57 @@ export interface TimelineEvent {
 /** A file sent in a conversation (specs/conversations): by the user, or by a bot that made it. */
 export interface ConversationFile {
   id: string;
-  conversationId: string;
+  /** The conversation it was sent in; null for a file put in the Library alone (change 0079). */
+  conversationId: string | null;
   name: string;
   mime: string;
   size: number;
   author: Author;
-  /** The message that carries it; null while it is uploaded and not yet sent. */
+  /** The message that carries it; null while it is uploaded and not yet sent, and for a Library-only file. */
   itemId: string | null;
   createdAt: string;
+  /** The Library folder it is in (change 0079). */
+  folderId?: string | null;
+  /** When it was archived: hidden from the Library's lists, kept everywhere else. */
+  archivedAt?: string | null;
+  /** Where it came from. */
+  source?: FileSource;
+}
+
+export type FileSource = "chat" | "library" | "routine" | "skill" | "task";
+
+/** A file as the Library lists it: with where it was sent (change 0079-library). */
+export interface LibraryFile extends ConversationFile {
+  conversationTitle: string | null;
+}
+
+export interface LibraryFolder {
+  id: string;
+  name: string;
+  description: string;
+  /** The bots and the groups that work on this folder. */
+  bots: string[];
+  groups: string[];
+  files: number;
+  bytes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibraryPage {
+  files: LibraryFile[];
+  /** Pass back as `cursor` for the next page; null at the end. */
+  next: string | null;
+}
+
+export interface LibraryUsage {
+  /** Bytes of every file Orbis keeps, and of each kind. */
+  total: number;
+  files: number;
+  byKind: Record<"image" | "video" | "audio" | "doc", number>;
+  largest: LibraryFile[];
+  /** The disk that holds the data: its free and total space, when the system says. */
+  disk: { free: number; size: number } | null;
 }
 
 export interface TimelineItem {

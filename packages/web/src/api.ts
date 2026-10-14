@@ -1,5 +1,5 @@
 // The web app's client of the hub API (same origin) and its event stream.
-import type { ApiErrorBody, ConversationFile, ImportReport, StreamEvent } from "@orbis/shared";
+import type { ApiErrorBody, ConversationFile, ImportReport, LibraryFile, StreamEvent } from "@orbis/shared";
 
 const TOKEN_KEY = "orbis.token";
 
@@ -144,6 +144,16 @@ export class Api {
     const parsed = text ? (JSON.parse(text) as unknown) : null;
     if (!res.ok) throw new ApiError(res.status, parsed as ApiErrorBody | null);
     return parsed as ConversationFile;
+  }
+  /** Put a file in the Library directly, optionally in a folder (change 0079). */
+  async uploadToLibrary(file: Blob, name: string, folderId: string | null = null): Promise<LibraryFile> {
+    const headers: Record<string, string> = { authorization: await this.bearer(), "content-type": file.type || "application/octet-stream", "x-file-name": encodeURIComponent(name) };
+    if (folderId) headers["x-folder-id"] = encodeURIComponent(folderId);
+    const res = await fetch(`${this.base}/api/v1/library/files`, { method: "POST", headers, body: file });
+    const text = await res.text();
+    const parsed = text ? (JSON.parse(text) as unknown) : null;
+    if (!res.ok) throw new ApiError(res.status, parsed as ApiErrorBody | null);
+    return parsed as LibraryFile;
   }
   /** The hub's `.orbis` export (its secrets sealed by the password, when given). */
   async exportData(password: string | null): Promise<Blob> {

@@ -11,6 +11,7 @@ import { Avatar, Mascot } from "./components/Avatar.js";
 import { Composer, type MentionOption, type SkillOption } from "./components/Composer.js";
 import { NewBotScreen } from "./components/NewBotScreen.js";
 import { Timeline } from "./components/Timeline.js";
+import { LibraryScreen } from "./components/LibraryScreen.js";
 import { TokenGate } from "./components/TokenGate.js";
 import { MAX_GROUP_SIZE, NewGroupDialog } from "./components/Groups.js";
 import { AddMembersDialog, conversationText, GroupHeader, GroupInfoPanel, type GroupActions, type GroupView } from "./components/GroupInfo.js";
@@ -341,6 +342,7 @@ export function App() {
       />
       <main className="main">
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
+        {view === "library" && store.api ? <LibraryScreen api={store.api} bots={bots} conversations={Object.values(store.conversations)} /> : null}
         {view === "skills" && store.api ? <SkillsScreen api={store.api} bots={bots} /> : null}
         {view === "tools" && store.api ? <Marketplace api={store.api} bots={bots} servers={store.mcpServers} onLoad={() => store.loadMcpServers()} /> : null}
         {view === "squads" && store.api ? (

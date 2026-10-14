@@ -366,7 +366,9 @@ export function Timeline({
                       ↪ {t("thread.replyTo", { text: clip(parent.text, 80) })}
                     </div>
                   )}
-                  {item.files && item.files.length > 0 && <FileAttachments files={item.files} />}
+                  {(item.files?.length ?? 0) + (item.attachments?.length ?? 0) > 0 && (
+                    <FileAttachments files={item.files ?? []} deleted={Math.max(0, (item.attachments?.length ?? 0) - (item.files?.length ?? 0))} />
+                  )}
                   {item.text && (
                     <div className="bubble-text">
                       <Markdown text={item.text} bots={team} />

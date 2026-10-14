@@ -21,10 +21,10 @@ export function formatSize(bytes: number, lang: string): string {
   return `${n(bytes / (1024 * 1024))} MB`;
 }
 
-const isImage = (mime: string) => /^image\/(png|jpeg|gif|webp|bmp)$/.test(mime);
+export const isImage = (mime: string) => /^image\/(png|jpeg|gif|webp|bmp)$/.test(mime);
 
 /** What a file is, for its card: the extension the user knows (PDF, XLSX…). */
-function extensionOf(name: string): string {
+export function extensionOf(name: string): string {
   const dot = name.lastIndexOf(".");
   return dot > 0 ? name.slice(dot + 1).toUpperCase().slice(0, 5) : "";
 }
@@ -96,13 +96,13 @@ function ImageViewer({ api, file, onClose }: { api: Api; file: ConversationFile;
   );
 }
 
-/** The files a message carries, inside its bubble. */
-export function FileAttachments({ files }: { files: ConversationFile[] }) {
+/** The files a message carries, inside its bubble; one deleted in the Library shows as deleted (change 0079). */
+export function FileAttachments({ files, deleted = 0 }: { files: ConversationFile[]; deleted?: number }) {
   const api = useStore((s) => s.api);
   const [open, setOpen] = useState<ConversationFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const t = useT();
-  if (!api || files.length === 0) return null;
+  if (!api || (files.length === 0 && deleted === 0)) return null;
   const images = files.filter((f) => isImage(f.mime));
   const others = files.filter((f) => !isImage(f.mime));
   return (
@@ -131,6 +131,11 @@ export function FileAttachments({ files }: { files: ConversationFile[] }) {
           <FileCard key={file.id} api={api} file={file} onError={setError} />
         ),
       )}
+      {Array.from({ length: deleted }, (_, i) => (
+        <p key={`deleted-${i}`} className="file-deleted muted" data-testid="file-deleted">
+          🚫 {t("files.deleted")}
+        </p>
+      ))}
       {error && <p className="error">{t("files.saveFailed", { error })}</p>}
       {open && <ImageViewer api={api} file={open} onClose={() => setOpen(null)} />}
     </div>

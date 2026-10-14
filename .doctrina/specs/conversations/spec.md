@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.11.0
+**Version:** 0.12.0
 
 ## Purpose
 
@@ -33,6 +33,9 @@ timeline changes.
 - The system shall keep each file sent in a conversation — by the user, or by a bot that made it — with its name, type, size, author and message, its bytes in the data directory and never in the database, and list a conversation's files newest first.
 - The system shall accept files of up to 25 MB and up to 10 files per message, take a name without folders or control characters, and take the file's type from the upload or else from its name.
 - The system shall serve a file's content to a request with the hub's token in its header or its address, showing images, audio, video, PDF and plain text in place and sending every other type as a download, always with a sandboxing content security policy and `nosniff`.
+- The system shall keep a Library of every file sent in a conversation and every file put in it directly (`POST /api/v1/library/files`), listed newest first by kind, name, folder or archived, a page at a time, with where each came from (`chat`, `library`, `routine`, `skill`, `task`) — never an upload not yet sent.
+- The system shall keep Library folders, each with the bots and the groups that work on it, and give bots `library.list`, `library.get` and `library.save`, which see and write only the folders given to the bot or to a group it is a member of.
+- The system shall report how much space the files take, by kind, the largest ones, and the free space of the disk that holds the data.
 
 ### Event-driven
 
@@ -55,6 +58,8 @@ timeline changes.
 - When a bot calls `files.send` with a file of its workspace, the system shall post it in the run's conversation as a message of that bot with the caption it gave.
 - When a bot calls `files.list` or `files.get`, the system shall list the conversation's files or copy the one named (by id or name) into the bot's workspace.
 - When a conversation is cleared or deleted, or an upload stays unsent for a day, the system shall delete its files and their bytes.
+- When the user deletes a Library file, the system shall remove its bytes and its row everywhere, and the message that carried it shall keep its place and show the file as deleted; when the user archives one, it shall leave the Library's lists and stay in its conversation.
+- When the user forwards Library files to a bot or a group, the system shall copy them into that conversation and post them as the user's message, which wakes the bot or the group's lead with the files in its workspace.
 
 ### State-driven
 
@@ -89,6 +94,7 @@ timeline changes.
 12. [verified] Creating a group and adding a bot post joined events with the bot's face; a bot added later reads the earlier messages; a removed bot is said to have left and a mention of it does not run it but says so, until it is added back; a group shrinks to one bot and not to none; a deleted bot leaves its groups, said in each, the change is published and a group left with no bot is deleted; clearing deletes the items, the sessions and the run summaries, keeps a saved preference, and is refused while a run works — verified by `packages/hub/test/group-membership.test.ts`.
 13. [verified] A group's name, description, photo, lead and mute change and each visible change is said in the group; the same values again and the mute say nothing; a non-image photo and a direct conversation are refused; the description reaches the bots' context and the info events stay out of their history; search ignores case and accents, newest first; links come once each, newest first — verified by `packages/hub/test/group-info.test.ts`.
 14. [verified] An uploaded JSON stays the bytes it is; files sent with no text reach the bot's workspace and its task (the text of a small text file as untrusted content), are listed and named in the message; a message of files alone shows them in the list of chats; another conversation's file, one already sent, an empty one and one over 25 MB are refused; images show in place, a page is downloaded and never runs, the token works in the address only for a file's content; a bot sends a file of its workspace with its caption, is refused one outside it or missing, lists the files and copies one back; a day-old unsent upload and a cleared conversation's files are deleted — verified by `packages/hub/test/files.test.ts`
+15. [verified] The Library lists every sent and directly added file by kind, name, folder and page, never an unsent upload, and a Library-only file is never swept; deleting removes it everywhere while its message stays; archiving hides it; forwarding copies it to a bot that wakes with it; folders hold files, bots and groups, and are deleted with or without their files; bots list, copy and keep files only in their folders; the space used is reported; folders and their files travel in an export — verified by `packages/hub/test/library.test.ts`
 
 ## Maturity
 

@@ -70,6 +70,7 @@ import { HiringService } from "./hiring/service.js";
 import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
 import { FilesService } from "./files/service.js";
+import { LibraryService } from "./library/service.js";
 import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
 import { ExportService } from "./export/service.js";
@@ -112,6 +113,7 @@ export interface Hub extends HubContext {
   hiring: HiringService;
   squads: SquadService;
   files: FilesService;
+  library: LibraryService;
   initiative: InitiativeService;
   health: HealthService;
   /** Start listening; resolves with the base URL. */
@@ -348,6 +350,8 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   conversationService.setAttachmentHandler(files);
   for (const tool of files.tools()) tools.register(tool);
   files.start();
+  const library = new LibraryService(ctx, files, opts.clock);
+  for (const tool of library.tools()) tools.register(tool);
   const secrets = new SecretService(ctx);
   secrets.wire();
   for (const tool of secrets.tools()) tools.register(tool);
@@ -413,6 +417,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await hiring.routes(app);
   await squads.routes(app);
   await files.routes(app);
+  await library.routes(app);
   await initiative.routes(app);
   await health.routes(app);
   const exports = new ExportService(ctx, {
@@ -461,6 +466,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     hiring,
     squads,
     files,
+    library,
     initiative,
     health,
     app,

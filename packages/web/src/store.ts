@@ -30,6 +30,8 @@ interface State {
   hiring: Record<string, HiringRound> | null;
   /** The squads and their room (specs/squads), kept live by the stream; null until first loaded. */
   squads: SquadsView | null;
+  /** Goes up each time the Library changes (change 0079), so its screen loads again. */
+  libraryVersion: number;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -143,6 +145,7 @@ export const useStore = create<State>((set, get) => ({
   mcpServers: {},
   hiring: null,
   squads: null,
+  libraryVersion: 0,
   error: null,
 
   setApi: (api) => set({ api }),
@@ -477,6 +480,10 @@ export const useStore = create<State>((set, get) => ({
       case "hiring.updated": {
         const { round } = event.data as { round: HiringRound };
         set((s) => ({ hiring: { ...(s.hiring ?? {}), [round.id]: round } }));
+        break;
+      }
+      case "library.updated": {
+        set((s) => ({ libraryVersion: s.libraryVersion + 1 }));
         break;
       }
       case "squads.updated": {

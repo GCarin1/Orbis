@@ -283,6 +283,16 @@ export const FileIcon = (p: P) => (
   </Icon>
 );
 
+/** The Library: pictures stacked (change 0079). */
+export const LibraryIcon = (p: P) => (
+  <Icon {...p}>
+    <rect x="3" y="5" width="14" height="14" rx="2" />
+    <path d="M7 3h12a2 2 0 0 1 2 2v12" />
+    <path d="m3 16 4-4 3 3 2-2 5 5" />
+    <circle cx="8.5" cy="9.5" r="1.3" />
+  </Icon>
+);
+
 export const DownloadIcon = (p: P) => (
   <Icon {...p}>
     <path d="M12 4v11" />

@@ -1,4 +1,4 @@
-import type { Author, Card, Conversation, ConversationFile, ConversationLink, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
+import type { Author, Card, Conversation, ConversationFile, ConversationLink, FileSource, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
 import { all, get, json, run, type Database, type Row } from "../db/index.js";
 
 function toConversation(r: Row, members: string[]): Conversation {
@@ -37,13 +37,16 @@ type ReactionStore = Record<string, string[]>;
 export function toFile(r: Row): ConversationFile {
   return {
     id: r.id as string,
-    conversationId: r.conversation_id as string,
+    conversationId: (r.conversation_id as string | null) ?? null,
     name: r.name as string,
     mime: r.mime as string,
     size: Number(r.size),
     author: { type: r.author_type as Author["type"], id: (r.author_id as string | null) ?? null },
     itemId: (r.item_id as string | null) ?? null,
     createdAt: r.created_at as string,
+    folderId: (r.folder_id as string | null | undefined) ?? null,
+    archivedAt: (r.archived_at as string | null | undefined) ?? null,
+    source: ((r.source as string | undefined) ?? "chat") as FileSource,
   };
 }
 

@@ -8,11 +8,11 @@ import type { Approval, Bot, Conversation, Squad } from "@orbis/shared";
 import { useLang, useT } from "../i18n.js";
 import { ApprovalsInbox } from "./ApprovalsInbox.js";
 import { Avatar, Mascot, StateLabel } from "./Avatar.js";
-import { BellOffIcon, BriefcaseIcon, PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon, UsersIcon } from "./Icons.js";
+import { BellOffIcon, BriefcaseIcon, LibraryIcon, PlusIcon, PuzzleIcon, SearchIcon, SkillsIcon, SlidersIcon, UsageIcon, UsersIcon } from "./Icons.js";
 import { LanguageSwitch } from "./LanguageSwitch.js";
 import { ThemeSwitch } from "./ThemeSwitch.js";
 
-export type View = "chat" | "skills" | "tools" | "hiring" | "squads" | "usage" | "settings" | "new-bot";
+export type View = "chat" | "library" | "skills" | "tools" | "hiring" | "squads" | "usage" | "settings" | "new-bot";
 
 export interface ChatEntry {
   key: string;
@@ -325,6 +325,7 @@ export function Sidebar({
 
       <div className="sidebar-bottom">
         <nav className="main-nav" aria-label="Orbis">
+          {nav("library", <LibraryIcon />, t("nav.library"), "🖼")}
           {nav("skills", <SkillsIcon />, t("nav.skills"), "📘")}
           {nav("tools", <PuzzleIcon />, t("nav.tools"), "🧩")}
           {nav("squads", <UsersIcon />, t("nav.squads"), "🛡")}

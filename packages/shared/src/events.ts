@@ -25,6 +25,8 @@ export interface StreamEventMap {
   "hiring.deleted": { roundId: string };
   /** The squads changed: one was created, renamed, deleted, or its members, representative or manager (specs/squads). */
   "squads.updated": SquadsView;
+  /** The Library changed: a file put in, deleted, archived, moved, renamed, or a folder changed (change 0079). */
+  "library.updated": { fileIds: string[]; folderId?: string | null };
   pong: Record<string, never>;
 }
 
@@ -50,6 +52,7 @@ export const GLOBAL_EVENTS: readonly StreamEventType[] = [
   "hiring.updated",
   "hiring.deleted",
   "squads.updated",
+  "library.updated",
   "pong",
 ];
 

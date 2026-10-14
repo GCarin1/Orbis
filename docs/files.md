@@ -66,3 +66,44 @@ files. A file uploaded and never sent is deleted after a day.
 
 A file opens only with the hub's token. A file that holds a page (HTML, SVG)
 always downloads and never runs inside Orbis.
+
+## The Library
+
+**Library** in the menu holds every file Orbis keeps: the ones sent in every
+conversation (by you or by a bot), and the ones you add straight to it with
+**Add files**. It is like ChatGPT's library (change 0079, ADR 0030).
+
+- **Tabs**: All · Images · Videos · Documents · Folders · Archived. Search by
+  name at the top.
+- **Opening a file** shows it large, or plays it. Its actions:
+  - **Download**.
+  - **Forward**: to a bot or a group, with a message if you like. The bot
+    wakes with the file in its workspace.
+  - **Move to folder**.
+  - **Archive**: hides it from the Library, and it stays in its
+    conversation.
+  - **Delete**: it goes everywhere, and the message shows "File deleted".
+- **Several at once**: tap **Select** or hold a file, pick more, then
+  forward, move, archive or delete them together.
+- **Space**: the All tab shows how much the files take, by kind, and the free
+  space of the disk. Under it, the largest files, ready to download or
+  delete.
+
+### Folders
+
+A folder groups files, for example the photos of an event. Folders take a
+**description** (what the folder holds and what it is for) and a **team**:
+bots, and whole groups. Only the bots of its team see a folder, and each uses
+three tools:
+
+- `library.list`: its folders and their files;
+- `library.get`: copies a file into its workspace;
+- `library.save`: keeps what it makes in the folder, and sends it to the
+  conversation it works in.
+
+Bots, routines and skills that make files fill the Library on their own. A
+routine's or a skill's files are marked with where they came from.
+
+With a hub linked as a device, run `supabase/migrations/0005_library.sql`
+once in the Supabase SQL Editor, so the account keeps folders and Library
+files too.

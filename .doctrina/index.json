@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-13",
+  "last_updated": "2026-10-14",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -119,7 +119,7 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.11.0",
+        "version": "0.12.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.40.0",
+        "version": "0.41.0",
         "last_updated": "2026-10-11",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -757,6 +757,15 @@
         "supersedes": "0028",
         "landed": "2026-10-13 — `packages/hub/src/auth/account.ts`, `packages/hub/test/auth.test.ts`",
         "summary": "A hub with accounts on always shows the account's sign-in."
+      },
+      {
+        "id": "0030",
+        "path": ".doctrina/decisions/0030-the-library-is-the-files-table-seen-whole-with-folders-deleting-a-file-there-deletes-it-everywhere.md",
+        "title": "The Library is the files table seen whole, with folders; deleting a file there deletes it everywhere",
+        "status": "accepted",
+        "date": "2026-10-14",
+        "summary": "The Library is the `files` table seen whole; it is not a second store.",
+        "landed": "2026-10-14 — `packages/hub/src/library/service.ts`, `packages/hub/test/library.test.ts`"
       }
     ],
     "changes": [
@@ -2275,6 +2284,24 @@
         "specs_affected": [
           {
             "capability": "android-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0079-library",
+        "title": "library",
+        "path": ".doctrina/changes/archive/2026-10-14-0079-library",
+        "status": "applied",
+        "applied": "2026-10-14",
+        "specs_affected": [
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
             "operation": "MODIFIED"
           }
         ],

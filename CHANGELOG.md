@@ -21,6 +21,11 @@ change that delivered it.
 
 ### Added
 
+- **The Library** (change 0079-library, ADR 0030): a new menu item holds every file Orbis keeps, from every conversation and added directly.
+  - Files show as a grid with tabs, search and space used.
+  - A file can be opened, downloaded, forwarded to a bot or a group, moved to a folder, archived or deleted, alone or several at once. Deleting removes it everywhere.
+  - Folders take a description and a team of bots and groups. The team's bots list, copy and keep files there with `library.list`, `library.get` and `library.save`.
+  - Linked devices: run `supabase/migrations/0005_library.sql` in the Supabase SQL Editor.
 - **A new hub opens with the account's sign-in** (changes 0074-owner-sign-in and 0075-first-account-owns, ADR 0029): the hub shows email and password from the first visit.
   - The first Orbis account to sign in with a confirmed email becomes the hub's owner, and from then on only that account opens it.
   - No token to copy and no variable to set; the token stays the recovery key.

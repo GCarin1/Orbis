@@ -26,7 +26,13 @@ export const SYNC_KEYS: Record<string, string[]> = {
   initiatives: ["id"],
   health_metrics: ["date", "metric"],
   health_sessions: ["id"],
+  library_folders: ["id"],
+  folder_bots: ["folder_id", "bot_id"],
+  folder_groups: ["folder_id", "conversation_id"],
 };
+
+/** The tables migration 15 put triggers on; the ones synced later get theirs in their own migration. */
+const SYNCED_IN_15 = Object.keys(SYNC_KEYS).slice(0, 18);
 
 /** Settings that stay on this hub: the vault's, the linked account and device, the last activity. */
 export const LOCAL_SETTING_KEYS = ["account", "user.lastActiveAt", "claude.tokenSavedAt", "device", "sync.on"];
@@ -41,20 +47,26 @@ function syncOutboxSql(): string {
   at TEXT NOT NULL
 );`,
   ];
+  for (const table of SYNCED_IN_15) parts.push(syncTriggersSql(table));
+  return parts.join("\n");
+}
+
+/** The triggers that queue a synced table's changes while the device is linked (also after a table is rebuilt). */
+function syncTriggersSql(table: string): string {
+  const keys = SYNC_KEYS[table]!;
   const linked = "EXISTS (SELECT 1 FROM settings WHERE key = 'sync.on')";
   const local = LOCAL_SETTING_KEYS.map((k) => `'${k}'`).join(", ");
-  for (const [table, keys] of Object.entries(SYNC_KEYS)) {
-    for (const [event, row, op] of [
-      ["INSERT", "NEW", "upsert"],
-      ["UPDATE", "NEW", "upsert"],
-      ["DELETE", "OLD", "delete"],
-    ] as const) {
-      const only = table === "settings" ? ` AND ${row}.key NOT LIKE 'secret:%' AND ${row}.key NOT IN (${local})` : "";
-      parts.push(
-        `CREATE TRIGGER sync_${table}_${event.toLowerCase()} AFTER ${event} ON ${table} WHEN ${linked}${only} BEGIN ` +
-          `INSERT INTO sync_outbox (tbl, pk, op, at) VALUES ('${table}', json_array(${keys.map((k) => `${row}.${k}`).join(", ")}), '${op}', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')); END;`,
-      );
-    }
+  const parts: string[] = [];
+  for (const [event, row, op] of [
+    ["INSERT", "NEW", "upsert"],
+    ["UPDATE", "NEW", "upsert"],
+    ["DELETE", "OLD", "delete"],
+  ] as const) {
+    const only = table === "settings" ? ` AND ${row}.key NOT LIKE 'secret:%' AND ${row}.key NOT IN (${local})` : "";
+    parts.push(
+      `CREATE TRIGGER sync_${table}_${event.toLowerCase()} AFTER ${event} ON ${table} WHEN ${linked}${only} BEGIN ` +
+        `INSERT INTO sync_outbox (tbl, pk, op, at) VALUES ('${table}', json_array(${keys.map((k) => `${row}.${k}`).join(", ")}), '${op}', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')); END;`,
+    );
   }
   return parts.join("\n");
 }
@@ -419,5 +431,50 @@ CREATE INDEX health_sessions_by_start ON health_sessions (start_at);`,
     // (change 0066-runner-link). The triggers write only while the device is linked (`sync.on`).
     version: 15,
     sql: syncOutboxSql(),
+  },
+  {
+    // specs/conversations: the Library (change 0079-library, ADR 0030). A file may live in the Library alone
+    // (no conversation), in a folder, archived, and says where it came from. SQLite keeps NOT NULL, so the
+    // table is rebuilt (with its sync triggers). The folders and who works on them stay on this hub.
+    version: 16,
+    sql: `CREATE TABLE library_folders (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE folder_bots (
+  folder_id TEXT NOT NULL REFERENCES library_folders(id) ON DELETE CASCADE,
+  bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+  PRIMARY KEY (folder_id, bot_id)
+);
+CREATE TABLE folder_groups (
+  folder_id TEXT NOT NULL REFERENCES library_folders(id) ON DELETE CASCADE,
+  conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  PRIMARY KEY (folder_id, conversation_id)
+);
+CREATE TABLE "files_next" (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT REFERENCES conversations(id) ON DELETE CASCADE,
+  item_id TEXT REFERENCES items(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  author_type TEXT NOT NULL,
+  author_id TEXT,
+  created_at TEXT NOT NULL,
+  folder_id TEXT REFERENCES library_folders(id) ON DELETE SET NULL,
+  archived_at TEXT,
+  source TEXT NOT NULL DEFAULT 'chat'
+);
+INSERT INTO files_next (id, conversation_id, item_id, name, mime, size, author_type, author_id, created_at)
+  SELECT id, conversation_id, item_id, name, mime, size, author_type, author_id, created_at FROM files;
+DROP TABLE files;
+ALTER TABLE files_next RENAME TO files;
+CREATE INDEX files_by_conversation ON files (conversation_id, created_at);
+CREATE INDEX files_by_folder ON files (folder_id, created_at);
+CREATE INDEX files_by_date ON files (created_at);
+${["files", "library_folders", "folder_bots", "folder_groups"].map(syncTriggersSql).join("\n")}`,
   },
 ];

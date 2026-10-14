@@ -7,7 +7,7 @@ import path from "node:path";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Type from "typebox";
-import type { Author, Bot, ConversationFile, Run, TimelineItem } from "@orbis/shared";
+import type { Author, Bot, ConversationFile, FileSource, Run, TimelineItem } from "@orbis/shared";
 import type { HubContext } from "../context.js";
 import { all, get, run as exec } from "../db/index.js";
 import { badRequest, conflict, notFound } from "../errors.js";
@@ -93,7 +93,7 @@ export function safeName(raw: string): string {
 }
 
 /** What the type says the file is, for the text a bot reads. */
-function kindOf(mime: string): string {
+export function kindOf(mime: string): string {
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("audio/")) return "audio";
   if (mime.startsWith("video/")) return "video";
@@ -102,7 +102,14 @@ function kindOf(mime: string): string {
   return "file";
 }
 
-function isText(mime: string): boolean {
+/** Where a file a bot makes in this run comes from, for the Library (change 0079). */
+export function sourceOf(run: Run): FileSource {
+  if (run.trigger.type === "routine" || run.trigger.type === "webhook") return "routine";
+  if (run.skill) return "skill";
+  return "chat";
+}
+
+export function isText(mime: string): boolean {
   return mime.startsWith("text/") || ["application/json", "application/xml", "application/yaml"].includes(mime);
 }
 
@@ -160,7 +167,7 @@ export class FilesService implements AttachmentHandler {
     this.pending.unref();
   }
 
-  private pathOf(id: string): string {
+  pathOf(id: string): string {
     if (!/^fil_[A-Za-z0-9_-]+$/.test(id)) throw badRequest("invalid file id", { id: "not a file id" });
     return path.join(this.dir, id);
   }
@@ -168,7 +175,8 @@ export class FilesService implements AttachmentHandler {
   /** Delete the bytes no row names (a cleared or deleted conversation's) and the uploads never sent. */
   sweep(): void {
     const before = new Date(this.clock().getTime() - UNSENT_MS).toISOString();
-    exec(this.hub.db, "DELETE FROM files WHERE item_id IS NULL AND created_at < ?", before);
+    // An upload to a conversation never sent; a file put in the Library alone has no message and stays.
+    exec(this.hub.db, "DELETE FROM files WHERE item_id IS NULL AND conversation_id IS NOT NULL AND source = 'chat' AND created_at < ?", before);
     const known = new Set(all<{ id: string }>(this.hub.db, "SELECT id FROM files").map((r) => r.id));
     for (const name of readdirSync(this.dir)) {
       if (!known.has(name)) rmSync(path.join(this.dir, name), { force: true, recursive: true });
@@ -190,19 +198,41 @@ export class FilesService implements AttachmentHandler {
     return all(this.hub.db, "SELECT * FROM files WHERE conversation_id = ? AND item_id IS NOT NULL ORDER BY created_at DESC, rowid DESC", conversationId).map(toFile);
   }
 
-  /** Keep the bytes of a file for a conversation; it is sent when a message names it. */
-  store(conversationId: string, rawName: string, mime: string | undefined, bytes: Buffer, author: Author): ConversationFile {
-    this.hub.conversationService.get(conversationId);
+  /**
+   * Keep the bytes of a file for a conversation (sent when a message names it), or for the Library alone when
+   * there is no conversation (change 0079).
+   */
+  store(
+    conversationId: string | null,
+    rawName: string,
+    mime: string | undefined,
+    bytes: Buffer,
+    author: Author,
+    extra: { folderId?: string | null; source?: FileSource } = {},
+  ): ConversationFile {
+    if (conversationId) this.hub.conversationService.get(conversationId);
     if (bytes.length === 0) throw badRequest("empty file", { body: "the file is empty" });
     if (bytes.length > MAX_FILE_BYTES) throw badRequest("file too large", { body: `a file may have at most ${sizeText(MAX_FILE_BYTES)}` });
     const name = safeName(rawName);
     const given = (mime ?? "").split(";")[0]!.trim().toLowerCase();
     const type = given && given !== "application/octet-stream" && /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(given) ? given : typeOf(name);
-    const file: ConversationFile = { id: newId("fil"), conversationId, name, mime: type, size: bytes.length, author, itemId: null, createdAt: this.clock().toISOString() };
+    const file: ConversationFile = {
+      id: newId("fil"),
+      conversationId,
+      name,
+      mime: type,
+      size: bytes.length,
+      author,
+      itemId: null,
+      createdAt: this.clock().toISOString(),
+      folderId: extra.folderId ?? null,
+      archivedAt: null,
+      source: extra.source ?? (conversationId ? "chat" : "library"),
+    };
     writeFileSync(this.pathOf(file.id), bytes, { mode: 0o600 });
     exec(
       this.hub.db,
-      "INSERT INTO files (id, conversation_id, item_id, name, mime, size, author_type, author_id, created_at) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO files (id, conversation_id, item_id, name, mime, size, author_type, author_id, created_at, folder_id, source) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)",
       file.id,
       conversationId,
       file.name,
@@ -211,6 +241,8 @@ export class FilesService implements AttachmentHandler {
       author.type,
       author.id,
       file.createdAt,
+      file.folderId ?? null,
+      file.source!,
     );
     return file;
   }
@@ -265,7 +297,7 @@ export class FilesService implements AttachmentHandler {
   }
 
   /** Copy files into the bot's workspace, under orbis-files/; two files of one name keep both. */
-  private copyToWorkspace(bot: Bot, files: ConversationFile[]): Array<{ file: ConversationFile; at: string }> {
+  copyToWorkspace(bot: Bot, files: ConversationFile[]): Array<{ file: ConversationFile; at: string }> {
     const root = this.hub.computer.workDir(bot);
     const folder = path.join(root, FILES_FOLDER);
     mkdirSync(folder, { recursive: true });
@@ -290,19 +322,19 @@ export class FilesService implements AttachmentHandler {
   }
 
   /** A bot sends a file of its workspace to the conversation it works in, as a message of its own. */
-  send(bot: Bot, run: Run, requested: string, caption = ""): { item: TimelineItem; file: ConversationFile } {
+  send(
+    bot: Bot,
+    run: Run,
+    requested: string,
+    caption = "",
+    extra: { folderId?: string | null; source?: FileSource; name?: string } = {},
+  ): { item: TimelineItem; file: ConversationFile } {
     const conversationId = this.conversationOf(run);
-    const root = this.hub.computer.workDir(bot);
-    let at: string;
-    try {
-      at = confine(root, requested);
-    } catch (err) {
-      throw badRequest(err instanceof Error ? err.message : String(err));
-    }
-    if (!existsSync(at) || !statSync(at).isFile()) throw badRequest(`there is no file "${requested}" in your workspace; computer.list_files shows what is there`);
-    const size = statSync(at).size;
-    if (size > MAX_FILE_BYTES) throw badRequest(`"${requested}" has ${sizeText(size)}; a file may have at most ${sizeText(MAX_FILE_BYTES)}`);
-    const file = this.store(conversationId, path.basename(at), undefined, readFileSync(at), { type: "bot", id: bot.id });
+    const at = this.workspaceFile(bot, requested);
+    const file = this.store(conversationId, extra.name ?? path.basename(at), undefined, readFileSync(at), { type: "bot", id: bot.id }, {
+      folderId: extra.folderId ?? null,
+      source: extra.source ?? sourceOf(run),
+    });
     const item = this.hub.timeline.post({
       conversationId,
       kind: "message",
@@ -313,6 +345,21 @@ export class FilesService implements AttachmentHandler {
     });
     this.bind(item.id, [file.id]);
     return { item, file: { ...file, itemId: item.id } };
+  }
+
+  /** A file of a bot's workspace, confined to it and within the size limit. */
+  workspaceFile(bot: Bot, requested: string): string {
+    const root = this.hub.computer.workDir(bot);
+    let at: string;
+    try {
+      at = confine(root, requested);
+    } catch (err) {
+      throw badRequest(err instanceof Error ? err.message : String(err));
+    }
+    if (!existsSync(at) || !statSync(at).isFile()) throw badRequest(`there is no file "${requested}" in your workspace; computer.list_files shows what is there`);
+    const size = statSync(at).size;
+    if (size > MAX_FILE_BYTES) throw badRequest(`"${requested}" has ${sizeText(size)}; a file may have at most ${sizeText(MAX_FILE_BYTES)}`);
+    return at;
   }
 
   /** A file of the conversation, by id or by name (the newest of that name). */

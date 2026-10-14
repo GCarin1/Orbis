@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.40.0
+**Version:** 0.41.0
 
 ## Purpose
 
@@ -66,6 +66,8 @@ run's steps.
 - The web app shall offer Settings → Health: inside the Android app, Health Connect's state, allowing it, syncing now and syncing on its own when the app opens and every 30 minutes while it is open (a choice of the device); anywhere, the last sync, its apps, the last 7 days, the bots that may read it and deleting it.
 - The web app shall open the event stream with a one-time ticket and show files with the hub's file key, renewed every 20 minutes and when the stream reconnects, never putting the token or a session in an address.
 - The web app shall keep an Orbis account's session on the device and renew it a minute before it ends, once for every request waiting, ending it when its renewal is refused; the hub's token, when the device has one, comes first.
+- The web app shall have a Library screen in its menu: every file as a grid with tabs (all, images, videos, documents, folders, archived), a search by name, files added from the device, and the space used with the largest files; a file opens large or plays, with download, forward to a bot or a group, move to a folder, archive and delete, and several are selected (by a long press or Select) to act on together.
+- The web app shall show a Library folder with its description, the bots and groups that work on it (chosen in a dialog) and its files, and shall show a message's deleted file as deleted.
 
 ### Event-driven
 
@@ -190,6 +192,7 @@ run's steps.
 63. [verified] Settings → Data downloads the file with the secrets sealed by the password typed twice, or without them; imports into this hub with the file's password and shows what came in; imports into the cloud account it signs in to without sending the file's password — verified by `packages/web/test/data.test.tsx`
 64. [verified] Settings → Account links this hub with the account's email and password, shows what waits and sends now, unlinks, says when the account revoked it, and lists the account's devices with its session and revokes one — verified by `packages/web/test/devices.test.tsx`
 65. [verified] Signing in with an authenticator asks its code after the password, says a wrong code, and signs in with the second-step session; without one the password suffices; Settings → Account sets it up from a QR code, has the hub require it and turns it off — verified by `packages/web/test/mfa.test.tsx`
+66. [verified] In a browser, the Library shows the grid and the space used, filters by tab and name, opens a file and forwards it to a bot with a message, selects several to archive, move or delete, opens a folder to add files and choose who works on it, and a message shows its deleted file — verified by `packages/web/test/library.test.tsx`
 
 ## Maturity
 

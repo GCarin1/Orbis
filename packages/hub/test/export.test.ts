@@ -264,12 +264,18 @@ describe("importing into the cloud account", () => {
   });
 
   it("maps every exported column onto a column of the cloud schema, with its type", async () => {
-    const sql = readFileSync(path.resolve(import.meta.dirname, "../../../supabase/migrations/0001_orbis_core.sql"), "utf8");
+    const sql = ["0001_orbis_core.sql", "0005_library.sql"]
+      .map((f) => readFileSync(path.resolve(import.meta.dirname, "../../../supabase/migrations", f), "utf8"))
+      .join("\n");
     const t = await hub();
     for (const table of TABLES) {
       const body = sql.slice(sql.indexOf(`create table public.${table} (`)).split("\n);")[0]!;
       const cloudColumns = new Map(
-        [...body.matchAll(/^\s{2}(\w+) (\w+)/gm)].filter((m) => !["primary", "unique", "foreign", "constraint", "check"].includes(m[1]!)).map((m) => [m[1]!, m[2]!]),
+        [
+          ...[...body.matchAll(/^\s{2}(\w+) (\w+)/gm)].filter((m) => !["primary", "unique", "foreign", "constraint", "check"].includes(m[1]!)),
+          // Columns a later migration adds (the Library's, change 0079).
+          ...sql.matchAll(new RegExp(`alter table public\\.${table} add column if not exists (\\w+) (\\w+)`, "g")),
+        ].map((m) => [m[1]!, m[2]!]),
       );
       const spec = CLOUD[table];
       const hubColumns = (t.hub.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name).filter((c) => c !== "seq" && !spec.drop?.includes(c));
