@@ -90,6 +90,20 @@ async function seed(base, token) {
     if (items.some((it) => it.kind === "message" && it.author?.type === "bot" && !it.backstage)) break;
     await new Promise((r) => setTimeout(r, 200));
   }
+  // A chief whose order goes to the Growth squad's chat: Ana shares a part with Bia there, and answers Max.
+  const max = await api("POST", "/api/v1/bots", { name: "Max", role: "Diretor", brain: { kind: "mock" } });
+  await api("POST", "/api/v1/squads", { name: "Growth", members: [ana.id, bia.id], representativeId: ana.id, managerId: max.id });
+  const maxConv = await api("GET", `/api/v1/bots/${max.id}/conversation`);
+  const anaWork = [`/tool team.handoff ${JSON.stringify({ to: "bia", task: "/reply Banner pronto em 3 versões" })}`, "/reply Vou dividir com a Bia"].join("\n");
+  await api("POST", `/api/v1/conversations/${maxConv.id}/messages`, {
+    text: `/tool team.handoff ${JSON.stringify({ to: "@growth", task: anaWork })}\n/reply Passei para a squad Growth`,
+  });
+  for (let i = 0; i < 150; i++) {
+    const runs = await api("GET", `/api/v1/runs?botId=${max.id}`).catch(() => null);
+    const list = Array.isArray(runs) ? runs : (runs?.runs ?? []);
+    if (list.some((r) => r.trigger?.type === "report" && r.status === "done")) break;
+    await new Promise((r) => setTimeout(r, 200));
+  }
   return { folder, group, ana };
 }
 
@@ -102,6 +116,9 @@ const screens = [
   { feature: "pastas", name: "equipe", steps: async (page) => { await page.getByRole("tab", { name: "Pastas" }).click(); await page.locator("button.library-folder", { hasText: "Evento" }).click(); await page.locator("button.btn-sm", { hasText: "Equipe" }).first().click(); await page.getByRole("dialog", { name: "Quem trabalha nesta pasta" }).waitFor(); } },
   { feature: "bastidores", name: "conversa", steps: async (page) => { await page.locator('[data-testid^="conv-"]', { hasText: "Marketing" }).click(); await page.getByTestId("backstage-link").waitFor({ timeout: 15_000 }); } },
   { feature: "bastidores", name: "dialogo", steps: async (page) => { await page.locator('[data-testid^="conv-"]', { hasText: "Marketing" }).click(); await page.getByTestId("backstage-link").click(); await page.getByTestId("backstage").waitFor(); } },
+  { feature: "squads", name: "chefe", steps: async (page) => { await page.getByTestId("bot-max").click(); await page.getByTestId("backstage-link").waitFor({ timeout: 15_000 }); } },
+  { feature: "squads", name: "cartao", steps: async (page) => { await page.getByTestId("bot-max").click(); await page.getByTestId("backstage-link").click(); await page.getByTestId("backstage").getByText("Abrir o chat da squad").waitFor(); } },
+  { feature: "squads", name: "chat-da-squad", steps: async (page) => { await page.locator('[data-testid^="conv-"]', { hasText: "Growth" }).click(); await page.getByText("Banner pronto em 3 versões").first().waitFor({ timeout: 15_000 }); } },
   { feature: "bastidores", name: "configuracoes", steps: async (page) => { await page.getByRole("button", { name: /Configurações/ }).click(); await page.getByRole("tab", { name: "Conversas" }).click(); await page.locator("#settings-panel-conversations").waitFor(); } },
 ];
 
