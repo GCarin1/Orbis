@@ -30,6 +30,20 @@ export function ApprovalCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
       setBusy(false);
     }
   };
+  // An answered request folds to one line, its input a tap away, so the chat keeps to the conversation (change 0084).
+  if (state !== "pending") {
+    return (
+      <details className={`card card-approval card-approval-done card-${state}`} data-testid="approval-card">
+        <summary className="card-head">
+          <span>{t("approval.asks", { name: bot?.name ?? "bot", tool: data.tool })}</span>
+          <span className={`pill pill-${state}`}>{t(`approval.state.${state}` as TextKey)}</span>
+        </summary>
+        {data.reason && <p className="muted">{t("approval.reason", { reason: data.reason })}</p>}
+        <Pretty value={data.input} />
+        {state === "denied" && data.note && <p className="muted">“{data.note}”</p>}
+      </details>
+    );
+  }
   return (
     <div className={`card card-approval card-${state}`} data-testid="approval-card">
       <div className="card-head">
@@ -57,7 +71,6 @@ export function ApprovalCard({ item, bot }: { item: TimelineItem; bot?: Bot }) {
           </div>
         </>
       )}
-      {state === "denied" && data.note && <p className="muted">“{data.note}”</p>}
       {error && <p className="error">{error}</p>}
     </div>
   );

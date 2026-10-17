@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.14.0
+**Version:** 0.15.0
 
 ## Purpose
 
@@ -64,6 +64,7 @@ timeline changes.
 - When the user gives a Library folder a task, the system shall post it as the user's message in the team's conversation — the folder's first group, the one bot's direct chat, or a group of the folder's bots made once and used again — naming the lead, who splits the work with team.handoff and gives the final result, and shall keep one step per bot on the task's board.
 - When a run of a task's chain starts or ends, or a bot calls task.progress, the system shall move that bot's step (pending, doing, done, failed) and announce the task; when no run of the chain is left, the task shall end with the lead's last answer as its result, and the files its runs keep in the folder shall be marked as the task's.
 - When the team's work stays backstage, the system shall mark as backstage the handoff cards, the answers of the bots the work was handed to (and their failures), and the words of a bot that handed work out and waits for the answers; the user's message, the final answer (the report), approvals, secret requests and files stay in the chat, and backstage items move neither the list of chats nor its last message.
+- When the user sends a PDF, the system shall read it once — its text (OCR for scanned pages), each of its first 20 pages as an image, a page bigger than A3 also cut into tiles with its lettering read by OCR — and before a bot starts on the message put that next to the PDF in the bot's workspace and tell the bot what is there, with the text as untrusted content; `files.get` gives the same reading, and brains that see also get the pages as images.
 
 ### State-driven
 
@@ -82,6 +83,7 @@ timeline changes.
 - The system shall not accept as a group's photo anything but a PNG, JPEG, WebP or GIF image as a `data:` URL, nor change a direct conversation's group info.
 - The system shall not accept as an attachment a file of another conversation or one already sent, nor send with `files.send` a file outside the bot's workspace.
 - The system shall not start a second task on a folder while one runs, a task on a folder with no team, nor a group larger than the hub's group size for a folder's bots.
+- The system shall not leave a bot to take a PDF apart by itself without saying why: a hub without the PDF tools tells the bot it could not read inside the PDF.
 
 ## Acceptance criteria
 
@@ -102,6 +104,7 @@ timeline changes.
 15. [verified] The Library lists every sent and directly added file by kind, name, folder and page, never an unsent upload, and a Library-only file is never swept; deleting removes it everywhere while its message stays; archiving hides it; forwarding copies it to a bot that wakes with it; folders hold files, bots and groups, and are deleted with or without their files; bots list, copy and keep files only in their folders; the space used is reported; folders and their files travel in an export — verified by `packages/hub/test/library.test.ts`
 16. [verified] A folder task goes to the team's own group (made once, used again), the folder's group or one bot's chat; the lead hands work out, each step moves, the files kept are the task's and the lead's last answer is the result; a second task, a folder with no team and an empty task are refused; a task is cancelled with its runs, fails when the lead fails, and task.progress needs a task — verified by `packages/hub/test/folder-tasks.test.ts`
 17. [verified] A conversation follows the hub's default until it or the default changes; the bot answering the user is told to keep it short and a handed-off task never is; with the backstage on, the cards, the colleagues' answers and the lead's waiting words are backstage and the chat shows the question and the report, the list of chats never showing the work; with it off, everything shows — verified by `packages/hub/test/backstage.test.ts`
+18. [verified] An A0 sheet sent by the user is read once into its text, its page image and 15 tiles, placed next to the PDF in the bot's workspace and described in its task with the text; a brain that sees gets the page; `files.get` gives the same reading; a hub without poppler says so — verified by `packages/hub/test/documents.test.ts`
 
 ## Maturity
 

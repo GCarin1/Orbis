@@ -116,6 +116,7 @@ export class LibraryService {
     for (const file of files) {
       exec(this.hub.db, "DELETE FROM files WHERE id = ?", file.id);
       rmSync(this.files.pathOf(file.id), { force: true });
+      this.files.documents.drop(file.id);
       this.touchFolder(file.folderId ?? null);
       // The message stays and shows the file as deleted.
       if (file.itemId && file.conversationId) {

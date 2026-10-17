@@ -28,11 +28,13 @@ FROM node:22-bookworm-slim
 ARG CLAUDE_CODE_VERSION=latest
 # The bots' browser tools; `--build-arg BROWSER_PACKAGES=` leaves them out for a smaller image.
 ARG BROWSER_PACKAGES="chromium fonts-liberation fonts-noto-color-emoji"
+# Reading the documents users send: PDF text and page images (poppler) and OCR of scans and drawings (tesseract).
+ARG DOCUMENT_PACKAGES="poppler-utils tesseract-ocr tesseract-ocr-por"
 ENV DEBIAN_FRONTEND=noninteractive
 # git, curl and python3 for the bots' commands; tini to stop cleanly.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      tini ca-certificates curl git python3 ${BROWSER_PACKAGES} \
+      tini ca-certificates curl git python3 ${BROWSER_PACKAGES} ${DOCUMENT_PACKAGES} \
  && rm -rf /var/lib/apt/lists/* \
  && npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" --no-audit --no-fund \
  && npm cache clean --force \

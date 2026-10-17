@@ -96,7 +96,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo "▸ Debian: packages"
 apt-get update -q
 # pipx: the MCP servers written in Python (Instagram, Google Analytics) start with `pipx run`.
-apt-get install -y -q --no-install-recommends ca-certificates curl git xz-utils procps python3 pipx >/dev/null
+apt-get install -y -q --no-install-recommends ca-certificates curl git xz-utils procps python3 pipx poppler-utils >/dev/null
 case "$(uname -m)" in
   aarch64 | arm64) arch=arm64 ;;
   x86_64) arch=x64 ;;

@@ -28,6 +28,11 @@ describe("the hub's image", () => {
     expect(docker).toMatch(/curl -fsS http:\/\/127\.0\.0\.1:7420\/health /);
   });
 
+  it("reads the documents users send: PDF text and pages (poppler) and OCR (tesseract, Portuguese too)", () => {
+    expect(docker).toMatch(/DOCUMENT_PACKAGES="poppler-utils tesseract-ocr tesseract-ocr-por"/);
+    expect(docker).toMatch(/\$\{DOCUMENT_PACKAGES\}/);
+  });
+
   it("sets no key or token of its own", () => {
     expect(docker).not.toMatch(/^\s*(ENV|ARG)\b[^\n]*(ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|CLAUDE_CODE_OAUTH_TOKEN|ORBIS_TOKEN)/m);
     expect(read(".dockerignore")).toMatch(/^\.env$/m);

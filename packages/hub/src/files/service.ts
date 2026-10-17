@@ -18,6 +18,7 @@ import { decodeText } from "../computer/tools.js";
 import type { AttachmentHandler } from "../services/conversations.js";
 import type { BrainImage } from "../brains/types.js";
 import { untrusted, type ToolDefinition } from "../tools/registry.js";
+import { DocumentReader, type ReadDocument } from "./documents.js";
 
 /** The largest file a message may carry, sent by the user or by a bot. */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -141,7 +142,11 @@ export class FilesService implements AttachmentHandler {
   ) {
     this.dir = path.join(hub.config.dataDir, "files");
     mkdirSync(this.dir, { recursive: true, mode: 0o700 });
+    this.documents = new DocumentReader(path.join(hub.config.dataDir, "documents"));
   }
+
+  /** The PDFs read for the bots (change 0084). */
+  readonly documents: DocumentReader;
 
   /** Forget leftovers now and every hour, and soon after a conversation is cleared or deleted. */
   start(): void {
@@ -186,6 +191,7 @@ export class FilesService implements AttachmentHandler {
     for (const name of readdirSync(this.dir)) {
       if (!known.has(name)) rmSync(path.join(this.dir, name), { force: true, recursive: true });
     }
+    this.documents.sweep(known);
   }
 
   private dropUnsent(conversationId: string): void {
@@ -249,6 +255,8 @@ export class FilesService implements AttachmentHandler {
       file.folderId ?? null,
       file.source!,
     );
+    // A document the user sends is read now, so it is ready (or nearly) when a bot starts on the message.
+    if (author.type === "user" && DocumentReader.reads(file.mime)) void this.documents.read(file.id, this.pathOf(file.id)).catch(() => undefined);
     return file;
   }
 
@@ -303,20 +311,65 @@ export class FilesService implements AttachmentHandler {
 
   /** Copy files into the bot's workspace, under orbis-files/; two files of one name keep both. */
   copyToWorkspace(bot: Bot, files: ConversationFile[]): Array<{ file: ConversationFile; at: string }> {
-    const root = this.hub.computer.workDir(bot);
-    const folder = path.join(root, FILES_FOLDER);
+    const folder = path.join(this.hub.computer.workDir(bot), FILES_FOLDER);
     mkdirSync(folder, { recursive: true });
-    const used = new Set<string>();
-    return files.map((file) => {
-      let name = file.name;
-      if (used.has(name.toLowerCase())) {
-        const ext = path.extname(name);
-        name = `${name.slice(0, name.length - ext.length)}-${file.id.slice(-6)}${ext}`;
-      }
-      used.add(name.toLowerCase());
-      copyFileSync(this.pathOf(file.id), path.join(folder, name));
-      return { file, at: `${FILES_FOLDER}/${name}` };
+    return placements(files).map(({ file, at }) => {
+      copyFileSync(this.pathOf(file.id), path.join(folder, path.basename(at)));
+      return { file, at };
     });
+  }
+
+  // --- documents read for the bots (change 0084-document-reading) -------------------------------------------
+
+  /**
+   * Before a bot starts on a message with documents: wait for them to be read, put their text and page images
+   * next to them in the bot's workspace, and say so — with the text — in its task.
+   */
+  async prepare(run: Run, bot: Bot): Promise<string | null> {
+    if (run.trigger.type !== "message" || !run.trigger.ref) return null;
+    const files = this.hub.repos.items.get(run.trigger.ref)?.files ?? [];
+    const documents = placements(files).filter(({ file }) => DocumentReader.reads(file.mime));
+    if (!documents.length) return null;
+    const parts: string[] = [];
+    for (const { file, at } of documents) parts.push(await this.readFor(bot, file, at));
+    return [
+      "What Orbis read in the documents of this message — use these instead of taking the PDF apart with scripts:",
+      ...parts,
+      "Open the page images with your file or image tool to see drawings, tables and scans as they are; the text has what is written on them.",
+    ].join("\n");
+  }
+
+  /** Read a document, place what was read next to its copy at `at`, and describe it for the bot. */
+  private async readFor(bot: Bot, file: ConversationFile, at: string): Promise<string> {
+    const doc = await this.documents.read(file.id, this.pathOf(file.id));
+    const base = at.replace(/\.pdf$/i, "");
+    const root = this.hub.computer.workDir(bot);
+    const from = this.documents.folderOf(file.id);
+    if (doc.text) copyFileSync(path.join(from, "text.txt"), path.join(root, `${base}.txt`));
+    if (doc.drawing) copyFileSync(path.join(from, "drawing.txt"), path.join(root, `${base}.drawing.txt`));
+    if (doc.images.length) {
+      const pages = path.join(root, `${base}.pages`);
+      rmSync(pages, { recursive: true, force: true });
+      mkdirSync(pages, { recursive: true });
+      for (const image of doc.images) copyFileSync(path.join(from, image.name), path.join(pages, image.name));
+    }
+    return describeDocument(file, base, doc);
+  }
+
+  /** The page images of a message's documents already read, for brains that see. */
+  private documentImages(files: ConversationFile[]): BrainImage[] {
+    return files
+      .filter((f) => DocumentReader.reads(f.mime))
+      .flatMap((f) => {
+        try {
+          const doc = JSON.parse(readFileSync(path.join(this.documents.folderOf(f.id), "document.json"), "utf8")) as ReadDocument;
+          return doc.images
+            .filter((image) => !image.tile)
+            .map((image) => ({ name: `${f.name} — page ${image.page}`, mime: "image/png", data: readFileSync(path.join(this.documents.folderOf(f.id), image.name)).toString("base64") }));
+        } catch {
+          return [];
+        }
+      });
   }
 
   // --- images for brains that see (change 0081-vision) ----------------------------------------------------
@@ -324,11 +377,12 @@ export class FilesService implements AttachmentHandler {
   /** The images of the message that started a run, as brains that see take them: a few, not too large. */
   imagesFor(run: Run): BrainImage[] {
     if (run.trigger.type !== "message" || !run.trigger.ref) return [];
-    const item = this.hub.repos.items.get(run.trigger.ref);
-    return (item?.files ?? [])
+    const files = this.hub.repos.items.get(run.trigger.ref)?.files ?? [];
+    const images = files
       .filter((f) => VISION_TYPES.has(f.mime) && f.size <= MAX_IMAGE_BYTES)
-      .slice(0, MAX_IMAGES)
       .map((f) => ({ name: f.name, mime: f.mime, data: this.bytes(f).toString("base64") }));
+    // A document's pages, as images, after the photos (change 0084).
+    return [...images, ...this.documentImages(files)].filter((image) => image.data.length <= (MAX_IMAGE_BYTES * 4) / 3).slice(0, MAX_IMAGES);
   }
 
   // --- the bots' tools -----------------------------------------------------------------------------
@@ -418,6 +472,7 @@ export class FilesService implements AttachmentHandler {
           const [copied] = this.copyToWorkspace(ctx.bot, [file]);
           const text = isText(file.mime) && file.size <= INLINE_TEXT_BYTES ? decodeText(this.bytes(file)) : null;
           const where = `${file.name} (${kindOf(file.mime)}, ${sizeText(file.size)}) is in your workspace at ${copied!.at}`;
+          if (DocumentReader.reads(file.mime)) return `${where}. What Orbis read in it:\n${await this.readFor(ctx.bot, file, copied!.at)}`;
           return text === null ? where : `${where}. Its text:\n${untrusted(`file:${file.name}`, text)}`;
         },
       },
@@ -494,4 +549,64 @@ export class FilesService implements AttachmentHandler {
       .header("cache-control", "private, max-age=86400");
     return reply.send(this.bytes(file));
   }
+}
+
+/** Where each file goes in a bot's orbis-files/: its name, or with its id's end when two share a name. */
+function placements(files: ConversationFile[]): Array<{ file: ConversationFile; at: string }> {
+  const used = new Set<string>();
+  return files.map((file) => {
+    let name = file.name;
+    if (used.has(name.toLowerCase())) {
+      const ext = path.extname(name);
+      name = `${name.slice(0, name.length - ext.length)}-${file.id.slice(-6)}${ext}`;
+    }
+    used.add(name.toLowerCase());
+    return { file, at: `${FILES_FOLDER}/${name}` };
+  });
+}
+
+/** A document's text given in the task at most; the rest is in its text file. */
+const DOCUMENT_TEXT_CHARS = 20_000;
+const SHEETS: Array<[string, number, number]> = [
+  ["A0", 2384, 3370],
+  ["A1", 1684, 2384],
+  ["A2", 1191, 1684],
+  ["A3", 842, 1191],
+  ["A4", 595, 842],
+];
+
+/** A page size's paper name (A0…A4, either way round), when it is one. */
+export function paperOf(size: { width: number; height: number } | null): string | null {
+  if (!size) return null;
+  const [short, long] = [Math.min(size.width, size.height), Math.max(size.width, size.height)];
+  return SHEETS.find(([, w, h]) => Math.abs(short - w) / w < 0.03 && Math.abs(long - h) / h < 0.03)?.[0] ?? null;
+}
+
+/** What a bot is told of a document Orbis read: where its text and page images are, and the text itself. */
+export function describeDocument(file: ConversationFile, base: string, doc: ReadDocument): string {
+  const paper = paperOf(doc.size);
+  const lines = [`- ${file.name}: ${doc.pages ? `${doc.pages} page${doc.pages === 1 ? "" : "s"}` : "a PDF"}${paper ? ` (${paper}${doc.size && doc.size.width > doc.size.height ? ", landscape" : ""})` : ""}.`];
+  if (doc.text) lines.push(`  Text (${doc.words} words${doc.ocr ? ", read by OCR from the page images" : ""}): ${base}.txt`);
+  const pages = doc.images.filter((i) => !i.tile);
+  if (pages.length) {
+    lines.push(`  Page images: ${base}.pages/${pages[0]!.name}${pages.length > 1 ? ` … ${pages[pages.length - 1]!.name}` : ""} (whole pages).`);
+    for (const [page, grid] of Object.entries(doc.grids)) {
+      lines.push(
+        `  Page ${page} is a big sheet, also cut into ${grid.rows} rows × ${grid.cols} columns of tiles for its details: ${base}.pages/page-${page}-r1c1.png … page-${page}-r${grid.rows}c${grid.cols}.png (r = row from the top, c = column from the left).`,
+      );
+    }
+  }
+  if (doc.drawing) {
+    lines.push(`  The sheet's lettering read by OCR from the tiles (tables, room names, dimensions; it may have mistakes — check them in the images): ${base}.drawing.txt`);
+  }
+  if (doc.problem) lines.push(`  Note: ${doc.problem}.`);
+  // The text first, then the lettering, within one budget; what does not fit stays in the files.
+  let budget = DOCUMENT_TEXT_CHARS;
+  for (const [what, text, at] of [["Its text", doc.text, `${base}.txt`], ["The sheet's lettering (OCR)", doc.drawing, `${base}.drawing.txt`]] as const) {
+    if (!text || budget <= 0) continue;
+    const cut = text.length > budget;
+    lines.push(`  ${what}${cut ? ` (the first ${budget} characters; all of it is in ${at})` : ""}:`, untrusted(`file:${file.name}`, cut ? text.slice(0, budget) : text));
+    budget -= Math.min(text.length, budget);
+  }
+  return lines.join("\n");
 }

@@ -66,6 +66,16 @@ describe("timeline", () => {
     expect(post).toHaveBeenCalledWith("/api/v1/approvals/apr_1", { decision: "allow_once" });
   });
 
+  it("folds an answered request to one line, its input a tap away", () => {
+    const approved = items.map((i) => (i.card?.type === "approval" ? { ...i, card: { ...i.card, state: "approved" } } : i));
+    render(<Timeline items={approved} bots={{ [ana.id]: ana }} runs={{}} activeRuns={[]} />);
+    const card = screen.getByTestId("approval-card") as HTMLDetailsElement;
+    expect(card.tagName).toBe("DETAILS");
+    expect(card.open).toBe(false);
+    expect(card.querySelector("summary")!.textContent).toBe("Ana wants to use computer.shellApproved");
+    expect(screen.queryByRole("button", { name: "Allow once" })).toBeNull();
+  });
+
   it("denies with the typed note", async () => {
     const { api, post } = fakeApi();
     act(() => useStore.getState().setApi(api));

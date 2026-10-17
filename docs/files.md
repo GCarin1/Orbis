@@ -39,6 +39,35 @@ into the task, so a brain without tools can read it too.
 A file sent earlier in the conversation is named in the bot's history. The
 bot copies it into its workspace again with `files.get`.
 
+### PDFs: Orbis reads them before the bot starts
+
+A PDF you send is read once by the hub, as soon as it is uploaded (change
+0084). Next to the PDF in `orbis-files/`, the bot finds:
+
+- **`<name>.txt`**, the PDF's text. Scanned pages are read by OCR.
+- **`<name>.pages/page-1.png` …**, each page as an image, up to 20 pages.
+- **`<name>.pages/page-1-r1c1.png` …**, for a big sheet (bigger than A3, such
+  as an A0 drawing): the page cut into tiles, rows from the top and columns
+  from the left, so the details are legible.
+- **`<name>.drawing.txt`**, a sheet's lettering read by OCR from the tiles.
+  CAD programs draw most of their text as lines, so tables, room names and
+  dimensions are not in the PDF's text. OCR can make mistakes; the bot checks
+  them in the images.
+
+The bot's task says what is there, with the text itself (up to 20,000
+characters). A brain that sees images also gets the pages. `files.get` gives
+the same reading for a PDF sent earlier. The bot no longer needs scripts or
+approvals to take the PDF apart.
+
+This needs `poppler-utils` on the hub, and `tesseract-ocr` for OCR. The
+server image has both. On a computer or a phone without them, the bot is told
+that Orbis could not read inside the PDF.
+
+### Answered approvals fold up
+
+A request a bot made (to run a command, say) that you already answered folds
+to one line: who asked, the tool, and the answer. Tap it to see the command.
+
 ## Files a bot makes
 
 A bot sends a file it made — a report, a spreadsheet, a chart, a PDF — with

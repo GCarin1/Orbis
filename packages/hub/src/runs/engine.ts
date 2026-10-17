@@ -141,6 +141,7 @@ export class RunEngine {
   private redactor: (<T>(botId: string, value: T) => T) | null = null;
   private stopped = false;
   private imageSource: ((run: Run) => BrainImage[]) | null = null;
+  private readonly preparers: Array<(run: Run, bot: Bot) => Promise<string | null>> = [];
   private backstageOf: ((run: Run) => boolean) | null = null;
 
   constructor(private readonly d: EngineDeps) {}
@@ -183,6 +184,14 @@ export class RunEngine {
       // A missing or unreadable image never stops a run: the bot still has the file's path.
       return [];
     }
+  }
+
+  /**
+   * Work done before a run's brain starts, whose text joins the task (the documents of its message read,
+   * change 0084). A preparer that fails leaves the task as it was.
+   */
+  addPreparer(prepare: (run: Run, bot: Bot) => Promise<string | null>): void {
+    this.preparers.push(prepare);
   }
 
   /** Add a section to every run's system text (the offered skills, the conversation). */
@@ -424,6 +433,11 @@ export class RunEngine {
     };
 
     try {
+      let task = req.input;
+      for (const prepare of this.preparers) {
+        const extra = await prepare(run, bot).catch(() => null);
+        if (extra) task = `${task}\n\n${extra}`;
+      }
       const workspaceDir = this.d.computer.workDir(bot);
       const conversationId = req.conversationId;
       const sessionKey = conversationId ?? `run:${runId}`;
@@ -438,7 +452,7 @@ export class RunEngine {
         {
           bot,
           conversationId: req.includeHistory === false ? null : conversationId,
-          task: req.input,
+          task,
           excludeItemId: req.triggerItemId ?? null,
           since,
         },
@@ -448,7 +462,7 @@ export class RunEngine {
       if (sections.length) context.identity = [context.identity, ...sections].join("\n\n");
 
       const events = adapter!.run(
-        { runId, bot, conversationId, task: req.input, context, skill: req.skill ?? null, images: this.images(run) },
+        { runId, bot, conversationId, task, context, skill: req.skill ?? null, images: this.images(run) },
         {
           signal: controller.signal,
           workspaceDir,
