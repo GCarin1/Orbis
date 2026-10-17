@@ -264,7 +264,7 @@ describe("importing into the cloud account", () => {
   });
 
   it("maps every exported column onto a column of the cloud schema, with its type", async () => {
-    const sql = ["0001_orbis_core.sql", "0005_library.sql"]
+    const sql = ["0001_orbis_core.sql", "0005_library.sql", "0006_conversation_style.sql"]
       .map((f) => readFileSync(path.resolve(import.meta.dirname, "../../../supabase/migrations", f), "utf8"))
       .join("\n");
     const t = await hub();

@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-14",
+  "last_updated": "2026-10-17",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -119,7 +119,7 @@
         "id": "conversations",
         "path": ".doctrina/specs/conversations/spec.md",
         "status": "active",
-        "version": "0.13.0",
+        "version": "0.14.0",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.42.0",
+        "version": "0.43.0",
         "last_updated": "2026-10-11",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -2334,6 +2334,24 @@
         "specs_affected": [
           {
             "capability": "agent-runtimes",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0082-backstage",
+        "title": "backstage",
+        "path": ".doctrina/changes/archive/2026-10-17-0082-backstage",
+        "status": "applied",
+        "applied": "2026-10-17",
+        "specs_affected": [
+          {
+            "capability": "conversations",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "web-app",
             "operation": "MODIFIED"
           }
         ],

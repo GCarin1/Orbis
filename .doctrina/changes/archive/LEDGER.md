@@ -83,3 +83,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-14 — 0079-library — library (specs: conversations MODIFIED, web-app MODIFIED)
 - 2026-10-14 — 0080-folder-tasks — folder-tasks (specs: conversations MODIFIED, web-app MODIFIED)
 - 2026-10-14 — 0081-vision — vision (specs: agent-runtimes MODIFIED)
+- 2026-10-17 — 0082-backstage — backstage (specs: conversations MODIFIED, web-app MODIFIED)

@@ -304,6 +304,7 @@ export function App() {
         info: (next = "info") => setGroupView(next),
         add: () => setAddingMembers(true),
         mute: (muted) => act(() => store.updateGroup(group.id, { muted })),
+        style: (patch) => act(() => store.setConversationStyle(group.id, patch)),
         exportChat: () =>
           act(async () => {
             const all = await store.allItems(group.id);
@@ -444,6 +445,8 @@ export function App() {
           <>
             <BotHeader
               bot={selected}
+              conversation={store.conversations[conversationId]}
+              onStyle={(patch) => void act(() => store.setConversationStyle(conversationId, patch))}
               computerRunning={store.computers[selected.id]?.status === "running"}
               onBack={() => void store.selectBot(null)}
               onPanel={(next) => setPanel(next === "details" && panel === "details" ? null : next)}

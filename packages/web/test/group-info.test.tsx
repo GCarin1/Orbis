@@ -35,6 +35,7 @@ const actions = (): GroupActions & Record<string, ReturnType<typeof vi.fn>> => (
   info: vi.fn(),
   add: vi.fn(),
   mute: vi.fn(async () => undefined),
+  style: vi.fn(async () => undefined),
   exportChat: vi.fn(async () => undefined),
   clear: vi.fn(async () => undefined),
   remove: vi.fn(async () => undefined),
@@ -79,9 +80,16 @@ describe("the group's header and ⋮ menu", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((m) => m.textContent),
-    ).toEqual(["Add members", "Group info", "Files", "Group links", "Search", "Mute notifications", "More"]);
+    ).toEqual(["Add members", "Group info", "Files", "Group links", "Search", "Detailed replies", "Show the team's work in the chat", "Mute notifications", "More"]);
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Add members" }));
     expect(a.add).toHaveBeenCalled();
+    // How the group talks (change 0082): it follows the hub's default (short, backstage) until changed here.
+    fireEvent.click(screen.getByRole("button", { name: "More options" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Detailed replies" }));
+    expect(a.style).toHaveBeenCalledWith({ replyStyle: "detailed" });
+    fireEvent.click(screen.getByRole("button", { name: "More options" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Show the team's work in the chat" }));
+    expect(a.style).toHaveBeenCalledWith({ backstage: false });
     expect(screen.queryByRole("menu")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "More options" }));

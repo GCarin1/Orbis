@@ -9,7 +9,7 @@ import { MIGRATIONS } from "../src/db/migrations.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 // The core schema and the tables later migrations add (the Library's, change 0079).
-const cloud = ["0001_orbis_core.sql", "0005_library.sql"].map((f) => readFileSync(path.join(root, "supabase/migrations", f), "utf8")).join("\n");
+const cloud = ["0001_orbis_core.sql", "0005_library.sql", "0006_conversation_style.sql"].map((f) => readFileSync(path.join(root, "supabase/migrations", f), "utf8")).join("\n");
 
 const tablesIn = (sql: string, pattern: RegExp) => [...sql.matchAll(pattern)].map((m) => m[1]!);
 const hubTables = tablesIn(MIGRATIONS.map((m) => m.sql).join("\n"), /CREATE TABLE (\w+)/g);

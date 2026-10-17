@@ -21,6 +21,9 @@ change that delivered it.
 
 ### Added
 
+- **Short replies and the backstage** (change 0082-backstage): each conversation chooses short, human replies (Chat) or detailed ones.
+  - It also chooses whether the team's work stays backstage. When a bot hands tasks to others, the chat shows one line ("Beatriz is talking with Marina and Helena…") and then only her answer, with **See backstage** to open the rest.
+  - New conversations start short and backstage. Conversations that existed before keep their earlier behaviour until changed. Both switches are in the ⋮ menu, and the default is in Settings → Conversations.
 - **Bots of an API see images** (change 0081-vision): images sent with a message (or forwarded from the Library) reach the Anthropic brain and remote OpenAI-compatible ones as images, not just a file path. That covers PNG, JPEG, GIF and WebP, up to 5 per message, 5 MB each.
 - **Tasks for a folder's team** (change 0080-folder-tasks): inside a Library folder, give its bots or group a task.
   - The first bot leads: it splits the work with the others and gives the final answer. Each bot keeps what it makes in the folder.

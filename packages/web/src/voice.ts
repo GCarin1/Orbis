@@ -321,7 +321,8 @@ export function useDictation({
 export function useReadAloud(conversationId: string | undefined, items: TimelineItem[], loaded: boolean): void {
   const lang = useLang((s) => s.lang);
   const readAloud = useVoice((s) => s.readAloud);
-  const last = items.at(-1);
+  // The team's work backstage is never read aloud: only what the chat shows (change 0082).
+  const last = items.findLast((i) => !i.backstage);
   const heard = useRef<{ conversationId?: string; last?: string; loaded: boolean }>({ loaded: false });
   useEffect(() => {
     const before = heard.current;

@@ -24,6 +24,12 @@ beforeAll(async () => {
   await build({ root: webRoot, configFile: path.join(webRoot, "vite.config.ts"), logLevel: "error", build: { outDir, emptyOutDir: true, sourcemap: false } });
   hub = await createHub({ env: {}, config: { dataDir, token: TOKEN, port: 0, webDir: outDir } });
   url = await hub.listen();
+  // These tests follow the team's work in the chat itself: the full view, not the backstage (change 0082).
+  await fetch(`${url}/api/v1/conversations/defaults`, {
+    method: "PUT",
+    headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+    body: JSON.stringify({ replyStyle: "detailed", backstage: false }),
+  });
   const executablePath = process.env.ORBIS_BROWSER_EXECUTABLE || undefined;
   browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
 });

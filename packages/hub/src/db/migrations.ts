@@ -504,4 +504,14 @@ CREATE TABLE task_steps (
   PRIMARY KEY (task_id, bot_id)
 );`,
   },
+  {
+    // specs/conversations: how a conversation talks — short and human, or detailed — and whether the team's
+    // work (handoffs, their answers) stays backstage (change 0082-backstage). Conversations made before keep
+    // today's way (detailed, in the chat); a new one follows the hub's default (null).
+    version: 18,
+    sql: `ALTER TABLE conversations ADD COLUMN reply_style TEXT CHECK (reply_style IN ('chat', 'detailed'));
+ALTER TABLE conversations ADD COLUMN backstage INTEGER;
+UPDATE conversations SET reply_style = 'detailed', backstage = 0;
+ALTER TABLE items ADD COLUMN backstage INTEGER NOT NULL DEFAULT 0;`,
+  },
 ];

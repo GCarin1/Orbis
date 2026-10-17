@@ -1,4 +1,4 @@
-import type { Author, Card, Conversation, ConversationFile, ConversationLink, FileSource, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
+import type { Author, Card, Conversation, ReplyStyle, ConversationFile, ConversationLink, FileSource, ItemKind, TimelineEvent, TimelineItem } from "@orbis/shared";
 import { all, get, json, run, type Database, type Row } from "../db/index.js";
 
 function toConversation(r: Row, members: string[]): Conversation {
@@ -11,6 +11,8 @@ function toConversation(r: Row, members: string[]): Conversation {
     description: (r.description as string | null) ?? "",
     photo: (r.photo as string | null) ?? null,
     muted: Number(r.muted ?? 0) === 1,
+    replyStyle: (r.reply_style as ReplyStyle | null) ?? null,
+    backstage: r.backstage === null || r.backstage === undefined ? null : Number(r.backstage) === 1,
     createdAt: r.created_at as string,
     lastItemAt: (r.last_item_at as string | null) ?? null,
   };
@@ -74,6 +76,7 @@ function toItem(r: Row, db?: Database): TimelineItem {
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string,
   };
+  if (Number(r.backstage ?? 0) === 1) item.backstage = true;
   const card = json<Card | null>(r.card, null);
   if (card) item.card = card;
   const event = json<TimelineEvent | null>(r.event, null);
@@ -211,6 +214,8 @@ export interface NewItem {
   runId?: string | null;
   card?: Card;
   event?: TimelineEvent;
+  /** Team work kept backstage (change 0082). */
+  backstage?: boolean;
   createdAt: string;
 }
 
@@ -221,8 +226,8 @@ export class ItemsRepo {
     run(
       this.db,
       `INSERT INTO items (id, conversation_id, kind, author_type, author_id, text, parent_id, mentions, attachments,
-         reactions, run_id, card, event, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)`,
+         reactions, run_id, card, event, created_at, updated_at, backstage)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?, ?)`,
       item.id,
       item.conversationId,
       item.kind,
@@ -237,6 +242,7 @@ export class ItemsRepo {
       item.event ? JSON.stringify(item.event) : null,
       item.createdAt,
       item.createdAt,
+      item.backstage ? 1 : 0,
     );
     return this.get(item.id)!;
   }

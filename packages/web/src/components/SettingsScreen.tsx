@@ -21,8 +21,8 @@ import { DeviceSettings } from "./DeviceSettings.js";
 import { useStore } from "../store.js";
 import type { AccountSession } from "../account.js";
 
-export type SettingsTab = "brains" | "computers" | "initiative" | "health" | "voice" | "phone" | "account" | "data";
-const TABS: SettingsTab[] = ["brains", "computers", "initiative", "health", "voice", "phone", "account", "data"];
+export type SettingsTab = "brains" | "conversations" | "computers" | "initiative" | "health" | "voice" | "phone" | "account" | "data";
+const TABS: SettingsTab[] = ["brains", "conversations", "computers", "initiative", "health", "voice", "phone", "account", "data"];
 
 /** What an import added shows at once: the lists are read again. */
 function reloadAll(): void {
@@ -73,6 +73,7 @@ export function SettingsScreen({
       </header>
       <div className="screen-body" role="tabpanel" id={`settings-panel-${tab}`} aria-labelledby={`settings-tab-${tab}`}>
         {tab === "brains" && <BrainsTab api={api} bots={bots} onConfigureBot={onConfigureBot} />}
+        {tab === "conversations" && <ConversationDefaultsSettings />}
         {tab === "computers" && <ComputersSettings api={api} />}
         {tab === "initiative" && <InitiativeSettingsTab api={api} />}
         {tab === "health" && <HealthSettings api={api} bots={bots} />}
@@ -262,5 +263,36 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
         </div>
       )}
     </>
+  );
+}
+
+/** How new conversations talk, and those with no choice of their own (change 0082). */
+function ConversationDefaultsSettings() {
+  const t = useT();
+  const defaults = useStore((s) => s.conversationDefaults);
+  const save = useStore((s) => s.setConversationDefaults);
+  const [error, setError] = useState<string | null>(null);
+  const change = (patch: Partial<typeof defaults>) => void save(patch).catch((err) => setError(err instanceof Error ? err.message : String(err)));
+  return (
+    <section className="settings-section" data-testid="conversation-defaults">
+      <p className="muted">{t("style.help")}</p>
+      <fieldset className="radio-group">
+        <legend>{t("style.replies")}</legend>
+        <label>
+          <input type="radio" name="reply-style" checked={defaults.replyStyle === "chat"} onChange={() => change({ replyStyle: "chat" })} /> {t("style.chat")}
+          <span className="muted small"> — {t("style.chatHelp")}</span>
+        </label>
+        <label>
+          <input type="radio" name="reply-style" checked={defaults.replyStyle === "detailed"} onChange={() => change({ replyStyle: "detailed" })} /> {t("style.detailed")}
+          <span className="muted small"> — {t("style.detailedHelp")}</span>
+        </label>
+      </fieldset>
+      <label className="check-row">
+        <input type="checkbox" checked={defaults.backstage} onChange={(e) => change({ backstage: e.target.checked })} /> {t("style.backstage")}
+        <span className="muted small"> — {t("style.backstageHelp")}</span>
+      </label>
+      <p className="muted small">{t("style.perConversation")}</p>
+      {error && <p className="error">{error}</p>}
+    </section>
   );
 }

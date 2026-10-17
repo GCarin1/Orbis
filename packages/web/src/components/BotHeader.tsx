@@ -1,23 +1,29 @@
 // A bot's conversation header, as a chat app shows a contact (specs/web-app): its face, name and what it
 // does now; a tap on them opens its details, and the ⋮ menu holds the rest, like a group's.
 import { useRef, useState, type ReactNode } from "react";
-import type { Bot } from "@orbis/shared";
+import type { Bot, Conversation, ReplyStyle } from "@orbis/shared";
+import { styleOf, useStore } from "../store.js";
 import { useT } from "../i18n.js";
 import { Avatar, StateLabel } from "./Avatar.js";
 import { brainLabel, brainShort } from "./brains.js";
 import { useDismiss } from "./GroupInfo.js";
-import { BackIcon, ClockIcon, EraseIcon, GearIcon, InfoIcon, MonitorIcon, MoreIcon, PaperclipIcon } from "./Icons.js";
+import { BackIcon, BackstageIcon, ChatIcon, ClockIcon, EraseIcon, GearIcon, InfoIcon, MonitorIcon, MoreIcon, PaperclipIcon } from "./Icons.js";
 
 export type BotPanelName = "details" | "computer" | "routines" | "settings" | "files";
 
 export function BotHeader({
   bot,
+  conversation,
+  onStyle,
   computerRunning,
   onBack,
   onPanel,
   onClear,
 }: {
   bot: Bot;
+  /** Its direct conversation, for how it talks (change 0082). */
+  conversation?: Conversation;
+  onStyle?(patch: { replyStyle?: ReplyStyle; backstage?: boolean }): void;
   computerRunning: boolean;
   onBack(): void;
   onPanel(panel: BotPanelName): void;
@@ -25,6 +31,7 @@ export function BotHeader({
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const way = styleOf(conversation, useStore((s) => s.conversationDefaults));
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(open, ref, () => setOpen(false));
   const item = (label: string, icon: ReactNode, run: () => void, extra?: ReactNode) => (
@@ -87,6 +94,11 @@ export function BotHeader({
                 () => onPanel("computer"),
                 computerRunning ? <span className="menu-note">{t("computer.on")}</span> : null,
               )}
+              {onStyle &&
+                item(way.replyStyle === "chat" ? t("style.toDetailed") : t("style.toChat"), <ChatIcon size={16} />, () =>
+                  onStyle({ replyStyle: way.replyStyle === "chat" ? "detailed" : "chat" }),
+                )}
+              {onStyle && item(way.backstage ? t("style.backstageOff") : t("style.backstageOn"), <BackstageIcon size={16} />, () => onStyle({ backstage: !way.backstage }))}
               {item(t("settings.open"), <GearIcon size={16} />, () => onPanel("settings"))}
               {item(t("conv.clear"), <EraseIcon size={16} />, onClear)}
             </div>

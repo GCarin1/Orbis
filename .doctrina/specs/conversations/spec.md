@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.13.0
+**Version:** 0.14.0
 
 ## Purpose
 
@@ -36,6 +36,7 @@ timeline changes.
 - The system shall keep a Library of every file sent in a conversation and every file put in it directly (`POST /api/v1/library/files`), listed newest first by kind, name, folder or archived, a page at a time, with where each came from (`chat`, `library`, `routine`, `skill`, `task`) — never an upload not yet sent.
 - The system shall keep Library folders, each with the bots and the groups that work on it, and give bots `library.list`, `library.get` and `library.save`, which see and write only the folders given to the bot or to a group it is a member of.
 - The system shall report how much space the files take, by kind, the largest ones, and the free space of the disk that holds the data.
+- The system shall keep, for each conversation, how its bots answer the user — `chat` (one to three short sentences, warm and plain, no headings or lists unless asked) or `detailed` — and whether the team's work stays backstage; a conversation with no choice of its own follows the hub's default (chat, backstage), conversations made before keep detailed and in the chat, and a handed-off task is always worked in full.
 
 ### Event-driven
 
@@ -62,6 +63,7 @@ timeline changes.
 - When the user forwards Library files to a bot or a group, the system shall copy them into that conversation and post them as the user's message, which wakes the bot or the group's lead with the files in its workspace.
 - When the user gives a Library folder a task, the system shall post it as the user's message in the team's conversation — the folder's first group, the one bot's direct chat, or a group of the folder's bots made once and used again — naming the lead, who splits the work with team.handoff and gives the final result, and shall keep one step per bot on the task's board.
 - When a run of a task's chain starts or ends, or a bot calls task.progress, the system shall move that bot's step (pending, doing, done, failed) and announce the task; when no run of the chain is left, the task shall end with the lead's last answer as its result, and the files its runs keep in the folder shall be marked as the task's.
+- When the team's work stays backstage, the system shall mark as backstage the handoff cards, the answers of the bots the work was handed to (and their failures), and the words of a bot that handed work out and waits for the answers; the user's message, the final answer (the report), approvals, secret requests and files stay in the chat, and backstage items move neither the list of chats nor its last message.
 
 ### State-driven
 
@@ -99,6 +101,7 @@ timeline changes.
 14. [verified] An uploaded JSON stays the bytes it is; files sent with no text reach the bot's workspace and its task (the text of a small text file as untrusted content), are listed and named in the message; a message of files alone shows them in the list of chats; another conversation's file, one already sent, an empty one and one over 25 MB are refused; images show in place, a page is downloaded and never runs, the token works in the address only for a file's content; a bot sends a file of its workspace with its caption, is refused one outside it or missing, lists the files and copies one back; a day-old unsent upload and a cleared conversation's files are deleted — verified by `packages/hub/test/files.test.ts`
 15. [verified] The Library lists every sent and directly added file by kind, name, folder and page, never an unsent upload, and a Library-only file is never swept; deleting removes it everywhere while its message stays; archiving hides it; forwarding copies it to a bot that wakes with it; folders hold files, bots and groups, and are deleted with or without their files; bots list, copy and keep files only in their folders; the space used is reported; folders and their files travel in an export — verified by `packages/hub/test/library.test.ts`
 16. [verified] A folder task goes to the team's own group (made once, used again), the folder's group or one bot's chat; the lead hands work out, each step moves, the files kept are the task's and the lead's last answer is the result; a second task, a folder with no team and an empty task are refused; a task is cancelled with its runs, fails when the lead fails, and task.progress needs a task — verified by `packages/hub/test/folder-tasks.test.ts`
+17. [verified] A conversation follows the hub's default until it or the default changes; the bot answering the user is told to keep it short and a handed-off task never is; with the backstage on, the cards, the colleagues' answers and the lead's waiting words are backstage and the chat shows the question and the report, the list of chats never showing the work; with it off, everything shows — verified by `packages/hub/test/backstage.test.ts`
 
 ## Maturity
 

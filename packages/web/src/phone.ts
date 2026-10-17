@@ -58,7 +58,8 @@ export function phoneNote(event: StreamEvent, ctx: PhoneContext, t: T): PhoneNot
         conversationId,
       };
     }
-    if (item.kind !== "message" || item.author.type !== "bot" || !item.text.trim() || muted(conversationId)) return null;
+    // The team's work backstage never rings the phone: only the answer does (change 0082).
+    if (item.kind !== "message" || item.author.type !== "bot" || !item.text.trim() || item.backstage || muted(conversationId)) return null;
     const group = ctx.conversations[conversationId];
     const who = name(item.author.id);
     return {

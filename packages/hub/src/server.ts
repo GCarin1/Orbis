@@ -71,6 +71,7 @@ import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
 import { FilesService } from "./files/service.js";
 import { LibraryService } from "./library/service.js";
+import { ConversationStyle } from "./collab/backstage.js";
 import { FolderTasks } from "./library/tasks.js";
 import { InitiativeService } from "./initiative/service.js";
 import { HealthService } from "./health/service.js";
@@ -115,6 +116,7 @@ export interface Hub extends HubContext {
   squads: SquadService;
   files: FilesService;
   library: LibraryService;
+  conversationStyle: ConversationStyle;
   folderTasks: FolderTasks;
   initiative: InitiativeService;
   health: HealthService;
@@ -337,6 +339,10 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   tools.register(collaboration.handoffTool());
   engine.addHooks(collaboration.hooks());
   engine.addContextSection((bot) => collaboration.contextSection(bot));
+  const conversationStyle = new ConversationStyle(ctx);
+  collaboration.backstageIn = (id) => conversationStyle.backstageIn(id);
+  engine.setBackstage((run) => conversationStyle.isBackstage(run));
+  engine.addContextSection((bot, run) => conversationStyle.contextSection(bot, run));
   engine.addContextSection((bot) => computer.contextSection(bot));
   engine.addContextSection((bot, run) => conversationService.contextSection(bot, run));
   const memoryService = new MemoryService(ctx);
@@ -426,6 +432,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await squads.routes(app);
   await files.routes(app);
   await library.routes(app);
+  await conversationStyle.routes(app);
   await folderTasks.routes(app);
   await initiative.routes(app);
   await health.routes(app);
@@ -476,6 +483,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
     squads,
     files,
     library,
+    conversationStyle,
     folderTasks,
     initiative,
     health,

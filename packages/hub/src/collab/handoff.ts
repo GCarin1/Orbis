@@ -21,6 +21,9 @@ export const MAX_MENTION_WAKES = 2;
 const label = (bot: Bot) => `@${bot.handle} (${bot.name}${bot.role ? `, ${bot.role}` : ""})`;
 
 export class Collaboration {
+  /** Whether handoff cards in a conversation stay backstage (change 0082); set by the conversation style. */
+  backstageIn: (conversationId: string) => boolean = () => false;
+
   constructor(private readonly hub: HubContext) {}
 
   private get maxDepth(): number {
@@ -155,6 +158,7 @@ export class Collaboration {
       text: `@${ctx.bot.handle} → @${receiver.handle}: ${work.task}`,
       runId: ctx.run.id,
       card: { type: "handoff", state: "queued", data },
+      backstage: this.backstageIn(conversationId),
     });
     const run = this.hub.engine.enqueue({
       botId: receiver.id,

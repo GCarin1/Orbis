@@ -26,7 +26,8 @@ export class Timeline {
     const at = item.createdAt ?? nowIso();
     const saved = this.items.insert({ ...item, id: item.id ?? newId("itm"), createdAt: at });
     this.conversations.touch(saved.conversationId, at);
-    if (saved.kind === "message") {
+    // The team's work backstage moves nothing in the list of chats (change 0082).
+    if (saved.kind === "message" && !saved.backstage) {
       const conv = this.conversations.get(saved.conversationId);
       // A message of files alone shows them in the list of chats.
       const preview = saved.text || (saved.files?.length ? `📎 ${saved.files.map((f) => f.name).join(", ")}` : "");
@@ -41,8 +42,9 @@ export class Timeline {
   }
 
   /** Post a system event line (run failed, depth exceeded, routine paused, ...). */
-  event(conversationId: string, type: string, text: string, data: Record<string, unknown> = {}, runId: string | null = null): TimelineItem {
+  event(conversationId: string, type: string, text: string, data: Record<string, unknown> = {}, runId: string | null = null, backstage = false): TimelineItem {
     return this.post({
+      backstage,
       conversationId,
       kind: "event",
       author: { type: "system", id: null },

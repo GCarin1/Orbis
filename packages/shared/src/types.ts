@@ -282,8 +282,20 @@ export interface Conversation {
   photo: string | null;
   /** A muted group raises no "reported back" notification and shows its unread count in gray. */
   muted: boolean;
+  /** How its bots answer the user: short and human, or detailed; null follows the hub's default (change 0082). */
+  replyStyle?: ReplyStyle | null;
+  /** Whether the team's work (handoffs and their answers) stays backstage; null follows the hub's default. */
+  backstage?: boolean | null;
   createdAt: string;
   lastItemAt: string | null;
+}
+
+export type ReplyStyle = "chat" | "detailed";
+
+/** What new conversations follow (Settings), and what a conversation with no choice of its own uses. */
+export interface ConversationDefaults {
+  replyStyle: ReplyStyle;
+  backstage: boolean;
 }
 
 /** A code that pairs a phone with the hub (the Android app trades it for the token, once). */
@@ -458,6 +470,8 @@ export interface TimelineItem {
   files?: ConversationFile[];
   reactions: Record<string, number>;
   runId: string | null;
+  /** Team work the user does not need to read: shown only when they open the backstage (change 0082). */
+  backstage?: boolean;
   card?: Card;
   event?: TimelineEvent;
   createdAt: string;

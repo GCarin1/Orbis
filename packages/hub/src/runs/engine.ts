@@ -141,8 +141,22 @@ export class RunEngine {
   private redactor: (<T>(botId: string, value: T) => T) | null = null;
   private stopped = false;
   private imageSource: ((run: Run) => BrainImage[]) | null = null;
+  private backstageOf: ((run: Run) => boolean) | null = null;
 
   constructor(private readonly d: EngineDeps) {}
+
+  /** Whether what a run posts stays backstage (the team's work, change 0082). */
+  setBackstage(decide: (run: Run) => boolean): void {
+    this.backstageOf = decide;
+  }
+
+  private backstage(run: Run): boolean {
+    try {
+      return this.backstageOf?.(run) ?? false;
+    } catch {
+      return false;
+    }
+  }
 
   /** Where a run's images come from (the files of the message that started it, change 0081). */
   setImageSource(source: (run: Run) => BrainImage[]): void {
@@ -541,6 +555,7 @@ export class RunEngine {
         text: reply!,
         parentId: req.replyParentId ?? null,
         runId,
+        backstage: this.backstage(run),
       });
     }
     this.finish(runId, "done", { reply });
@@ -551,7 +566,7 @@ export class RunEngine {
   private failRun(run: Run, bot: Bot, error: string, quiet = false): void {
     this.finish(run.id, "failed", { error });
     if (run.conversationId && !quiet) {
-      this.d.timeline.event(run.conversationId, "run.failed", `${bot.name}: ${error}`, { runId: run.id, botId: bot.id, error }, run.id);
+      this.d.timeline.event(run.conversationId, "run.failed", `${bot.name}: ${error}`, { runId: run.id, botId: bot.id, error }, run.id, this.backstage(run));
     }
     this.settleBotState(bot.id, "blocked");
     this.notifyFinished(run.id, bot);

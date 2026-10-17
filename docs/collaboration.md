@@ -201,3 +201,30 @@ belongs to one bot or to the whole team.
   `orbis memory add --team "Staging lives at qa.acme.test"`,
   `orbis memory edit mem_… "new text"`, `orbis memory rm mem_…`, or the REST
   routes below. Edits and deletes take effect in the next search.
+
+## How a conversation talks: short replies and the backstage
+
+Each conversation has two switches in its ⋮ menu. The defaults for new
+conversations are in **Settings → Conversations** (change 0082).
+
+- **Short replies** (Chat) or **Detailed replies**.
+  - Chat: the bot answering you writes the way a person texts. It sends one
+    to three short sentences, with no headings or lists unless you ask, and
+    offers more detail when there is more.
+  - Detailed: full answers.
+  - Work handed to a colleague is always done in full, whatever the switch.
+- **Team work backstage**: when a bot hands tasks to others, the chat does
+  not show their talk.
+  - While they work, one line says *"Beatriz is talking with Marina and
+    Helena…"*.
+  - Then comes her answer, with **🧠 See backstage** under it. It opens what
+    each one was asked and answered.
+  - Approvals, secret requests, files and the final answer always show in
+    the chat.
+  - Backstage work never notifies the phone, is never read aloud and never
+    marks the chat unread.
+
+New conversations start short and backstage. Conversations that existed
+before keep their earlier behaviour until you change them. With a hub linked
+as a device, run `supabase/migrations/0006_conversation_style.sql` in the
+Supabase SQL Editor.

@@ -5022,3 +5022,70 @@ label.pick-row.on {
   text-decoration: none;
   margin-right: 2px;
 }
+
+/* The team's work backstage (change 0082-backstage) */
+.backstage-link {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 0.8em;
+  cursor: pointer;
+}
+.backstage-link:hover {
+  color: var(--text);
+}
+.team-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+.backstage-dialog {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.backstage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.backstage-head h2 {
+  margin: 0;
+}
+.backstage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.backstage-message {
+  background: var(--panel-2);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.backstage-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.settings-section .radio-group {
+  border: 0;
+  padding: 0;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-section .check-row {
+  display: block;
+  margin: 8px 0;
+}

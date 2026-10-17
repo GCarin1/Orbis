@@ -1,6 +1,6 @@
 // Client state, fed by REST loads and the event stream.
 import { create } from "zustand";
-import type { Approval, ApprovalDecision, Bot, ComputerStatus, Conversation, DraftFields, HiringRound, McpServer, Routine, RoutineApproval, RoutineTrigger, Run, SkillInfo, SquadsView, Step, StreamEvent, TimelineItem } from "@orbis/shared";
+import type { Approval, ApprovalDecision, Bot, ComputerStatus, Conversation, DraftFields, HiringRound, McpServer, Routine, RoutineApproval, RoutineTrigger, Run, SkillInfo, SquadsView, Step, StreamEvent, TimelineItem, ConversationDefaults, ReplyStyle } from "@orbis/shared";
 import { Api } from "./api.js";
 
 export type RunView = Omit<Run, "steps"> & { steps: Step[] };
@@ -32,6 +32,10 @@ interface State {
   squads: SquadsView | null;
   /** Goes up each time the Library changes (change 0079), so its screen loads again. */
   libraryVersion: number;
+  /** What a conversation with no choice of its own follows (change 0082). */
+  conversationDefaults: ConversationDefaults;
+  setConversationStyle(conversationId: string, patch: { replyStyle?: ReplyStyle | null; backstage?: boolean | null }): Promise<void>;
+  setConversationDefaults(patch: Partial<ConversationDefaults>): Promise<void>;
   error: string | null;
 
   setApi(api: Api | null): void;
@@ -146,6 +150,7 @@ export const useStore = create<State>((set, get) => ({
   hiring: null,
   squads: null,
   libraryVersion: 0,
+  conversationDefaults: { replyStyle: "chat", backstage: true },
   error: null,
 
   setApi: (api) => set({ api }),
@@ -193,6 +198,21 @@ export const useStore = create<State>((set, get) => ({
     if (!api) return;
     const list = await api.get<Conversation[]>("/api/v1/conversations");
     set((s) => ({ conversations: { ...s.conversations, ...Object.fromEntries(list.map((c) => [c.id, c])) } }));
+    const defaults = await api.get<ConversationDefaults>("/api/v1/conversations/defaults").catch(() => null);
+    if (defaults) set({ conversationDefaults: defaults });
+  },
+
+  async setConversationStyle(conversationId, patch) {
+    const api = get().api;
+    if (!api) return;
+    const saved = await api.request<Conversation>("PUT", `/api/v1/conversations/${conversationId}/style`, patch);
+    set((s) => ({ conversations: { ...s.conversations, [saved.id]: saved } }));
+  },
+
+  async setConversationDefaults(patch) {
+    const api = get().api;
+    if (!api) return;
+    set({ conversationDefaults: await api.request<ConversationDefaults>("PUT", "/api/v1/conversations/defaults", patch) });
   },
 
   async openConversation(conversationId) {
@@ -554,6 +574,8 @@ export const useStore = create<State>((set, get) => ({
         set((s) => {
           const next: Partial<State> = {};
           if (s.items[conversationId]) next.items = { ...s.items, [conversationId]: upsertItem(s.items[conversationId], item) };
+          // The team's work backstage moves neither the list nor the unread dot (change 0082).
+          if (item.backstage) return next;
           // The conversation's latest activity drives the list order and the unread dot.
           const known = s.conversations[conversationId];
           if (known && (!known.lastItemAt || item.createdAt > known.lastItemAt)) {
@@ -590,3 +612,8 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 }));
+
+/** How a conversation talks: its own choice, else the hub's default (change 0082). */
+export function styleOf(conversation: Conversation | undefined, defaults: ConversationDefaults): ConversationDefaults {
+  return { replyStyle: conversation?.replyStyle ?? defaults.replyStyle, backstage: conversation?.backstage ?? defaults.backstage };
+}

@@ -142,6 +142,8 @@ export class ConversationService {
       description: "",
       photo: null,
       muted: false,
+      replyStyle: null,
+      backstage: null,
       createdAt: nowIso(),
       lastItemAt: null,
     };
@@ -199,6 +201,8 @@ export class ConversationService {
       description: input.description?.trim() ?? "",
       photo: null,
       muted: false,
+      replyStyle: null,
+      backstage: null,
       createdAt: nowIso(),
       lastItemAt: null,
     };

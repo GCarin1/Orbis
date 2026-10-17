@@ -283,6 +283,14 @@ export const FileIcon = (p: P) => (
   </Icon>
 );
 
+/** The backstage: layers, one behind the other (change 0082). */
+export const BackstageIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="m12 3 9 5-9 5-9-5z" />
+    <path d="m3 13 9 5 9-5" />
+  </Icon>
+);
+
 /** The Library: pictures stacked (change 0079). */
 export const LibraryIcon = (p: P) => (
   <Icon {...p}>

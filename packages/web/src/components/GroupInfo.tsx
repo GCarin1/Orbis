@@ -3,13 +3,15 @@
 // (full screen on a phone) with its photo, name, description, members, links and search; and the dialog
 // that adds members.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { Bot, Conversation, ConversationLink, TimelineItem } from "@orbis/shared";
+import type { Bot, Conversation, ConversationLink, ReplyStyle, TimelineItem } from "@orbis/shared";
+import { styleOf, useStore } from "../store.js";
 import type { Api } from "../api.js";
 import { useLang, useT } from "../i18n.js";
 import { Avatar, StateLabel } from "./Avatar.js";
 import { GroupFace } from "./Sidebar.js";
 import {
   BackIcon,
+  BackstageIcon,
   BellIcon,
   BellOffIcon,
   CameraIcon,
@@ -36,6 +38,8 @@ export interface GroupActions {
   info(view?: GroupView): void;
   add(): void;
   mute(muted: boolean): Promise<void>;
+  /** How the group talks: short or detailed answers, the team's work backstage or in the chat (change 0082). */
+  style(patch: { replyStyle?: ReplyStyle; backstage?: boolean }): Promise<void>;
   exportChat(): Promise<void>;
   clear(): Promise<void>;
   remove(): Promise<void>;
@@ -103,6 +107,7 @@ export function GroupMenu({ group, actions }: { group: Conversation; actions: Gr
   const [open, setOpen] = useState<false | "main" | "more">(false);
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(open !== false, ref, () => setOpen(false));
+  const way = styleOf(group, useStore((s) => s.conversationDefaults));
   const item = (label: string, icon: ReactNode, run: () => void, extra?: { danger?: boolean; more?: boolean }) => (
     <button
       type="button"
@@ -139,6 +144,10 @@ export function GroupMenu({ group, actions }: { group: Conversation; actions: Gr
           {item(t("files.title"), <PaperclipIcon size={16} />, () => actions.info("files"))}
           {item(t("group.links"), <LinkIcon size={16} />, () => actions.info("links"))}
           {item(t("group.search"), <SearchIcon size={16} />, () => actions.info("search"))}
+          {item(way.replyStyle === "chat" ? t("style.toDetailed") : t("style.toChat"), <ChatIcon size={16} />, () =>
+            void actions.style({ replyStyle: way.replyStyle === "chat" ? "detailed" : "chat" }),
+          )}
+          {item(way.backstage ? t("style.backstageOff") : t("style.backstageOn"), <BackstageIcon size={16} />, () => void actions.style({ backstage: !way.backstage }))}
           {item(
             group.muted ? t("group.unmute") : t("group.mute"),
             group.muted ? <BellIcon size={16} /> : <BellOffIcon size={16} />,

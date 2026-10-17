@@ -104,6 +104,83 @@ export function workingBots(activeRuns: RunView[], bots: Record<string, Bot>): W
   });
 }
 
+/** The backstage items of each chain (one request of the user and everything it set off), in order. */
+export function backstageByChain(items: TimelineItem[], runs: Record<string, RunView>): Map<string, TimelineItem[]> {
+  const chains = new Map<string, TimelineItem[]>();
+  for (const item of items) {
+    if (!item.backstage) continue;
+    const chain = item.runId ? runs[item.runId]?.chainId : undefined;
+    if (!chain) continue;
+    chains.set(chain, [...(chains.get(chain) ?? []), item]);
+  }
+  return chains;
+}
+
+/**
+ * The runs of tasks handed out backstage, by the bot that handed them out: "Beatriz is talking with Marina and
+ * Helena…" instead of a bubble per bot (change 0082).
+ */
+export function teamAtWork(activeRuns: RunView[], byId: Map<string, TimelineItem>): { runIds: Set<string>; leads: Array<{ leadId: string; botIds: string[] }> } {
+  const runIds = new Set<string>();
+  const byLead = new Map<string, string[]>();
+  for (const run of activeRuns) {
+    if (run.trigger.type !== "handoff" || !run.trigger.ref) continue;
+    const card = byId.get(run.trigger.ref);
+    if (!card?.backstage || card.card?.type !== "handoff") continue;
+    const lead = (card.card.data as { from?: string }).from;
+    if (!lead) continue;
+    runIds.add(run.id);
+    const list = byLead.get(lead) ?? [];
+    if (!list.includes(run.botId)) list.push(run.botId);
+    byLead.set(lead, list);
+  }
+  return { runIds, leads: [...byLead.entries()].map(([leadId, botIds]) => ({ leadId, botIds })) };
+}
+
+/** A chain's backstage, opened: who handed what to whom, and what each answered. */
+function BackstageDialog({ items, bots, onClose }: { items: TimelineItem[]; bots: Record<string, Bot>; onClose(): void }) {
+  const t = useT();
+  const team = useMemo(() => Object.values(bots), [bots]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="dialog-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="dialog backstage-dialog" role="dialog" aria-label={t("backstage.title")} data-testid="backstage">
+        <header className="backstage-head">
+          <h2>🧠 {t("backstage.title")}</h2>
+          <button type="button" className="icon-btn" aria-label={t("computer.close")} onClick={onClose}>
+            ✕
+          </button>
+        </header>
+        <p className="muted small">{t("backstage.help")}</p>
+        <ol className="backstage-list">
+          {items.map((item) => {
+            const bot = item.author.type === "bot" ? bots[item.author.id ?? ""] : undefined;
+            return (
+              <li key={item.id} className={`backstage-item kind-${item.kind}`}>
+                {item.kind === "card" ? (
+                  <CardView item={item} bot={bot} bots={bots} />
+                ) : (
+                  <div className="backstage-message">
+                    <div className="backstage-who">
+                      {bot && <Avatar bot={bot} size={22} />}
+                      <strong style={bot ? { color: bot.avatar.color } : undefined}>{bot?.name ?? t("backstage.system")}</strong>
+                    </div>
+                    <Markdown text={item.text} bots={team} />
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 /** The joins and leaves of a group, and a new lead, shown with the bot's face. */
 const MEMBER_EVENTS = new Set(["member.joined", "member.left", "member.absent", "group.lead"]);
 /** A group's name, description or photo changing, said as a chat app says it. */
@@ -112,7 +189,7 @@ const GROUP_EVENTS = new Set(["group.renamed", "group.described", "group.photo"]
 const FLASH_MS = 2500;
 
 export function Timeline({
-  items,
+  items: allItems,
   bots,
   runs,
   activeRuns,
@@ -155,11 +232,29 @@ export function Timeline({
     setFlash(focus.itemId);
     const timer = setTimeout(() => setFlash(null), FLASH_MS);
     return () => clearTimeout(timer);
-  }, [focus?.itemId, focus?.at, items.length]);
-  const byId = new Map(items.map((i) => [i.id, i]));
+  }, [focus?.itemId, focus?.at, allItems.length]);
+  // The team's work stays backstage (change 0082): out of the chat, a tap away from the answer it led to.
+  const items = useMemo(() => allItems.filter((i) => !i.backstage), [allItems]);
+  const byId = new Map(allItems.map((i) => [i.id, i]));
+  const backstage = useMemo(() => backstageByChain(allItems, runs), [allItems, runs]);
+  const [openBackstage, setOpenBackstage] = useState<TimelineItem[] | null>(null);
+  /** The last message the chat shows of each chain that has backstage work: where "See backstage" goes. */
+  const backstageAnchor = useMemo(() => {
+    const anchors = new Map<string, string>();
+    for (const item of items) {
+      const chain = item.runId ? runs[item.runId]?.chainId : undefined;
+      if (chain && backstage.has(chain) && item.kind === "message" && item.author.type === "bot") anchors.set(chain, item.id);
+    }
+    return anchors;
+  }, [items, runs, backstage]);
   // Stable while the bots do not change, so memoized messages are not parsed again on every step.
   const team = useMemo(() => Object.values(bots), [bots]);
-  const working = workingBots(activeRuns, bots);
+  // Bots working on a task handed to them backstage show as one line under the bot that handed it out.
+  const teamWork = teamAtWork(activeRuns, byId);
+  const working = workingBots(
+    activeRuns.filter((r) => !teamWork.runIds.has(r.id)),
+    bots,
+  );
   const conversationId = items[0]?.conversationId ?? activeRuns[0]?.conversationId;
   const lastItem = items.at(-1);
   const stepCount = activeRuns.reduce((n, r) => n + r.steps.length, 0);
@@ -397,11 +492,38 @@ export function Timeline({
                   </button>
                 )}
                 {run && <Steps run={run} />}
+                {run && backstageAnchor.get(run.chainId) === item.id && (
+                  <button type="button" className="backstage-link" data-testid="backstage-link" onClick={() => setOpenBackstage(backstage.get(run.chainId) ?? [])}>
+                    🧠 {t("backstage.open", { count: new Set((backstage.get(run.chainId) ?? []).map((i) => i.author.id).filter(Boolean)).size })}
+                  </button>
+                )}
               </div>
             </div>,
           );
         }
         return <Fragment key={item.id}>{parts}</Fragment>;
+      })}
+      {teamWork.leads.map(({ leadId, botIds }) => {
+        const lead = bots[leadId];
+        const others = botIds.map((id) => bots[id]?.name ?? "bot");
+        const text = t("backstage.working", { name: lead?.name ?? "bot", others: listOf(others, t("backstage.and")) });
+        return (
+          <div key={`team-${leadId}`} className="message message-bot working team-working" data-testid="team-working">
+            <span className="message-face">{lead && <Avatar bot={lead} size={28} />}</span>
+            <div className="bubble-wrap">
+              <div className="working-row">
+                <div className="bubble typing team-note" aria-label={text}>
+                  <span>{text}</span>
+                  <span className="dots" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       })}
       {working.map(({ bot, run, queued, runIds }) => {
         const name = bot?.name ?? "bot";
@@ -457,6 +579,13 @@ export function Timeline({
         </button>
       )}
       <div ref={end} />
+      {openBackstage && <BackstageDialog items={openBackstage} bots={bots} onClose={() => setOpenBackstage(null)} />}
     </div>
   );
+}
+
+/** "Marina", "Marina and Helena", "Marina, Helena and Lucas". */
+function listOf(names: string[], and: string): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} ${and} ${names.at(-1)}`;
 }
