@@ -81,6 +81,15 @@ async function seed(base, token) {
   const gone = await api("POST", `/api/v1/conversations/${conv.id}/files`, Buffer.from("apagado"), { "x-file-name": encodeURIComponent("rascunho.txt"), "content-type": "text/plain" });
   await api("POST", `/api/v1/conversations/${conv.id}/messages`, { text: "", attachments: [gone.id] });
   await api("DELETE", `/api/v1/library/files/${gone.id}`);
+  // A group in the new default (short replies, the team backstage): Ana hands a part to Bia and answers once.
+  const ask = `/tool team.handoff {"to":"bia","task":"/reply Revisei as três legendas: a segunda é a mais forte, a terceira ficou longa demais"}\n/reply Vou ver com a Bia e já te falo`;
+  await api("POST", `/api/v1/conversations/${group.id}/messages`, { text: ask });
+  for (let i = 0; i < 100; i++) {
+    const page = await api("GET", `/api/v1/conversations/${group.id}/items?limit=50`);
+    const items = Array.isArray(page) ? page : page.items;
+    if (items.some((it) => it.kind === "message" && it.author?.type === "bot" && !it.backstage)) break;
+    await new Promise((r) => setTimeout(r, 200));
+  }
   return { folder, group, ana };
 }
 
@@ -91,6 +100,9 @@ const screens = [
   { feature: "biblioteca", name: "selecao", steps: async (page) => { await page.getByRole("button", { name: "Selecionar" }).click(); await page.getByRole("button", { name: "Selecionar praia.png" }).click(); await page.getByRole("toolbar").waitFor(); } },
   { feature: "pastas", name: "pasta-com-tarefa", steps: async (page) => { await page.getByRole("tab", { name: "Pastas" }).click(); await page.locator("button.library-folder", { hasText: "Evento" }).click(); await page.getByTestId("task-card").waitFor(); } },
   { feature: "pastas", name: "equipe", steps: async (page) => { await page.getByRole("tab", { name: "Pastas" }).click(); await page.locator("button.library-folder", { hasText: "Evento" }).click(); await page.locator("button.btn-sm", { hasText: "Equipe" }).first().click(); await page.getByRole("dialog", { name: "Quem trabalha nesta pasta" }).waitFor(); } },
+  { feature: "bastidores", name: "conversa", steps: async (page) => { await page.locator('[data-testid^="conv-"]', { hasText: "Marketing" }).click(); await page.getByTestId("backstage-link").waitFor({ timeout: 15_000 }); } },
+  { feature: "bastidores", name: "dialogo", steps: async (page) => { await page.locator('[data-testid^="conv-"]', { hasText: "Marketing" }).click(); await page.getByTestId("backstage-link").click(); await page.getByTestId("backstage").waitFor(); } },
+  { feature: "bastidores", name: "configuracoes", steps: async (page) => { await page.getByRole("button", { name: /Configurações/ }).click(); await page.getByRole("tab", { name: "Conversas" }).click(); await page.locator("#settings-panel-conversations").waitFor(); } },
 ];
 
 async function main() {
