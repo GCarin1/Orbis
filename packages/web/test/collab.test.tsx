@@ -6,6 +6,7 @@ import { NewGroupDialog } from "../src/components/Groups.js";
 import { Sidebar } from "../src/components/Sidebar.js";
 import { Timeline } from "../src/components/Timeline.js";
 import { useLang } from "../src/i18n.js";
+import { useStore } from "../src/store.js";
 import { bot } from "./fixtures.js";
 
 const ana = bot({ name: "Ana", role: "QA" });
@@ -92,6 +93,17 @@ describe("handoff cards", () => {
     expect(within(view).getByText("deploy 42")).toBeTruthy();
     expect(view.textContent).toContain("The answer goes back to @ana.");
     expect(screen.getByTestId("reply-to").textContent).toContain("replying to @ana → @bob: check the logs");
+  });
+
+  it("says when the squad works on it in its own chat, and opens that chat", () => {
+    const selectGroup = vi.fn(async () => undefined);
+    useStore.setState({ selectGroup });
+    const squad = { ...card, card: { ...card.card!, data: { ...card.card!.data, roomId: "cnv_growth", squad: "Growth" } } };
+    render(<Timeline items={[squad]} bots={bots} runs={{}} activeRuns={[]} />);
+    const view = screen.getByTestId("handoff-card");
+    expect(view.textContent).toContain("The squad Growth works on it in its chat.");
+    fireEvent.click(within(view).getByRole("button", { name: "Open the squad's chat" }));
+    expect(selectGroup).toHaveBeenCalledWith("cnv_growth");
   });
 
   it("shows the error of a failed handoff", () => {

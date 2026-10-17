@@ -72,6 +72,16 @@ export class SquadService {
     return { squads: this.list(), roomId: roomId && this.hub.repos.conversations.get(roomId) ? roomId : null };
   }
 
+  /** The squad's chat a bot works in: its squad's group, when the bot is in it (change 0083). */
+  roomOf(bot: Bot): { conversationId: string; name: string; handle: string } | null {
+    if (!bot.squadId) return null;
+    const row = get(this.hub.db, "SELECT * FROM squads WHERE id = ?", bot.squadId);
+    if (!row?.conversation_id) return null;
+    const conversation = this.hub.repos.conversations.get(row.conversation_id as string);
+    if (!conversation?.members.includes(bot.id)) return null;
+    return { conversationId: conversation.id, name: row.name as string, handle: row.handle as string };
+  }
+
   /** `@handle` of each squad names its representative. */
   aliases(): Record<string, string> {
     return Object.fromEntries(this.list().flatMap((s) => (s.representativeId ? [[s.handle, s.representativeId]] : [])));
@@ -381,13 +391,16 @@ export class SquadService {
     }
     lines.push(
       "How squads work:",
-      "- To ask another squad for something, hand it off to the squad's handle with team.handoff (to @handle): its representative receives it and shares it in the squad. In a group, @handle wakes the representative.",
+      "- To talk to a squad or give it work, use team.handoff to the squad's @handle (its representative) or to one of its bots: your message goes to the squad's own chat, the squad works on it there, and the answer comes back to you here. Never bring a squad's bots into the conversation you are in to work; a squad works in its chat.",
     );
     if (represents)
       lines.push(
-        "- You speak for your squad: work from your manager and from other squads comes to you; split it among your squad with team.handoff and report back.",
+        "- You speak for your squad: work from your manager and from other squads comes to you in your squad's chat; split it there among your squad with team.handoff, and your answer when their parts are back goes to whoever asked.",
       );
-    if (manages.length) lines.push("- Delegate to the squads you manage through their representatives.");
+    if (manages.length)
+      lines.push(
+        "- You lead the squads you manage: when the user asks you to talk to a squad or give it orders, hand it to the squad (team.handoff to its @handle) so it works in its own chat, then tell the user what it answered.",
+      );
     lines.push('- Any bot\'s enabled routines can be called with routine.call; routine.list with bot "all" lists them.');
     return lines.join("\n");
   }

@@ -19,10 +19,32 @@ const COLLEAGUES_SHOWN = 30;
 export const MAX_MENTION_WAKES = 2;
 
 const label = (bot: Bot) => `@${bot.handle} (${bot.name}${bot.role ? `, ${bot.role}` : ""})`;
+/** How far up a chain of reports the handoff a run answers is looked for. */
+const MAX_REPORT_HOPS = 20;
+
+/** A squad's chat, where the work handed to the squad or one of its bots takes place (change 0083). */
+export interface SquadRoom {
+  conversationId: string;
+  name: string;
+  handle: string;
+}
+
+/** What a handed-off bot reads: who asked, the task, and where its answer goes. */
+export function taskInput(from: Bot, task: string, context: string | null): string {
+  return [
+    `${label(from)} handed you this task:`,
+    task,
+    ...(context ? ["", `Context from @${from.handle}:`, context] : []),
+    "",
+    `Do it and answer with the result; @${from.handle} gets your answer.`,
+  ].join("\n");
+}
 
 export class Collaboration {
   /** Whether handoff cards in a conversation stay backstage (change 0082); set by the conversation style. */
   backstageIn: (conversationId: string) => boolean = () => false;
+  /** The squad's chat a bot works in, or null (set by the squads, change 0083). */
+  squadRoomOf: (bot: Bot) => SquadRoom | null = () => null;
 
   constructor(private readonly hub: HubContext) {}
 
@@ -87,7 +109,8 @@ export class Collaboration {
       name: "team.handoff",
       description:
         "Delegate a task to another bot of the team (by @handle, or by @role when one bot holds it), for example one of your reports. " +
-        "It works on it asynchronously and answers in this conversation. Hand off several independent tasks in the same turn: once every " +
+        "It works on it asynchronously and answers in this conversation; a squad (by its @handle) or a bot of a squad you are not talking " +
+        "with here gets the task in the squad's own chat and works on it there with its squad. Hand off several independent tasks in the same turn: once every " +
         "one of them has ended you get all their answers together as a new task, so you can tell the user the outcome. Do not wait for them. " +
         "Set returnResult to false only for work you do not need to hear back about.",
       input: Type.Object({
@@ -104,17 +127,18 @@ export class Collaboration {
       handler: async (input: { to: string; task: string; context?: string; returnResult?: boolean }, ctx) => {
         const receiver = this.receiverOf(input.to);
         if (typeof receiver === "string") return { output: receiver, isError: true };
-        const task = [
-          `${label(ctx.bot)} handed you this task:`,
-          input.task,
-          ...(input.context ? ["", `Context from @${ctx.bot.handle}:`, input.context] : []),
-          "",
-          `Do it and answer with the result; @${ctx.bot.handle} gets your answer.`,
-        ].join("\n");
-        const handed = this.delegate(ctx, receiver, { task: input.task, context: input.context ?? null, input: task, returnResult: input.returnResult ?? true });
+        const task = taskInput(ctx.bot, input.task, input.context ?? null);
+        const handed = this.delegate(ctx, receiver, {
+          task: input.task,
+          context: input.context ?? null,
+          input: task,
+          returnResult: input.returnResult ?? true,
+          viaSquad: true,
+        });
         if (typeof handed === "string") return { output: handed, isError: true };
-        return `Handed off to @${receiver.handle} (handoff ${handed.card.id}). It answers in this conversation${
-          handed.returnResult ? "; you get its answer back, with the rest of this turn's handoffs, as a new task" : ""
+        const where = handed.room ? `in the chat of the squad ${handed.room.name} (@${handed.room.handle}), with its squad` : "in this conversation";
+        return `Handed off to @${receiver.handle} (handoff ${handed.card.id}). It works on it ${where}${
+          handed.returnResult ? "; you get its answer back here, with the rest of this turn's handoffs, as a new task" : ""
         }. Do not wait for it.`;
       },
     };
@@ -125,12 +149,16 @@ export class Collaboration {
    * runs `input` there, and with `returnResult` its answer comes back in the sender's report. Returns why
    * not, as a message for the sender, when the work cannot go (itself, no conversation, the chain limits).
    * `team.handoff` and `routine.call` both hand work over this way.
+   *
+   * With `viaSquad`, work for a bot of a squad that is not in the run's conversation goes to the squad's chat
+   * (change 0083): the sender's message is posted there, the receiver works there with its squad, and the card
+   * stays in the sender's conversation, where the answer comes back.
    */
   delegate(
     ctx: { bot: Bot; run: Run },
     receiver: Bot,
-    work: { task: string; context: string | null; input: string; returnResult: boolean },
-  ): string | { card: TimelineItem; run: Run; returnResult: boolean } {
+    work: { task: string; context: string | null; input: string; returnResult: boolean; viaSquad?: boolean },
+  ): string | { card: TimelineItem; run: Run; returnResult: boolean; room: SquadRoom | null } {
     if (receiver.id === ctx.bot.id) return "you cannot hand a task to yourself";
     const conversationId = ctx.run.conversationId;
     if (!conversationId) return "a handoff needs a conversation to be shown in";
@@ -143,6 +171,7 @@ export class Collaboration {
       this.chainExhausted(conversationId, ctx.bot, receiver);
       return "this request already set off as many bot runs as allowed; finish the work yourself or ask the user";
     }
+    const room = work.viaSquad ? this.roomFor(receiver, conversationId) : null;
     const data: HandoffCardData = {
       from: ctx.bot.id,
       to: receiver.id,
@@ -150,28 +179,54 @@ export class Collaboration {
       context: work.context,
       returnResult: work.returnResult,
       receiverRunId: null,
+      ...(room ? { roomId: room.conversationId, squad: room.name } : {}),
     };
     const card = this.hub.timeline.post({
       conversationId,
       kind: "card",
       author: { type: "bot", id: ctx.bot.id },
-      text: `@${ctx.bot.handle} → @${receiver.handle}: ${work.task}`,
+      text: `@${ctx.bot.handle} → @${receiver.handle}${room ? ` (squad ${room.name})` : ""}: ${work.task}`,
       runId: ctx.run.id,
       card: { type: "handoff", state: "queued", data },
       backstage: this.backstageIn(conversationId),
     });
+    // In the squad's chat the task is the sender's message to the squad, and the receiver answers under it.
+    const message = room
+      ? this.hub.timeline.post({
+          conversationId: room.conversationId,
+          kind: "message",
+          author: { type: "bot", id: ctx.bot.id },
+          text: [`@${receiver.handle} ${work.task}`, ...(work.context ? ["", work.context] : [])].join("\n"),
+        })
+      : null;
+    const input = room
+      ? [
+          work.input,
+          "",
+          `You are in the chat of your squad ${room.name} (@${room.handle}), where @${ctx.bot.handle} brought this task. Share parts of it ` +
+            `with your squadmates with team.handoff when that helps; your final answer here goes back to @${ctx.bot.handle}.`,
+        ].join("\n")
+      : work.input;
     const run = this.hub.engine.enqueue({
       botId: receiver.id,
-      conversationId,
+      conversationId: room?.conversationId ?? conversationId,
       trigger: { type: "handoff", ref: card.id },
-      input: work.input,
+      input,
       depth,
       chainId: ctx.run.chainId,
-      replyParentId: card.id,
+      replyParentId: message?.id ?? card.id,
       includeHistory: false,
     });
-    this.setCard(card.id, "queued", { receiverRunId: run.id });
-    return { card, run, returnResult: data.returnResult };
+    this.setCard(card.id, "queued", { receiverRunId: run.id, ...(message ? { roomItemId: message.id } : {}) });
+    return { card, run, returnResult: data.returnResult, room };
+  }
+
+  /** The squad's chat where work for `receiver` goes: when it is in a squad and not in this conversation. */
+  private roomFor(receiver: Bot, conversationId: string): SquadRoom | null {
+    const room = this.squadRoomOf(receiver);
+    if (!room || room.conversationId === conversationId) return null;
+    if (this.hub.repos.conversations.get(conversationId)?.members.includes(receiver.id)) return null; // it is here already
+    return room;
   }
 
   /** Who this bot works with, for its context (specs/bots: hierarchy). */
@@ -214,7 +269,7 @@ export class Collaboration {
         if (card && card.data.receiverRunId === run.id) this.setCard(card.item.id, "running", {});
       },
       onEnded: (run) => {
-        if (run.trigger.type === "handoff") this.handoffEnded(run);
+        if (run.trigger.type === "handoff" || run.trigger.type === "report") this.workEnded(run);
         if (run.status !== "done") return;
         if (run.trigger.type === "report") this.reported(run);
         else this.mentionsInReply(run);
@@ -222,12 +277,36 @@ export class Collaboration {
     };
   }
 
-  private handoffEnded(run: Run): void {
-    const card = this.card(run.trigger.ref);
-    if (!card || card.data.receiverRunId !== run.id) return;
-    if (run.status === "done") this.setCard(card.item.id, "done", {});
+  /**
+   * A run that answers a handoff ended: the handed-off run itself, or a report back to it. A receiver that
+   * handed parts of the work on (to its squad, say) answers with its report once they are back, so its card
+   * ends then, with that report as the answer (change 0083).
+   */
+  private workEnded(run: Run, force = false): void {
+    const origin = this.handoffRunOf(run);
+    if (!origin) return;
+    const card = this.card(origin.trigger.ref);
+    if (!card || card.data.receiverRunId !== origin.id || TERMINAL.has(card.item.card!.state)) return;
+    if (run.status === "done" && !force && this.awaitsAnswers(run)) return; // its report ends the handoff
+    if (run.status === "done") this.setCard(card.item.id, "done", { answerRunId: run.id });
     else this.setCard(card.item.id, "failed", { error: run.error ?? run.status });
     this.reportWhenAllEnded(card.item, run);
+  }
+
+  /** The handed-off run a run answers for: itself, or the run it reports back to, up the chain of reports. */
+  private handoffRunOf(run: Run): Run | null {
+    let at: Run | undefined = run;
+    for (let hop = 0; at && hop < MAX_REPORT_HOPS; hop++) {
+      if (at.trigger.type === "handoff") return at;
+      if (at.trigger.type !== "report" || !at.trigger.ref) return null;
+      at = this.hub.repos.runs.get(at.trigger.ref);
+    }
+    return null;
+  }
+
+  /** Whether a run handed work on and waits for the answers (a report back to it follows). */
+  private awaitsAnswers(run: Run): boolean {
+    return this.hub.repos.items.cardsOf(run.id).some((i) => i.card?.type === "handoff" && (i.card.data as HandoffCardData).returnResult);
   }
 
   /**
@@ -248,6 +327,9 @@ export class Collaboration {
     const depth = lastRun.depth + 1;
     if (depth > this.maxDepth) {
       this.depthExceeded(cardItem.conversationId, this.hub.repos.bots.get(first.to) ?? sender, sender, depth);
+      // No report comes: a handoff the sender was answering ends with what it said.
+      const senderRun = this.hub.repos.runs.get(senderRunId);
+      if (senderRun) this.workEnded(senderRun, true);
       return;
     }
     const parts = batch.map((item) => {
@@ -255,7 +337,8 @@ export class Collaboration {
       const receiver = this.hub.repos.bots.get(data.to);
       const who = receiver ? label(receiver) : "a removed bot";
       if (item.card!.state === "failed") return `${who} — "${data.task}" — failed: ${data.error ?? "no answer"}`;
-      const answer = data.receiverRunId ? (this.hub.repos.runs.get(data.receiverRunId)?.reply ?? "") : "";
+      const answerRunId = (data.answerRunId as string | undefined) ?? data.receiverRunId;
+      const answer = answerRunId ? (this.hub.repos.runs.get(answerRunId)?.reply ?? "") : "";
       return `${who} — "${data.task}" — done. Answer:\n${answer}`;
     });
     const input = [
@@ -334,6 +417,11 @@ export class Collaboration {
       return;
     }
     for (const target of targets) {
+      // A squad's bot from outside this conversation gets the call in its squad's chat, as work handed to it.
+      if (!conv.members.includes(target.id) && this.squadRoomOf(target)) {
+        this.delegate({ bot: author, run }, target, { task: run.reply, context: null, input: taskInput(author, run.reply, null), returnResult: true, viaSquad: true });
+        continue;
+      }
       if (this.chainRunsLeft(run.chainId) <= 0) {
         this.chainExhausted(conv.id, author, target);
         return;

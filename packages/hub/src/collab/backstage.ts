@@ -44,11 +44,15 @@ export class ConversationStyle {
 
   /**
    * Whether what a run posts stays backstage: a handed-off task's own work, and the words of a bot that handed
-   * work out and waits for the answers (its report follows, in the chat).
+   * work out and waits for the answers (its report follows, in the chat). A task brought to a squad's chat from
+   * another conversation is that chat's own work, in sight (change 0083).
    */
   isBackstage(run: Run): boolean {
     if (!run.conversationId || !this.of(run.conversationId).backstage) return false;
-    if (run.trigger.type === "handoff") return true;
+    if (run.trigger.type === "handoff") {
+      const card = run.trigger.ref ? this.hub.repos.items.get(run.trigger.ref) : undefined;
+      if (!card || card.conversationId === run.conversationId) return true;
+    }
     return this.hub.repos.items.cardsOf(run.id).some((i) => i.card?.type === "handoff" && (i.card.data as { returnResult?: boolean }).returnResult === true);
   }
 

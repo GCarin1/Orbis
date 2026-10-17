@@ -2238,6 +2238,19 @@ body.resizing-panel {
 .card-handoff details {
   font-size: 12.5px;
 }
+.card-handoff .handoff-squad {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+}
+.card-handoff .link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--link);
+  cursor: pointer;
+  text-decoration: underline;
+}
 
 /* ── voice (change 0016) ─────────────────────────────────────────────────── */
 .composer-mic.on {

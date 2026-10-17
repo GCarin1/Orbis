@@ -391,6 +391,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const hiring = new HiringService(ctx, { skills: skillService.store, vault: secrets.vault, mcp, usage });
   const squads = new SquadService(ctx);
   mentionAliases.register(() => squads.aliases());
+  collaboration.squadRoomOf = (bot) => squads.roomOf(bot);
   engine.addContextSection((bot) => squads.contextSection(bot));
   for (const tool of squads.tools()) tools.register(tool);
   botService.onDelete((bot) => squads.botDeleted(bot));

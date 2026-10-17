@@ -427,7 +427,12 @@ export class ConversationService {
       retryOf: old.id,
       skill: resolved.kind === "skill" ? resolved.skill : null,
       triggerItemId: old.trigger.type === "message" || old.trigger.type === "mention" ? (old.trigger.ref ?? null) : null,
-      replyParentId: handoff ? handoff.id : old.trigger.type === "message" ? (trigger?.parentId ?? null) : null,
+      // A squad's task answers under the sender's message in the squad's chat (change 0083), else under its card.
+      replyParentId: handoff
+        ? ((handoff.card!.data as { roomItemId?: string }).roomItemId ?? handoff.id)
+        : old.trigger.type === "message"
+          ? (trigger?.parentId ?? null)
+          : null,
       includeHistory: old.trigger.type !== "handoff",
     });
     if (handoff && (handoff.card!.data as { receiverRunId?: string }).receiverRunId === old.id) {

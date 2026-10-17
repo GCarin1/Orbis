@@ -5,8 +5,8 @@
 **Implementation:** verified — `packages/hub/src/squads/service.ts` (squads, members, representative, manager, who reports to whom, the squads' groups and room, `@squad` aliases, the squads' context, `team.list_squads`, routes), `routine.call` in `packages/hub/src/routines/service.ts`, the web app's Squads screen (`SquadsScreen.tsx`), the sidebar's squad filter and the squad in a bot's settings
 **Realizes:** SC12
 **Depends on:** bots, conversations, handoff, routines
-**Last updated:** 2026-10-03
-**Version:** 0.1.0
+**Last updated:** 2026-10-17
+**Version:** 0.2.0
 
 ## Purpose
 
@@ -38,6 +38,7 @@ any bot can call another bot's routines.
   - Each squad has a card with its handle and description and these controls: rename, description and color; manager; representative (☆); remove a member; add a bot (one in another squad says where it is); the squad's chat; delete.
   - The screen also offers the bots in no squad, one manager for every squad, the room, and a new squad with its bots.
 - The web app shall filter the sidebar by squad (all, a squad's bots and chat, the bots in no squad), remembered in the browser, and mark each bot and squad chat with its squad's color; a bot's settings offer its squad.
+- The system shall tell a squad's manager to give a squad its work in the squad's own chat (team.handoff to its @handle) and a representative that its squad's work comes to it in its squad's chat.
 
 ### Event-driven
 
@@ -46,12 +47,15 @@ any bot can call another bot's routines.
 - When a squad changes, the system shall tell every client (`squads.updated`) and each bot whose squad or manager changed (`bot.updated`).
 - When a bot is deleted, the system shall take it out of its squad and of the squads it manages, and set the team again without it.
 - When a squad is deleted, the system shall leave its bots in no squad and its chat as a plain group.
+- When a bot hands work with team.handoff to a squad's @handle or to a bot of a squad that is not in the conversation the bot works in, the system shall post the sender's message in the squad's chat, run the receiver there with the task (its squad's parts handed there too), keep the handoff card in the sender's conversation with the squad named and a link to its chat, and bring the receiver's final answer back there.
+- When a bot's reply names with @ a bot of a squad that is not in the conversation, the system shall hand the reply to that bot in its squad's chat, as work whose answer comes back, instead of calling it into the conversation.
 
 ### Unwanted-behavior (must-not)
 
 - The system shall not make a squad's member its manager, a non-member its representative, nor a squad's manager its member.
 - The system shall not keep a change that would make a bot report to itself; the change is undone and the reason named.
 - The system shall not let a bot's settings change who it reports to while it is in a squad: the squad decides.
+- The system shall not bring a squad's bot into another conversation to work on a handoff, unless it is already a member of that conversation.
 
 ## Acceptance criteria
 
@@ -79,6 +83,8 @@ any bot can call another bot's routines.
    Verified by `packages/web/test/squads.test.tsx`.
 7. [verified] In a real browser, the user creates two squads with their bots, picks a representative, sets one manager for both, sees the org chart, filters the sidebar, opens the squad's chat and the room, and `@data` there wakes Data's representative — verified by `tests/e2e/squads.test.ts`.
 8. [verified] At 390 px, the Squads screen and a new squad's form scroll nothing sideways — verified by `tests/e2e/phone-layout.test.ts`.
+9. [verified] A manager's handoff to @growth posts its message in Growth's chat; the representative works there, hands a part to its squadmate there, and its report — not its words while it waited — closes the manager's card and reaches the manager's report; the squad's bots never speak in the manager's conversation. A reply naming @bia goes to Bia in the squad's chat. A group Bia is in keeps her work there. The manager and the representative are told how — verified by `packages/hub/test/squad-delegation.test.ts`
+10. [verified] A handoff card names the squad that works on it and opens its chat — verified by `packages/web/test/collab.test.tsx`
 
 ## Maturity
 

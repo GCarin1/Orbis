@@ -39,6 +39,19 @@ manager with its squads, their representatives and their size.
 - **`@squad`.** In a group, `@data` wakes Data's representative. A bot hands
   work to another squad with `team.handoff` to `@data`. The representative
   receives it, splits it among its squad and reports back.
+- **A squad works in its own chat.** Work handed to a squad (`@data`) or to
+  one of its bots goes to the squad's chat, not to the conversation it came
+  from:
+  - the sender's message is posted in the squad's chat, and the squad works
+    there: the representative shares parts with its squadmates there;
+  - the sender's conversation keeps the handoff card, which names the squad
+    and opens its chat;
+  - the squad's final answer (the representative's, once its squad's parts are
+    back) comes back to the sender, who tells you.
+
+  Ask your chief "tell the Data squad to…" and the order reaches the squad's
+  chat. A bot naming `@ana` of another squad in its reply sends it there too.
+  A bot already in the conversation (a group with both) works there.
 - **What bots know.** Each bot is told:
   - its squad, its representative and its manager;
   - its squadmates;

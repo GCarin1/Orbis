@@ -84,3 +84,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-14 — 0080-folder-tasks — folder-tasks (specs: conversations MODIFIED, web-app MODIFIED)
 - 2026-10-14 — 0081-vision — vision (specs: agent-runtimes MODIFIED)
 - 2026-10-17 — 0082-backstage — backstage (specs: conversations MODIFIED, web-app MODIFIED)
+- 2026-10-17 — 0083-delegating-squad-happens-chat — Delegating to a squad happens in the squad's chat: the task is posted there, the squad works there, and the answer comes back to the sender (specs: handoff MODIFIED, squads MODIFIED)

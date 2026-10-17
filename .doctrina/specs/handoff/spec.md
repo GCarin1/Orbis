@@ -6,7 +6,7 @@
 **Realizes:** SC4
 **Depends on:** conversations, agent-runtimes, tool-gateway
 **Last updated:** 2026-09-27
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 ## Purpose
 
@@ -38,6 +38,7 @@ themselves forever.
 - When a `report` run finishes with a reply, the system shall post the reply as a new message of the conversation, not a thread reply, and broadcast a `bot.report` event naming the bot, the conversation, the item and the text.
 - When the hub starts with handoff cards still `queued` or `running`, the system shall set them to `failed`, as their runs did not survive the restart.
 - When a bot hands off to a squad's handle (`@growth`) that no bot's handle or role matches, the system shall hand the task to that squad's representative.
+- When a handed-off bot hands parts of its task on and waits for them, the system shall end its handoff with its report once those parts are back, and give that report to the sender as its answer; a report that cannot start (the chain's depth) ends it with what the bot said.
 
 ### Unwanted-behavior (must-not)
 
@@ -60,6 +61,7 @@ themselves forever.
 8. [verified] A handoff card left running by a stopped hub reads failed after the restart — verified by `packages/hub/test/chat-audit.test.ts`.
 9. [verified] A handoff to `@growth` reaches Growth's representative — verified by `packages/hub/test/squads.test.ts`.
 10. [verified] A bot's team context says that in a group the members it names with @ are all called, and elsewhere one or two colleagues at most — verified by `packages/hub/test/routines.test.ts`
+11. [verified] A representative that splits a manager's task with its squad answers the manager with its report, after its squad's parts — verified by `packages/hub/test/squad-delegation.test.ts`
 
 ## Maturity
 

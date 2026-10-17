@@ -166,6 +166,14 @@ export function HandoffCard({ item, bots }: { item: TimelineItem; bots: Record<s
             <p className="handoff-context">{data.context}</p>
           </details>
         )}
+        {typeof data.roomId === "string" && (
+          <p className="handoff-squad">
+            🛡 {t("handoff.inSquad", { squad: String(data.squad ?? "") })}{" "}
+            <button type="button" className="link-btn" onClick={() => void useStore.getState().selectGroup(data.roomId as string)}>
+              {t("handoff.openSquad")}
+            </button>
+          </p>
+        )}
         {data.returnResult && <p className="handoff-returns">{t("handoff.returns", { from: name(from) })}</p>}
         {state === "failed" && data.error && <p className="error">{data.error}</p>}
       </div>

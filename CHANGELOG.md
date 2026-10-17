@@ -21,6 +21,7 @@ change that delivered it.
 
 ### Added
 
+- **A squad works in its own chat** (change 0083-delegating-squad-happens-chat): work a bot hands to a squad (`@growth`) or to one of its bots now goes to the squad's chat. The sender's message is posted there, the squad works there, and the squad's final answer comes back to the sender. Before, the squad's bot was called into the sender's conversation. The handoff card names the squad and opens its chat, and a reply naming a squad's bot with @ hands the work to it there.
 - **Short replies and the backstage** (change 0082-backstage): each conversation chooses short, human replies (Chat) or detailed ones.
   - It also chooses whether the team's work stays backstage. When a bot hands tasks to others, the chat shows one line ("Beatriz is talking with Marina and Helena…") and then only her answer, with **See backstage** to open the rest.
   - New conversations start short and backstage. Conversations that existed before keep their earlier behaviour until changed. Both switches are in the ⋮ menu, and the default is in Settings → Conversations.

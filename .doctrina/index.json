@@ -149,7 +149,7 @@
         "id": "handoff",
         "path": ".doctrina/specs/handoff/spec.md",
         "status": "active",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — handoff tool (to a handle, or a role one bot holds), cards, threaded replies, one report back per delegating run, bot.report events, bot-to-bot mentions in any conversation, depth limit",
         "realizes": [
@@ -276,8 +276,8 @@
         "id": "squads",
         "path": ".doctrina/specs/squads/spec.md",
         "status": "active",
-        "version": "0.1.0",
-        "last_updated": "2026-10-03",
+        "version": "0.2.0",
+        "last_updated": "2026-10-17",
         "implementation": "verified — `packages/hub/src/squads/service.ts` (squads, members, representative, manager, who reports to whom, the squads' groups and room, `@squad` aliases, the squads' context, `team.list_squads`, routes), `routine.call` in `packages/hub/src/routines/service.ts`, the web app's Squads screen (`SquadsScreen.tsx`), the sidebar's squad filter and the squad in a bot's settings",
         "realizes": [
           "SC12"
@@ -2356,6 +2356,24 @@
           }
         ],
         "lane": "product (uncertain)"
+      },
+      {
+        "id": "0083-delegating-squad-happens-chat",
+        "title": "Delegating to a squad happens in the squad's chat: the task is posted there, the squad works there, and the answer comes back to the sender",
+        "path": ".doctrina/changes/archive/2026-10-17-0083-delegating-squad-happens-chat",
+        "status": "applied",
+        "applied": "2026-10-17",
+        "specs_affected": [
+          {
+            "capability": "handoff",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "squads",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [
