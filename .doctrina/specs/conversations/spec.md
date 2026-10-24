@@ -6,7 +6,7 @@
 **Realizes:** SC1, SC4
 **Depends on:** bots
 **Last updated:** 2026-09-27
-**Version:** 0.15.0
+**Version:** 0.15.1
 
 ## Purpose
 
@@ -37,6 +37,7 @@ timeline changes.
 - The system shall keep Library folders, each with the bots and the groups that work on it, and give bots `library.list`, `library.get` and `library.save`, which see and write only the folders given to the bot or to a group it is a member of.
 - The system shall report how much space the files take, by kind, the largest ones, and the free space of the disk that holds the data.
 - The system shall keep, for each conversation, how its bots answer the user — `chat` (one to three short sentences, warm and plain, no headings or lists unless asked) or `detailed` — and whether the team's work stays backstage; a conversation with no choice of its own follows the hub's default (chat, backstage), conversations made before keep detailed and in the chat, and a handed-off task is always worked in full.
+- The system shall end the task of every run in a chat-style conversation (but a handed-off task) with a reminder to answer in one to three short sentences, so a conversation of long answers turns short.
 
 ### Event-driven
 
@@ -65,6 +66,7 @@ timeline changes.
 - When a run of a task's chain starts or ends, or a bot calls task.progress, the system shall move that bot's step (pending, doing, done, failed) and announce the task; when no run of the chain is left, the task shall end with the lead's last answer as its result, and the files its runs keep in the folder shall be marked as the task's.
 - When the team's work stays backstage, the system shall mark as backstage the handoff cards, the answers of the bots the work was handed to (and their failures), and the words of a bot that handed work out and waits for the answers; the user's message, the final answer (the report), approvals, secret requests and files stay in the chat, and backstage items move neither the list of chats nor its last message.
 - When the user sends a PDF, the system shall read it once — its text (OCR for scanned pages), each of its first 20 pages as an image, a page bigger than A3 also cut into tiles with its lettering read by OCR — and before a bot starts on the message put that next to the PDF in the bot's workspace and tell the bot what is there, with the text as untrusted content; `files.get` gives the same reading, and brains that see also get the pages as images.
+- When the user switches a conversation's reply style or its backstage, the system shall post the change in the conversation, for the user to see and its bots to read.
 
 ### State-driven
 
@@ -105,6 +107,7 @@ timeline changes.
 16. [verified] A folder task goes to the team's own group (made once, used again), the folder's group or one bot's chat; the lead hands work out, each step moves, the files kept are the task's and the lead's last answer is the result; a second task, a folder with no team and an empty task are refused; a task is cancelled with its runs, fails when the lead fails, and task.progress needs a task — verified by `packages/hub/test/folder-tasks.test.ts`
 17. [verified] A conversation follows the hub's default until it or the default changes; the bot answering the user is told to keep it short and a handed-off task never is; with the backstage on, the cards, the colleagues' answers and the lead's waiting words are backstage and the chat shows the question and the report, the list of chats never showing the work; with it off, everything shows — verified by `packages/hub/test/backstage.test.ts`
 18. [verified] An A0 sheet sent by the user is read once into its text, its page image and 15 tiles, placed next to the PDF in the bot's workspace and described in its task with the text; a brain that sees gets the page; `files.get` gives the same reading; a hub without poppler says so — verified by `packages/hub/test/documents.test.ts`
+19. [verified] A switch posts its event (none when nothing changes), and a chat-style run's task ends with the reminder, never a handed-off one's — verified by `packages/hub/test/backstage.test.ts`
 
 ## Maturity
 

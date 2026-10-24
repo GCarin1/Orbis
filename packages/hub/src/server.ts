@@ -343,6 +343,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   collaboration.backstageIn = (id) => conversationStyle.backstageIn(id);
   engine.setBackstage((run) => conversationStyle.isBackstage(run));
   engine.addContextSection((bot, run) => conversationStyle.contextSection(bot, run));
+  engine.addPreparer((run) => conversationStyle.taskNote(run));
   engine.addContextSection((bot) => computer.contextSection(bot));
   engine.addContextSection((bot, run) => conversationService.contextSection(bot, run));
   const memoryService = new MemoryService(ctx);

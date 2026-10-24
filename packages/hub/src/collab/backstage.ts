@@ -83,6 +83,17 @@ export class ConversationStyle {
     return lines.length ? lines.join("\n") : null;
   }
 
+  /**
+   * The reminder at the end of the task, where a bot heeds it most, in a conversation the user switched to short
+   * replies: its long answers so far otherwise keep their length whatever the system text says (change 0085). A
+   * conversation short from its start (the default) has no such history and needs only the system text.
+   */
+  async taskNote(run: Run): Promise<string | null> {
+    if (!run.conversationId || run.trigger.type === "handoff") return null;
+    if (this.hub.repos.conversations.get(run.conversationId)?.replyStyle !== "chat") return null;
+    return "(This conversation is set to short replies: answer in one to three short sentences, like a person texting — no headings, lists or tables unless the user asks. Earlier long answers here do not change that.)";
+  }
+
   async routes(root: FastifyInstance): Promise<void> {
     const app = root.withTypeProvider<TypeBoxTypeProvider>();
     const Style = Type.Union([Type.Literal("chat"), Type.Literal("detailed")]);
@@ -110,11 +121,32 @@ export class ConversationStyle {
       },
       async (req) => {
         const conv = this.hub.conversationService.get(req.params.id);
+        const before = this.of(conv.id);
         if (req.body.replyStyle !== undefined) exec(this.hub.db, "UPDATE conversations SET reply_style = ? WHERE id = ?", req.body.replyStyle as ReplyStyle | null, conv.id);
         if (req.body.backstage !== undefined)
           exec(this.hub.db, "UPDATE conversations SET backstage = ? WHERE id = ?", req.body.backstage === null ? null : req.body.backstage ? 1 : 0, conv.id);
         const saved = this.hub.conversationService.get(conv.id);
         this.hub.bus.publish("conversation.updated", { conversation: saved });
+        // The chat shows the change, and the bots read it in their history (change 0085).
+        const after = this.of(conv.id);
+        if (after.replyStyle !== before.replyStyle) {
+          this.hub.timeline.event(
+            conv.id,
+            "conversation.style",
+            after.replyStyle === "chat"
+              ? "The user switched this conversation to short replies: one to three sentences, like a chat."
+              : "The user switched this conversation to detailed replies.",
+            { replyStyle: after.replyStyle },
+          );
+        }
+        if (after.backstage !== before.backstage) {
+          this.hub.timeline.event(
+            conv.id,
+            "conversation.backstage",
+            after.backstage ? "The team's work in this conversation now stays backstage." : "The team's work in this conversation now shows in the chat.",
+            { backstage: after.backstage },
+          );
+        }
         return saved;
       },
     );

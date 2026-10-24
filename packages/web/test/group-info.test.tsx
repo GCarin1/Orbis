@@ -80,16 +80,21 @@ describe("the group's header and ⋮ menu", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((m) => m.textContent),
-    ).toEqual(["Add members", "Group info", "Files", "Group links", "Search", "Detailed replies", "Show the team's work in the chat", "Mute notifications", "More"]);
+    ).toEqual(["Add members", "Group info", "Files", "Group links", "Search", "Mute notifications", "More"]);
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Add members" }));
     expect(a.add).toHaveBeenCalled();
-    // How the group talks (change 0082): it follows the hub's default (short, backstage) until changed here.
+    // How the group talks (changes 0082, 0085): switches that show the state — the hub's default, short and backstage.
     fireEvent.click(screen.getByRole("button", { name: "More options" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Detailed replies" }));
+    const short = screen.getByRole("menuitemcheckbox", { name: "Short replies" });
+    const backstage = screen.getByRole("menuitemcheckbox", { name: "Team work backstage" });
+    expect([short.getAttribute("aria-checked"), backstage.getAttribute("aria-checked")]).toEqual(["true", "true"]);
+    fireEvent.click(short);
     expect(a.style).toHaveBeenCalledWith({ replyStyle: "detailed" });
-    fireEvent.click(screen.getByRole("button", { name: "More options" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Show the team's work in the chat" }));
+    fireEvent.click(backstage);
     expect(a.style).toHaveBeenCalledWith({ backstage: false });
+    // The menu stays open, so the switch is seen to flip.
+    expect(screen.getByRole("menu")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "More options" }));
     expect(screen.queryByRole("menu")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "More options" }));

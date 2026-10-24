@@ -86,3 +86,5 @@ One line per archived change, newest last. Appended by
 - 2026-10-17 — 0082-backstage — backstage (specs: conversations MODIFIED, web-app MODIFIED)
 - 2026-10-17 — 0083-delegating-squad-happens-chat — Delegating to a squad happens in the squad's chat: the task is posted there, the squad works there, and the answer comes back to the sender (specs: handoff MODIFIED, squads MODIFIED)
 - 2026-10-17 — 0084-document-reading — document-reading (specs: conversations MODIFIED, web-app MODIFIED)
+- 2026-10-24 — 0078-other-account-message — other-account-message (specs: hub-api MODIFIED)
+- 2026-10-24 — 0085-reply-style-feedback — reply-style-feedback (specs: conversations MODIFIED, web-app MODIFIED)

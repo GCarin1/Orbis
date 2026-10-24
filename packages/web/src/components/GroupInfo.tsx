@@ -2,6 +2,7 @@
 // its photo, name and members; the ⋮ menu with every group option; the group's info — a flyout on the right
 // (full screen on a phone) with its photo, name, description, members, links and search; and the dialog
 // that adds members.
+import { MenuSwitch } from "./MenuSwitch.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Bot, Conversation, ConversationLink, ReplyStyle, TimelineItem } from "@orbis/shared";
 import { styleOf, useStore } from "../store.js";
@@ -144,10 +145,8 @@ export function GroupMenu({ group, actions }: { group: Conversation; actions: Gr
           {item(t("files.title"), <PaperclipIcon size={16} />, () => actions.info("files"))}
           {item(t("group.links"), <LinkIcon size={16} />, () => actions.info("links"))}
           {item(t("group.search"), <SearchIcon size={16} />, () => actions.info("search"))}
-          {item(way.replyStyle === "chat" ? t("style.toDetailed") : t("style.toChat"), <ChatIcon size={16} />, () =>
-            void actions.style({ replyStyle: way.replyStyle === "chat" ? "detailed" : "chat" }),
-          )}
-          {item(way.backstage ? t("style.backstageOff") : t("style.backstageOn"), <BackstageIcon size={16} />, () => void actions.style({ backstage: !way.backstage }))}
+          <MenuSwitch label={t("style.short")} icon={<ChatIcon size={16} />} on={way.replyStyle === "chat"} onToggle={() => void actions.style({ replyStyle: way.replyStyle === "chat" ? "detailed" : "chat" })} />
+          <MenuSwitch label={t("style.backstage")} icon={<BackstageIcon size={16} />} on={way.backstage} onToggle={() => void actions.style({ backstage: !way.backstage })} />
           {item(
             group.muted ? t("group.unmute") : t("group.mute"),
             group.muted ? <BellIcon size={16} /> : <BellOffIcon size={16} />,

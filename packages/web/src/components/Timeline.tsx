@@ -185,6 +185,7 @@ function BackstageDialog({ items, bots, onClose }: { items: TimelineItem[]; bots
 const MEMBER_EVENTS = new Set(["member.joined", "member.left", "member.absent", "group.lead"]);
 /** A group's name, description or photo changing, said as a chat app says it. */
 const GROUP_EVENTS = new Set(["group.renamed", "group.described", "group.photo"]);
+const STYLE_EVENTS = new Set(["conversation.style", "conversation.backstage"]);
 /** How long a message found by a search stays marked. */
 const FLASH_MS = 2500;
 
@@ -379,6 +380,17 @@ export function Timeline({
           parts.push(
             <div key="item" className={`event event-member event-${item.event.type}`} data-testid="event">
               <Avatar bot={face} size={20} />
+              <span>{text}</span>
+            </div>,
+          );
+        } else if (item.kind === "event" && item.event && STYLE_EVENTS.has(item.event.type)) {
+          const data = item.event.data as { replyStyle?: string; backstage?: boolean };
+          const text =
+            item.event.type === "conversation.style"
+              ? t(data.replyStyle === "chat" ? "style.event.chat" : "style.event.detailed")
+              : t(data.backstage ? "style.event.backstageOn" : "style.event.backstageOff");
+          parts.push(
+            <div key="item" className={`event event-style`} data-testid="event">
               <span>{text}</span>
             </div>,
           );

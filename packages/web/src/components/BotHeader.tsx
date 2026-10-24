@@ -1,5 +1,6 @@
 // A bot's conversation header, as a chat app shows a contact (specs/web-app): its face, name and what it
 // does now; a tap on them opens its details, and the ⋮ menu holds the rest, like a group's.
+import { MenuSwitch } from "./MenuSwitch.js";
 import { useRef, useState, type ReactNode } from "react";
 import type { Bot, Conversation, ReplyStyle } from "@orbis/shared";
 import { styleOf, useStore } from "../store.js";
@@ -94,11 +95,10 @@ export function BotHeader({
                 () => onPanel("computer"),
                 computerRunning ? <span className="menu-note">{t("computer.on")}</span> : null,
               )}
-              {onStyle &&
-                item(way.replyStyle === "chat" ? t("style.toDetailed") : t("style.toChat"), <ChatIcon size={16} />, () =>
-                  onStyle({ replyStyle: way.replyStyle === "chat" ? "detailed" : "chat" }),
-                )}
-              {onStyle && item(way.backstage ? t("style.backstageOff") : t("style.backstageOn"), <BackstageIcon size={16} />, () => onStyle({ backstage: !way.backstage }))}
+              {onStyle && (
+                <MenuSwitch label={t("style.short")} icon={<ChatIcon size={16} />} on={way.replyStyle === "chat"} onToggle={() => onStyle({ replyStyle: way.replyStyle === "chat" ? "detailed" : "chat" })} />
+              )}
+              {onStyle && <MenuSwitch label={t("style.backstage")} icon={<BackstageIcon size={16} />} on={way.backstage} onToggle={() => onStyle({ backstage: !way.backstage })} />}
               {item(t("settings.open"), <GearIcon size={16} />, () => onPanel("settings"))}
               {item(t("conv.clear"), <EraseIcon size={16} />, onClear)}
             </div>

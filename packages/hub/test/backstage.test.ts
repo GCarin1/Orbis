@@ -41,6 +41,35 @@ describe("a conversation's way of talking", () => {
     expect((await t.api("PUT", `/api/v1/conversations/${conv.id}/style`, { replyStyle: "loud" })).status).toBe(400);
   });
 
+  it("records a switch in the chat and reminds every chat-style answer, at the end of its task, to stay short (change 0085)", async () => {
+    t = await testHub();
+    const ana = await createBot(t, { name: "Ana" });
+    const conv = (await t.api("GET", `/api/v1/bots/${ana.id}/conversation`)).body as Conversation;
+    const events = async () =>
+      ((await t!.api("GET", `/api/v1/conversations/${conv.id}/items`)).body as TimelineItem[]).filter((i) => i.event?.type.startsWith("conversation."));
+    // Short from its start (the default): the system text says so, no reminder needed.
+    const run0 = { conversationId: conv.id, trigger: { type: "message", ref: null } } as unknown as Run;
+    expect(await t.hub.conversationStyle.taskNote(run0)).toBeNull();
+    // Choosing what it already follows changes nothing, and says nothing.
+    await t.api("PUT", `/api/v1/conversations/${conv.id}/style`, { replyStyle: "chat" });
+    expect(await events()).toEqual([]);
+    await t.api("PUT", `/api/v1/conversations/${conv.id}/style`, { replyStyle: "detailed", backstage: false });
+    expect((await events()).map((e) => [e.event!.type, e.event!.data])).toEqual([
+      ["conversation.style", { replyStyle: "detailed" }],
+      ["conversation.backstage", { backstage: false }],
+    ]);
+    const run = (type: Run["trigger"]["type"]) => ({ conversationId: conv.id, trigger: { type, ref: null } }) as unknown as Run;
+    expect(await t.hub.conversationStyle.taskNote(run("message"))).toBeNull();
+    await t.api("PUT", `/api/v1/conversations/${conv.id}/style`, { replyStyle: "chat" });
+    expect(await t.hub.conversationStyle.taskNote(run("message"))).toMatch(/one to three short sentences/);
+    expect(await t.hub.conversationStyle.taskNote(run("report"))).toMatch(/short replies/);
+    expect(await t.hub.conversationStyle.taskNote(run("handoff"))).toBeNull();
+    // The reminder reaches the brain, after the user's words (the mock brain echoes its task).
+    const posted = await t.api("POST", `/api/v1/conversations/${conv.id}/messages`, { text: "como está a obra?" });
+    const done = await t.hub.engine.wait(posted.body.runs[0].id);
+    expect(done.reply).toMatch(/como está a obra\?\n+\(This conversation is set to short replies/);
+  });
+
   it("tells the bot that answers the user to keep it short, and never a handed-off task", async () => {
     t = await testHub();
     const ana = await createBot(t, { name: "Ana" });

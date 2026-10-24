@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.43.1
+**Version:** 0.43.2
 
 ## Purpose
 
@@ -71,6 +71,7 @@ run's steps.
 - The web app shall show, in a Library folder, its task board: a box to give the team a task (asking for a team first), the running task with each bot's step and note, a way to open the team's conversation and to cancel, and, once it ends, the result and the files kept, with the earlier tasks on demand — live as the hub announces each move.
 - The web app shall hide backstage items from the chat, show one line "<lead> is talking with <colleagues>…" while the colleagues work, put "See backstage" under the answer they led to (opening what each one handed out and answered), never notify, read aloud or mark unread for backstage work, and offer in each conversation's ⋮ menu short or detailed replies and the team's work backstage or in the chat, with the default in Settings → Conversations.
 - The web app shall fold an approval card the user already answered to one line (who asked, the tool, the answer), its input shown on a tap.
+- The web app shall show a conversation's short replies and team backstage as on/off switches in its ⋮ menu, which stays open to show the switch flip, and show each switch as a line in the chat.
 
 ### Event-driven
 
@@ -199,6 +200,7 @@ run's steps.
 67. [verified] In a browser, a folder's board starts a task, shows each bot's step, opens the team's conversation, cancels the task and shows it cancelled, shows a result with its files, and asks for a team first — verified by `packages/web/test/folder-task.test.tsx`
 68. [verified] In a browser, a chain with backstage work shows only the question and the answer, opens the backstage with every colleague's answer, shows the lead talking with the colleagues while they work, never notifies the phone of backstage work, and the group menu switches the replies and the backstage — verified by `packages/web/test/backstage.test.tsx`, `packages/web/test/group-info.test.tsx`
 69. [verified] An answered approval shows as one folded line without its buttons — verified by `packages/web/test/timeline.test.tsx`
+70. [verified] The group menu shows both switches checked by default and flips them; the chat shows "You turned on short replies" and the backstage line — verified by `packages/web/test/group-info.test.tsx`, `packages/web/test/backstage.test.tsx`
 
 ## Maturity
 

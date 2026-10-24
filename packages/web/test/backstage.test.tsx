@@ -97,3 +97,21 @@ describe("the team's work backstage", () => {
     expect(note(false)).not.toBeNull();
   });
 });
+
+describe("switching how a conversation talks (change 0085)", () => {
+  beforeEach(() => {
+    act(() => useLang.getState().setLang("pt-BR"));
+  });
+
+  it("shows the switch in the chat, so the user sees it took", () => {
+    const events = [
+      item({ id: "e1", kind: "event", author: { type: "system", id: null }, text: "switched", event: { type: "conversation.style", data: { replyStyle: "chat" } } }),
+      item({ id: "e2", kind: "event", author: { type: "system", id: null }, text: "switched", event: { type: "conversation.backstage", data: { backstage: false } } }),
+    ];
+    render(<Timeline items={events} bots={bots} runs={{}} activeRuns={[]} />);
+    expect(screen.getAllByTestId("event").map((e) => e.textContent)).toEqual([
+      "Você ativou as respostas curtas: os bots respondem em poucas frases",
+      "O trabalho da equipe agora aparece no chat",
+    ]);
+  });
+});

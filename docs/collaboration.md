@@ -204,6 +204,8 @@ belongs to one bot or to the whole team.
 
 ## How a conversation talks: short replies and the backstage
 
+In a conversation's ⋮ menu, **Short replies** and **Team work backstage** are switches that show whether each is on. Switching one writes a line in the chat, so you can see it took (change 0085).
+
 Each conversation has two switches in its ⋮ menu. The defaults for new
 conversations are in **Settings → Conversations** (change 0082).
 
