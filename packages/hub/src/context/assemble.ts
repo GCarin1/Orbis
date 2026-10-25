@@ -54,6 +54,8 @@ export interface AssembleOptions {
   excludeItemId?: string | null;
   /** What the bot's resumed CLI session already holds (see AssembledContext.since). */
   since?: SessionMark | null;
+  /** The user's timezone, for the date and time the bot reads (change 0086). */
+  zone?: string | null;
 }
 
 export interface AssembleDeps {
@@ -62,17 +64,25 @@ export interface AssembleDeps {
   bots: BotsRepo;
 }
 
-/** Today's date where the hub runs, e.g. "Friday, 2 October 2026 (America/Sao_Paulo)". */
-export function todayText(now: Date = new Date()): string {
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const date = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: zone });
-  return `${date} (${zone})`;
+/**
+ * Today's date where the user is (their device's timezone, change 0086), else where the hub runs, e.g.
+ * "Friday, 2 October 2026 (America/Sao_Paulo)".
+ */
+export function todayText(now: Date = new Date(), zone: string | null = null): string {
+  const where = zone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const date = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: where });
+  return `${date} (${where})`;
 }
 
-export function identityText(bot: Bot, now: Date = new Date()): string {
+/** The time of day where the user is, e.g. "14:32". */
+export function clockText(now: Date = new Date(), zone: string | null = null): string {
+  return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: zone ?? undefined });
+}
+
+export function identityText(bot: Bot, now: Date = new Date(), zone: string | null = null): string {
   const lines = [
     `You are ${bot.name} (@${bot.handle})${bot.role ? `, ${bot.role}` : ""}: a persistent AI colleague on an Orbis team.`,
-    `Today is ${todayText(now)}.`,
+    `Today is ${todayText(now, zone)}; it is ${clockText(now, zone)} there.`,
     "",
   ];
   if (bot.description.trim()) {
@@ -165,5 +175,5 @@ export function assembleContext(opts: AssembleOptions, deps: AssembleDeps): Asse
     history = fitHistory(candidates);
   }
 
-  return { identity: identityText(bot), memories: [...pinned, ...relevant], history, since: opts.since ?? null };
+  return { identity: identityText(bot, new Date(), opts.zone ?? null), memories: [...pinned, ...relevant], history, since: opts.since ?? null };
 }

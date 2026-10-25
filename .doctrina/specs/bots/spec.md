@@ -5,7 +5,7 @@
 **Implementation:** verified
 **Realizes:** SC1
 **Last updated:** 2026-09-27
-**Version:** 0.8.0
+**Version:** 0.8.1
 
 ## Purpose
 
@@ -26,6 +26,7 @@ Everything else in Orbis hangs off a bot.
 - The system shall persist bots in the hub database so that a bot and its settings survive a hub restart.
 - The system shall place in every prompt of a bot its team: the bot it reports to, the bots that report to it and its other colleagues with their roles, and how to delegate to them and bring them into a conversation.
 - The system shall keep for each bot its initiative — whether it may write to the user on its own (off until the user turns it on), how often (rarely: at most once a day after 12 hours of quiet; sometimes: twice a day after 4 hours; often: four times a day after 2 hours) and whether it answers its MCP servers' updates — and for every bot a switch and quiet hours in the user's timezone (22:00 to 08:00 until changed).
+- The system shall tell each bot today's date and the time of day in the user's timezone, as last told by their device, else the hub's.
 
 ### Event-driven
 
@@ -70,6 +71,7 @@ Everything else in Orbis hangs off a bot.
 9. [verified] A bot whose short run ends while its long run goes on stays `working`, then becomes `done`; runs left waiting and their handoff cards are failed after a restart — verified by `packages/hub/test/chat-audit.test.ts`.
 10. [verified] A new bot's initiative is off and it never writes on its own; turned on, it writes after its rhythm's quiet and not before, the run says how long it was quiet and offers [silent], the message is posted in its conversation, no other one comes before the user answers and one comes after; a rare bot writes once a day at most and an unlucky roll waits; quiet hours in the user's timezone and every bot's switch hold it back, times and timezones are checked; [silent] posts nothing, a failure says nothing and neither counts; Try it now starts a run at once and is refused while the bot works — verified by `packages/hub/test/initiative.test.ts`
 11. [verified] Updates sent in the quiet hours wait and reach the bot when they end; with every bot's initiative off they reach nobody, then or later — verified by `packages/hub/test/mcp-updates.test.ts`
+12. [verified] A bot reads "Today is Thursday, 1 October 2026 (America/Sao_Paulo); it is 23:30 there" at 02:30 UTC on 2 October — verified by `packages/hub/test/user-zone.test.ts`
 
 ## Maturity
 

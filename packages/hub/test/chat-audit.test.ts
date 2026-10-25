@@ -152,7 +152,7 @@ describe("what a bot is told", () => {
     t = await testHub();
     const ana = await createBot(t, { name: "Ana", role: "QA" });
     const bob = await createBot(t, { name: "Bob", role: "Dev" });
-    expect(identityText(t.hub.botService.get(ana.id), new Date("2026-10-02T12:00:00Z"))).toMatch(/Today is \w+day, \d+ October 2026 \(.+\)\./);
+    expect(identityText(t.hub.botService.get(ana.id), new Date("2026-10-02T12:00:00Z"))).toMatch(/Today is \w+day, \d+ October 2026 \(.+\); it is \d\d:\d\d there\./);
     expect(identityText(t.hub.botService.get(ana.id))).toContain("Answer in the language the user writes in.");
     const group = (await t.api("POST", "/api/v1/conversations", { title: "Release", members: [ana.id, bob.id], leadBotId: ana.id })).body;
     const run = t.hub.engine.enqueue({ botId: ana.id, conversationId: group.id, trigger: { type: "api", ref: null }, input: "/reply ok" });

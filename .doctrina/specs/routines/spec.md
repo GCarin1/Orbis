@@ -6,7 +6,7 @@
 **Realizes:** SC6
 **Depends on:** agent-runtimes, approvals, bots
 **Last updated:** 2026-09-27
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 ## Purpose
 
@@ -37,6 +37,7 @@ enough that nobody would read the results.
 - When a bot calls another bot's enabled routine with `routine.call` (by "@handle/name" or by id, with a note), the system shall run the routine's instruction and the note as a handoff to its bot in the caller's conversation, keep the routine's draft-only mode, record the run on the routine with who called it, and give the caller the answer back like a handoff's.
 - When a bot lists routines with `routine.list` for another bot or for "all", the system shall list their enabled routines as "@handle/name" with their trigger and instruction.
 - When a bot calls `routine.create` with `bot` naming a bot below it in the team (one that reports to it, directly or through others), the system shall create the routine for that bot, disabled like any new routine, and post its routine card both in that bot's direct conversation and in the conversation where it was asked.
+- When a routine is created without a timezone (by a bot's routine.create or through the API), the system shall give it the user's timezone, as last told by their device, else UTC.
 
 ### Unwanted-behavior (must-not)
 
@@ -59,6 +60,7 @@ enough that nobody would read the results.
 7. [verified] A bot lists every enabled routine, is refused a disabled routine, an unknown one and its own, and calls another bot's routine with a note: it runs in the caller's conversation with the instruction and the note, the caller hears back, and the routine's last run says who called it — verified by `packages/hub/test/squads.test.ts`.
 8. [verified] An enabled routine shows how other bots call it, and its last run who called it — verified by `packages/web/test/squads.test.tsx`.
 9. [verified] A manager creates a routine for its report and for its report's report (each the report's own, its card in the report's chat and where the manager was asked) and for itself, is refused one for a bot that does not report to it, and its context tells it to schedule its reports' work with Orbis routines — verified by `packages/hub/test/routines.test.ts`
+10. [verified] A device's timezone is kept and an unknown one refused; routines a bot or the API create without a timezone take it, and one given stays — verified by `packages/hub/test/user-zone.test.ts`
 
 ## Maturity
 

@@ -88,3 +88,6 @@ One line per archived change, newest last. Appended by
 - 2026-10-17 — 0084-document-reading — document-reading (specs: conversations MODIFIED, web-app MODIFIED)
 - 2026-10-24 — 0078-other-account-message — other-account-message (specs: hub-api MODIFIED)
 - 2026-10-24 — 0085-reply-style-feedback — reply-style-feedback (specs: conversations MODIFIED, web-app MODIFIED)
+- 2026-10-25 — 0086-routine-local-timezone — routine-local-timezone (specs: bots MODIFIED, routines MODIFIED)
+- 2026-10-25 — 0087-phone-back-button — phone-back-button (specs: web-app MODIFIED)
+- 2026-10-25 — 0088-buttons-say-why — buttons-say-why (specs: web-app MODIFIED)

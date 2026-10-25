@@ -1,3 +1,5 @@
+import { BackIcon } from "./components/Icons.js";
+import { localZone } from "./schedule.js";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { roleSlug, type AuthConfig, type Bot, type TranscriptionStatus } from "@orbis/shared";
 import { Api, capturePairingFromUrl, captureTokenFromUrl, loadToken, openStream, saveToken } from "./api.js";
@@ -121,6 +123,8 @@ export function App() {
       if (cancelled) return;
       store.setApi(api);
       stopStream = start(api);
+      // The bots read the date and time where the user is, and their routines run at the user's hour (change 0086).
+      void api.put("/api/v1/me/timezone", { timezone: localZone() }).catch(() => undefined);
     });
     return () => {
       cancelled = true;
@@ -343,6 +347,15 @@ export function App() {
       />
       <main className="main">
         {!store.connected && <div className="banner">{t("stream.offline")}</div>}
+        {view !== "chat" && (
+          // On a phone every full screen leads back to the conversations (change 0087).
+          <div className="screen-back">
+            <button type="button" className="icon-btn back" aria-label={t("nav.back")} onClick={() => setView("chat")}>
+              <BackIcon />
+            </button>
+            <span>{t("nav.chat")}</span>
+          </div>
+        )}
         {view === "library" && store.api ? <LibraryScreen
             api={store.api}
             bots={bots}

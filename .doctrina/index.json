@@ -2,7 +2,7 @@
   "$schema_version": "0.1.0",
   "project": "Orbis",
   "framework_version": "0.17.0",
-  "last_updated": "2026-10-24",
+  "last_updated": "2026-10-25",
   "artifacts": {
     "product": {
       "path": ".doctrina/product.md",
@@ -63,7 +63,7 @@
         "id": "bots",
         "path": ".doctrina/specs/bots/spec.md",
         "status": "active",
-        "version": "0.8.0",
+        "version": "0.8.1",
         "last_updated": "2026-09-27",
         "implementation": "verified",
         "realizes": [
@@ -230,7 +230,7 @@
         "id": "routines",
         "path": ".doctrina/specs/routines/spec.md",
         "status": "active",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "last_updated": "2026-09-27",
         "implementation": "verified — routines service, scheduler and webhooks (`packages/hub/src/routines/`)",
         "realizes": [
@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.43.2",
+        "version": "0.43.4",
         "last_updated": "2026-10-11",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -768,7 +768,88 @@
         "summary": "The Library is the `files` table seen whole; it is not a second store."
       }
     ],
-    "changes": [],
+    "changes": [
+      {
+        "id": "0089-phone-tab-bar",
+        "title": "phone-tab-bar",
+        "path": ".doctrina/changes/0089-phone-tab-bar",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0090-plain-language",
+        "title": "plain-language",
+        "path": ".doctrina/changes/0090-plain-language",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0091-chat-focus",
+        "title": "chat-focus",
+        "path": ".doctrina/changes/0091-chat-focus",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0092-settings-groups",
+        "title": "settings-groups",
+        "path": ".doctrina/changes/0092-settings-groups",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (confident; signals: add)"
+      },
+      {
+        "id": "0093-conversation-list",
+        "title": "conversation-list",
+        "path": ".doctrina/changes/0093-conversation-list",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0094-lighter-forms",
+        "title": "lighter-forms",
+        "path": ".doctrina/changes/0094-lighter-forms",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0095-skills-form",
+        "title": "skills-form",
+        "path": ".doctrina/changes/0095-skills-form",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0096-library-tidy",
+        "title": "library-tidy",
+        "path": ".doctrina/changes/0096-library-tidy",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0097-squads-tidy",
+        "title": "squads-tidy",
+        "path": ".doctrina/changes/0097-squads-tidy",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "product (uncertain)"
+      },
+      {
+        "id": "0098-usage-summary",
+        "title": "usage-summary",
+        "path": ".doctrina/changes/0098-usage-summary",
+        "status": "proposed",
+        "opened": "2026-10-25",
+        "lane": "chore (confident; signals: format)"
+      }
+    ],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -2415,6 +2496,52 @@
           }
         ],
         "lane": "product (uncertain; signals: change)"
+      },
+      {
+        "id": "0086-routine-local-timezone",
+        "title": "routine-local-timezone",
+        "path": ".doctrina/changes/archive/2026-10-25-0086-routine-local-timezone",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "bots",
+            "operation": "MODIFIED"
+          },
+          {
+            "capability": "routines",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0087-phone-back-button",
+        "title": "phone-back-button",
+        "path": ".doctrina/changes/archive/2026-10-25-0087-phone-back-button",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0088-buttons-say-why",
+        "title": "buttons-say-why",
+        "path": ".doctrina/changes/archive/2026-10-25-0088-buttons-say-why",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
       }
     ],
     "skills": [

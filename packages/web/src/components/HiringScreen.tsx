@@ -1,6 +1,7 @@
 // Hiring (specs/hiring): ask a bot's brain for short résumés of AI teammates, for a project or one of your
 // groups, then hire only the ones you want. Only a hire makes the brain write the full profile
 // (instructions, tools, skills, what it will do and needs), which becomes a bot that says hello.
+import { Missing } from "./Missing.js";
 import { useEffect, useMemo, useState } from "react";
 import { colorFor, initialsOf, shapeFor, type Bot, type Candidate, type Conversation, type HiringRound, type HiringTool } from "@orbis/shared";
 import type { Api } from "../api.js";
@@ -183,6 +184,13 @@ function NewRound({ api, bots, groups }: { api: Api; bots: Bot[]; groups: Conver
       <button className="btn btn-primary" type="submit" disabled={!ready || busy}>
         {t("hiring.generate", { count })}
       </button>
+      <Missing
+        text={
+          !busy &&
+          !ready &&
+          (!recruiterId ? t("missing.recruiter") : basis === "project" ? t("missing.brief") : t("missing.team"))
+        }
+      />
       {error && <p className="error">{error}</p>}
     </form>
   );

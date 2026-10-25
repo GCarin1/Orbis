@@ -176,6 +176,13 @@ screen, which also comes back by itself when the hub does not answer (computer
 off, another network) — and tries again every 10 seconds. An `https` hub whose
 certificate the phone does not trust is never loaded; the first screen says so.
 
+## Getting around
+
+- The conversations are home. Library, Skills, Squads, Hiring, Usage and Settings open over them, each with
+  "← Conversations" at the top (change 0087).
+- A button that is not ready yet says what it waits for on the line under it, such as "Paste your Orbis access
+  code to connect" or "Give the routine a name" (change 0088).
+
 ## What the app adds to the web app
 
 - **Notifications** while the app is off screen: a bot's reply (one per

@@ -998,6 +998,9 @@ iframe.computer-screen {
 .icon-btn.back {
   display: none;
 }
+.screen-back {
+  display: none;
+}
 .dot-running {
   position: absolute;
   top: 5px;
@@ -2165,6 +2168,14 @@ body.resizing-panel {
   }
   .icon-btn.back {
     display: inline-grid;
+  }
+  .screen-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 8px 0;
+    color: var(--muted);
+    font-size: 15px;
   }
   .side-panel,
   .computer-panel:not(.fullscreen) {
@@ -5146,4 +5157,16 @@ label.pick-row.on {
 }
 .menu .menu-switch-item .menu-switch.on::after {
   transform: translateX(12px);
+}
+
+/* ── what a disabled button waits for (change 0088) ───────────────────────── */
+.missing-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.btn.btn-primary:disabled {
+  opacity: 0.45;
+  background: var(--accent);
+  color: var(--accent-text);
 }

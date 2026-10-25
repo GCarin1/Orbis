@@ -47,6 +47,9 @@ message lists the skills the bot (or any group member) is offered.
 
 ## Routines
 
+A routine without a timezone runs in yours: the app tells the hub your device's timezone when it opens, so a bot
+asked for "every day at 9" schedules 9:00 where you are, not on the server's clock (change 0086).
+
 A routine is an instruction one bot runs on a schedule or when a signed
 webhook arrives ([`specs/routines`](../.doctrina/specs/routines/spec.md)).
 Each run happens in the bot's direct conversation, so you see it like any

@@ -159,6 +159,13 @@ curl -s -H "$H" "http://127.0.0.1:7420/api/v1/usage?from=2026-09-01&to=2026-10-0
 
 See [secrets-and-usage.md](secrets-and-usage.md).
 
+## Your timezone
+
+`GET /api/v1/me/timezone` → `{ timezone }` (null until a device told it) · `PUT /api/v1/me/timezone`
+`{ timezone }` (an IANA name such as `America/Sao_Paulo`; 400 otherwise). The web app sends the device's timezone
+when it connects (change 0086). The bots read today's date and the time of day there, and a routine created without
+a timezone, by a bot's `routine.create` or through the API, runs in it.
+
 ## Stream
 
 `ws://127.0.0.1:7420/api/v1/stream?ticket=<ticket>` (from

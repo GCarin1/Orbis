@@ -142,6 +142,7 @@ export class RunEngine {
   private stopped = false;
   private imageSource: ((run: Run) => BrainImage[]) | null = null;
   private readonly preparers: Array<(run: Run, bot: Bot) => Promise<string | null>> = [];
+  private zoneOf: () => string | null = () => null;
   private backstageOf: ((run: Run) => boolean) | null = null;
 
   constructor(private readonly d: EngineDeps) {}
@@ -184,6 +185,11 @@ export class RunEngine {
       // A missing or unreadable image never stops a run: the bot still has the file's path.
       return [];
     }
+  }
+
+  /** Where the user is, for the date and time the bots read (change 0086). */
+  setUserZone(zone: () => string | null): void {
+    this.zoneOf = zone;
   }
 
   /**
@@ -455,6 +461,7 @@ export class RunEngine {
           task,
           excludeItemId: req.triggerItemId ?? null,
           since,
+          zone: this.zoneOf(),
         },
         { items: this.d.items, memory: this.d.memory, bots: this.d.bots },
       );

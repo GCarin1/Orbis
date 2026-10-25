@@ -1,5 +1,6 @@
 // A bot's routines beside its conversation: create, test, enable, disable (specs/routines, specs/web-app).
 // The schedule is picked and read back in words; a raw cron stays one choice among them.
+import { Missing } from "./Missing.js";
 import { useEffect, useState } from "react";
 import type { Bot, Routine, RoutineApproval, RoutineTrigger } from "@orbis/shared";
 import { ApiError } from "../api.js";
@@ -280,6 +281,18 @@ export function RoutinesPanel({
         <button className="btn btn-primary" type="submit" disabled={!ready}>
           {t("routines.create")}
         </button>
+        <Missing
+          text={
+            !ready &&
+            (!name.trim()
+              ? t("missing.routineName")
+              : !instruction.trim()
+                ? t("missing.routineWhat")
+                : repeat === "weekly"
+                  ? t("missing.routineDays")
+                  : t("missing.routineCron"))
+          }
+        />
       </form>
     </aside>
   );

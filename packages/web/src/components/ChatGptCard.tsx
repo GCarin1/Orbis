@@ -2,6 +2,7 @@
 // the Codex CLI signs in with the user's ChatGPT account. This card installs
 // it, signs in (the browser on this computer, or a code on any device), tests
 // that a model answers, and signs out.
+import { Missing } from "./Missing.js";
 import { useCallback, useEffect, useState } from "react";
 import type { BrainTestResult, CliJob, CodexAccount } from "@orbis/shared";
 import type { Api } from "../api.js";
@@ -136,6 +137,7 @@ export function ChatGptCard({ api }: { api: Api }) {
                 >
                   {t("chatgpt.signInCode")}
                 </button>
+                <Missing text={!account.installed && t("missing.codex")} />
               </span>
             )}
           </li>

@@ -1,6 +1,7 @@
 // The sign-in screen: the Orbis account linked to this hub (an email and a password, change 0064), the API
 // token, or a pairing code from the computer (Settings → Phone), which the phone's camera also brings in a
 // QR code's link (#pair=…). An email's reset link lands here to choose a new password.
+import { Missing } from "./Missing.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AuthConfig } from "@orbis/shared";
 import { Api, claimPairing } from "../api.js";
@@ -193,6 +194,7 @@ function AccountSignIn({ project, onSession, onUseToken, linkError }: { project:
       <button className="btn btn-primary" type="submit" disabled={busy || !email.trim() || !password}>
         {t("account.signIn")}
       </button>
+      <Missing text={!busy && (!email.trim() || !password) && t("missing.signIn")} />
       <div className="card-actions">
         <button className="btn" type="button" onClick={() => setForgot(true)}>
           {t("account.forgot")}
@@ -301,6 +303,7 @@ function TokenSignIn({ onToken, pairCode = null }: { onToken(token: string): voi
             <button className="btn btn-primary" type="submit" disabled={!token.trim()}>
               {t("token.submit")}
             </button>
+            <Missing text={!token.trim() && t("missing.token")} />
           </>
         )}
       </form>

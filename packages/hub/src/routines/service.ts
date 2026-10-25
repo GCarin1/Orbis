@@ -33,10 +33,13 @@ export interface RoutineInput {
   approval?: RoutineApproval;
 }
 
-/** Throws a 400 with the field that is wrong; returns the trigger with its timezone filled in. */
-export function validateTrigger(trigger: RoutineTrigger): RoutineTrigger {
+/**
+ * Throws a 400 with the field that is wrong; returns the trigger with its timezone filled in: the user's
+ * (change 0086) when none was given, else UTC.
+ */
+export function validateTrigger(trigger: RoutineTrigger, userZone: string | null = null): RoutineTrigger {
   if (trigger.type === "webhook") return { type: "webhook" };
-  const timezone = trigger.timezone?.trim() || "UTC";
+  const timezone = trigger.timezone?.trim() || userZone || "UTC";
   try {
     new Intl.DateTimeFormat("en", { timeZone: timezone });
   } catch {
@@ -69,6 +72,8 @@ export class RoutineService {
   /** Routine runs in flight: their mode decides whether external tools act. */
   private readonly active = new Map<string, { routineId: string; name: string; mode: RoutineApproval }>();
   private timer: NodeJS.Timeout | null = null;
+  /** The user's timezone, once a device told it (change 0086); set by the hub. */
+  userZone: () => string | null = () => null;
   /** Per routine: the still-running run a turn was last skipped for (one event per run). */
   private readonly skipped = new Map<string, string>();
   private lastActivityWrite = 0;
@@ -168,7 +173,7 @@ export class RoutineService {
       id: newId("rtn"),
       botId: bot.id,
       name,
-      trigger: validateTrigger(input.trigger),
+      trigger: validateTrigger(input.trigger, this.userZone()),
       instruction: input.instruction.trim(),
       approval: input.approval ?? "normal",
       enabled: false,
@@ -193,7 +198,7 @@ export class RoutineService {
       if (!patch.instruction.trim()) throw badRequest("invalid routine", { instruction: "must not be empty" });
       next.instruction = patch.instruction.trim();
     }
-    if (patch.trigger !== undefined) next.trigger = validateTrigger(patch.trigger);
+    if (patch.trigger !== undefined) next.trigger = validateTrigger(patch.trigger, this.userZone());
     if (patch.approval !== undefined) next.approval = patch.approval;
     this.repo.update(id, next, this.now().toISOString());
     const updated = this.row(id);
@@ -389,7 +394,7 @@ export class RoutineService {
           name: Type.String({ minLength: 1, maxLength: 120 }),
           instruction: Type.String({ minLength: 1, maxLength: 20_000 }),
           cron: Type.Optional(Type.String({ description: 'five-field cron, e.g. "0 9 * * 1-5"' })),
-          timezone: Type.Optional(Type.String({ description: "IANA timezone, e.g. America/Sao_Paulo (default UTC)" })),
+          timezone: Type.Optional(Type.String({ description: "IANA timezone, e.g. America/Sao_Paulo (default: the user's timezone)" })),
           webhook: Type.Optional(Type.Boolean({ description: "trigger on a signed webhook instead of a schedule" })),
           approval: Type.Optional(Type.Union([Type.Literal("normal"), Type.Literal("draft_only")])),
           bot: Type.Optional(
@@ -410,7 +415,7 @@ export class RoutineService {
             return { output: `@${owner.handle} does not report to you: you create routines for yourself and for your reports only`, isError: true };
           }
           try {
-            const trigger: RoutineTrigger = input.webhook ? { type: "webhook" } : { type: "cron", cron: input.cron!, timezone: input.timezone ?? "UTC" };
+            const trigger: RoutineTrigger = input.webhook ? { type: "webhook" } : { type: "cron", cron: input.cron!, timezone: input.timezone ?? this.userZone() ?? "UTC" };
             const shownIn = owner.id === ctx.bot.id ? undefined : (ctx.run.conversationId ?? undefined);
             const routine = this.create(owner.id, { name: input.name, instruction: input.instruction, trigger, approval: input.approval }, shownIn);
             const whose = owner.id === ctx.bot.id ? "" : ` for @${owner.handle}`;

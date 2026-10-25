@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.43.2
+**Version:** 0.43.4
 
 ## Purpose
 
@@ -72,6 +72,7 @@ run's steps.
 - The web app shall hide backstage items from the chat, show one line "<lead> is talking with <colleagues>…" while the colleagues work, put "See backstage" under the answer they led to (opening what each one handed out and answered), never notify, read aloud or mark unread for backstage work, and offer in each conversation's ⋮ menu short or detailed replies and the team's work backstage or in the chat, with the default in Settings → Conversations.
 - The web app shall fold an approval card the user already answered to one line (who asked, the tool, the answer), its input shown on a tap.
 - The web app shall show a conversation's short replies and team backstage as on/off switches in its ⋮ menu, which stays open to show the switch flip, and show each switch as a line in the chat.
+- The web app shall show, on a phone, a back bar to the conversations at the top of every full screen (Library, Skills, MCP, Squads, Hiring, Usage, Settings).
 
 ### Event-driven
 
@@ -124,6 +125,7 @@ run's steps.
 - The web app shall not put a `chat-http` token in the bot; it shall save it as the bot's secret, keep a saved one when the field is left empty, and never show it back.
 - The web app shall not scroll a screen, panel or dialog sideways on a screen 390 px wide; a table wider than its screen scrolls inside its own box.
 - The web app shall not attach a file over 25 MB or more than 10 files to one message; it shall say which file and the limit.
+- The web app shall not leave a primary button disabled without a line under it saying what it waits for (connect, sign in, generate candidates, create a routine, sign in with ChatGPT).
 
 ### Optional
 
@@ -201,6 +203,8 @@ run's steps.
 68. [verified] In a browser, a chain with backstage work shows only the question and the answer, opens the backstage with every colleague's answer, shows the lead talking with the colleagues while they work, never notifies the phone of backstage work, and the group menu switches the replies and the backstage — verified by `packages/web/test/backstage.test.tsx`, `packages/web/test/group-info.test.tsx`
 69. [verified] An answered approval shows as one folded line without its buttons — verified by `packages/web/test/timeline.test.tsx`
 70. [verified] The group menu shows both switches checked by default and flips them; the chat shows "You turned on short replies" and the backstage line — verified by `packages/web/test/group-info.test.tsx`, `packages/web/test/backstage.test.tsx`
+71. [verified] On a 390 px phone, Library, Skills, Squads, Usage and Settings each lead back to the conversations — verified by `tests/e2e/phone-nav.test.ts`
+72. [verified] Connect says to paste the access code while it is disabled and the line goes once one is typed — verified by `packages/web/test/missing.test.tsx`
 
 ## Maturity
 

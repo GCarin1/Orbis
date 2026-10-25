@@ -66,6 +66,7 @@ import { type HubContext, MentionAliases, SecretResolvers } from "./context.js";
 import { SettingsRepo } from "./repos/settings.js";
 import { VoiceService } from "./voice/service.js";
 import { SquadService } from "./squads/service.js";
+import { UserZone } from "./services/user-zone.js";
 import { HiringService } from "./hiring/service.js";
 import { McpConnections } from "./mcp/connections.js";
 import { registerMcpRoutes } from "./mcp/routes.js";
@@ -377,6 +378,9 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   const usage = new UsageService(ctx, opts.clock);
   engine.addHooks(usage.hooks());
   const routines = new RoutineService(ctx, drafts, opts.clock);
+  const userZone = new UserZone(ctx);
+  routines.userZone = () => userZone.get();
+  engine.setUserZone(() => userZone.get());
   for (const tool of routines.tools()) tools.register(tool);
   engine.addHooks(routines.hooks());
   gateway.onBeforeCall(routines.draftOnlyHook());
@@ -423,6 +427,7 @@ export async function createHub(opts: HubOptions = {}): Promise<Hub> {
   await registerComputerRoutes(app, ctx, browser, vncSessions, opts.computerSetup ?? new ComputerSetup(config.computerProvider));
   await skillService.routes(app);
   await routines.routes(app);
+  await userZone.routes(app);
   await secrets.routes(app);
   await usage.routes(app);
   await templates.routes(app);
