@@ -1,11 +1,12 @@
-# Change 0093-conversation-list — conversation-list
+# Change 0092-settings-groups — settings-groups
 
 - **Status:** applied
 - **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product
+- **Lane:** product (confident; signals: add)
 - **Affects specs:** web-app
+- **Documented surface:** n/a — this change's docs (docs/android.md, docs/voice.md, docs/brains.md, docs/mcp.md and the CHANGELOG entry for 0089–0093) were committed with its implementation in 81c19b4
 
 <!--
 Optional, and usually absent. The closing docs gate reads COMMAND and FLAG
@@ -24,17 +25,18 @@ reason is the declaration.
 
 ## Why
 
-One indicator per conversation in the list and the last message as its preview
+Settings in four groups, and brains show only those in use plus Add brain
 
 ## What
 
-The audit found two marks per row (a squad dot before the name, the unread dot after) and previews that were sometimes a role, sometimes the last message.
+The audit found nine settings tabs in one overflowing row and the brains tab opening with a setup card and red "Not found" badges.
 
-- `Sidebar.tsx`: the squad's colour rings the face; a bot never talked to says "Say hi to …".
+- `SettingsScreen.tsx`: the tabs in four groups (Bots, Conversations, Account and devices, Data), a side list on a computer, a row with dividers on a phone; Brains: your bots first, the brains ready, then **Add a brain** (ChatGPT, chat tokens, what is not installed or running); paths under Details.
+- `i18n.ts`: "Not installed" instead of "Not found".
 
 ## Scope boundaries
 
-- Nothing beyond the screens named.
+- The tabs keep their names and ids.
 
 ## Verification
 

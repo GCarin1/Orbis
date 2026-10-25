@@ -92,3 +92,7 @@ One line per archived change, newest last. Appended by
 - 2026-10-25 — 0087-phone-back-button — phone-back-button (specs: web-app MODIFIED)
 - 2026-10-25 — 0088-buttons-say-why — buttons-say-why (specs: web-app MODIFIED)
 - 2026-10-25 — 0089-phone-tab-bar — phone-tab-bar (specs: web-app MODIFIED)
+- 2026-10-25 — 0090-plain-language — plain-language (specs: web-app MODIFIED)
+- 2026-10-25 — 0091-chat-focus — chat-focus (specs: web-app MODIFIED)
+- 2026-10-25 — 0092-settings-groups — settings-groups (specs: web-app MODIFIED)
+- 2026-10-25 — 0093-conversation-list — conversation-list (specs: web-app MODIFIED)

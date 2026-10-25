@@ -6,6 +6,7 @@
 - **Owner:**
 - **Lane:** product
 - **Affects specs:** web-app
+- **Documented surface:** n/a — this change's docs (docs/android.md, docs/voice.md, docs/brains.md, docs/mcp.md and the CHANGELOG entry for 0089–0093) were committed with its implementation in 81c19b4
 
 <!--
 Optional, and usually absent. The closing docs gate reads COMMAND and FLAG

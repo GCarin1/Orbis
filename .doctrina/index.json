@@ -770,38 +770,6 @@
     ],
     "changes": [
       {
-        "id": "0090-plain-language",
-        "title": "plain-language",
-        "path": ".doctrina/changes/0090-plain-language",
-        "status": "applied",
-        "opened": "2026-10-25",
-        "lane": "product"
-      },
-      {
-        "id": "0091-chat-focus",
-        "title": "chat-focus",
-        "path": ".doctrina/changes/0091-chat-focus",
-        "status": "applied",
-        "opened": "2026-10-25",
-        "lane": "product"
-      },
-      {
-        "id": "0092-settings-groups",
-        "title": "settings-groups",
-        "path": ".doctrina/changes/0092-settings-groups",
-        "status": "applied",
-        "opened": "2026-10-25",
-        "lane": "product (confident; signals: add)"
-      },
-      {
-        "id": "0093-conversation-list",
-        "title": "conversation-list",
-        "path": ".doctrina/changes/0093-conversation-list",
-        "status": "applied",
-        "opened": "2026-10-25",
-        "lane": "product"
-      },
-      {
         "id": "0094-lighter-forms",
         "title": "lighter-forms",
         "path": ".doctrina/changes/0094-lighter-forms",
@@ -2539,6 +2507,62 @@
         "id": "0089-phone-tab-bar",
         "title": "phone-tab-bar",
         "path": ".doctrina/changes/archive/2026-10-25-0089-phone-tab-bar",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0090-plain-language",
+        "title": "plain-language",
+        "path": ".doctrina/changes/archive/2026-10-25-0090-plain-language",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0091-chat-focus",
+        "title": "chat-focus",
+        "path": ".doctrina/changes/archive/2026-10-25-0091-chat-focus",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0092-settings-groups",
+        "title": "settings-groups",
+        "path": ".doctrina/changes/archive/2026-10-25-0092-settings-groups",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product (confident; signals: add)"
+      },
+      {
+        "id": "0093-conversation-list",
+        "title": "conversation-list",
+        "path": ".doctrina/changes/archive/2026-10-25-0093-conversation-list",
         "status": "applied",
         "applied": "2026-10-25",
         "specs_affected": [
