@@ -109,42 +109,7 @@ export function BotPanel({
         </span>
       </header>
 
-      <button className="screen-card" onClick={onOpenComputer} aria-label={t("panel.openScreen", { name: bot.name })}>
-        <Screen api={api} bot={bot} status={status} />
-      </button>
-      <p className="screen-caption">
-        {t("panel.screen", { name: bot.name })}
-        {status && status.status !== "stopped" && <span className="muted"> · {t(`computer.status.${status.status}` as TextKey)}</span>}
-      </p>
-      {bot.computer.enabled && (
-        <p className="screen-mode muted small" data-testid="computer-mode" title={bot.computer.hostDir ?? undefined}>
-          {MODE_ICONS[status?.provider ?? bot.computer.provider ?? "local"]} {t(`computers.${status?.provider ?? bot.computer.provider ?? "local"}.title` as TextKey)}
-          {(status?.provider ?? bot.computer.provider) === "host" && bot.computer.hostDir ? ` · ${bot.computer.hostDir}` : ""}
-        </p>
-      )}
 
-      <section className="panel-section">
-        <h3>{t("panel.routines")}</h3>
-        <ul className="panel-routines">
-          {(routines ?? []).map((r) => {
-            const active = r.enabled && !r.paused;
-            return (
-              <li key={r.id}>
-                <button className="routine-row" onClick={onOpenRoutines}>
-                  <span className={`routine-icon${active ? " active" : ""}`}>{active ? <CheckClockIcon /> : <PauseIcon />}</span>
-                  <span>
-                    <strong>{r.name}</strong>
-                    <span className="muted">{active ? describeSchedule(r, t, lang) : r.paused ? t("panel.paused") : t("panel.off")}</span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <button className="link add-link" onClick={onOpenRoutines}>
-          <PlusIcon size={14} /> {t("panel.newRoutine")}
-        </button>
-      </section>
 
       <section className="panel-section">
         <h3>{t("panel.team")}</h3>
@@ -169,6 +134,53 @@ export function BotPanel({
           </button>
         ))}
       </section>
+
+      <section className="panel-section">
+        <h3>{t("panel.routines")}</h3>
+        <ul className="panel-routines">
+          {(routines ?? []).map((r) => {
+            const active = r.enabled && !r.paused;
+            return (
+              <li key={r.id}>
+                <button className="routine-row" onClick={onOpenRoutines}>
+                  <span className={`routine-icon${active ? " active" : ""}`}>{active ? <CheckClockIcon /> : <PauseIcon />}</span>
+                  <span>
+                    <strong>{r.name}</strong>
+                    <span className="muted">{active ? describeSchedule(r, t, lang) : r.paused ? t("panel.paused") : t("panel.off")}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <button className="link add-link" onClick={onOpenRoutines}>
+          <PlusIcon size={14} /> {t("panel.newRoutine")}
+        </button>
+      </section>
+
+      {/* The computer: its live screen while it runs, one line otherwise (change 0091). */}
+      {status && status.status !== "stopped" ? (
+        <>
+          <button className="screen-card" onClick={onOpenComputer} aria-label={t("panel.openScreen", { name: bot.name })}>
+            <Screen api={api} bot={bot} status={status} />
+          </button>
+          <p className="screen-caption">
+            {t("panel.screen", { name: bot.name })}
+            <span className="muted"> · {t(`computer.status.${status.status}` as TextKey)}</span>
+          </p>
+        </>
+      ) : (
+        <button className="computer-row" onClick={onOpenComputer} aria-label={t("panel.openScreen", { name: bot.name })} data-testid="computer-row">
+          <span>🖥 {t("panel.computer")}</span>
+          <span className="muted">{bot.computer.enabled ? t("computer.status.stopped") : t("panel.computerOff")} ›</span>
+        </button>
+      )}
+      {bot.computer.enabled && (
+        <p className="screen-mode muted small" data-testid="computer-mode" title={bot.computer.hostDir ?? undefined}>
+          {MODE_ICONS[status?.provider ?? bot.computer.provider ?? "local"]} {t(`computers.${status?.provider ?? bot.computer.provider ?? "local"}.title` as TextKey)}
+          {(status?.provider ?? bot.computer.provider) === "host" && bot.computer.hostDir ? ` · ${bot.computer.hostDir}` : ""}
+        </p>
+      )}
 
       <section className="panel-section">
         <h3>{t("brains.brain")}</h3>

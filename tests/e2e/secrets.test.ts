@@ -56,7 +56,7 @@ describe("secrets in a browser", () => {
     const ana = hub.botService.get("ana");
     expect(readFileSync(path.join(hub.computer.workspaceDir(ana.id), "key.txt"), "utf8")).toBe(VALUE);
     // Expand the run's steps too: the value is on no part of the page.
-    for (const toggle of await page.getByRole("button", { name: /Show \d+ steps/ }).all()) await toggle.click();
+    for (const toggle of await page.getByRole("button", { name: /\d+ steps?$/ }).all()) await toggle.click();
     expect(await page.content()).not.toContain(VALUE);
   });
 });

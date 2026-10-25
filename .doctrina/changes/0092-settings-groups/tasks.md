@@ -7,6 +7,6 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Grouped tab list
+- [x] Brains in use, ready, Add a brain
+- [x] Test packages/web/test/brains.test.tsx

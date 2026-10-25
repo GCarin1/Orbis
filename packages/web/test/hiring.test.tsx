@@ -77,7 +77,7 @@ describe("a new opening", () => {
     expect(within(form).getByRole("button", { name: "Generate 10 candidates" })).toHaveProperty("disabled", true);
     fireEvent.change(within(form).getByLabelText("The project"), { target: { value: "A dashboard of stocks" } });
     fireEvent.click(within(form).getByRole("button", { name: "20" }));
-    expect(within(form).getByText(/≈ 1400 response tokens for 20 résumés/)).toBeTruthy();
+    expect(within(form).getByText(/Generating 20 résumés is quick/)).toBeTruthy();
     await act(async () => fireEvent.click(within(form).getByRole("button", { name: "Generate 20 candidates" })));
     expect(post).toHaveBeenCalledWith("/api/v1/hiring/rounds", {
       basis: "project",

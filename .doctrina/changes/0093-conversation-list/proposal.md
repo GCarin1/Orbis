@@ -1,9 +1,10 @@
 # Change 0093-conversation-list — conversation-list
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product (uncertain)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -27,11 +28,13 @@ One indicator per conversation in the list and the last message as its preview
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found two marks per row (a squad dot before the name, the unread dot after) and previews that were sometimes a role, sometimes the last message.
+
+- `Sidebar.tsx`: the squad's colour rings the face; a bot never talked to says "Say hi to …".
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- Nothing beyond the screens named.
 
 ## Verification
 
@@ -43,8 +46,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

@@ -67,7 +67,7 @@ describe("walking skeleton in a browser", () => {
     await page.getByRole("log").getByText("[Ana] hello from the browser").waitFor({ timeout: 15_000 });
     // The roster shows it as the bot's last message too.
     await page.getByTestId("bot-ana").getByText("[Ana] hello from the browser").waitFor();
-    await page.getByRole("button", { name: /Show \d+ steps/ }).first().waitFor();
+    await page.getByRole("button", { name: /\d+ steps?$/ }).first().waitFor();
 
     // The same bot and reply are visible through the API.
     const bots = await (await fetch(`${url}/api/v1/bots`, { headers: { authorization: `Bearer ${TOKEN}` } })).json();

@@ -1,9 +1,10 @@
 # Change 0090-plain-language — plain-language
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product (uncertain)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -27,11 +28,13 @@ Plain language on screen: no tokens, file paths, environment variables or protoc
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found technical words on screen: API token, ~/.orbis/token, orbis open, ORBIS_SUPABASE_URL=off, token counts, computer.*, MCP.
+
+- `packages/web/src/i18n.ts`: the sign-in asks for the access code; accounts off says to ask whoever runs the server; Hiring and Usage speak of work and cost, not tokens; the tool policy explains itself; MCP is **Integrations**; the introductions of Skills, Squads, Brains, Hiring and Integrations shrink to one sentence.
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- The API, CLI and docs keep their technical names.
 
 ## Verification
 
@@ -43,8 +46,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

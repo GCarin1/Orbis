@@ -123,7 +123,8 @@ function Row({
   const bot = entry.bot;
   const busy = bot && bot.state !== "idle" && bot.state !== "done";
   let preview: ReactNode;
-  if (bot) preview = busy ? <StateLabel state={bot.state} /> : bot.lastMessage ? plainText(bot.lastMessage.text).split("\n")[0] : bot.role;
+  // Always the last message; a bot not talked to yet invites a first one (change 0093).
+  if (bot) preview = busy ? <StateLabel state={bot.state} /> : bot.lastMessage ? plainText(bot.lastMessage.text).split("\n")[0] : <span className="say-hi">{t("sidebar.sayHi", { name: bot.name })}</span>;
   else preview = entry.group!.members.map((id) => bots[id]?.name ?? "?").join(", ");
   return (
     <li>
@@ -133,11 +134,13 @@ function Row({
         aria-current={selected ? "true" : undefined}
         data-testid={bot ? `bot-${bot.handle}` : `conv-${entry.group!.id}`}
       >
-        {bot ? <Avatar bot={bot} size={40} /> : <GroupFace group={entry.group!} bots={bots} />}
+        {/* The squad's colour rings the face: one mark, where the eye already looks (change 0093). */}
+        <span className={`chat-face${squad ? " squad-ring" : ""}`} style={squad ? { ["--squad" as string]: squad.color } : undefined} title={squad?.name} aria-label={squad?.name}>
+          {bot ? <Avatar bot={bot} size={40} /> : <GroupFace group={entry.group!} bots={bots} />}
+        </span>
         <span className="chat-text">
           <span className="chat-line">
             <strong className="chat-title">
-              {squad && <span className="squad-dot" style={{ ["--squad" as string]: squad.color }} title={squad.name} aria-label={squad.name} />}
               {entry.title}
             </strong>
             {entry.at && <time>{timeOf(entry.at, lang, t("time.yesterday"))}</time>}

@@ -21,6 +21,12 @@ change that delivered it.
 
 ### Added
 
+- **The UX audit's clarity changes** (changes 0089–0093):
+  - **A tab bar on the phone** (0089-phone-tab-bar): Conversations, Library, Team and More at the bottom, in place of the sidebar's seven rows.
+  - **Plain words** (0090-plain-language): no "API token", file paths, environment variables or token counts on screen; MCP is now **Integrations**; shorter introductions.
+  - **The chat keeps to the conversation** (0091-chat-focus): the bot's panel stays closed until opened and lists team, routines, computer (one line unless it runs) and brain; the header drops the brain chip and shows the state only while the bot works; "1 step / N steps" and listen share one quiet line under each message; the message box has one **+** (attach, mention, read aloud) and says just "Message".
+  - **Settings in four groups** (0092-settings-groups): Bots, Conversations, Account and devices, Data, as a side list on a computer; Brains shows your bots first, the brains ready next, and the rest under **Add a brain**.
+  - **One mark per conversation** (0093-conversation-list): a squad's colour rings the face instead of a dot by the name; a bot not talked to yet invites "Say hi".
 - **The UX audit's urgent fixes** (changes 0086–0088):
   - **Your time, not the server's** (0086-routine-local-timezone): the app tells the hub your device's timezone. Bots now read today's date and the time where you are (the server often runs in UTC, so after 21:00 in Brasília they thought it was already tomorrow), and a routine a bot creates without a timezone runs at your hour.
   - **A way back on the phone** (0087-phone-back-button): Library, Skills, Squads, Hiring, Usage and Settings show "← Conversations" at the top.

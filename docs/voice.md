@@ -53,9 +53,11 @@ including Orbis's, with no setup.
 
 ## Hearing the bots
 
-- **Listen** (the speaker under a bot's message) reads that message aloud.
-- The speaker switch in the message box, or **Read replies aloud** in the
-  settings, reads every new reply of the conversation you have open.
+- **Listen** (the speaker on the quiet line under a bot's message, beside its
+  steps) reads that message aloud.
+- **Read replies aloud**, a switch under the message box's **+** (or in the
+  settings), reads every new reply of the conversation you have open
+  (change 0091).
 
 Reading uses your system's voices (Windows, macOS, Linux, Android, iOS), in
 the interface language; nothing leaves your computer. Links, code blocks and

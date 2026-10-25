@@ -5170,3 +5170,249 @@ label.pick-row.on {
   background: var(--accent);
   color: var(--accent-text);
 }
+
+/* ── the phone's tab bar (change 0089) ────────────────────────────────────── */
+.phone-tabs,
+.phone-sheet-backdrop {
+  display: none;
+}
+@media (max-width: 760px) {
+  .sidebar-bottom {
+    display: none;
+  }
+  .app.with-tabs .sidebar,
+  .app.with-tabs .main {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .phone-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .phone-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 11.5px;
+    min-height: 44px;
+  }
+  .phone-tab.active {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .phone-sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    background: rgb(0 0 0 / 0.35);
+  }
+  .phone-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 12px calc(76px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .phone-sheet .me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 8px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+  .phone-sheet .me .me-name {
+    flex: 1;
+  }
+}
+
+/* ── a message's quiet line: listen and the steps (change 0091) ─────────────── */
+.message-meta {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding-left: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.message-user .message-meta {
+  justify-content: flex-end;
+}
+.message-meta .bubble-listen {
+  margin-top: 0;
+  align-self: center;
+}
+.message-meta .steps {
+  margin-top: 0;
+}
+.message-meta .steps > .link {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.message-meta .steps > .link::before {
+  content: "⚙ ";
+}
+.message-meta .step-list {
+  flex-basis: 100%;
+}
+
+.computer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+.computer-row:hover {
+  background: var(--hover);
+}
+
+/* ── the composer's one "+" (change 0091) ─────────────────────────────────── */
+.composer-more {
+  position: relative;
+  display: inline-flex;
+}
+.composer-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 240px;
+  z-index: 5;
+}
+.menu-glyph {
+  width: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ── settings: brains in use first, the rest under "Add a brain" (change 0092) ─ */
+.add-brain {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.add-brain > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 6px 0 12px;
+}
+.brain-details > summary {
+  cursor: pointer;
+}
+.brain-card .badge.off {
+  color: var(--muted);
+  background: var(--hover);
+}
+.tab-group {
+  display: contents;
+}
+.tab-group-label {
+  display: none;
+}
+@media (min-width: 901px) {
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+  }
+  .settings-layout > .settings-nav {
+    position: sticky;
+    top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 0;
+    overflow: visible;
+    padding: 12px 0 12px 24px;
+  }
+  .settings-nav .tab-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 14px;
+  }
+  .settings-nav .tab-group-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 0 10px 4px;
+  }
+  .settings-nav [role="tab"] {
+    text-align: left;
+    border: 0;
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin: 0;
+  }
+  .settings-nav [role="tab"][aria-selected="true"] {
+    background: var(--hover);
+    box-shadow: none;
+  }
+}
+@media (max-width: 900px) {
+  .settings-nav .tab-group:not(:last-child)::after {
+    content: "";
+    flex: none;
+    width: 1px;
+    align-self: stretch;
+    margin: 8px 4px;
+    background: var(--border);
+  }
+  .settings-nav .tab-group {
+    display: flex;
+    align-items: center;
+  }
+}
+@media (max-width: 900px) {
+  .settings-layout > .settings-nav {
+    margin: 0;
+    padding: 0 12px;
+  }
+}
+
+/* ── the list: the squad rings the face, the preview is the last message (change 0093) ─ */
+.chat-face {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+}
+.chat-face.squad-ring {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--squad);
+}
+.say-hi {
+  font-style: italic;
+  color: var(--muted);
+}

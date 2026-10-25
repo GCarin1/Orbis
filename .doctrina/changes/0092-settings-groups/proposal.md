@@ -1,6 +1,7 @@
 # Change 0092-settings-groups — settings-groups
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
 - **Lane:** product (confident; signals: add)
@@ -27,11 +28,14 @@ Settings in four groups, and brains show only those in use plus Add brain
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found nine settings tabs in one overflowing row and the brains tab opening with a setup card and red "Not found" badges.
+
+- `SettingsScreen.tsx`: the tabs in four groups (Bots, Conversations, Account and devices, Data), a side list on a computer, a row with dividers on a phone; Brains: your bots first, the brains ready, then **Add a brain** (ChatGPT, chat tokens, what is not installed or running); paths under Details.
+- `i18n.ts`: "Not installed" instead of "Not found".
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- The tabs keep their names and ids.
 
 ## Verification
 
@@ -43,8 +47,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

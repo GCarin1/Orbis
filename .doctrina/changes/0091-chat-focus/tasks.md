@@ -7,6 +7,6 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Panel closed by default and reordered
+- [x] Header, message meta line, composer + menu
+- [x] Tests: look, voice, i18n, e2e step labels

@@ -91,3 +91,4 @@ One line per archived change, newest last. Appended by
 - 2026-10-25 — 0086-routine-local-timezone — routine-local-timezone (specs: bots MODIFIED, routines MODIFIED)
 - 2026-10-25 — 0087-phone-back-button — phone-back-button (specs: web-app MODIFIED)
 - 2026-10-25 — 0088-buttons-say-why — buttons-say-why (specs: web-app MODIFIED)
+- 2026-10-25 — 0089-phone-tab-bar — phone-tab-bar (specs: web-app MODIFIED)

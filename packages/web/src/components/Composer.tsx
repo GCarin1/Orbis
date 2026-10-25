@@ -1,5 +1,6 @@
 // Message box with autocomplete: `@` for bot handles, `/` for skills, and the
 // microphone and read-aloud switch (specs/web-app).
+import { MenuSwitch } from "./MenuSwitch.js";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Bot } from "@orbis/shared";
 import { useLang, useT, type TextKey } from "../i18n.js";
@@ -88,6 +89,16 @@ export function Composer({
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [moreOpen]);
   const box = useRef<HTMLTextAreaElement>(null);
   /** Where the caret goes after a pick, applied in the same commit as the new text. */
   const pendingCaret = useRef<number | null>(null);
@@ -246,33 +257,57 @@ export function Composer({
           ))}
         </ul>
       )}
-      <button
-        type="button"
-        className="composer-plus"
-        aria-label={t("composer.mention")}
-        title={t("composer.mention")}
-        onClick={() => {
-          const at = box.current?.selectionStart ?? text.length;
-          const before = text.slice(0, at);
-          const insert = before === "" || /\s$/.test(before) ? "@" : " @";
-          pendingCaret.current = at + insert.length;
-          setText(before + insert + text.slice(at));
-          setCaret(at + insert.length);
-          setDismissed(null);
-        }}
-      >
-        <PlusIcon />
-      </button>
-      <button
-        type="button"
-        className="composer-plus composer-attach"
-        aria-label={t("files.attach")}
-        title={t("files.attach")}
-        disabled={busy}
-        onClick={() => picker.current?.click()}
-      >
-        <PaperclipIcon />
-      </button>
+      {/* One "+" for everything that is not typing: a file, a mention, reading replies aloud (change 0091). */}
+      <div className="composer-more" ref={moreRef}>
+        <button
+          type="button"
+          className="composer-plus"
+          aria-label={t("composer.more")}
+          title={t("composer.more")}
+          aria-haspopup="menu"
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen(!moreOpen)}
+        >
+          <PlusIcon />
+        </button>
+        {moreOpen && (
+          <div className="menu composer-menu" role="menu" aria-label={t("composer.more")}>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={busy}
+              onClick={() => {
+                setMoreOpen(false);
+                picker.current?.click();
+              }}
+            >
+              <PaperclipIcon size={16} />
+              <span>{t("files.attach")}</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMoreOpen(false);
+                const at = box.current?.selectionStart ?? text.length;
+                const before = text.slice(0, at);
+                const insert = before === "" || /\s$/.test(before) ? "@" : " @";
+                pendingCaret.current = at + insert.length;
+                setText(before + insert + text.slice(at));
+                setCaret(at + insert.length);
+                setDismissed(null);
+                box.current?.focus();
+              }}
+            >
+              <span className="menu-glyph">@</span>
+              <span>{t("composer.mention")}</span>
+            </button>
+            {canSpeak() && (
+              <MenuSwitch label={t("voice.readAloud")} icon={readAloud ? <SpeakerIcon size={16} /> : <SpeakerOffIcon size={16} />} on={readAloud} onToggle={() => setReadAloud(!readAloud)} />
+            )}
+          </div>
+        )}
+      </div>
       <input
         ref={picker}
         type="file"
@@ -302,24 +337,12 @@ export function Composer({
           e.preventDefault();
           addFiles(pasted.map((f, i) => (f.name && f.name !== "image.png" ? f : new File([f], `${t("files.pastedName")}-${Date.now()}${i ? `-${i}` : ""}.${(f.type.split("/")[1] ?? "png").replace("jpeg", "jpg")}`, { type: f.type }))));
         }}
-        placeholder={t("composer.short", { name })}
+        placeholder={t("composer.short")}
         aria-label={t("composer.placeholder", { name })}
         aria-autocomplete="list"
         aria-expanded={open}
         rows={1}
       />
-      {canSpeak() && (
-        <button
-          type="button"
-          className="composer-plus composer-read"
-          aria-pressed={readAloud}
-          aria-label={t("voice.readAloud")}
-          title={t("voice.readAloud")}
-          onClick={() => setReadAloud(!readAloud)}
-        >
-          {readAloud ? <SpeakerIcon /> : <SpeakerOffIcon />}
-        </button>
-      )}
       <button
         type="button"
         className={`composer-plus composer-mic${micOn ? " on" : ""}`}

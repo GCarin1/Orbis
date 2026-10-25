@@ -22,7 +22,13 @@ import { useStore } from "../store.js";
 import type { AccountSession } from "../account.js";
 
 export type SettingsTab = "brains" | "conversations" | "computers" | "initiative" | "health" | "voice" | "phone" | "account" | "data";
-const TABS: SettingsTab[] = ["brains", "conversations", "computers", "initiative", "health", "voice", "phone", "account", "data"];
+/** The tabs in four groups (change 0092): the bots, how conversations go, the account and its devices, the data. */
+const GROUPS: Array<{ label: TextKey; tabs: SettingsTab[] }> = [
+  { label: "settings.group.bots", tabs: ["brains", "computers", "initiative"] },
+  { label: "settings.group.conversations", tabs: ["conversations", "voice"] },
+  { label: "settings.group.account", tabs: ["account", "phone", "health"] },
+  { label: "settings.group.data", tabs: ["data"] },
+];
 
 /** What an import added shows at once: the lists are read again. */
 function reloadAll(): void {
@@ -55,22 +61,30 @@ export function SettingsScreen({
     <section className="screen brains-screen" aria-labelledby="brains-title" data-testid="settings-screen">
       <header className="screen-head">
         <h1 id="brains-title">{t("brains.title")}</h1>
-        <div className="settings-tabs" role="tablist" aria-label={t("brains.title")}>
-          {TABS.map((id) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              id={`settings-tab-${id}`}
-              aria-selected={tab === id}
-              aria-controls={`settings-panel-${id}`}
-              onClick={() => setTab(id)}
-            >
-              {t(`settings.tab.${id}` as TextKey)}
-            </button>
+      </header>
+      <div className="settings-layout">
+        <div className="settings-tabs settings-nav" role="tablist" aria-label={t("brains.title")}>
+          {GROUPS.map((group) => (
+            <div key={group.label} className="tab-group" role="presentation">
+              <span className="tab-group-label" aria-hidden="true">
+                {t(group.label)}
+              </span>
+              {group.tabs.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  id={`settings-tab-${id}`}
+                  aria-selected={tab === id}
+                  aria-controls={`settings-panel-${id}`}
+                  onClick={() => setTab(id)}
+                >
+                  {t(`settings.tab.${id}` as TextKey)}
+                </button>
+              ))}
+            </div>
           ))}
         </div>
-      </header>
       <div className="screen-body" role="tabpanel" id={`settings-panel-${tab}`} aria-labelledby={`settings-tab-${tab}`}>
         {tab === "brains" && <BrainsTab api={api} bots={bots} onConfigureBot={onConfigureBot} />}
         {tab === "conversations" && <ConversationDefaultsSettings />}
@@ -86,6 +100,7 @@ export function SettingsScreen({
           </>
         )}
         {tab === "data" && <DataSettings api={api} account={account} onImported={reloadAll} />}
+      </div>
       </div>
     </section>
   );
@@ -122,41 +137,17 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
   };
   const busy = (key: string) => tests[key]?.pending === true;
   const visible = bots.filter((b) => !b.hidden);
-
-  return (
-    <>
-      <div className="settings-intro">
-        <p className="muted">{t("brains.help")}</p>
-        <div className="card-actions">
-          <button
-            className="btn"
-            onClick={() => {
-              setRound((r) => r + 1);
-              reload();
-            }}
-          >
-            ↻ {t("brains.refresh")}
-          </button>
-        </div>
-      </div>
-      <ChatGptCard api={api} />
-      <ChatTokensCard api={api} />
-      <h2>{t("brains.machine")}</h2>
-      <p className="muted settings-help">{t("brains.testHelp")}</p>
-
-      <h3>{t("brains.subscription")}</h3>
-      <div className="brain-grid">
-        {health === null && <p className="muted">…</p>}
-        {health?.map((h) => (
+  const subscriptionCard = (h: RuntimeHealth) => (
           <article key={h.kind} className="brain-card" data-testid={`brain-${h.kind}`}>
             <header>
               <strong>{brainShort(t, h.kind)}</strong>
               <span className={`badge ${h.found ? "ok" : "off"}`}>{h.found ? `✓ ${t("brains.found")}` : `✗ ${t("brains.missing")}`}</span>
             </header>
             {h.found ? (
-              <p className="muted small">
+              <details className="brain-details muted small">
+                <summary>{t("brains.details")}</summary>
                 {h.version ?? "?"} · <code>{h.path}</code>
-              </p>
+              </details>
             ) : (
               <p className="muted small">{t(`brains.install.${h.kind}` as TextKey)}</p>
             )}
@@ -168,13 +159,9 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
             </button>
             <TestResultView state={tests[h.kind]} />
           </article>
-        ))}
-      </div>
-
-      <h3>{t("brains.local")}</h3>
-      <div className="brain-grid">
-        {servers === null && <p className="muted">…</p>}
-        {servers?.map((s) => {
+        
+  );
+  const localCard = (s: NonNullable<typeof servers>[number]) => {
           const model = models[s.kind] ?? s.models[0] ?? "";
           return (
             <article key={s.kind} className="brain-card" data-testid={`brain-${s.kind}`}>
@@ -215,9 +202,26 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
               <TestResultView state={tests[s.kind]} />
             </article>
           );
-        })}
-      </div>
+        
+  };
 
+  return (
+    <>
+      <div className="settings-intro">
+        <p className="muted">{t("brains.help")}</p>
+        <div className="card-actions">
+          <button
+            className="btn"
+            onClick={() => {
+              setRound((r) => r + 1);
+              reload();
+            }}
+          >
+            ↻ {t("brains.refresh")}
+          </button>
+        </div>
+      </div>
+      {/* What the bots use first, the brains ready next, the rest under "Add a brain" (change 0092). */}
       <h2>{t("brains.bots")}</h2>
       {visible.length === 0 ? (
         <p className="muted">{t("brains.noBots")}</p>
@@ -262,6 +266,26 @@ function BrainsTab({ api, bots, onConfigureBot }: { api: Api; bots: Bot[]; onCon
           </table>
         </div>
       )}
+
+      <h2>{t("brains.ready")}</h2>
+      <p className="muted settings-help">{t("brains.testHelp")}</p>
+      <div className="brain-grid">
+        {(health === null || servers === null) && <p className="muted">…</p>}
+        {health?.filter((h) => h.found).map((h) => subscriptionCard(h))}
+        {servers?.filter((s) => s.reachable).map((s) => localCard(s))}
+      </div>
+
+      <details className="add-brain" data-testid="add-brain">
+        <summary>
+          {t("brains.add", { count: (health?.filter((h) => !h.found).length ?? 0) + (servers?.filter((s) => !s.reachable).length ?? 0) + 2 })}
+        </summary>
+        <ChatGptCard api={api} />
+        <ChatTokensCard api={api} />
+        <div className="brain-grid">
+          {health?.filter((h) => !h.found).map((h) => subscriptionCard(h))}
+          {servers?.filter((s) => !s.reachable).map((s) => localCard(s))}
+        </div>
+      </details>
     </>
   );
 }

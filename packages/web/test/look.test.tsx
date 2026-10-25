@@ -129,7 +129,10 @@ describe("bot panel", () => {
       />,
     );
     const panel = screen.getByTestId("bot-panel");
-    expect(panel.textContent).toContain("Chief's screen");
+    // A stopped computer is one line after the team and the routines (change 0091).
+    expect(panel.textContent).not.toContain("Chief's screen");
+    expect(screen.getByTestId("computer-row").textContent).toBe("🖥 ComputerStopped ›");
+    expect(panel.textContent!.indexOf("Team")).toBeLessThan(panel.textContent!.indexOf("Routines"));
     expect(panel.textContent).toContain("Every day at 8:00 AM");
     expect(panel.textContent).toContain("Weekdays at 6:00 PM");
     expect(panel.textContent).toContain("Paused");

@@ -172,7 +172,7 @@ describe("signing a phone's browser in", () => {
 
     fetch.mockResolvedValue(answer(401, { error: { code: "invalid_code", message: "wrong" } }));
     render(<TokenGate onToken={onToken} />);
-    fireEvent.change(screen.getByLabelText("token da API"), { target: { value: "483 219" } });
+    fireEvent.change(screen.getByLabelText("código de acesso"), { target: { value: "483 219" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Conectar" })));
     expect(JSON.parse(String(fetch.mock.calls[1]![1]!.body))).toEqual({ code: "483219" });
     expect(screen.getByText(/Código errado, já usado ou vencido/)).toBeTruthy();

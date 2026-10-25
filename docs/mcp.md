@@ -1,5 +1,8 @@
 # MCP: how CLI brains (and your own agents) reach Orbis tools
 
+In the app, the catalog of MCP servers is called **Integrations** (change 0090); this page is about the protocol
+behind it.
+
 The hub serves its tool registry over the Model Context Protocol:
 
 - **HTTP**: `POST /mcp`, one JSON-RPC 2.0 message per request, protocol

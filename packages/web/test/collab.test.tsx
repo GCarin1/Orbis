@@ -18,6 +18,34 @@ beforeEach(() => {
   act(() => useLang.getState().setLang("en"));
 });
 
+describe("the list of conversations (change 0093)", () => {
+  it("invites a first message where a bot has none, and rings a squad's bot instead of a dot by its name", () => {
+    const squads = [{ id: "sqd_1", name: "Growth", handle: "growth", description: "", color: "#22c55e", representativeId: ana.id, managerId: null, conversationId: null, members: [ana.id], createdAt: "", updatedAt: "" }];
+    render(
+      <Sidebar
+        bots={{ ...bots, [ana.id]: { ...ana, squadId: "sqd_1" } }}
+        conversations={[]}
+        approvals={[]}
+        selectedBotId={null}
+        selectedGroupId={null}
+        view="chat"
+        isUnread={() => false}
+        onOpenBot={() => undefined}
+        onOpenGroup={() => undefined}
+        onNewBot={() => undefined}
+        onNewGroup={() => undefined}
+        onView={() => undefined}
+        squads={squads}
+      />,
+    );
+    const row = screen.getByTestId("bot-bob");
+    expect(row.textContent).toContain("Say hi to Bob");
+    const ana_ = screen.getByTestId("bot-ana");
+    expect(ana_.querySelector(".squad-ring")?.getAttribute("aria-label")).toBe("Growth");
+    expect(ana_.querySelector(".chat-title .squad-dot")).toBeNull();
+  });
+});
+
 describe("groups in the sidebar", () => {
   it("lists groups with their members and selects one", () => {
     const group: Conversation = { id: "cnv_g", kind: "group", title: "Release", members: [ana.id, bob.id], leadBotId: bob.id, description: "", photo: null, muted: false, createdAt: "2026-09-27T10:00:00.000Z", lastItemAt: null };

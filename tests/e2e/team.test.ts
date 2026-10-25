@@ -54,7 +54,8 @@ describe("a team in a browser", () => {
     await page.goto(`${url}/#token=${TOKEN}`);
     await page.getByTestId("bot-chief").click();
 
-    // The panel shows the chief's team; its reports are one click away.
+    // The panel (a tap on the bot's name) shows the chief's team; its reports are one click away.
+    await page.getByTestId("bot-title").click();
     const panel = page.getByTestId("bot-panel");
     await panel.getByText("Dana", { exact: true }).waitFor();
     await panel.getByText("Quinn", { exact: true }).waitFor();

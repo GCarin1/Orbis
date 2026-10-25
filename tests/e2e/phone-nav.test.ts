@@ -1,6 +1,6 @@
 // Getting around on a phone (changes 0087-phone-back-button, 0089-phone-tab-bar): every full screen leads back to
 // the conversations (specs/web-app).
-import { afterAll, beforeAll, describe, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -44,10 +44,31 @@ describe("getting around on a phone", () => {
   it("leads back to the conversations from every full screen", async () => {
     hub.botService.create({ name: "Ana", role: "QA", brain: { kind: "mock" } });
     const page = await phone();
-    for (const screen of ["Library", "Skills", "Squads", "Usage", "Settings"]) {
-      await page.getByRole("button", { name: new RegExp(`${screen}$`) }).first().click();
+    for (const screen of ["🖼 Library", "📘 Skills", "🛡 Squads", "📊 Usage", "⚙ Settings"]) {
+      const button = page.getByRole("button", { name: screen, exact: true });
+      if (!(await button.count())) await page.getByRole("button", { name: "More", exact: true }).click();
+      await button.first().click();
       await page.getByRole("button", { name: "Back" }).first().click();
       await page.getByTestId("bot-ana").waitFor({ state: "visible" });
     }
+  });
+
+  it("goes everywhere from the tab bar, the rest under More, and hides it inside a conversation", async () => {
+    const page = await phone();
+    const tabs = page.getByRole("navigation", { name: "Navigation" });
+    expect(await tabs.getByRole("button").allTextContents()).toEqual(["Conversations", "Library", "Team", "More"]);
+    // The sidebar's seven rows are gone from the phone's list.
+    expect(await page.getByRole("navigation", { name: "Orbis" }).isVisible()).toBe(false);
+    await tabs.getByRole("button", { name: "🛡 Squads" }).click();
+    await page.getByRole("heading", { level: 1, name: "Squads" }).waitFor();
+    await tabs.getByRole("button", { name: "More" }).click();
+    const sheet = page.getByRole("dialog", { name: "More" });
+    expect(await sheet.getByRole("button").allTextContents()).toEqual(expect.arrayContaining(["Skills", "Hiring", "Usage", "Settings"]));
+    await sheet.getByRole("button", { name: "📊 Usage" }).click();
+    await page.getByRole("heading", { level: 1, name: /Usage/ }).waitFor();
+    await tabs.getByRole("button", { name: "Conversations" }).click();
+    await page.getByTestId("bot-ana").click();
+    await page.getByRole("textbox").first().waitFor();
+    expect(await tabs.count()).toBe(0);
   });
 });

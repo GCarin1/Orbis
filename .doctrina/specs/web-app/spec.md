@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.43.4
+**Version:** 0.46.1
 
 ## Purpose
 
@@ -73,6 +73,10 @@ run's steps.
 - The web app shall fold an approval card the user already answered to one line (who asked, the tool, the answer), its input shown on a tap.
 - The web app shall show a conversation's short replies and team backstage as on/off switches in its ⋮ menu, which stays open to show the switch flip, and show each switch as a line in the chat.
 - The web app shall show, on a phone, a back bar to the conversations at the top of every full screen (Library, Skills, MCP, Squads, Hiring, Usage, Settings).
+- The web app shall navigate on a phone with a tab bar at the bottom (Conversations, Library, Team, More, the rest under More), hidden inside a conversation, in place of the sidebar's rows.
+- The web app shall keep a conversation's screen to the conversation: the bot's panel closed until opened (team, routines, the computer as one line unless it runs, the brain), the header with the name, the role and the state only while the bot works, each message's listen button and steps on one line under it ("1 step", "N steps"), and one + in the message box for attaching, mentioning and reading replies aloud.
+- The web app shall group the settings in Bots (brains, computers, initiative), Conversations (how they talk, voice and appearance), Account and devices (account, phone, health) and Data, and show under Brains the bots and their brains first, the brains ready next, and the rest under Add a brain.
+- The web app shall mark a conversation's squad with a ring of its colour around the face, keep the dot for unread, and preview each conversation with its last message, inviting a first one ("Say hi to …") where there is none.
 
 ### Event-driven
 
@@ -126,6 +130,7 @@ run's steps.
 - The web app shall not scroll a screen, panel or dialog sideways on a screen 390 px wide; a table wider than its screen scrolls inside its own box.
 - The web app shall not attach a file over 25 MB or more than 10 files to one message; it shall say which file and the limit.
 - The web app shall not leave a primary button disabled without a line under it saying what it waits for (connect, sign in, generate candidates, create a routine, sign in with ChatGPT).
+- The web app shall not show file paths, environment variables, token counts or protocol names in its everyday screens: the sign-in asks for the access code, MCP is called Integrations, and each screen opens with one sentence.
 
 ### Optional
 
@@ -205,6 +210,11 @@ run's steps.
 70. [verified] The group menu shows both switches checked by default and flips them; the chat shows "You turned on short replies" and the backstage line — verified by `packages/web/test/group-info.test.tsx`, `packages/web/test/backstage.test.tsx`
 71. [verified] On a 390 px phone, Library, Skills, Squads, Usage and Settings each lead back to the conversations — verified by `tests/e2e/phone-nav.test.ts`
 72. [verified] Connect says to paste the access code while it is disabled and the line goes once one is typed — verified by `packages/web/test/missing.test.tsx`
+73. [verified] On a 390 px phone the tab bar holds Conversations, Library, Team and More, the sidebar's rows are gone, More opens Usage, and the bar hides inside a conversation — verified by `tests/e2e/phone-nav.test.ts`
+74. [verified] The sign-in asks for the access code, the hiring estimate speaks without tokens, and the Integrations screen is reached by that name — verified by `packages/web/test/account.test.tsx`, `packages/web/test/hiring.test.tsx`, `tests/e2e/marketplace.test.ts`
+75. [verified] The panel lists the team before the routines and a stopped computer as one line; read aloud is a switch under the message box's +; steps read "3 steps" — verified by `packages/web/test/look.test.tsx`, `packages/web/test/voice.test.tsx`, `packages/web/test/i18n.test.tsx`
+76. [verified] A brain not installed waits under Add a brain, marked Not installed, and a ready one stays out of it — verified by `packages/web/test/brains.test.tsx`
+77. [verified] A bot with no message reads "Say hi to Bob" and a squad's bot wears the squad's ring, with no dot by its name — verified by `packages/web/test/collab.test.tsx`
 
 ## Maturity
 

@@ -178,8 +178,15 @@ certificate the phone does not trust is never loaded; the first screen says so.
 
 ## Getting around
 
-- The conversations are home. Library, Skills, Squads, Hiring, Usage and Settings open over them, each with
-  "← Conversations" at the top (change 0087).
+- A tab bar at the bottom (change 0089): **Conversations**, **Library**, **Team** (the squads) and **More**
+  (Skills, Integrations, Hiring, Usage, Settings, theme and language). It hides inside a conversation, which has
+  its own ← back.
+- Library, Skills, Squads, Hiring, Usage and Settings also show "← Conversations" at the top (change 0087).
+- In the list, a squad's colour rings its bots' faces, and a bot you have not talked to yet says "Say hi to …"
+  (change 0093).
+- In a conversation, the message box has one **+** (attach a file, mention a bot, read replies aloud), and each
+  message keeps its listen button and its steps on one quiet line under it. The bot's panel stays closed until you
+  open it (change 0091).
 - A button that is not ready yet says what it waits for on the line under it, such as "Paste your Orbis access
   code to connect" or "Give the routine a name" (change 0088).
 

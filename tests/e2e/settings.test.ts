@@ -74,6 +74,8 @@ describe("settings screen in a browser", () => {
     await ollamaCard.getByLabel("Model").selectOption("qwen3:4b");
     await ollamaCard.getByRole("button", { name: "Test" }).click();
     await ollamaCard.getByRole("status").getByText(/✓ Answered in [\d.]+ s: 391/).waitFor();
+    // A server that is off sits under "Add a brain".
+    await screen.getByTestId("add-brain").locator("summary").click();
     await screen.getByTestId("brain-lmstudio").getByText("✗ Off").waitFor();
 
     // A bot's own brain: the Cursor CLI answers; the mock only echoes.
@@ -88,7 +90,6 @@ describe("settings screen in a browser", () => {
     // Configure opens the bot with its settings panel on the brain it uses.
     await cursa.getByRole("button", { name: /Configure/ }).click();
     await page.getByRole("heading", { level: 1, name: /Cursa @cursa/ }).waitFor();
-    expect(await page.getByTestId("brain-badge").textContent()).toContain("Cursor CLI");
     expect(await page.getByTestId("settings-panel").getByLabel("Brain").inputValue()).toBe("cursor");
   });
 });

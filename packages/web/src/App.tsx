@@ -1,3 +1,4 @@
+import { PhoneTabs } from "./components/PhoneTabs.js";
 import { BackIcon } from "./components/Icons.js";
 import { localZone } from "./schedule.js";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -40,12 +41,12 @@ const wide = () => typeof window !== "undefined" && typeof window.matchMedia ===
 
 function initialPanel(): Panel {
   try {
-    const saved = globalThis.localStorage?.getItem(PANEL_KEY);
-    if (saved === "closed") return null;
+    // Closed until the user opens it (change 0091): the conversation gets the room.
+    if (globalThis.localStorage?.getItem(PANEL_KEY) === "open" && wide()) return "details";
   } catch {
     /* no storage */
   }
-  return wide() ? "details" : null;
+  return null;
 }
 
 export function App() {
@@ -325,7 +326,7 @@ export function App() {
     : null;
 
   return (
-    <div className={`app${sidePanel ? " with-panel" : ""}${chatOpen ? " chat-open" : ""}`} style={{ "--panel-width": `${panelWidth}px` } as CSSProperties}>
+    <div className={`app${sidePanel ? " with-panel" : ""}${chatOpen ? " chat-open" : ""}${view === "chat" && (selected || group) ? "" : " with-tabs"}`} style={{ "--panel-width": `${panelWidth}px` } as CSSProperties}>
       {sidePanel && !(computerOpen && computerFull) && <PanelResizer width={panelWidth} onWidth={setPanelWidth} />}
       <Sidebar
         bots={store.bots}
@@ -510,6 +511,7 @@ export function App() {
           </div>
         )}
       </main>
+      {!(view === "chat" && (selected || group)) && <PhoneTabs view={view} onView={setView} onHome={() => setView("chat")} />}
       {selected && panel === "details" && !group && view === "chat" && store.api && (
         <BotPanel
           key={selected.id}
@@ -544,7 +546,7 @@ export function App() {
             await store.deleteBot(selected.id);
             setPanel(null);
           }}
-          onClose={() => setPanel(wide() ? "details" : null)}
+          onClose={() => setPanel(null)}
         />
       )}
       {selected && panel === "files" && !group && view === "chat" && store.api && conversationId && (
@@ -554,7 +556,7 @@ export function App() {
           conversationId={conversationId}
           bots={store.bots}
           refreshKey={store.conversations[conversationId]?.lastItemAt ?? null}
-          onClose={() => setPanel(wide() ? "details" : null)}
+          onClose={() => setPanel(null)}
           onShowItem={async (itemId) => {
             await store.revealItem(conversationId, itemId);
           }}
@@ -567,7 +569,7 @@ export function App() {
           onLoad={() => store.loadRoutines(selected.id)}
           onCreate={(input) => store.createRoutine(selected.id, input)}
           onAction={(routine, action, force) => store.routineAction(routine, action, force)}
-          onClose={() => setPanel(wide() ? "details" : null)}
+          onClose={() => setPanel(null)}
         />
       )}
       {selected && computerOpen && !group && view === "chat" && store.api && (
@@ -579,7 +581,7 @@ export function App() {
           onAction={(action) => store.computerAction(selected.id, action)}
           onFullscreen={setComputerFull}
           onClose={() => {
-            setPanel(wide() ? "details" : null);
+            setPanel(null);
             setComputerFull(false);
           }}
         />

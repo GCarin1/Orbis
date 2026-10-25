@@ -43,6 +43,6 @@ describe("languages", () => {
 
   it("has every text in both languages", () => {
     expect(translate("pt-BR", "composer.placeholder", { name: "Ana" })).toContain("Ana");
-    expect(translate("en", "steps.show", { count: 3 })).toBe("Show 3 steps");
+    expect(translate("en", "steps.show", { count: 3 })).toBe("3 steps");
   });
 });

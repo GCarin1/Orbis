@@ -167,7 +167,8 @@ describe("reading aloud", () => {
     expect(spoken).toEqual([]);
 
     render(<Composer name="Chief" onSend={async () => undefined} />);
-    fireEvent.click(screen.getByRole("button", { name: "Read replies aloud" }));
+    fireEvent.click(screen.getByRole("button", { name: "Attach, mention or listen" }));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Read replies aloud" }));
     expect(useVoice.getState().readAloud).toBe(true);
     expect(localStorage.getItem("orbis.readAloud")).toBe("1");
     rerender({ items: history, loaded: true });

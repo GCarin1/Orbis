@@ -7,6 +7,5 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Web: PhoneTabs and the More sheet
+- [x] e2e: tab bar, More and hidden inside a conversation; phone-layout opens screens through it

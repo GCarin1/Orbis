@@ -44,7 +44,10 @@ describe("settings screen", () => {
     expect(claude.textContent).toContain("✓ Installed");
     expect(claude.textContent).toContain("2.1.0 (Claude Code)");
     const codex = screen.getByTestId("brain-codex");
-    expect(codex.textContent).toContain("✗ Not found");
+    expect(codex.textContent).toContain("✗ Not installed");
+    // A brain not there waits under "Add a brain"; the ones ready come first (change 0092).
+    expect(screen.getByTestId("add-brain").contains(codex)).toBe(true);
+    expect(screen.getByTestId("add-brain").contains(claude)).toBe(false);
     expect(codex.textContent).toContain("npm i -g @openai/codex");
     expect(within(codex).getByRole("button", { name: "Test" })).toHaveProperty("disabled", true);
     expect(screen.getByTestId("brain-cursor").textContent).toContain("Cursor CLI");

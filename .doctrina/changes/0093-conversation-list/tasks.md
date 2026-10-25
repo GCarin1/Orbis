@@ -7,6 +7,5 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Squad ring on the face; say-hi preview
+- [x] Test packages/web/test/collab.test.tsx

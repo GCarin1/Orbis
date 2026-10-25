@@ -59,6 +59,13 @@ function sideways(page: Page): Promise<string[]> {
   });
 }
 
+/** Open a screen on the phone: its tab, or its row under More (change 0089). */
+async function go(page: Page, name: string): Promise<void> {
+  const button = page.getByRole("button", { name, exact: true });
+  if (!(await button.count())) await page.getByRole("button", { name: "More", exact: true }).click();
+  await button.first().click();
+}
+
 describe("the web app on a phone", () => {
   it("scrolls no screen, panel or dialog sideways", async () => {
     const ana = hub.botService.create({ name: "Ana", role: "Pesquisa e análise de mercado", brain: { kind: "claude-code" } });
@@ -141,12 +148,12 @@ describe("the web app on a phone", () => {
 
     for (const [nav, tabs] of [
       ["⚙ Settings", ["Brains", "Computers", "Voice and appearance", "Phone"]],
-      ["🧩 MCP", ["Explore", "Connected"]],
+      ["🧩 Integrations", ["Explore", "Connected"]],
       ["📘 Skills", []],
       ["📊 Usage", []],
     ] as const) {
       await home();
-      await page.getByRole("button", { name: nav }).click();
+      await go(page, nav);
       await check(nav);
       for (const tab of tabs) {
         await page.getByRole("tab", { name: new RegExp(`^${tab}`) }).click();
@@ -155,7 +162,7 @@ describe("the web app on a phone", () => {
     }
     // Claude Code's subscription token, open — when this machine has Claude Code (change 0051).
     await home();
-    await page.getByRole("button", { name: "⚙ Settings" }).click();
+    await go(page, "⚙ Settings");
     const claudeCard = page.getByTestId("brain-claude-code");
     await claudeCard.waitFor();
     if (await claudeCard.getByText("✓ Installed").count()) {
@@ -166,7 +173,7 @@ describe("the web app on a phone", () => {
     }
     // The MCP screen's sheets: a server's details and your own server.
     await home();
-    await page.getByRole("button", { name: "🧩 MCP" }).click();
+    await go(page, "🧩 Integrations");
     await page.getByTestId("catalog-github").click();
     await page.getByTestId("details-github").waitFor();
     await check("an MCP's details");
@@ -183,7 +190,7 @@ describe("the web app on a phone", () => {
     // Squads: the org chart, a squad's card, the bots in no squad, and a new squad's form.
     hub.squads.create({ name: "Squad de pesquisa e análise de mercado", members: [ana.id], managerId: bia.id });
     await home();
-    await page.getByRole("button", { name: "🛡 Squads" }).click();
+    await go(page, "🛡 Squads");
     await page.getByRole("article").first().waitFor();
     await check("squads");
     await page.getByRole("button", { name: "New squad" }).first().click();
@@ -194,7 +201,7 @@ describe("the web app on a phone", () => {
     hub.hiring.start({ basis: "project", brief: "Um painel de ações brasileiras com alertas de preço", recruiterId: bia.id, count: 4, lang: "pt-BR" });
     await hub.hiring.wait();
     await home();
-    await page.getByRole("button", { name: "💼 Hiring" }).click();
+    await go(page, "💼 Hiring");
     await page.getByRole("article").first().waitFor();
     await check("hiring");
     await page.getByRole("radio", { name: "My team" }).click();

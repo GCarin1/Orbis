@@ -63,11 +63,8 @@ export function BotHeader({
         </h1>
         <div className="conv-meta">
           {bot.role && <span className="conv-role">{bot.role}</span>}
-          <span className="badge" title={brainLabel(t, bot.brain.kind)} data-testid="brain-badge">
-            🧠 {brainShort(t, bot.brain.kind)}
-            {bot.brain.model ? ` · ${bot.brain.model}` : ""}
-          </span>
-          <StateLabel state={bot.state} />
+          {/* The brain lives in the panel; the state shows only while the bot works (change 0091). */}
+          {bot.state !== "idle" && <StateLabel state={bot.state} />}
         </div>
       </div>
       <div className="conv-actions">

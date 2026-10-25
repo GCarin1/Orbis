@@ -1,9 +1,10 @@
 # Change 0089-phone-tab-bar — phone-tab-bar
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product (uncertain)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -27,11 +28,14 @@ The phone app navigates with a tab bar at the bottom: Conversations, Library, Te
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found the phone's home spent 38% of the screen on the sidebar's seven rows and footer, leaving room for five conversations.
+
+- `packages/web/src/components/PhoneTabs.tsx` (new): Conversations, Library, Team, More at the bottom; More opens a sheet with Skills, Integrations, Hiring, Usage, Settings, theme and language.
+- `App.tsx`: the bar shows everywhere but inside a conversation; `styles.css` hides the sidebar's rows on a phone.
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- Nothing beyond the screens named.
 
 ## Verification
 
@@ -43,8 +47,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

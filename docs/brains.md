@@ -144,7 +144,12 @@ run with a message asking you to set the brain's `command` to the program's
 
 ## Which brains do I have, and does it really answer?
 
-**⚙ Settings** in the web app lists:
+**⚙ Settings → Bots → Brains** lists, in this order (change 0092): your bots and the brain each one uses,
+the brains ready on this machine, and, under **Add a brain**, the ones not installed or not running with how to
+set them up. The settings are grouped as Bots (brains, computers, initiative), Conversations (how they talk,
+voice and appearance), Account and devices (account, phone, health) and Data.
+
+In detail, the screen lists:
 
 - the subscription CLIs on the hub's machine (installed or not, version,
   path, and how to install the missing ones);

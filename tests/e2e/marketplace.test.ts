@@ -43,7 +43,7 @@ describe("the tools marketplace in a browser", () => {
     const page = await (await browser.newContext({ locale: "en-US", viewport: { width: 1400, height: 900 } })).newPage();
     await page.goto(`${url}/#token=${TOKEN}`);
 
-    await page.getByRole("button", { name: /MCP/ }).first().click();
+    await page.getByRole("button", { name: /Integrations/ }).first().click();
     const market = page.getByTestId("marketplace");
     await market.getByTestId("catalog-deepwiki").waitFor();
     expect(await market.getByTestId("catalog-notion").textContent()).toContain("Sign in");

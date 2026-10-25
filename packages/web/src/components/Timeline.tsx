@@ -44,7 +44,7 @@ export function Steps({ run, open: initiallyOpen = false }: { run: RunView; open
   return (
     <div className="steps">
       <button className="link" onClick={() => setOpen(!open)} aria-expanded={open}>
-        {open ? t("steps.hide") : t("steps.show", { count: visible.length })}
+        {open ? t("steps.hide") : visible.length === 1 ? t("steps.showOne") : t("steps.show", { count: visible.length })}
       </button>
       {open && (
         <ol className="step-list">
@@ -492,18 +492,23 @@ export function Timeline({
                     </span>
                   )}
                 </div>
-                {!mine && canSpeak() && (
-                  <button
-                    type="button"
-                    className="bubble-listen"
-                    aria-label={t("voice.listen")}
-                    title={t("voice.listen")}
-                    onClick={() => speak(plainText(item.text), lang)}
-                  >
-                    <SpeakerIcon size={14} />
-                  </button>
+                {/* One quiet line under the message: listen and the steps (change 0091). */}
+                {((!mine && canSpeak()) || (run && run.steps.some((s) => s.type !== "text"))) && (
+                  <div className="message-meta">
+                    {!mine && canSpeak() && (
+                      <button
+                        type="button"
+                        className="bubble-listen"
+                        aria-label={t("voice.listen")}
+                        title={t("voice.listen")}
+                        onClick={() => speak(plainText(item.text), lang)}
+                      >
+                        <SpeakerIcon size={14} />
+                      </button>
+                    )}
+                    {run && <Steps run={run} />}
+                  </div>
                 )}
-                {run && <Steps run={run} />}
                 {run && backstageAnchor.get(run.chainId) === item.id && (
                   <button type="button" className="backstage-link" data-testid="backstage-link" onClick={() => setOpenBackstage(backstage.get(run.chainId) ?? [])}>
                     🧠 {t("backstage.open", { count: new Set((backstage.get(run.chainId) ?? []).map((i) => i.author.id).filter(Boolean)).size })}

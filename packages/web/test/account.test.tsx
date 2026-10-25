@@ -100,7 +100,7 @@ describe("the sign-in screen", () => {
     await waitFor(() => expect(onSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: "access-1" })));
 
     fireEvent.click(screen.getByRole("button", { name: "Use a token or a code" }));
-    expect(screen.getByPlaceholderText("API token")).toBeTruthy();
+    expect(screen.getByPlaceholderText("access code")).toBeTruthy();
   });
 
   it("says when the hub belongs to another account, instead of going back to the sign-in screen (change 0078)", async () => {
@@ -152,7 +152,7 @@ describe("the sign-in screen", () => {
 
   it("asks for the token when no account opens this hub", () => {
     render(<TokenGate auth={{ ...auth, linked: false }} onToken={() => undefined} />);
-    expect(screen.getByPlaceholderText("API token")).toBeTruthy();
+    expect(screen.getByPlaceholderText("access code")).toBeTruthy();
   });
 });
 

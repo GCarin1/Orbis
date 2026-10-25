@@ -66,6 +66,8 @@ describe.skipIf(process.platform === "win32")("ChatGPT in a browser", () => {
     const page = await (await browser.newContext({ locale: "en-US", viewport: { width: 1400, height: 900 } })).newPage();
     await page.goto(`${url}/#token=${TOKEN}`);
     await page.getByRole("button", { name: /Settings/ }).first().click();
+    // A brain not set up yet sits under "Add a brain".
+    await page.getByTestId("add-brain").locator("summary").click();
     const card = page.getByTestId("chatgpt-card");
     await card.getByText("Codex not installed").waitFor();
 

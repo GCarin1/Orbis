@@ -7,6 +7,5 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Rewrite the texts in pt-BR and en
+- [x] Tests follow the new labels

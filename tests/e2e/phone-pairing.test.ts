@@ -91,7 +91,7 @@ describe("pairing a phone", () => {
     // The 6 digits typed where the token goes sign in too.
     await computer.reload();
     const typed = await makeCode();
-    await again.getByLabel("API token").fill(`${typed.slice(0, 3)} ${typed.slice(3)}`);
+    await again.getByLabel("access code").fill(`${typed.slice(0, 3)} ${typed.slice(3)}`);
     await again.getByRole("button", { name: "Connect" }).click();
     await again.locator("main.gate").waitFor({ state: "detached" });
     expect(await again.evaluate(() => localStorage.getItem("orbis.token"))).toBe(TOKEN);
