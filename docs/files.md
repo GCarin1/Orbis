@@ -108,8 +108,8 @@ always downloads and never runs inside Orbis.
 conversation (by you or by a bot), and the ones you add straight to it with
 **Add files**. It is like ChatGPT's library (change 0079, ADR 0030).
 
-- **Tabs**: All · Images · Videos · Documents · Folders · Archived. Search by
-  name at the top.
+- **Tabs**: All · Images · Videos · Documents · Archived. Search by name at
+  the top. On All, the **Folders** sit in their own section above the files.
 - **Opening a file** shows it large, or plays it. Its actions:
   - **Download**.
   - **Forward**: to a bot or a group, with a message if you like. The bot
@@ -120,9 +120,11 @@ conversation (by you or by a bot), and the ones you add straight to it with
   - **Delete**: it goes everywhere, and the message shows "File deleted".
 - **Several at once**: tap **Select** or hold a file, pick more, then
   forward, move, archive or delete them together.
-- **Space**: the All tab shows how much the files take, by kind, and the free
-  space of the disk. Under it, the largest files, ready to download or
-  delete.
+- **Space**: one line under the files on All says how much Orbis takes and
+  how much the disk has free ("Orbis uses 4 KB · 200 GB free on the disk").
+  Tap it for the card: the files by kind, the disk, and the largest files,
+  ready to download or delete. Once the disk is 90% full the card shows on
+  its own.
 
 ### Folders
 

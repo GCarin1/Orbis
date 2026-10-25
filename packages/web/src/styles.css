@@ -73,6 +73,8 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+  /* What the user typed reads in normal weight, even under a bold label (change 0094). */
+  font-weight: 400;
 }
 /*
  * Nothing may push a screen sideways on a phone (skill: phone-layout-no-sideways-scroll). A fieldset is
@@ -513,6 +515,63 @@ iframe.computer-screen {
 .screen-body {
   padding: 16px 20px;
 }
+/* Skills: "+ New skill" is a button above the list, not a selected row; a skill is a short form (change 0095). */
+.skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.skills-new {
+  align-self: flex-start;
+}
+.skills-editing {
+  margin: 0;
+  font-size: 1em;
+}
+.skill-steps {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skill-steps legend {
+  font-size: 0.85em;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 4px;
+}
+.skill-steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skill-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.skill-steps li > input {
+  flex: 1;
+  min-width: 0;
+}
+.skill-step-n {
+  min-width: 1.6em;
+  color: var(--muted);
+  text-align: right;
+}
+.skill-steps > .btn {
+  align-self: flex-start;
+}
+.skills-as-text {
+  align-self: flex-start;
+}
 .two-columns {
   display: grid;
   grid-template-columns: minmax(200px, 280px) 1fr;
@@ -763,6 +822,37 @@ iframe.computer-screen {
 .usage-table tfoot td {
   font-weight: 700;
   border-bottom: 0;
+}
+/* Three headline numbers above the table (change 0098). */
+.usage-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.usage-stat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  min-width: 0;
+}
+.usage-stat dt {
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.usage-stat dd {
+  margin: 4px 0 0;
+  font-size: 1.5em;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usage-stat dd .usage-bot {
+  font-size: 0.7em;
+}
+.usage-tokens-toggle {
+  margin-top: 10px;
 }
 .usage-bot {
   display: inline-flex;
@@ -2111,6 +2201,48 @@ body.resizing-panel {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+/* In a bot's settings the face is shown, and its colours and shapes open on a tap (change 0094). */
+details.face-pickers {
+  display: block;
+}
+details.face-pickers > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+details.face-pickers > summary::-webkit-details-marker {
+  display: none;
+}
+details.face-pickers[open] > div {
+  margin-top: 10px;
+}
+.settings-jump {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 8px;
+  background: var(--panel);
+}
+.settings-jump .chip {
+  text-decoration: none;
+  color: inherit;
+}
+.settings-reports {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.85em;
+}
+.settings-reports .field-label {
+  font-weight: 600;
+  margin: 0;
 }
 .face-pickers > div {
   display: flex;
@@ -4221,6 +4353,60 @@ label.pick-row.on {
   gap: 4px 8px;
   min-width: 0;
 }
+/* The org chart's squads jump to their card; the rare actions sit in the ⋮ menu (change 0097). */
+.org-squad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.org-squad:hover {
+  background: var(--panel);
+}
+.squads-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* The buttons keep their width; the title beside them wraps instead (a phone has 390 px). */
+.mcp-head-row > .squads-head-actions {
+  flex-shrink: 0;
+  min-width: auto;
+}
+.squads-menu-body {
+  right: 0;
+  left: auto;
+  width: min(300px, calc(100vw - 32px));
+  padding: 12px;
+}
+.squads-menu-body .squads-manager {
+  flex-direction: column;
+  align-items: stretch;
+}
+.squad-manager-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.squad-card:focus {
+  outline: 2px solid var(--squad, var(--brand-blue));
+  outline-offset: 2px;
+}
+select.squad-add {
+  align-self: flex-start;
+}
 .squads-bar {
   display: flex;
   flex-wrap: wrap;
@@ -4764,9 +4950,12 @@ label.pick-row.on {
   font-size: 0.72em;
   color: var(--text);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .library-check {
   position: absolute;
@@ -4847,7 +5036,32 @@ label.pick-row.on {
 .library-sheet-actions .btn-danger {
   color: #fca5a5;
 }
+.library-usage-line {
+  display: block;
+  margin: 16px auto 80px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.82em;
+  cursor: pointer;
+}
+.library-usage-line:hover {
+  color: var(--text);
+}
+.library-folders-section h2 {
+  font-size: 0.85em;
+  color: var(--muted);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.library-folders-section {
+  margin-bottom: 16px;
+}
+.library-usage.full {
+  border-color: var(--danger);
+}
 .library-usage {
+  margin-top: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 14px;

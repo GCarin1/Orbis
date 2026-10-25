@@ -391,7 +391,17 @@ export function App() {
             onOpenBot={openBot}
           />
         ) : null}
-        {view === "usage" && store.api ? <UsageScreen api={store.api} bots={store.bots} /> : null}
+        {view === "usage" && store.api ? (
+          <UsageScreen
+            api={store.api}
+            bots={store.bots}
+            onSetCap={(id) => {
+              setView("chat");
+              setPanel("settings");
+              void store.selectBot(id);
+            }}
+          />
+        ) : null}
         {view === "settings" && store.api ? (
           <SettingsScreen
             api={store.api}

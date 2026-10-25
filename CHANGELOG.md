@@ -21,6 +21,12 @@ change that delivered it.
 
 ### Added
 
+- **The UX audit's polish** (changes 0094–0098):
+  - **Lighter forms** (0094-lighter-forms): what you type reads in normal weight; a bot's settings jump to Identity, Brain, Tools and Advanced, say Brain once, show the face with **Change colour and shape**, and say whom a squad member answers to as a sentence.
+  - **Skills in a form** (0095-skills-form): name, what it does, when to use it and numbered steps; **Edit as text** for the `SKILL.md`; the example speaks your language; **Available to** in place of Scope.
+  - **A tidier Library** (0096-library-tidy): folders are a section above the files instead of a tab; the space used is one line under them, and the card shows on its own once the disk is 90% full; names take two lines.
+  - **Squads around the org chart** (0097-squads-tidy): a squad in the chart jumps to its card; **One manager for every squad** sits in the ⋮ menu; each card says its manager with **Change**; "2 bots".
+  - **Usage at a glance** (0098-usage-summary): the month's cost, runs and top spender on top; money in your format ("US$ 1.234,50"); tokens behind **Show tokens**; **Set a limit** where a bot has none.
 - **The UX audit's clarity changes** (changes 0089–0093):
   - **A tab bar on the phone** (0089-phone-tab-bar): Conversations, Library, Team and More at the bottom, in place of the sidebar's seven rows.
   - **Plain words** (0090-plain-language): no "API token", file paths, environment variables or token counts on screen; MCP is now **Integrations**; shorter introductions.

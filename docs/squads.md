@@ -18,7 +18,9 @@ Open **🛡 Squads** in the sidebar.
     over.
 - **The manager**: a bot outside the squad, which the representative reports
   to.
-  - **One manager for every squad** gives the same manager to all of them.
+  - On each card the manager reads as text; **Change** picks another.
+  - **One manager for every squad**, in the screen's **⋮** menu, gives the
+    same manager to all of them.
   - A bot can manage some squads and be in another. A choice that would make
     a bot report to itself is refused.
 - On each card you can rename, change the color, add a bot, take one out,
@@ -27,8 +29,9 @@ Open **🛡 Squads** in the sidebar.
   there.
 
 The squads set who reports to whom. While a bot is in a squad, its settings
-show its manager but do not change it. The org chart at the top shows each
-manager with its squads, their representatives and their size.
+say whom it reports to ("Ana, through the Growth squad") instead of offering
+a choice. The org chart at the top shows each manager with its squads, their
+representatives and their size ("2 bots"); tap a squad to go to its card.
 
 ## Squads working together
 

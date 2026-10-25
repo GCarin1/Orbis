@@ -45,6 +45,15 @@ orbis chat @ana "/release-notes for version 4.2"
 In the web app: **📘 Skills** in the sidebar edits them, and typing `/` in a
 message lists the skills the bot (or any group member) is offered.
 
+- **The form.** A skill is written in a form: **Name** (it becomes the
+  `/name`), **What it does**, **When to use it** and numbered **Steps**. The
+  form writes the `SKILL.md` above. A new skill starts from an example in
+  your language (`resumo-semanal` in Portuguese).
+- **Edit as text** shows the `SKILL.md` itself; **Back to the form** reads it
+  back. A skill with more than the form shows (headings, prose, other keys)
+  opens as text and stays there.
+- **Available to** picks every bot or one bot.
+
 ## Routines
 
 A routine without a timezone runs in yours: the app tells the hub your device's timezone when it opens, so a bot

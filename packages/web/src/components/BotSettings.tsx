@@ -225,7 +225,25 @@ export function BotSettings({
           void save();
         }}
       >
-        <fieldset>
+        {/* Jumps to each part of a long form (change 0094). */}
+        <nav className="settings-jump" aria-label={t("settings.jump")}>
+          {(
+            [
+              ["identity", t("settings.identity")],
+              ["brain", t("settings.brain")],
+              ["tools", t("tools.title")],
+              ["advanced", t("settings.advanced")],
+            ] as const
+          ).map(([id, label]) => (
+            <a key={id} href={`#settings-${id}`} className="chip" onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}>
+              {label}
+            </a>
+          ))}
+        </nav>
+        <fieldset id="settings-identity">
           <legend>{t("settings.identity")}</legend>
           <label>
             {t("newbot.name")}
@@ -264,27 +282,38 @@ export function BotSettings({
               {squadError && <span className="error small">{squadError}</span>}
             </label>
           )}
-          <label>
-            {t("newbot.reportsTo")}
-            <select
-              value={bot.squadId ? (bot.reportsTo ?? "") : reportsTo}
-              onChange={(e) => setReportsTo(e.target.value)}
-              name="settings-reports-to"
-              disabled={Boolean(bot.squadId)}
-            >
-              <option value="">{t("newbot.noManager")}</option>
-              {bots
-                .filter((b) => b.id !== bot.id && !b.hidden)
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {botLabel(b)}
-                  </option>
-                ))}
-            </select>
-            {bot.squadId && <span className="muted small">{t("settings.reportsBySquad")}</span>}
-          </label>
-          <div className="face-pickers">
-            <BotFace shape={shape} color={color} size={56} />
+          {bot.squadId ? (
+            // The squad decides whom a member answers to: said as text, not a locked select.
+            <p className="settings-reports" data-testid="settings-reports">
+              <span className="field-label">{t("newbot.reportsTo")}</span>
+              <span>
+                {(() => {
+                  const boss = bot.reportsTo ? bots.find((b) => b.id === bot.reportsTo) : undefined;
+                  const squad = squads.find((sq) => sq.id === bot.squadId)?.name ?? "";
+                  return boss ? t("settings.reportsVia", { name: botLabel(boss), squad }) : t("settings.reportsNone", { squad });
+                })()}
+              </span>
+            </p>
+          ) : (
+            <label>
+              {t("newbot.reportsTo")}
+              <select value={reportsTo} onChange={(e) => setReportsTo(e.target.value)} name="settings-reports-to">
+                <option value="">{t("newbot.noManager")}</option>
+                {bots
+                  .filter((b) => b.id !== bot.id && !b.hidden)
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {botLabel(b)}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
+          <details className="face-pickers">
+            <summary>
+              <BotFace shape={shape} color={color} size={48} />
+              <span className="link">{t("settings.changeFace")}</span>
+            </summary>
             <div>
               <div className="swatches small" role="radiogroup" aria-label={t("newbot.color")}>
                 {AVATAR_COLORS.map((c) => (
@@ -299,21 +328,19 @@ export function BotSettings({
                 ))}
               </div>
             </div>
-          </div>
+          </details>
         </fieldset>
 
-        <fieldset>
+        <fieldset id="settings-brain">
           <legend>{t("settings.brain")}</legend>
-          <label>
-            {t("newbot.brain")}
-            <select value={kind} onChange={(e) => setKind(e.target.value as BrainKind)} name="settings-brain">
-              {BRAINS.map((k) => (
-                <option key={k} value={k}>
-                  {t(`brain.${k}` as TextKey)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* The legend already says Brain; the select carries the name without saying it twice. */}
+          <select value={kind} onChange={(e) => setKind(e.target.value as BrainKind)} name="settings-brain" aria-label={t("newbot.brain")}>
+            {BRAINS.map((k) => (
+              <option key={k} value={k}>
+                {t(`brain.${k}` as TextKey)}
+              </option>
+            ))}
+          </select>
           {takesModel(kind) && <ModelField kind={kind} value={model} onChange={setModel} name="settings-model" servers={servers} />}
           {kind === "custom-cli" && (
             <label>
@@ -336,7 +363,7 @@ export function BotSettings({
           )}
         </fieldset>
 
-        <fieldset>
+        <fieldset id="settings-advanced">
           <legend>{t("settings.policy")}</legend>
           <p className="muted settings-help">{t("settings.policyHelp")}</p>
           {rules.map((rule, i) => (
@@ -408,7 +435,7 @@ export function BotSettings({
           </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset id="settings-tools">
           <legend>{t("tools.title")}</legend>
           <ToolPicker api={api} patterns={list(tools)} onChange={(next) => setTools(next.join(", "))} />
           <label>

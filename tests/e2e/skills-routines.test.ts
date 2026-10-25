@@ -44,7 +44,16 @@ describe("skills and routines in a browser", () => {
     // Skills screen: save a new account skill.
     await page.getByRole("button", { name: /Skills/ }).first().click();
     const screen = page.getByTestId("skills-screen");
-    await screen.getByLabel("SKILL.md").fill("---\nname: smoke\ndescription: Run the smoke checklist\n---\n1. Open the app.\n2. Log in.\n");
+    // Written in the form: name, what it does, its steps.
+    await screen.getByLabel("Name", { exact: true }).fill("smoke");
+    await screen.getByLabel("What it does").fill("Run the smoke checklist");
+    await screen.getByLabel("When to use it").fill("");
+    await screen.getByLabel("Step 1", { exact: true }).fill("Open the app.");
+    await screen.getByLabel("Step 2", { exact: true }).fill("Log in.");
+    await screen.getByRole("button", { name: "Remove step 3" }).click();
+    // The text it makes is a toggle away.
+    await screen.getByRole("button", { name: "Edit as text" }).click();
+    expect(await screen.getByLabel("SKILL.md").inputValue()).toBe("---\nname: smoke\ndescription: Run the smoke checklist\n---\n1. Open the app.\n2. Log in.\n");
     await screen.getByRole("button", { name: "Save" }).click();
     await screen.getByText("Saved.").waitFor();
     await screen.getByRole("button", { name: /\/smoke/ }).waitFor();

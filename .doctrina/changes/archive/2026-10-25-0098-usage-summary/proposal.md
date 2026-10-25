@@ -1,9 +1,10 @@
-# Change 0096-library-tidy — library-tidy
+# Change 0098-usage-summary — usage-summary
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product (uncertain)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -23,15 +24,18 @@ reason is the declaration.
 
 ## Why
 
-Library: storage in one line, folders as their own section, thumbnails cropped
+Usage shows three headline numbers and money in the user's format
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found the Usage screen a table of raw numbers: dollars in English format, a tokens column most people do not need, an empty Subscription column and "no cap" with no way to set one.
+
+- `UsageScreen.tsx`: three headline numbers (the month's cost, runs, the bot that spent the most); money in the user's own format ("US$ 1.234,50" in Portuguese — still dollars, Orbis converts nothing); tokens behind "Show tokens"; the Subscription column only when something was billed to one; "Set a limit" opens the bot's settings.
+- `App.tsx`: wires Set a limit to the bot's settings panel.
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- Costs stay in US dollars as the hub reports them; no exchange rate is fetched.
 
 ## Verification
 
@@ -43,8 +47,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

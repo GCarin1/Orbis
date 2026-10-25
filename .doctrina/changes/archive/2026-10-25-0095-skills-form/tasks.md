@@ -7,6 +7,6 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Form with name, what it does, when, steps; edit as text
+- [x] Example in the user's language; new-skill button; Available to
+- [x] Tests packages/web/test/skills.test.tsx and tests/e2e/skills-routines.test.ts

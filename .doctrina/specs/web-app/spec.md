@@ -6,7 +6,7 @@
 **Realizes:** SC7, SC4, SC5
 **Depends on:** hub-api
 **Last updated:** 2026-10-11
-**Version:** 0.46.1
+**Version:** 0.46.6
 
 ## Purpose
 
@@ -77,6 +77,11 @@ run's steps.
 - The web app shall keep a conversation's screen to the conversation: the bot's panel closed until opened (team, routines, the computer as one line unless it runs, the brain), the header with the name, the role and the state only while the bot works, each message's listen button and steps on one line under it ("1 step", "N steps"), and one + in the message box for attaching, mentioning and reading replies aloud.
 - The web app shall group the settings in Bots (brains, computers, initiative), Conversations (how they talk, voice and appearance), Account and devices (account, phone, health) and Data, and show under Brains the bots and their brains first, the brains ready next, and the rest under Add a brain.
 - The web app shall mark a conversation's squad with a ring of its colour around the face, keep the dot for unread, and preview each conversation with its last message, inviting a first one ("Say hi to …") where there is none.
+- The web app shall show a bot's settings with typed values in normal weight, each name said once, chips that jump to its parts, the face with a tap to change it, and whom a squad member answers to as a sentence instead of a locked control.
+- The web app shall let the user write a skill in a form — name, what it does, when to use it and numbered steps — that makes its SKILL.md, keep the text a toggle away, and open as text a skill the form cannot hold.
+- The web app shall show the Library's folders as a section above its files, the space used as one line under them that opens the full card, and the card on its own once the disk is nearly full (90%).
+- The web app shall put the squads' org chart at the centre of their screen, a squad in it jumping to its card, keep rare actions (one manager for every squad) in the screen's menu, and say each squad's manager as text with a way to change it.
+- The web app shall open the Usage screen with three headline numbers — the month's cost, its runs and the bot that spent the most — write money in the user's own format, keep tokens a tap away, and offer to set a limit where a bot has none.
 
 ### Event-driven
 
@@ -215,6 +220,13 @@ run's steps.
 75. [verified] The panel lists the team before the routines and a stopped computer as one line; read aloud is a switch under the message box's +; steps read "3 steps" — verified by `packages/web/test/look.test.tsx`, `packages/web/test/voice.test.tsx`, `packages/web/test/i18n.test.tsx`
 76. [verified] A brain not installed waits under Add a brain, marked Not installed, and a ready one stays out of it — verified by `packages/web/test/brains.test.tsx`
 77. [verified] A bot with no message reads "Say hi to Bob" and a squad's bot wears the squad's ring, with no dot by its name — verified by `packages/web/test/collab.test.tsx`
+78. [verified] A squad member's settings say "Reports to Ana · …, through the Growth squad" with no locked select, and saving sends no reportsTo — verified by `packages/web/test/squads.test.tsx`
+79. [verified] A skill written in the form saves the SKILL.md it makes, round-trips through Edit as text, starts from an example in the user's language, and one with headings opens as text with a note — verified by `packages/web/test/skills.test.tsx`
+80. [verified] In a browser a skill written in the form is saved and offered with / in a conversation — verified by `tests/e2e/skills-routines.test.ts`
+81. [verified] The Library shows the folders above the grid with no Folders tab, the space as "O Orbis usa 4 KB · … livres no disco" that opens the card, and the card on its own with the disk 96% full — verified by `packages/web/test/library.test.tsx`
+82. [verified] The chart reads "★ Ana · 2 bots" and jumps to the card; the manager reads as text until Change; one manager for every squad is applied from the ⋮ menu — verified by `packages/web/test/squads.test.tsx`
+83. [verified] In a browser one manager for both squads is set from the ⋮ menu and the chart shows them under Max — verified by `tests/e2e/squads.test.ts`
+84. [verified] Usage shows the cost, runs and top spender on top, "US$ 1.234,50" in Portuguese, tokens only after Show tokens, no Subscription column when nothing was billed, and Set a limit opens the bot — verified by `packages/web/test/secrets-usage.test.tsx`
 
 ## Maturity
 

@@ -1,12 +1,13 @@
 // Squads (specs/squads): bots organized under a name, each with a representative the members report to and a
 // manager the representative reports to (one manager may take every squad). The org chart on top, a card per
 // squad, the bots in no squad, each squad's chat and the room where the representatives and managers talk.
-import { useState } from "react";
+// The chart is the centre (a squad in it jumps to its card); rare actions sit in the ⋮ menu (change 0097).
+import { useEffect, useRef, useState } from "react";
 import type { Bot, Squad, SquadsView } from "@orbis/shared";
 import type { Api } from "../api.js";
 import { useT } from "../i18n.js";
 import { Avatar, botLabel } from "./Avatar.js";
-import { ChatIcon, PlusIcon } from "./Icons.js";
+import { ChatIcon, MoreIcon, PlusIcon } from "./Icons.js";
 
 type T = ReturnType<typeof useT>;
 
@@ -47,11 +48,21 @@ function OrgChart({ squads, bots, t }: { squads: Squad[]; bots: Map<string, Bot>
                 const rep = s.representativeId ? bots.get(s.representativeId) : undefined;
                 return (
                   <li key={s.id} style={{ ["--squad" as string]: s.color }}>
-                    <span className="squad-dot" aria-hidden="true" />
-                    <strong>{s.name}</strong>
-                    <span className="muted small">
-                      {rep ? `★ ${rep.name}` : t("squads.noRep")} · {t("squads.botsCount", { count: s.members.length })}
-                    </span>
+                    <button
+                      type="button"
+                      className="org-squad"
+                      onClick={() => {
+                        const card = document.getElementById(`squad-card-${s.id}`);
+                        card?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        card?.focus({ preventScroll: true });
+                      }}
+                    >
+                      <span className="squad-dot" aria-hidden="true" />
+                      <strong>{s.name}</strong>
+                      <span className="muted small">
+                        {rep ? `★ ${rep.name}` : t("squads.noRep")} · {t(s.members.length === 1 ? "squads.botsOne" : "squads.botsCount", { count: s.members.length })}
+                      </span>
+                    </button>
                   </li>
                 );
               })}
@@ -82,12 +93,21 @@ function SquadCard({
   const [title, setTitle] = useState(squad.name);
   const [description, setDescription] = useState(squad.description);
   const [color, setColor] = useState(squad.color);
+  const [changingManager, setChangingManager] = useState(false);
   const patch = (body: object) => act(() => api.request("PATCH", `/api/v1/squads/${squad.id}`, body));
   const members = squad.members.map((id) => bots.get(id)).filter((b): b is Bot => b !== undefined);
+  const manager = squad.managerId ? bots.get(squad.managerId) : undefined;
   const outside = [...bots.values()].filter((b) => !squad.members.includes(b.id));
   const squadOf = (b: Bot) => squads.find((s) => s.id === b.squadId);
   return (
-    <article className="squad-card" style={{ ["--squad" as string]: squad.color }} data-testid={`squad-${squad.handle}`} aria-label={squad.name}>
+    <article
+      className="squad-card"
+      id={`squad-card-${squad.id}`}
+      tabIndex={-1}
+      style={{ ["--squad" as string]: squad.color }}
+      data-testid={`squad-${squad.handle}`}
+      aria-label={squad.name}
+    >
       <header className="squad-head">
         {editing ? (
           <form
@@ -144,17 +164,43 @@ function SquadCard({
           </>
         )}
       </header>
-      <label className="squad-field">
-        {t("squads.manager")}
-        <select value={squad.managerId ?? ""} onChange={(e) => void patch({ managerId: e.target.value || null })} name="squad-manager">
-          <option value="">{t("squads.noManager")}</option>
-          {outside.map((b) => (
-            <option key={b.id} value={b.id}>
-              {botLabel(b)}
-            </option>
-          ))}
-        </select>
-      </label>
+      {changingManager ? (
+        <label className="squad-field">
+          {t("squads.manager")}
+          <select
+            value={squad.managerId ?? ""}
+            onChange={(e) => {
+              setChangingManager(false);
+              void patch({ managerId: e.target.value || null });
+            }}
+            onBlur={() => setChangingManager(false)}
+            name="squad-manager"
+            autoFocus
+          >
+            <option value="">{t("squads.noManager")}</option>
+            {outside.map((b) => (
+              <option key={b.id} value={b.id}>
+                {botLabel(b)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p className="squad-manager-line">
+          <span className="muted">{t("squads.manager")}:</span>{" "}
+          {manager ? (
+            <span className="usage-bot">
+              <Avatar bot={manager} size={22} />
+              <strong>{manager.name}</strong>
+            </span>
+          ) : (
+            <span className="muted">{t("squads.noManager")}</span>
+          )}{" "}
+          <button type="button" className="link" onClick={() => setChangingManager(true)} aria-label={t("squads.changeManager", { name: squad.name })}>
+            {t("squads.change")}
+          </button>
+        </p>
+      )}
       <ul className="squad-members" aria-label={t("squads.members")}>
         {members.map((b) => {
           const rep = b.id === squad.representativeId;
@@ -195,24 +241,23 @@ function SquadCard({
         })}
         {members.length === 0 && <li className="muted small">{t("squads.empty")}</li>}
       </ul>
-      <label className="squad-field">
-        {t("squads.add")}
-        <select
-          value=""
-          onChange={(e) => e.target.value && void act(() => api.request("PUT", `/api/v1/squads/${squad.id}/members/${e.target.value}`))}
-          name="squad-add"
-        >
-          <option value="">{t("squads.pick")}</option>
-          {outside
-            .filter((b) => b.id !== squad.managerId)
-            .map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-                {squadOf(b) ? ` (${t("squads.inSquad", { squad: squadOf(b)!.name })})` : ""}
-              </option>
-            ))}
-        </select>
-      </label>
+      <select
+        className="squad-add"
+        aria-label={t("squads.add")}
+        value=""
+        onChange={(e) => e.target.value && void act(() => api.request("PUT", `/api/v1/squads/${squad.id}/members/${e.target.value}`))}
+        name="squad-add"
+      >
+        <option value="">+ {t("squads.add")}</option>
+        {outside
+          .filter((b) => b.id !== squad.managerId)
+          .map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+              {squadOf(b) ? ` (${t("squads.inSquad", { squad: squadOf(b)!.name })})` : ""}
+            </option>
+          ))}
+      </select>
       {squad.conversationId ? (
         <button type="button" className="btn btn-sm squad-chat" onClick={() => onOpenGroup(squad.conversationId!)}>
           <ChatIcon size={16} /> {t("squads.openChat")}
@@ -288,11 +333,57 @@ function NewSquad({ api, bots, squads, onDone }: { api: Api; bots: Bot[]; squads
   );
 }
 
+/** The screen's ⋮ menu: what is done once in a while — one manager for every squad. */
+function SquadsMenu({ api, bots, onError }: { api: Api; bots: Bot[]; onError(fn: () => Promise<unknown>): Promise<boolean> }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [managerOfAll, setManagerOfAll] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  return (
+    <div className="new-menu squads-menu" ref={ref}>
+      <button type="button" className="icon-btn" aria-label={t("squads.menu")} title={t("squads.menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <MoreIcon />
+      </button>
+      {open && (
+        <div className="menu squads-menu-body" role="group" aria-label={t("squads.menu")}>
+          <form
+            className="squads-manager"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (await onError(() => api.post("/api/v1/squads/manager", { managerId: managerOfAll || null }))) setOpen(false);
+            }}
+          >
+            <label>
+              {t("squads.managerOfAll")}
+              <select value={managerOfAll} onChange={(e) => setManagerOfAll(e.target.value)} name="manager-of-all">
+                <option value="">{t("squads.noManager")}</option>
+                {bots.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {botLabel(b)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="btn btn-sm">
+              {t("squads.applyAll")}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SquadsScreen({ api, bots, view, onOpenGroup }: { api: Api; bots: Bot[]; view: SquadsView | null; onOpenGroup(id: string): void }) {
   const t = useT();
   const { error, act } = useAct();
   const [creating, setCreating] = useState(false);
-  const [managerOfAll, setManagerOfAll] = useState("");
   const visible = bots.filter((b) => !b.hidden);
   const byId = new Map(visible.map((b) => [b.id, b]));
   const squads = view?.squads ?? [];
@@ -305,9 +396,12 @@ export function SquadsScreen({ api, bots, view, onOpenGroup }: { api: Api; bots:
             <h1 id="squads-title">{t("squads.title")}</h1>
             <p className="muted">{t("squads.help")}</p>
           </div>
-          <button type="button" className="btn btn-primary mcp-add" aria-label={t("squads.new")} title={t("squads.new")} onClick={() => setCreating(true)}>
-            <PlusIcon size={16} /> <span>{t("squads.new")}</span>
-          </button>
+          <div className="squads-head-actions">
+            <button type="button" className="btn btn-primary mcp-add" aria-label={t("squads.new")} title={t("squads.new")} onClick={() => setCreating(true)}>
+              <PlusIcon size={16} /> <span>{t("squads.new")}</span>
+            </button>
+            {squads.length > 0 && <SquadsMenu api={api} bots={visible} onError={act} />}
+          </div>
         </div>
       </header>
       <div className="screen-body squads-body">
@@ -326,28 +420,6 @@ export function SquadsScreen({ api, bots, view, onOpenGroup }: { api: Api; bots:
           <>
             <OrgChart squads={squads} bots={byId} t={t} />
             <div className="squads-bar">
-              <form
-                className="squads-manager"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void act(() => api.post("/api/v1/squads/manager", { managerId: managerOfAll || null }));
-                }}
-              >
-                <label>
-                  {t("squads.managerOfAll")}
-                  <select value={managerOfAll} onChange={(e) => setManagerOfAll(e.target.value)} name="manager-of-all">
-                    <option value="">{t("squads.noManager")}</option>
-                    {visible.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {botLabel(b)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button type="submit" className="btn btn-sm">
-                  {t("squads.applyAll")}
-                </button>
-              </form>
               {view?.roomId && (
                 <button type="button" className="btn btn-sm" onClick={() => onOpenGroup(view.roomId!)}>
                   <ChatIcon size={16} /> {t("squads.openRoom")}

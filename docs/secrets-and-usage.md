@@ -66,5 +66,13 @@ orbis usage @ana --from 2026-08-01 --to 2026-09-01
 orbis bots edit @ana --spend-cap 20
 ```
 
-In the web app, **📊 Usage** shows runs, tokens, cost, the subscription part
-and each bot's cap, for this month or the last.
+In the web app, **📊 Usage** opens with three numbers: the month's cost, its
+runs and the bot that spent the most. Under them, each bot's runs, cost and
+cap, for this month or the last:
+
+- Money is written your way ("US$ 1.234,50" in Portuguese). It stays in US
+  dollars, as the brains bill it; Orbis converts nothing.
+- **Show tokens** adds the input and output tokens.
+- The **Subscription** column appears only when a subscription covered some
+  of the cost.
+- A bot with no cap shows **Set a limit**, which opens its settings.

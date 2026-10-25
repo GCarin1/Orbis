@@ -82,10 +82,19 @@ describe("the Squads screen", () => {
     const chart = screen.getByRole("region", { name: "Org chart" });
     expect(within(chart).getByText("Max")).toBeTruthy();
     expect(within(chart).getByText("No manager")).toBeTruthy();
-    expect(within(chart).getByText("★ Ana · bots: 2")).toBeTruthy();
+    expect(within(chart).getByText("★ Ana · 2 bots")).toBeTruthy();
+    // A squad in the chart jumps to its card.
+    const scroll = vi.fn();
+    screen.getByTestId("squad-growth").scrollIntoView = scroll;
+    fireEvent.click(within(chart).getByRole("button", { name: /Growth/ }));
+    expect(scroll).toHaveBeenCalled();
 
     const card = screen.getByTestId("squad-growth");
     expect(within(card).getByText("@growth")).toBeTruthy();
+    // The manager reads as text; Change opens the picker.
+    expect(within(card).getByText("Max")).toBeTruthy();
+    expect(within(card).queryByLabelText(/^Manager/)).toBeNull();
+    fireEvent.click(within(card).getByRole("button", { name: "Change Growth's manager" }));
     expect((within(card).getByLabelText(/^Manager/) as HTMLSelectElement).value).toBe(max.id);
     expect(within(card).getByText("★ Representative")).toBeTruthy();
     await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Make Bob the representative" })));
@@ -105,6 +114,9 @@ describe("the Squads screen", () => {
     // The bots in no squad, one manager for every squad, the room.
     await act(async () => fireEvent.change(screen.getByLabelText("Put Dan in…"), { target: { value: "sqd_data" } }));
     expect(request).toHaveBeenCalledWith("PUT", `/api/v1/squads/sqd_data/members/${dan.id}`);
+    // One manager for every squad is a rare action, in the ⋮ menu.
+    expect(screen.queryByLabelText("One manager for every squad")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "More squad actions" }));
     fireEvent.change(screen.getByLabelText("One manager for every squad"), { target: { value: max.id } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Apply to all" })));
     expect(post).toHaveBeenCalledWith("/api/v1/squads/manager", { managerId: max.id });
@@ -174,10 +186,9 @@ describe("squads around the app", () => {
     );
     const panel = screen.getByTestId("settings-panel");
     expect((within(panel).getByLabelText("Squad") as HTMLSelectElement).value).toBe("sqd_growth");
-    const reports = within(panel).getByLabelText(/^Reports to/) as HTMLSelectElement;
-    expect(reports.disabled).toBe(true);
-    expect(reports.value).toBe(ana.id);
-    expect(within(panel).getByText(/Set by the squad/)).toBeTruthy();
+    // The squad decides whom a member answers to: said as text, not a locked select (change 0094).
+    expect(within(panel).queryByLabelText(/^Reports to/)).toBeNull();
+    expect(within(panel).getByTestId("settings-reports").textContent).toMatch(/^Reports toAna.*, through the Growth squad$/);
     await act(async () => fireEvent.change(within(panel).getByLabelText("Squad"), { target: { value: "sqd_data" } }));
     expect(request).toHaveBeenCalledWith("PUT", "/api/v1/squads/sqd_data/members/bot_bob");
     await act(async () => fireEvent.change(within(panel).getByLabelText("Squad"), { target: { value: "" } }));

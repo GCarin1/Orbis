@@ -1,9 +1,10 @@
-# Change 0098-usage-summary — usage-summary
+# Change 0096-library-tidy — library-tidy
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** chore (confident; signals: format)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -23,15 +24,18 @@ reason is the declaration.
 
 ## Why
 
-Usage shows three headline numbers and money in the user's format
+Library: storage in one line, folders as their own section, thumbnails cropped
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found the space card above the files, mixing the server's disk with Orbis's bytes; Folders as a tab beside file kinds; names cut after one line. (It also reported photos drawn as a strip: that came from a truncated test image in the audit's own seed data, not from the app; with a valid image the thumbnail already fills its tile.)
+
+- `LibraryScreen.tsx`: folders are a section above the grid on All; the Folders tab is gone; the space used is one quiet line under the files ("Orbis uses 4 KB · 200 GB free on the disk") that opens the card, and the card shows on its own once the disk is 90% full.
+- `styles.css`: file names take two lines.
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- The Library's routes and the usage numbers are unchanged.
 
 ## Verification
 
@@ -43,8 +47,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

@@ -340,7 +340,7 @@
         "id": "web-app",
         "path": ".doctrina/specs/web-app/spec.md",
         "status": "active",
-        "version": "0.46.1",
+        "version": "0.46.6",
         "last_updated": "2026-10-11",
         "implementation": "verified — the Orbis look: bot faces with state motion, one conversation list with search and unread dots, dark and light bubbles with time separators and \"Messages from\", mention chips, the pill composer with the microphone and the read-aloud switch, the bot panel (screen, routines, team, brain), the new-bot screen with face pickers and suggestions, the phone layout, the System/Light/Dark theme; timeline cards, the skills, usage, routines, computer, bot settings and settings screens (brains, voice and appearance), approvals inbox, languages, PWA and the end-to-end paths",
         "realizes": [
@@ -768,48 +768,7 @@
         "summary": "The Library is the `files` table seen whole; it is not a second store."
       }
     ],
-    "changes": [
-      {
-        "id": "0094-lighter-forms",
-        "title": "lighter-forms",
-        "path": ".doctrina/changes/0094-lighter-forms",
-        "status": "proposed",
-        "opened": "2026-10-25",
-        "lane": "product (uncertain)"
-      },
-      {
-        "id": "0095-skills-form",
-        "title": "skills-form",
-        "path": ".doctrina/changes/0095-skills-form",
-        "status": "proposed",
-        "opened": "2026-10-25",
-        "lane": "product (uncertain)"
-      },
-      {
-        "id": "0096-library-tidy",
-        "title": "library-tidy",
-        "path": ".doctrina/changes/0096-library-tidy",
-        "status": "proposed",
-        "opened": "2026-10-25",
-        "lane": "product (uncertain)"
-      },
-      {
-        "id": "0097-squads-tidy",
-        "title": "squads-tidy",
-        "path": ".doctrina/changes/0097-squads-tidy",
-        "status": "proposed",
-        "opened": "2026-10-25",
-        "lane": "product (uncertain)"
-      },
-      {
-        "id": "0098-usage-summary",
-        "title": "usage-summary",
-        "path": ".doctrina/changes/0098-usage-summary",
-        "status": "proposed",
-        "opened": "2026-10-25",
-        "lane": "chore (confident; signals: format)"
-      }
-    ],
+    "changes": [],
     "changes_archive": [
       {
         "id": "0001-walking-skeleton",
@@ -2563,6 +2522,76 @@
         "id": "0093-conversation-list",
         "title": "conversation-list",
         "path": ".doctrina/changes/archive/2026-10-25-0093-conversation-list",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0094-lighter-forms",
+        "title": "lighter-forms",
+        "path": ".doctrina/changes/archive/2026-10-25-0094-lighter-forms",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0095-skills-form",
+        "title": "skills-form",
+        "path": ".doctrina/changes/archive/2026-10-25-0095-skills-form",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0096-library-tidy",
+        "title": "library-tidy",
+        "path": ".doctrina/changes/archive/2026-10-25-0096-library-tidy",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0097-squads-tidy",
+        "title": "squads-tidy",
+        "path": ".doctrina/changes/archive/2026-10-25-0097-squads-tidy",
+        "status": "applied",
+        "applied": "2026-10-25",
+        "specs_affected": [
+          {
+            "capability": "web-app",
+            "operation": "MODIFIED"
+          }
+        ],
+        "lane": "product"
+      },
+      {
+        "id": "0098-usage-summary",
+        "title": "usage-summary",
+        "path": ".doctrina/changes/archive/2026-10-25-0098-usage-summary",
         "status": "applied",
         "applied": "2026-10-25",
         "specs_affected": [

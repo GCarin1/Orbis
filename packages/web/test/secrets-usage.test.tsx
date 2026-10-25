@@ -57,7 +57,7 @@ describe("secret-request card", () => {
 });
 
 describe("usage screen", () => {
-  it("shows runs, tokens and cost per bot, the subscription part and the cap (criterion 11)", async () => {
+  it("shows three headline numbers, then runs and cost per bot, the subscription part and the cap (criterion 11)", async () => {
     const report: UsageReport = {
       from: "2026-09-01T00:00:00.000Z",
       to: "2026-10-01T00:00:00.000Z",
@@ -68,18 +68,47 @@ describe("usage screen", () => {
       ],
     };
     const get = vi.fn(async (_path: string) => report);
-    render(<UsageScreen api={{ get } as unknown as Api} bots={{ [ana.id]: ana, [bob.id]: bob }} />);
+    const onSetCap = vi.fn();
+    render(<UsageScreen api={{ get } as unknown as Api} bots={{ [ana.id]: ana, [bob.id]: bob }} onSetCap={onSetCap} />);
     await waitFor(() => expect(screen.getByTestId("usage-ana")).toBeTruthy());
+    // On top: the month's cost (API and subscription), the runs and who spent the most.
+    const stats = screen.getByTestId("usage-stats");
+    expect(stats.textContent).toContain("Cost this month$5.50");
+    expect(stats.textContent).toContain("Runs5");
+    expect(stats.textContent).toContain("Spent the most" + ana.name);
     const anaRow = screen.getByTestId("usage-ana");
-    expect(anaRow.textContent).toContain("10.0k / 2.0k");
     expect(anaRow.textContent).toContain("$3.00");
     expect(anaRow.textContent).toContain("$2.00");
     expect(anaRow.textContent).toContain("$1.00 / $1.00");
     expect(anaRow.textContent).toContain("reached");
     expect(within(anaRow).getByRole("meter").getAttribute("aria-valuenow")).toBe("1");
-    expect(screen.getByTestId("usage-bob").textContent).toContain("no cap");
+    // Tokens are a tap away; a bot with no cap offers to set one.
+    expect(anaRow.textContent).not.toContain("10.0k");
+    fireEvent.click(screen.getByRole("button", { name: "Show tokens" }));
+    expect(screen.getByTestId("usage-ana").textContent).toContain("10.0k / 2.0k");
+    fireEvent.click(within(screen.getByTestId("usage-bob")).getByRole("button", { name: "Set a limit" }));
+    expect(onSetCap).toHaveBeenCalledWith(bob.id);
     expect(get.mock.calls[0]![0]).toMatch(/^\/api\/v1\/usage\?from=/);
     fireEvent.click(screen.getByRole("button", { name: "Last month" }));
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+  });
+
+  it("writes money the way the user does, and drops the subscription column when nothing was billed to one", async () => {
+    useLang.getState().setLang("pt-BR");
+    try {
+      const report: UsageReport = {
+        from: "2026-09-01T00:00:00.000Z",
+        to: "2026-10-01T00:00:00.000Z",
+        total: { runs: 2, inputTokens: 2_500, outputTokens: 1_000, cachedTokens: 0, costUsd: 1234.5, subscriptionCostUsd: 0 },
+        bots: [{ botId: bob.id, usage: { runs: 2, inputTokens: 2_500, outputTokens: 1_000, cachedTokens: 0, costUsd: 1234.5, subscriptionCostUsd: 0 }, spendCapUsd: null, capIncludesSubscription: false, cappedCostUsd: 1234.5 }],
+      };
+      render(<UsageScreen api={{ get: async () => report } as unknown as Api} bots={{ [bob.id]: bob }} />);
+      await waitFor(() => expect(screen.getByTestId("usage-bob")).toBeTruthy());
+      expect(screen.getByTestId("usage-bob").textContent?.replace(/\s/g, " ")).toContain("US$ 1.234,50");
+      expect(screen.queryByRole("columnheader", { name: "Assinatura" })).toBeNull();
+      expect(screen.getByTestId("usage-bob").textContent).toContain("sem teto");
+    } finally {
+      useLang.getState().setLang("en");
+    }
   });
 });

@@ -7,6 +7,6 @@ of work). The change is done when every box is checked and
 archives the change and updates the index, so those are not boxes here.
 -->
 
-- [ ]
-- [ ]
-- [ ]
+- [x] Normal-weight typed text
+- [x] Jump chips, brain legend only, reports-to as text, collapsed face pickers
+- [x] Test packages/web/test/squads.test.tsx

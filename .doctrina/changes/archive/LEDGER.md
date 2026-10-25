@@ -96,3 +96,8 @@ One line per archived change, newest last. Appended by
 - 2026-10-25 — 0091-chat-focus — chat-focus (specs: web-app MODIFIED)
 - 2026-10-25 — 0092-settings-groups — settings-groups (specs: web-app MODIFIED)
 - 2026-10-25 — 0093-conversation-list — conversation-list (specs: web-app MODIFIED)
+- 2026-10-25 — 0094-lighter-forms — lighter-forms (specs: web-app MODIFIED)
+- 2026-10-25 — 0095-skills-form — skills-form (specs: web-app MODIFIED)
+- 2026-10-25 — 0096-library-tidy — library-tidy (specs: web-app MODIFIED)
+- 2026-10-25 — 0097-squads-tidy — squads-tidy (specs: web-app MODIFIED)
+- 2026-10-25 — 0098-usage-summary — usage-summary (specs: web-app MODIFIED)

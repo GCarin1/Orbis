@@ -1,9 +1,10 @@
-# Change 0095-skills-form — skills-form
+# Change 0097-squads-tidy — squads-tidy
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product (uncertain)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -23,15 +24,17 @@ reason is the declaration.
 
 ## Why
 
-Skills are written in a form (name, when to use, steps) with the text editor as an option
+Squads: the org chart at the centre, rare actions in a menu
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found the org chart the best part of the Squads screen but inert, the rare "one manager for every squad" always on screen, a manager select on every card and "bots: 2".
+
+- `SquadsScreen.tsx`: a squad in the chart jumps to its card; "One manager for every squad" moves to the screen's ⋮ menu; each card says its manager as text with Change opening the select; "+ Add a bot" is one select; counts read "2 bots" / "1 bot"; the help is one line.
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- The squads routes and rules (representative, manager, chats) are unchanged.
 
 ## Verification
 
@@ -43,8 +46,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

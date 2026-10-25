@@ -1,9 +1,10 @@
-# Change 0097-squads-tidy — squads-tidy
+# Change 0095-skills-form — skills-form
 
-- **Status:** proposed
+- **Status:** applied
+- **Applied:** 2026-10-25
 - **Date:** 2026-10-25
 - **Owner:**
-- **Lane:** product (uncertain)
+- **Lane:** product
 - **Affects specs:** web-app
 
 <!--
@@ -23,15 +24,17 @@ reason is the declaration.
 
 ## Why
 
-Squads: the org chart at the centre, rare actions in a menu
+Skills are written in a form (name, when to use, steps) with the text editor as an option
 
 ## What
 
-<!-- The shape of the change: artifacts created or modified, specs affected. -->
+The audit found skills written only as raw SKILL.md, with an English example about pull requests.
+
+- `SkillsScreen.tsx`: a form (name, what it does, when to use it, numbered steps) that makes the SKILL.md; "Edit as text" for the raw text and back; a skill the form cannot hold (headings, prose, other keys) opens as text and says so; the example is "resumo-semanal" in Portuguese, "weekly-summary" in English; "+ New skill" is a button above the list; the scope reads "Available to: Every bot".
 
 ## Scope boundaries
 
-<!-- Anything adjacent that this change deliberately does NOT touch. -->
+- The hub's SKILL.md format and routes are unchanged; the form writes the same file.
 
 ## Verification
 
@@ -43,8 +46,8 @@ unchecked (pass --force to archive anyway and record the gap). Distinguish
 "task marked done" from "verification passed" — link the evidence.
 -->
 
-- [ ] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
-- [ ] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
+- [x] Automated checks pass (`doctrina verify`, or the project's typecheck/test/build).
+- [x] The affected spec's acceptance criteria are met and cite their evidence (`doctrina coverage`).
 
 ## Open questions
 

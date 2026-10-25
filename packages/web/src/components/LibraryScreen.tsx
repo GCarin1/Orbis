@@ -1,7 +1,7 @@
 // The Library (specs/web-app, change 0079-library): every file of every conversation and the ones put in
-// directly, as a grid — images, videos, documents, folders, archived — to open, download, forward to a bot or
-// a group, move to a folder, archive or delete, one at a time or several selected; folders and who works on
-// them; and how much space it all takes.
+// directly, as a grid — images, videos, documents, archived — to open, download, forward to a bot or a group,
+// move to a folder, archive or delete, one at a time or several selected; folders, as their own section above
+// the files, and who works on them; and how much space it all takes, in one line under the files (change 0096).
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bot, Conversation, LibraryFile, LibraryFolder, LibraryPage, LibraryUsage } from "@orbis/shared";
 import type { Api } from "../api.js";
@@ -12,10 +12,10 @@ import { FolderTaskBoard } from "./FolderTaskBoard.js";
 import { extensionOf, formatSize, isImage, MAX_FILE_BYTES, saveFile } from "./Files.js";
 import { BackIcon, CheckIcon, CloseIcon, DownloadIcon, FileIcon, PlusIcon, SearchIcon, TrashIcon } from "./Icons.js";
 
-type Tab = "all" | "image" | "video" | "doc" | "folders" | "archived";
+type Tab = "all" | "image" | "video" | "doc" | "archived";
 type Batch = "delete" | "archive" | "unarchive" | "move" | "forward";
 
-const kindQuery: Record<Tab, string> = { all: "", image: "kind=image", video: "kind=video", doc: "kind=doc", folders: "", archived: "archived=true" };
+const kindQuery: Record<Tab, string> = { all: "", image: "kind=image", video: "kind=video", doc: "kind=doc", archived: "archived=true" };
 
 function errorText(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -289,14 +289,31 @@ function FileSheet({ api, file, bots, onAction, onClose }: { api: Api; file: Lib
   );
 }
 
-/** How much the Library takes, of the disk, and its largest files. */
+/** The disk is this full (%) before the space used shows as a card instead of one quiet line. */
+const DISK_WARN = 90;
+
+/**
+ * How much the Library takes, of the disk, and its largest files: one quiet line under the files that opens
+ * the card, the card open by itself once the disk is nearly full (change 0096).
+ */
 function UsageCard({ api, usage, onDelete }: { api: Api; usage: LibraryUsage; onDelete(file: LibraryFile): void }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
   const [open, setOpen] = useState(false);
   const share = usage.disk && usage.disk.size > 0 ? Math.min(100, ((usage.disk.size - usage.disk.free) / usage.disk.size) * 100) : null;
+  const full = share !== null && share >= DISK_WARN;
+  const [card, setCard] = useState(full);
+  if (!card) {
+    return (
+      <button type="button" className="library-usage-line" onClick={() => setCard(true)} aria-expanded={false} data-testid="library-usage">
+        {usage.disk
+          ? t("library.usageLine", { size: formatSize(usage.total, lang), free: formatSize(usage.disk.free, lang) })
+          : t("library.usedBy", { size: formatSize(usage.total, lang), count: usage.files })}
+      </button>
+    );
+  }
   return (
-    <section className="library-usage" aria-label={t("library.usage")} data-testid="library-usage">
+    <section className={`library-usage${full ? " full" : ""}`} aria-label={t("library.usage")} data-testid="library-usage">
       <div className="library-usage-head">
         <strong>{t("library.usedBy", { size: formatSize(usage.total, lang), count: usage.files })}</strong>
         {usage.disk && <span className="muted">{t("library.diskFree", { free: formatSize(usage.disk.free, lang), size: formatSize(usage.disk.size, lang) })}</span>}
@@ -385,11 +402,6 @@ export function LibraryScreen({
         if (!live) return;
         setFolders(folderList);
         setUsage(used);
-        if (tab === "folders" && !folderId) {
-          setFiles([]);
-          setNext(null);
-          return;
-        }
         const page = await api.get<LibraryPage>(listPath(null));
         if (!live) return;
         setFiles(page.files);
@@ -462,7 +474,6 @@ export function LibraryScreen({
     ["image", t("library.tab.images")],
     ["video", t("library.tab.videos")],
     ["doc", t("library.tab.docs")],
-    ["folders", t("library.tab.folders")],
     ["archived", t("library.tab.archived")],
   ];
 
@@ -537,15 +548,13 @@ export function LibraryScreen({
             ))}
           </div>
         )}
-        {(tab !== "folders" || folder) && (
-          <div className="library-search">
-            <SearchIcon size={16} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("library.search")} aria-label={t("library.search")} />
-            <button type="button" className="btn btn-sm" onClick={() => (selecting ? (setSelecting(false), setSelected(new Set())) : setSelecting(true))}>
-              {selecting ? t("library.cancel") : t("library.selectMany")}
-            </button>
-          </div>
-        )}
+        <div className="library-search">
+          <SearchIcon size={16} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("library.search")} aria-label={t("library.search")} />
+          <button type="button" className="btn btn-sm" onClick={() => (selecting ? (setSelecting(false), setSelected(new Set())) : setSelecting(true))}>
+            {selecting ? t("library.cancel") : t("library.selectMany")}
+          </button>
+        </div>
       </header>
       <div className="screen-body">
         {error && <p className="error">{error}</p>}
@@ -555,22 +564,25 @@ export function LibraryScreen({
           </p>
         )}
         {folder && <FolderTaskBoard api={api} folder={folder} bots={byId} onOpenConversation={onOpenConversation} />}
-        {tab === "all" && !folder && usage && <UsageCard api={api} usage={usage} onDelete={(file) => batch("delete", [file.id])} />}
-        {tab === "folders" && !folder ? (
-          <div className="library-folders" data-testid="library-folders">
-            <button type="button" className="library-folder new" onClick={() => setDialog({ kind: "folder", folder: null })}>
-              <PlusIcon /> {t("library.newFolder")}
-            </button>
-            {folders.map((f) => (
-              <button key={f.id} type="button" className="library-folder" onClick={() => setFolderId(f.id)}>
-                <span className="library-folder-icon">📁</span>
-                <strong>{f.name}</strong>
-                <span className="muted small">{t("library.folderCount", { count: f.files, size: formatSize(f.bytes, lang) })}</span>
-                {(f.bots.length > 0 || f.groups.length > 0) && <span className="muted small">{t("library.folderTeam", { count: f.bots.length + f.groups.length })}</span>}
+        {tab === "all" && !folder && !query && (
+          <section className="library-folders-section" aria-labelledby="library-folders-title">
+            <h2 id="library-folders-title">{t("library.tab.folders")}</h2>
+            <div className="library-folders" data-testid="library-folders">
+              <button type="button" className="library-folder new" onClick={() => setDialog({ kind: "folder", folder: null })}>
+                <PlusIcon /> {t("library.newFolder")}
               </button>
-            ))}
-          </div>
-        ) : files === null ? (
+              {folders.map((f) => (
+                <button key={f.id} type="button" className="library-folder" onClick={() => setFolderId(f.id)}>
+                  <span className="library-folder-icon">📁</span>
+                  <strong>{f.name}</strong>
+                  <span className="muted small">{t("library.folderCount", { count: f.files, size: formatSize(f.bytes, lang) })}</span>
+                  {(f.bots.length > 0 || f.groups.length > 0) && <span className="muted small">{t("library.folderTeam", { count: f.bots.length + f.groups.length })}</span>}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {files === null ? (
           <p className="muted">{t("timeline.loading")}</p>
         ) : files.length === 0 ? (
           <p className="muted library-empty">{folder ? t("library.emptyFolder") : query ? t("library.noMatch") : t("library.empty")}</p>
@@ -588,6 +600,7 @@ export function LibraryScreen({
             )}
           </>
         )}
+        {tab === "all" && !folder && usage && <UsageCard api={api} usage={usage} onDelete={(file) => batch("delete", [file.id])} />}
       </div>
       {selecting && selected.size > 0 && (
         <div className="library-batch" role="toolbar" aria-label={t("library.selected", { count: selected.size })}>

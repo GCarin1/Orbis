@@ -38,7 +38,7 @@ const folder: LibraryFolder = { id: "fld_1", name: "Evento", description: "Fotos
 const usage: LibraryUsage = { total: 4096, files: 2, byKind: { image: 2048, video: 0, audio: 0, doc: 2048 }, largest: [photo, report], disk: { free: 200 * 1024 ** 3, size: 469 * 1024 ** 3 } };
 
 /** The hub: answers each path, and records what was asked. */
-function fakeHub() {
+function fakeHub(used: LibraryUsage = usage) {
   const calls: Array<{ method: string; url: string; body: unknown }> = [];
   vi.stubGlobal(
     "fetch",
@@ -49,7 +49,7 @@ function fakeHub() {
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json" } });
       const u = new URL(url, "http://hub");
       if (u.pathname === "/api/v1/library/folders" && method === "GET") return json([folder]);
-      if (u.pathname === "/api/v1/library/usage") return json(usage);
+      if (u.pathname === "/api/v1/library/usage") return json(used);
       if (u.pathname === "/api/v1/library" && u.searchParams.get("folder")) return json({ files: [photo], next: null });
       if (u.pathname === "/api/v1/library" && u.searchParams.get("kind") === "image") return json({ files: [photo], next: null });
       if (u.pathname === "/api/v1/library") return json({ files: [photo, report], next: null });
@@ -74,10 +74,17 @@ afterEach(() => {
 const renderLibrary = () => render(<LibraryScreen api={api} bots={[ana, bia]} conversations={[group]} />);
 
 describe("the Library screen", () => {
-  it("shows every file as a grid, with the space used, and filters by tab and name", async () => {
+  it("shows every file as a grid, the folders above it, the space used in one line under it, and filters by tab and name", async () => {
     const calls = fakeHub();
     renderLibrary();
     await waitFor(() => expect(screen.getAllByTestId("library-tile")).toHaveLength(2));
+    // Folders are their own section, not a tab.
+    expect(within(screen.getByRole("region", { name: "Pastas" })).getByRole("button", { name: /Evento/ })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "Pastas" })).toBeNull();
+    // The space used: one quiet line while the disk has room; a tap opens the card.
+    const line = screen.getByTestId("library-usage");
+    expect(line.textContent).toMatch(/^O Orbis usa 4 KB · .+ livres no disco$/);
+    fireEvent.click(line);
     expect(screen.getByTestId("library-usage").textContent).toMatch(/4 KB em 2 arquivo\(s\)/);
     expect(screen.getByTestId("library-usage").textContent).toMatch(/livres de/);
     fireEvent.click(screen.getByRole("button", { name: "Ver os maiores arquivos" }));
@@ -88,6 +95,13 @@ describe("the Library screen", () => {
     expect(calls.some((c) => c.url.includes("kind=image"))).toBe(true);
     fireEvent.change(screen.getByLabelText("Buscar por nome"), { target: { value: "praia" } });
     await waitFor(() => expect(calls.some((c) => c.url.includes("q=praia"))).toBe(true));
+  });
+
+  it("shows the space as a card on its own once the disk is nearly full", async () => {
+    fakeHub({ ...usage, disk: { free: 20 * 1024 ** 3, size: 469 * 1024 ** 3 } });
+    renderLibrary();
+    await waitFor(() => expect(screen.getByRole("region", { name: "Espaço" })).toBeTruthy());
+    expect(screen.getByRole("meter", { name: "Disco usado" }).getAttribute("aria-valuenow")).toBe("96");
   });
 
   it("opens a file with its actions and forwards it to a bot with a message", async () => {
@@ -134,7 +148,6 @@ describe("the Library screen", () => {
   it("opens a folder, adds files to it and says who works on it", async () => {
     const calls = fakeHub();
     renderLibrary();
-    fireEvent.click(screen.getByRole("tab", { name: "Pastas" }));
     fireEvent.click(await screen.findByRole("button", { name: /Evento/ }));
     expect(await screen.findByText("Fotos para escolher")).toBeTruthy();
     await waitFor(() => expect(calls.some((c) => c.url.includes("folder=fld_1"))).toBe(true));
